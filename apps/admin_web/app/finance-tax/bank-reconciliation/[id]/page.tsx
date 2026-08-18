@@ -10,6 +10,7 @@ import {
   AdminApiRequestError,
   AdminOperatorAccessDeniedError,
   adminGet,
+  adminGetResult,
   adminPostOrThrow,
 } from '../../../../lib/admin-api';
 import {
@@ -31,7 +32,7 @@ import {
 import { AdminInlineNotice } from '../../../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { ConfirmDialog } from '../../../../components/confirm-dialog';
-import { AdminBasicTimeline, AdminDisclosure } from '../../../../components/admin-surface';
+import { AdminBasicTimeline, AdminDisclosure, AdminErrorState } from '../../../../components/admin-surface';
 import { AdminTableSubstack } from '../../../../components/admin-data-table';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
@@ -108,11 +109,39 @@ export default async function BankReconciliationDetailPage({
   });
   if (candidateQuery) detailApiParams.set('candidateQ', candidateQuery);
   const detailApiHref = `${buildBankReconciliationDetailApiHref(id)}?${detailApiParams.toString()}`;
+  const requestedDetailHref = bankCandidateStateHref(bankReconciliationDetailHref(id, returnTo), {
+    candidatePage,
+    candidateQuery,
+    candidateTake,
+  });
 
-  const transaction = await adminGet<AdminBankReconciliationTransactionDetail | null>(detailApiHref, null);
-  if (!transaction) {
+  const transactionResult = await adminGetResult<AdminBankReconciliationTransactionDetail | null>(
+    detailApiHref,
+    null,
+  );
+  if (!transactionResult.ok && transactionResult.status === 404) {
     notFound();
   }
+  if (!transactionResult.ok || !transactionResult.data) {
+    const errorCopy = bankReconciliationDetailErrorCopy(
+      transactionResult.status,
+      transactionResult.requestId,
+    );
+    return (
+      <AdminPageTemplate
+        actions={<AdminFormControlLink href={returnTo}>Back to bank reconciliation</AdminFormControlLink>}
+        description="The bank transaction API did not return authoritative reconciliation evidence."
+        title="Bank Reconciliation Detail"
+      >
+        <AdminErrorState
+          action={<AdminFormControlLink href={requestedDetailHref}>Retry</AdminFormControlLink>}
+          message={errorCopy.message}
+          title={errorCopy.title}
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const transaction = transactionResult.data;
 
   const canAssignReviewOwner = canAssignBankTransactionReview(transaction.status);
   const requestedReviewOwnerConfirmation = confirmAction === 'review-owner' && canAssignReviewOwner;
@@ -121,6 +150,8 @@ export default async function BankReconciliationDetailPage({
     adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
   ]);
   const matches = transaction.reconciliationMatches ?? [];
+  const activeMatchCount =
+    transaction.preflight?.activeMatchCount ?? matches.filter((match) => match.status !== 'REVERSED').length;
   const latestActiveMatch = matches.find((match) => match.status !== 'REVERSED') ?? null;
   const latestReversedMatch = matches.find((match) => match.status === 'REVERSED') ?? null;
   const matchedAmount =
@@ -142,6 +173,12 @@ export default async function BankReconciliationDetailPage({
     (transaction.status === 'UNMATCHED' && !latestActiveMatch);
   const paymentClearingCandidates = transaction.paymentClearingCandidates ?? [];
   const eligiblePaymentClearingCandidates = paymentClearingCandidates.filter((entry) => entry.eligible);
+  const recommendedPaymentClearingCandidateCount = eligiblePaymentClearingCandidates.filter(
+    (entry) => entry.confidence === 'STRONG',
+  ).length;
+  const manualReviewPaymentClearingCandidateCount =
+    eligiblePaymentClearingCandidates.length - recommendedPaymentClearingCandidateCount;
+  const paymentClearingCandidateSummary = `${recommendedPaymentClearingCandidateCount} recommended · ${manualReviewPaymentClearingCandidateCount} manual review · ${paymentClearingCandidates.length} shown`;
   const paymentClearingOptions = [
     { label: 'Select a payment clearing candidate', value: '' },
     ...eligiblePaymentClearingCandidates.map((entry) => ({
@@ -162,7 +199,11 @@ export default async function BankReconciliationDetailPage({
     currentOperatorAccess?.id ?? null,
   );
   const detailPath = `/finance-tax/bank-reconciliation/${encodeURIComponent(transaction.id)}`;
-  const detailHref = bankReconciliationDetailHref(transaction.id, returnTo);
+  const detailHref = bankCandidateStateHref(bankReconciliationDetailHref(transaction.id, returnTo), {
+    candidatePage,
+    candidateQuery,
+    candidateTake,
+  });
   const showReviewOwnerConfirmation = requestedReviewOwnerConfirmation && reviewOwnerOptions.length > 0;
   const paymentClearingCandidateEvidence = (
     <>
@@ -251,7 +292,7 @@ export default async function BankReconciliationDetailPage({
                   }
                 >
                   {!candidate.eligible
-                    ? 'Not eligible'
+                    ? 'Not selectable'
                     : candidate.confidence === 'STRONG'
                       ? 'Recommended'
                       : 'Review'}
@@ -336,11 +377,11 @@ export default async function BankReconciliationDetailPage({
           value: <MoneyText amount={transaction.amount} currency={transaction.currency} />,
         },
         {
-          helper: 'Linked reconciliation matches.',
+          helper: `${matches.length} retained match record(s), including reversed history.`,
           kind: 'record',
-          label: 'Matches',
+          label: 'Active matches',
           scope: 'Record detail',
-          value: matches.length,
+          value: activeMatchCount,
         },
         {
           helper: 'Bank flow direction.',
@@ -375,6 +416,9 @@ export default async function BankReconciliationDetailPage({
           }
           hiddenInputs={[
             { name: 'bankTransactionId', value: transaction.id },
+            { name: 'candidatePage', value: candidatePage },
+            { name: 'candidateQ', value: candidateQuery },
+            { name: 'candidateTake', value: candidateTake },
             { name: 'confirmationBankTransactionId', value: transaction.id },
             { name: 'returnTo', value: returnTo },
           ]}
@@ -717,8 +761,8 @@ export default async function BankReconciliationDetailPage({
       {!statusModel.closed && !canCreateManualMatch ? (
         <FinanceTablePanel
           description="Search and inspect candidate evidence before assigning an owner. Matching remains unavailable until every preflight blocker is resolved."
-          resultLabel={`${eligiblePaymentClearingCandidates.length} eligible / ${paymentClearingCandidates.length} shown`}
-          resultTone={eligiblePaymentClearingCandidates.length > 0 ? 'success' : 'warning'}
+          resultLabel={paymentClearingCandidateSummary}
+          resultTone={recommendedPaymentClearingCandidateCount > 0 ? 'success' : 'warning'}
           title="Payment clearing candidates"
         >
           {paymentClearingCandidateEvidence}
@@ -868,14 +912,14 @@ export default async function BankReconciliationDetailPage({
               <div className="finance-reconciliation-match-primary">
                 <div className="finance-reconciliation-match-heading">
                   <div>
-                    <strong>Recommended payment clearing match</strong>
+                    <strong>Payment clearing match</strong>
                     <span>
                       Use this first when the bank row belongs to a customer payment or booking settlement
                       clearing entry.
                     </span>
                   </div>
-                  <StatusBadge tone={eligiblePaymentClearingCandidates.length > 0 ? 'success' : 'warning'}>
-                    {eligiblePaymentClearingCandidates.length} eligible / {paymentClearingCandidates.length} shown
+                  <StatusBadge tone={recommendedPaymentClearingCandidateCount > 0 ? 'success' : 'warning'}>
+                    {paymentClearingCandidateSummary}
                   </StatusBadge>
                 </div>
                 {paymentClearingCandidateEvidence}
@@ -895,7 +939,7 @@ export default async function BankReconciliationDetailPage({
                     options={
                       eligiblePaymentClearingCandidates.length
                         ? paymentClearingOptions
-                        : [{ label: 'No eligible payment clearing candidate available', value: '' }]
+                        : [{ label: 'No selectable payment clearing candidate available', value: '' }]
                     }
                     required
                   />
@@ -1024,7 +1068,7 @@ export default async function BankReconciliationDetailPage({
       <FinanceTablePanel
         grouped
         description="Each match points to the finance source used to reconcile this bank row."
-        resultLabel={`${matches.length} match(es)`}
+        resultLabel={`${activeMatchCount} active · ${matches.length} history`}
         resultTone="info"
         title="Reconciliation matches"
       >
@@ -1249,11 +1293,20 @@ async function assignBankTransactionReviewAction(formData: FormData) {
   'use server';
 
   const bankTransactionId = readFormString(formData, 'bankTransactionId');
+  const candidatePage = boundedCandidatePage(readFormString(formData, 'candidatePage'));
+  const candidateQuery = readFormString(formData, 'candidateQ');
+  const candidateTake = boundedCandidateTake(readFormString(formData, 'candidateTake'));
   const confirmationBankTransactionId = readFormString(formData, 'confirmationBankTransactionId');
   const assigneeAdminId = readFormString(formData, 'assigneeAdminId');
   const reason = readFormString(formData, 'reason');
   const returnTo = safeBankReconciliationReturnTo(readFormString(formData, 'returnTo'));
-  const detailHref = bankTransactionId ? bankReconciliationDetailHref(bankTransactionId, returnTo) : returnTo;
+  const detailHref = bankTransactionId
+    ? bankCandidateStateHref(bankReconciliationDetailHref(bankTransactionId, returnTo), {
+        candidatePage,
+        candidateQuery,
+        candidateTake,
+      })
+    : returnTo;
   if (
     !isConfirmedBankReconciliationAction({
       bankTransactionId,
@@ -1617,6 +1670,26 @@ function bankReconciliationActionErrorCode(error: unknown) {
     return 'request';
   }
   return 'failed';
+}
+
+function bankReconciliationDetailErrorCopy(status: number | null, requestId?: string | null) {
+  const supportReference = requestId ? ` Support reference: ${requestId}.` : '';
+  if (status === 403) {
+    return {
+      message: `Your operator account cannot load this bank reconciliation evidence.${supportReference}`,
+      title: 'Bank reconciliation access denied',
+    };
+  }
+  if (status === 400) {
+    return {
+      message: `The candidate search was rejected. Clear or revise the search before retrying.${supportReference}`,
+      title: 'Bank reconciliation request rejected',
+    };
+  }
+  return {
+    message: `Retry before making a reconciliation or closeout decision.${supportReference}`,
+    title: 'Bank reconciliation evidence unavailable',
+  };
 }
 
 function logBankReconciliationActionError(action: string, error: unknown) {

@@ -112,7 +112,7 @@ export function DashboardDataScopeStatus({
         ? `${partialSourceCount} source${partialSourceCount === 1 ? '' : 's'} unavailable`
         : sourceState === 'stale'
           ? 'Source delayed'
-          : 'All sources healthy';
+          : 'All data sources current';
 
     return (
       <>

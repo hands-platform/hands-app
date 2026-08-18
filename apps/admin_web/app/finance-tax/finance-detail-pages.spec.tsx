@@ -1114,7 +1114,8 @@ describe('finance detail pages', () => {
     );
     expect(markup).toContain('Manual reconciliation match');
     expect(markup).toContain('finance-reconciliation-match-board');
-    expect(markup).toContain('Recommended payment clearing match');
+    expect(markup).toContain('Payment clearing match');
+    expect(markup).toContain('1 recommended · 1 manual review · 2 shown');
     expect(markup).toContain('Payment clearing candidate');
     expect(markup).toContain('Review evidence and match');
     expect(markup).toContain('Pending journal evidence');

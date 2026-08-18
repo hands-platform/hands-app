@@ -1,18 +1,21 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
-import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/admin-api';
-import { adminGet } from '../../../../lib/admin-api';
+import type { AdminBookingPaymentClearingEntryDetail, AdminUser } from '../../../../lib/admin-api';
+import { adminGet, adminGetResult, adminPostOrThrow } from '../../../../lib/admin-api';
 import { AdminFormActionRow, AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../../components/admin-inline-fallback';
 import { AdminInlineNotice } from '../../../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { ConfirmDialog } from '../../../../components/confirm-dialog';
 import { AdminTableSubstack } from '../../../../components/admin-data-table';
+import { AdminErrorState } from '../../../../components/admin-surface';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadgeFromPillClass } from '../../../../components/status-badge';
 import { shortId } from '../../../../lib/admin-format';
+import { getCurrentAdminOperatorAccess } from '../../../../lib/admin-operator-access';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -22,6 +25,7 @@ import {
   financePaymentClearingStatusTone,
 } from '../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../finance-table-panel';
+import { buildPaymentClearingReviewOwnerOptions } from '../../bank-reconciliation/bank-reconciliation-review-owner-model';
 import { paymentClearingStateModel } from '../payment-clearing-state-model';
 import {
   bankReconciliationDetailHref,
@@ -51,19 +55,36 @@ export default async function PaymentClearingDetailPage({
     notFound();
   }
 
-  const entry = await adminGet<AdminBookingPaymentClearingEntryDetail | null>(
+  const query = searchParams ? await searchParams : {};
+  const returnTo = safePaymentClearingDetailReturnTo(readParam(query, 'returnTo'));
+  const detailHref = paymentClearingDetailHref(id, returnTo);
+  const entryResult = await adminGetResult<AdminBookingPaymentClearingEntryDetail | null>(
     buildBookingPaymentClearingDetailApiHref(id),
     null,
   );
-  if (!entry) {
+  if (!entryResult.ok && entryResult.status === 404) {
     notFound();
   }
-
-  const query = searchParams ? await searchParams : {};
-  const returnTo = safePaymentClearingDetailReturnTo(readParam(query, 'returnTo'));
-  const detailHref = paymentClearingDetailHref(entry.id, returnTo);
+  if (!entryResult.ok || !entryResult.data) {
+    const errorCopy = paymentClearingDetailErrorCopy(entryResult.status, entryResult.requestId);
+    return (
+      <AdminPageTemplate
+        actions={<AdminFormControlLink href={returnTo}>Back to clearing</AdminFormControlLink>}
+        description="The payment clearing API did not return authoritative finance evidence."
+        title="Payment Clearing Detail"
+      >
+        <AdminErrorState
+          action={<AdminFormControlLink href={detailHref}>Retry</AdminFormControlLink>}
+          message={errorCopy.message}
+          title={errorCopy.title}
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const entry = entryResult.data;
 
   const matches = entry.bankReconciliationMatches ?? [];
+  const activeMatchCount = matches.filter((match) => match.status !== 'REVERSED').length;
   const latestActiveMatch = matches.find((match) => match.status !== 'REVERSED') ?? null;
   const matchedAmount =
     entry.matchedAmount ??
@@ -72,6 +93,8 @@ export default async function PaymentClearingDetailPage({
     }, 0);
   const remainingAmount = entry.remainingAmount ?? Math.max(0, Math.abs(entry.amount) - matchedAmount);
   const clearingState = paymentClearingStateModel(entry.status, remainingAmount);
+  const assignmentNotice = readParam(query, 'assignmentNotice');
+  const requestedOwnerConfirmation = readParam(query, 'confirm') === 'review-owner' && clearingState.isMatchable;
   const closedAt =
     entry.status === 'REVERSED'
       ? (entry.settlementReversalEntry?.occurredAt ?? entry.clearedAt)
@@ -80,6 +103,18 @@ export default async function PaymentClearingDetailPage({
   const assignmentHistory = entry.assignmentHistory ?? [];
   const settlementRecordLinks = buildFinanceSettlementTraceLinks(entry);
   const settlementPaymentFee = paymentFeePolicyInfo(entry.settlementSnapshot, entry.currency);
+  const [currentOperatorAccess, adminUsers] = requestedOwnerConfirmation
+    ? await Promise.all([
+        getCurrentAdminOperatorAccess(),
+        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
+      ])
+    : [null, [] as AdminUser[]];
+  const reviewOwnerOptions = buildPaymentClearingReviewOwnerOptions(
+    adminUsers,
+    entry.reviewAssignment?.assigneeAdminId ?? null,
+    currentOperatorAccess?.id ?? null,
+  );
+  const showOwnerConfirmation = requestedOwnerConfirmation && reviewOwnerOptions.length > 0;
 
   return (
     <AdminPageTemplate
@@ -88,12 +123,20 @@ export default async function PaymentClearingDetailPage({
           <AdminFormControlLink className="button-secondary" href={returnTo}>
             Back to clearing
           </AdminFormControlLink>
-          {clearingState.isMatchable && bankTransactionCandidates[0] ? (
+          {clearingState.isMatchable ? (
+            <AdminFormControlLink
+              className="button-secondary"
+              href={appendDetailParam(detailHref, 'confirm', 'review-owner')}
+            >
+              {entry.reviewAssignment ? 'Reassign owner' : 'Assign owner'}
+            </AdminFormControlLink>
+          ) : null}
+          {clearingState.isMatchable && bankTransactionCandidates.length > 0 ? (
             <AdminFormControlLink
               className="button-primary"
-              href={bankCandidateReviewHref(bankTransactionCandidates[0].id, detailHref, entry.id)}
+              href="#matching-bank-candidates"
             >
-              Review newest eligible candidate
+              Compare candidate evidence
             </AdminFormControlLink>
           ) : clearingState.isMatchable ? (
             <AdminFormControlLink
@@ -122,6 +165,61 @@ export default async function PaymentClearingDetailPage({
       ]}
       title="Payment Clearing Detail"
     >
+      {assignmentNotice === 'assigned' ? (
+        <AdminInlineNotice className="admin-mb-16" role="status" tone="success">
+          Review owner updated. The payment clearing status and matched amount are unchanged.
+        </AdminInlineNotice>
+      ) : assignmentNotice === 'failed' ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Review owner was not updated. Confirm the operator has Payment Clearing access and is not already
+          assigned.
+        </AdminInlineNotice>
+      ) : null}
+
+      {showOwnerConfirmation ? (
+        <ConfirmDialog
+          action={assignPaymentClearingDetailReviewAction}
+          cancelHref={detailHref}
+          confirmLabel={entry.reviewAssignment ? 'Reassign owner' : 'Assign owner'}
+          description={
+            entry.reviewAssignment
+              ? 'Transfer this open payment evidence review to another eligible Finance operator. Existing ownership evidence remains in the history.'
+              : 'Assign this open payment evidence review without changing its clearing status or matched amount.'
+          }
+          hiddenInputs={[
+            { name: 'clearingEntryId', value: entry.id },
+            { name: 'confirmationClearingEntryId', value: entry.id },
+            { name: 'returnTo', value: returnTo },
+          ]}
+          id={`payment-clearing-review-owner-${entry.id}`}
+          selectInputs={[
+            {
+              defaultValue: reviewOwnerOptions[0]?.value,
+              label: 'Review owner',
+              name: 'assigneeAdminId',
+              options: reviewOwnerOptions,
+              required: true,
+            },
+          ]}
+          textInputs={[
+            {
+              label: 'Assignment reason',
+              maxLength: 500,
+              minLength: 12,
+              name: 'reason',
+              placeholder: 'Why should this operator own the payment evidence review?',
+              required: true,
+            },
+          ]}
+          title={`${entry.reviewAssignment ? 'Reassign' : 'Assign'} payment evidence review?`}
+          tone="warning"
+        />
+      ) : requestedOwnerConfirmation ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+          No eligible Finance operator is available for this review. Check Admin Operator category access.
+        </AdminInlineNotice>
+      ) : null}
+
       <FinanceTablePanel
         description={
           <>
@@ -250,35 +348,40 @@ export default async function PaymentClearingDetailPage({
         resultTone={entry.reviewAssignment ? 'info' : 'warning'}
         title="Review owner history"
       >
-        <FinanceDataTable
-          ariaLabel="Payment clearing assignment history"
-          emptyMessage="No review owner has been assigned to this payment evidence."
-          headers={['Owner', 'Assigned by', 'Reason', 'Assigned at']}
-          rowCount={assignmentHistory.length}
-        >
-          {assignmentHistory.map((assignment) => (
-            <tr key={assignment.id}>
-              <td>{assignment.assignee.fullName ?? assignment.assignee.email ?? shortId(assignment.assignee.id)}</td>
-              <td>
-                {assignment.assignedBy?.fullName ??
-                  assignment.assignedBy?.email ??
-                  (assignment.assignedBy ? shortId(assignment.assignedBy.id) : 'System')}
-              </td>
-              <td>{assignment.reason ?? <AdminInlineFallback>No reason recorded</AdminInlineFallback>}</td>
-              <td><DateTimeText value={assignment.assignedAt} /></td>
-            </tr>
-          ))}
-        </FinanceDataTable>
+        {assignmentHistory.length > 0 ? (
+          <FinanceDataTable
+            ariaLabel="Payment clearing assignment history"
+            emptyMessage="No review owner has been assigned to this payment evidence."
+            headers={['Owner', 'Assigned by', 'Reason', 'Assigned at']}
+            rowCount={assignmentHistory.length}
+          >
+            {assignmentHistory.map((assignment) => (
+              <tr key={assignment.id}>
+                <td>{assignment.assignee.fullName ?? assignment.assignee.email ?? shortId(assignment.assignee.id)}</td>
+                <td>
+                  {assignment.assignedBy?.fullName ??
+                    assignment.assignedBy?.email ??
+                    (assignment.assignedBy ? shortId(assignment.assignedBy.id) : 'System')}
+                </td>
+                <td>{assignment.reason ?? <AdminInlineFallback>No reason recorded</AdminInlineFallback>}</td>
+                <td><DateTimeText value={assignment.assignedAt} /></td>
+              </tr>
+            ))}
+          </FinanceDataTable>
+        ) : (
+          <p className="muted">No review owner has been assigned. Use Assign owner before approving reconciliation evidence.</p>
+        )}
       </FinanceTablePanel>
 
       {clearingState.isTerminal ? null : (
       <FinanceTablePanel
         grouped
-        description="Newest eligible unresolved bank rows with the same currency and authoritative direction within the candidate window. Compare amount and occurrence-time gaps before opening a row."
+        description="Recent unresolved bank rows with the same currency and authoritative direction within the candidate window. These are unranked leads, not match recommendations. Compare amount and occurrence-time gaps before opening a row."
+        id="matching-bank-candidates"
         resultLabel={
           remainingAmount <= 0
             ? 'Fully matched'
-            : `${bankTransactionCandidates.length} nearby candidate(s)`
+            : `${bankTransactionCandidates.length} unranked candidate(s)`
         }
         resultTone={
           remainingAmount <= 0 ? 'success' : bankTransactionCandidates.length > 0 ? 'info' : 'warning'
@@ -292,7 +395,7 @@ export default async function PaymentClearingDetailPage({
               ? 'This payment evidence has no remaining amount to match.'
               : 'No nearby unresolved bank transaction has the required currency and direction. Open Bank transactions to search the wider queue.'
           }
-          headers={['Bank transaction', 'Direction', 'Amount', 'Match comparison', 'Status', 'Action']}
+          headers={['Bank transaction', 'Direction', 'Amount', 'Match comparison', 'Assessment', 'Action']}
           rowCount={bankTransactionCandidates.length}
         >
           {bankTransactionCandidates.map((candidate) => (
@@ -312,10 +415,15 @@ export default async function PaymentClearingDetailPage({
                   <span className="muted"><DateTimeText value={candidate.occurredAt} /></span>
                 </AdminTableSubstack>
               </td>
-              <td>{candidate.status}</td>
+              <td>
+                <AdminTableSubstack>
+                  <span>{candidate.status}</span>
+                  <span className="muted">Manual comparison required</span>
+                </AdminTableSubstack>
+              </td>
               <td>
                 <AdminTextLink href={bankCandidateReviewHref(candidate.id, detailHref, entry.id)}>
-                  Review candidate
+                  Review evidence
                 </AdminTextLink>
               </td>
             </tr>
@@ -408,7 +516,7 @@ export default async function PaymentClearingDetailPage({
                 {clearingState.isTerminal ? (
                   clearingState.closeoutLabel
                 ) : (
-                  <>{matches.length} match(es) · <MoneyText amount={remainingAmount} currency={entry.currency} /> remaining</>
+                  <>{activeMatchCount} active · {matches.length} history · <MoneyText amount={remainingAmount} currency={entry.currency} /> remaining</>
                 )}
               </>
             }
@@ -430,7 +538,7 @@ export default async function PaymentClearingDetailPage({
       <FinanceTablePanel
         grouped
         description="Bank matches are loaded from this detail endpoint only. Open the bank transaction detail for full reconciliation evidence."
-        resultLabel={`${matches.length} match(es)`}
+        resultLabel={`${activeMatchCount} active · ${matches.length} history`}
         resultTone="info"
         title="Bank reconciliation matches"
       >
@@ -612,6 +720,60 @@ function bankCandidateReviewHref(bankTransactionId: string, returnTo: string, cl
   url.searchParams.set('candidateQ', clearingEntryId);
   url.searchParams.set('candidatePage', '1');
   url.searchParams.set('candidateTake', '25');
+  return `${url.pathname}${url.search}`;
+}
+
+async function assignPaymentClearingDetailReviewAction(formData: FormData) {
+  'use server';
+
+  const clearingEntryId = readFormString(formData, 'clearingEntryId');
+  const confirmationClearingEntryId = readFormString(formData, 'confirmationClearingEntryId');
+  const assigneeAdminId = readFormString(formData, 'assigneeAdminId');
+  const reason = readFormString(formData, 'reason');
+  const returnTo = safePaymentClearingDetailReturnTo(readFormString(formData, 'returnTo'));
+  const detailHref = clearingEntryId ? paymentClearingDetailHref(clearingEntryId, returnTo) : returnTo;
+  if (
+    !clearingEntryId ||
+    confirmationClearingEntryId !== clearingEntryId ||
+    !assigneeAdminId ||
+    reason.length < 12
+  ) {
+    redirect(appendDetailParam(detailHref, 'assignmentNotice', 'failed'));
+  }
+
+  try {
+    await adminPostOrThrow(
+      `/admin/booking-payment-clearing/${encodeURIComponent(clearingEntryId)}/review-assignment`,
+      { assigneeAdminId, reason },
+    );
+  } catch {
+    redirect(appendDetailParam(detailHref, 'assignmentNotice', 'failed'));
+  }
+
+  redirect(appendDetailParam(detailHref, 'assignmentNotice', 'assigned'));
+}
+
+function paymentClearingDetailErrorCopy(status: number | null, requestId?: string | null) {
+  const supportReference = requestId ? ` Support reference: ${requestId}.` : '';
+  if (status === 403) {
+    return {
+      message: `Your operator account cannot load this payment clearing evidence.${supportReference}`,
+      title: 'Payment clearing access denied',
+    };
+  }
+  return {
+    message: `Retry before making a payment matching or closeout decision.${supportReference}`,
+    title: 'Payment clearing evidence unavailable',
+  };
+}
+
+function readFormString(formData: FormData, key: string) {
+  return String(formData.get(key) ?? '').trim();
+}
+
+function appendDetailParam(href: string, key: string, value: string) {
+  const url = new URL(href, 'http://admin.local');
+  url.searchParams.set(key, value);
   return `${url.pathname}${url.search}`;
 }
 

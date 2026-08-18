@@ -71,7 +71,7 @@ describe('dashboard trace summary model', () => {
 
     expect(freshMarkup).toContain('Today so far');
     expect(freshMarkup).toContain('Updated');
-    expect(freshMarkup).toContain('ICT · All sources healthy');
+    expect(freshMarkup).toContain('ICT · All data sources current');
     expect(freshMarkup).toContain('Test data excluded');
     expect(freshMarkup).toContain('Refresh every 60s');
     expect(partialMarkup).toContain('Today');

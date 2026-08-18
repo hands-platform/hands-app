@@ -113,6 +113,10 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
   });
 
   it('uses the server reconciliation preflight for match, ignore, and reversal availability', () => {
+    expect(source).toContain('transaction.preflight?.activeMatchCount');
+    expect(source).toContain("label: 'Active matches'");
+    expect(source).toContain('retained match record(s), including reversed history');
+    expect(source).toContain('`${activeMatchCount} active · ${matches.length} history`');
     expect(source).toContain('transaction.preflight?.actions.createMatch.allowed');
     expect(source).toContain('transaction.preflight?.actions.ignore.allowed');
     expect(source).toContain('transaction.preflight.actions.reverse.allowedMatchIds.includes(match.id)');
@@ -127,7 +131,9 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
     expect(source).toContain('candidate.exclusionReasons');
     expect(source).toContain('Previous candidates');
     expect(source).toContain('Next candidates');
-    expect(source).toContain('No eligible payment clearing candidate available');
+    expect(source).toContain('No selectable payment clearing candidate available');
+    expect(source).toContain('recommended · ${manualReviewPaymentClearingCandidateCount} manual review');
+    expect(source).toContain("? 'Not selectable'");
   });
 
   it('keeps candidate evidence searchable before the review owner gate is satisfied', () => {
@@ -135,5 +141,22 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
     expect(source).toContain('!statusModel.closed && !canCreateManualMatch');
     expect(source).toContain('Search and inspect candidate evidence before assigning an owner.');
     expect(source).toContain('{paymentClearingCandidateEvidence}');
+  });
+
+  it('preserves candidate investigation state through owner assignment', () => {
+    expect(source).toContain("{ name: 'candidatePage', value: candidatePage }");
+    expect(source).toContain("{ name: 'candidateQ', value: candidateQuery }");
+    expect(source).toContain("{ name: 'candidateTake', value: candidateTake }");
+    expect(source).toContain("const candidateQuery = readFormString(formData, 'candidateQ')");
+    expect(source).toContain('bankCandidateStateHref(bankReconciliationDetailHref(bankTransactionId, returnTo)');
+  });
+
+  it('distinguishes a missing bank record from a retryable evidence failure', () => {
+    expect(source).toContain('adminGetResult<AdminBankReconciliationTransactionDetail | null>');
+    expect(source).toContain('transactionResult.status === 404');
+    expect(source).toContain('<AdminErrorState');
+    expect(source).toContain('Bank reconciliation evidence unavailable');
+    expect(source).toContain('Support reference:');
+    expect(source).toContain('href={requestedDetailHref}>Retry');
   });
 });
