@@ -263,6 +263,95 @@ describe('ProviderOnboardingService tax policy listing', () => {
     );
   });
 
+  it('scopes the default draft queue to OPERATOR policies', async () => {
+    const prisma = {
+      taxPolicyVersion: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await service.listTaxPolicyVersions({ view: 'drafts' });
+
+    expect(prisma.taxPolicyVersion.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ provenance: TaxPolicyProvenance.OPERATOR }),
+    }));
+    expect(prisma.taxPolicyVersion.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ provenance: TaxPolicyProvenance.OPERATOR }),
+    });
+  });
+
+  it('keeps explicit test and legacy draft pagination outside the production queue', async () => {
+    const prisma = {
+      taxPolicyVersion: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(6),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await service.listTaxPolicyVersions({ source: 'test-legacy', view: 'drafts' });
+
+    expect(prisma.taxPolicyVersion.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ provenance: { not: TaxPolicyProvenance.OPERATOR } }),
+    }));
+  });
+
+  it('returns bounded activation handoff evidence with redacted operator projections', async () => {
+    const policy = {
+      activatedAt: new Date('2026-08-12T03:00:00.000Z'),
+      approvedAt: new Date('2026-08-12T02:00:00.000Z'),
+      id: 'policy-1',
+      payloadHash: 'a'.repeat(64),
+      revision: 4,
+    };
+    const approvalRequest = {
+      activatedAt: policy.activatedAt,
+      decidedAt: policy.approvedAt,
+      decidedByAdmin: { id: 'checker-1', fullName: 'Finance Checker', email: 'checker@example.com' },
+      id: 'approval-1',
+      policyVersionId: policy.id,
+      requestedByAdmin: { id: 'maker-1', fullName: 'Policy Maker', email: 'maker@example.com' },
+    };
+    const prisma = {
+      taxPolicyVersion: {
+        findMany: vi.fn().mockResolvedValue([policy]),
+        count: vi.fn().mockResolvedValue(1),
+      },
+      taxPolicyApprovalRequest: { findMany: vi.fn().mockResolvedValue([approvalRequest]) },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([{
+          id: 'audit-activation-1', createdAt: policy.activatedAt, target: `tax_policy:${policy.id}`,
+        }]),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await expect(service.listTaxPolicyVersions({ view: 'current' })).resolves.toMatchObject({
+      items: [{
+        activationEvidence: {
+          activationAuditAt: policy.activatedAt,
+          activationAuditId: 'audit-activation-1',
+          activatedAt: policy.activatedAt,
+          approvalRequestId: approvalRequest.id,
+          approvedAt: policy.approvedAt,
+          checker: approvalRequest.decidedByAdmin,
+          maker: approvalRequest.requestedByAdmin,
+          payloadHash: policy.payloadHash,
+          policyVersionId: policy.id,
+          revision: 4,
+        },
+      }],
+    });
+    expect(prisma.taxPolicyApprovalRequest.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      include: {
+        requestedByAdmin: { select: { email: true, fullName: true, id: true } },
+        decidedByAdmin: { select: { email: true, fullName: true, id: true } },
+      },
+    }));
+  });
+
   it('returns exact Tax Policy audit events with a real total', async () => {
     const auditRow = {
       id: 'audit-1',
@@ -417,6 +506,9 @@ describe('ProviderOnboardingService tax policy listing', () => {
           { lifecycleStatus: TaxPolicyLifecycleStatus.DRAFT, provenance: TaxPolicyProvenance.OPERATOR, _count: { _all: 31 } },
           { lifecycleStatus: TaxPolicyLifecycleStatus.PENDING_APPROVAL, provenance: TaxPolicyProvenance.OPERATOR, _count: { _all: 4 } },
           { lifecycleStatus: TaxPolicyLifecycleStatus.SCHEDULED, provenance: TaxPolicyProvenance.OPERATOR, _count: { _all: 2 } },
+          { lifecycleStatus: TaxPolicyLifecycleStatus.SCHEDULED, provenance: TaxPolicyProvenance.SMOKE_TEST, _count: { _all: 3 } },
+          { lifecycleStatus: TaxPolicyLifecycleStatus.DRAFT, provenance: TaxPolicyProvenance.SEED, _count: { _all: 4 } },
+          { lifecycleStatus: TaxPolicyLifecycleStatus.PENDING_APPROVAL, provenance: TaxPolicyProvenance.MIGRATION, _count: { _all: 2 } },
           { lifecycleStatus: TaxPolicyLifecycleStatus.SUPERSEDED, provenance: TaxPolicyProvenance.SMOKE_TEST, _count: { _all: 145 } },
         ]),
       },
@@ -433,10 +525,14 @@ describe('ProviderOnboardingService tax policy listing', () => {
       drafts: { needsAuthor: 31, awaitingChecker: 4, approved: 0, scheduled: 2 },
       history: { production: 0, testOrLegacy: 145 },
       nextScheduled: expect.objectContaining({ id: 'scheduled-after-page-25' }),
+      nonProductionScheduledCount: 3,
     });
     expect(tx.taxPolicyVersion.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }],
-      where: expect.objectContaining({ lifecycleStatus: TaxPolicyLifecycleStatus.SCHEDULED }),
+      where: expect.objectContaining({
+        lifecycleStatus: TaxPolicyLifecycleStatus.SCHEDULED,
+        provenance: TaxPolicyProvenance.OPERATOR,
+      }),
     }));
   });
 
@@ -474,10 +570,11 @@ describe('ProviderOnboardingService tax policy listing', () => {
           bookingId: 'booking-1',
           createdAt: new Date('2026-08-10T01:00:00.000Z'),
           grossAmount: 500_000,
+          evidenceSource: 'PRODUCTION',
           id: 'earning-1',
           policyProvenance: TaxPolicyProvenance.OPERATOR,
           policyVersionId: 'policy-production-1',
-          providerDisplayName: 'Lan Anh',
+          providerDisplayName: 'Smoke Production Partner',
           providerProfileId: 'partner-1',
           taxLogWithholdingAmount: 20_000n,
           withholdingAmount: 25_000,
@@ -500,13 +597,79 @@ describe('ProviderOnboardingService tax policy listing', () => {
         classification: 'CURRENT_REGRESSION',
         evidenceSource: 'PRODUCTION',
         policyVersionId: 'policy-production-1',
-        providerDisplayName: 'Lan Anh',
+        providerDisplayName: 'Smoke Production Partner',
         taxLogWithholdingAmount: 20_000,
       }],
       sort: 'newest',
       source: 'production',
       total: 1,
     });
+  });
+
+  it.each([
+    ['TEST', 'TEST_RESIDUE'],
+    ['LEGACY', 'LEGACY_MIGRATION_DEBT'],
+    ['UNKNOWN', 'UNKNOWN'],
+  ] as const)('keeps %s missing-log evidence in its authoritative source class', async (
+    evidenceSource,
+    classification,
+  ) => {
+    const tx = {
+      user: { findUnique: vi.fn().mockResolvedValue(verifiedTaxPolicyActor('admin-1')) },
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ total: 1n }])
+        .mockResolvedValueOnce([{
+          bookingId: 'booking-source',
+          createdAt: new Date('2026-08-10T01:00:00.000Z'),
+          evidenceSource,
+          grossAmount: 500_000,
+          id: 'earning-source',
+          policyProvenance: null,
+          policyVersionId: null,
+          providerDisplayName: 'Neutral Partner name',
+          providerProfileId: 'partner-source',
+          taxLogWithholdingAmount: 0n,
+          withholdingAmount: 0,
+        }]),
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await expect(service.taxPolicyIntegrityRecords('admin-1', {
+      issue: 'missing-tax-log',
+      source: evidenceSource.toLowerCase(),
+    }, new Date('2026-08-14T12:00:00.000Z'))).resolves.toMatchObject({
+      items: [{ classification, evidenceSource }],
+    });
+  });
+
+  it('uses User fixture metadata in the shared SQL classifier without name or ID heuristics', async () => {
+    const tx = {
+      user: { findUnique: vi.fn().mockResolvedValue(verifiedTaxPolicyActor('admin-1')) },
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ total: 0n }])
+        .mockResolvedValueOnce([]),
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await service.taxPolicyIntegrityRecords('admin-1', {
+      issue: 'missing-tax-log',
+      source: 'test',
+    }, new Date('2026-08-14T12:00:00.000Z'));
+
+    const queryText = tx.$queryRaw.mock.calls
+      .map(([query]) => (query as { strings?: readonly string[] }).strings?.join(' ') ?? '')
+      .join(' ');
+    expect(queryText).toContain('providerUser."fixtureKind"');
+    expect(queryText).toContain('providerUser."fixtureRunId"');
+    expect(queryText).toContain('providerUser."fixtureExpiresAt"');
+    expect(queryText).toContain('providerUser."adminUserProvenance"');
+    expect(queryText).not.toMatch(/displayName.*(?:smoke|audit|seed)/iu);
   });
 
   it('classifies missing approval evidence as applicability readiness without inventing provenance', async () => {
@@ -574,6 +737,10 @@ describe('ProviderOnboardingService tax policy listing', () => {
         noActivePolicy: 9n,
         noApprovedTaxProfile: 177n,
         noMatchingRule: 5n,
+        sourceLegacy: 5n,
+        sourceProduction: 300n,
+        sourceTest: 100n,
+        sourceUnknown: 40n,
       }]),
     };
     const prisma = {
@@ -581,12 +748,19 @@ describe('ProviderOnboardingService tax policy listing', () => {
     };
     const service = new ProviderOnboardingService(prisma as never);
 
-    await expect(service.taxPolicyIntegritySummary('admin-1', new Date('2026-08-12T00:00:00.000Z')))
+    await expect(service.taxPolicyIntegritySummary(
+      'admin-1',
+      { source: 'production' },
+      new Date('2026-08-12T00:00:00.000Z'),
+    ))
       .resolves.toMatchObject({
+        source: 'production',
+        sourceTotals: { legacy: 5, production: 300, test: 100, unknown: 40 },
         total: 445,
         recordIntegrity: { healthy: 250, amountMismatch: 2, missingTaxLog: 3, missingSnapshot: 4 },
         taxApplicability: { noActivePolicy: 9, noApprovedTaxProfile: 177, noMatchingRule: 5 },
       });
+    expect(5 + 300 + 100 + 40).toBe(445);
   });
 });
 
@@ -1029,6 +1203,69 @@ describe('ProviderOnboardingService tax policy maker-checker lifecycle', () => {
     });
   });
 
+  it('keeps approval fail-closed when the submitted payload hash is stale', async () => {
+    const { request, service, tx } = taxPolicyDecisionHarness();
+
+    await expect(service.decideTaxPolicyApprovalRequest('checker-1', request.id, {
+      decision: 'APPROVE',
+      decisionReason: 'The submitted payload no longer matches the candidate.',
+    }, recentTaxPolicyAssurance())).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'TAX_POLICY_PAYLOAD_CHANGED' }),
+    });
+
+    expect(tx.taxPolicyApprovalRequest.update).not.toHaveBeenCalled();
+    expect(tx.taxPolicyVersion.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('closes a stale request as rejected without mutating the changed policy', async () => {
+    const { request, service, tx } = taxPolicyDecisionHarness();
+    const decisionReason = 'Close the stale request after the candidate changed during recovery.';
+
+    await expect(service.decideTaxPolicyApprovalRequest('checker-1', request.id, {
+      decision: 'REJECT',
+      decisionReason,
+    }, recentTaxPolicyAssurance())).resolves.toMatchObject({
+      status: TaxPolicyApprovalStatus.REJECTED,
+    });
+
+    expect(tx.taxPolicyApprovalRequest.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: request.id },
+      data: expect.objectContaining({
+        decisionReason,
+        pendingKey: null,
+        status: TaxPolicyApprovalStatus.REJECTED,
+      }),
+    }));
+    expect(tx.taxPolicyVersion.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'tax_policy.approval_rejected',
+        metadata: expect.objectContaining({
+          decisionReason,
+          staleRequest: true,
+          staleReasons: ['TAX_POLICY_PAYLOAD_CHANGED'],
+        }),
+      }),
+    });
+  });
+
+  it('replays a completed stale rejection without duplicate writes or audit', async () => {
+    const { request, service, tx } = taxPolicyDecisionHarness(TaxPolicyApprovalStatus.REJECTED);
+
+    await expect(service.decideTaxPolicyApprovalRequest('checker-1', request.id, {
+      decision: 'REJECT',
+      decisionReason: 'Repeat the previously recorded stale-request closure.',
+    }, recentTaxPolicyAssurance())).resolves.toMatchObject({
+      replayed: true,
+      status: TaxPolicyApprovalStatus.REJECTED,
+    });
+
+    expect(tx.taxPolicyApprovalRequest.update).not.toHaveBeenCalled();
+    expect(tx.taxPolicyVersion.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
   it('schedules a future approved policy without changing the current ACTIVE policy', async () => {
     const policy = approvalReadyTaxPolicy();
     let payloadHash = '';
@@ -1210,6 +1447,211 @@ describe('ProviderOnboardingService tax policy maker-checker lifecycle', () => {
     });
   });
 });
+
+function taxPolicyDecisionHarness(status: TaxPolicyApprovalStatus = TaxPolicyApprovalStatus.PENDING) {
+  const policy = {
+    ...approvalReadyTaxPolicy(),
+    lifecycleStatus: TaxPolicyLifecycleStatus.PENDING_APPROVAL,
+    payloadHash: 'a'.repeat(64),
+  };
+  const request = {
+    activatedAt: null,
+    activationJobId: null,
+    createdAt: new Date('2026-08-12T01:00:00.000Z'),
+    decidedAt: status === TaxPolicyApprovalStatus.REJECTED
+      ? new Date('2026-08-12T02:00:00.000Z')
+      : null,
+    decidedByAdmin: status === TaxPolicyApprovalStatus.REJECTED
+      ? verifiedTaxPolicyActor('checker-1', true)
+      : null,
+    decidedByAdminId: status === TaxPolicyApprovalStatus.REJECTED ? 'checker-1' : null,
+    decisionReason: status === TaxPolicyApprovalStatus.REJECTED ? 'Previously rejected as stale.' : null,
+    failureCode: null,
+    id: 'approval-stale-1',
+    operatorReason: 'Submit the verified legal schedule for independent approval.',
+    payloadHash: policy.payloadHash,
+    policyVersion: policy,
+    policyVersionId: policy.id,
+    requestedAt: new Date('2026-08-12T01:00:00.000Z'),
+    requestedByAdmin: verifiedTaxPolicyActor('maker-1'),
+    requestedByAdminId: 'maker-1',
+    scheduledFor: null,
+    status,
+    updatedAt: new Date('2026-08-12T01:00:00.000Z'),
+  };
+  const rejected = {
+    ...request,
+    decidedAt: new Date('2026-08-12T02:00:00.000Z'),
+    decidedByAdmin: verifiedTaxPolicyActor('checker-1', true),
+    decidedByAdminId: 'checker-1',
+    decisionReason: 'Close the stale request after the candidate changed during recovery.',
+    status: TaxPolicyApprovalStatus.REJECTED,
+  };
+  const tx = {
+    ...governedTaxPolicyAccess('checker-1', true),
+    adminAuditLog: { create: vi.fn() },
+    taxPolicyApprovalRequest: {
+      findUnique: vi.fn().mockResolvedValue(request),
+      update: vi.fn().mockResolvedValue(rejected),
+    },
+    taxPolicyVersion: { update: vi.fn() },
+  };
+  const prisma = {
+    $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      callback(tx),
+    ),
+  };
+  return { request, service: new ProviderOnboardingService(prisma as never), tx };
+}
+
+describe('ProviderOnboardingService tax policy activation provenance', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each([
+    TaxPolicyProvenance.SMOKE_TEST,
+    TaxPolicyProvenance.SEED,
+    TaxPolicyProvenance.MIGRATION,
+  ])('blocks %s activation on a shared database without changing the current ACTIVE policy', async (provenance) => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://localhost/massage_vn?schema=public');
+    vi.stubEnv('TAX_POLICY_FIXTURE_WRITE_ALLOWLIST', '');
+    const { request, service, tx } = taxPolicyActivationHarness(provenance);
+
+    await expect(service.activateTaxPolicyVersion(
+      request.policyVersionId,
+      request.id,
+      new Date('2026-09-01T00:01:00.000Z'),
+    )).resolves.toEqual({
+      policyVersionId: request.policyVersionId,
+      reason: 'non-production-provenance',
+      skipped: true,
+    });
+
+    expect(tx.taxPolicyApprovalRequest.update).toHaveBeenCalledWith({
+      where: { id: request.id },
+      data: {
+        failureCode: 'TAX_POLICY_NON_PRODUCTION_ACTIVATION_BLOCKED',
+        status: TaxPolicyApprovalStatus.FAILED,
+      },
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'tax_policy.activation_blocked',
+        actorId: 'checker-1',
+        target: `tax_policy_approval:${request.id}`,
+        metadata: {
+          failureCode: 'TAX_POLICY_NON_PRODUCTION_ACTIVATION_BLOCKED',
+          policyProvenance: provenance,
+          policyVersionId: request.policyVersionId,
+        },
+      },
+    });
+    expect(tx.taxPolicyVersion.findMany).not.toHaveBeenCalled();
+    expect(tx.taxPolicyVersion.updateMany).not.toHaveBeenCalled();
+    expect(tx.taxPolicyVersion.update).not.toHaveBeenCalled();
+  });
+
+  it('does not duplicate the provenance block audit on scheduler retry', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://localhost/massage_vn?schema=public');
+    vi.stubEnv('TAX_POLICY_FIXTURE_WRITE_ALLOWLIST', '');
+    const { request, service, tx } = taxPolicyActivationHarness(TaxPolicyProvenance.SMOKE_TEST);
+
+    await service.activateTaxPolicyVersion(
+      request.policyVersionId,
+      request.id,
+      new Date('2026-09-01T00:01:00.000Z'),
+    );
+    await expect(service.activateTaxPolicyVersion(
+      request.policyVersionId,
+      request.id,
+      new Date('2026-09-01T00:02:00.000Z'),
+    )).resolves.toMatchObject({ reason: 'approval-not-ready', skipped: true });
+
+    expect(tx.taxPolicyApprovalRequest.update).toHaveBeenCalledTimes(1);
+    expect(tx.adminAuditLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows non-production activation checks only on an exact disposable fixture target', async () => {
+    vi.stubEnv(
+      'DATABASE_URL',
+      'postgresql://localhost/tax_policy_smoke_run1?schema=tax_policy_smoke_run1',
+    );
+    vi.stubEnv(
+      'TAX_POLICY_FIXTURE_WRITE_ALLOWLIST',
+      'tax_policy_smoke_run1:tax_policy_smoke_run1',
+    );
+    const { request, service, tx } = taxPolicyActivationHarness(TaxPolicyProvenance.SMOKE_TEST);
+
+    await expect(service.activateTaxPolicyVersion(
+      request.policyVersionId,
+      request.id,
+      new Date('2026-09-01T00:01:00.000Z'),
+    )).resolves.toMatchObject({ reason: 'payload-changed', skipped: true });
+
+    expect(tx.taxPolicyApprovalRequest.update).toHaveBeenCalledWith({
+      where: { id: request.id },
+      data: {
+        failureCode: 'TAX_POLICY_PAYLOAD_CHANGED',
+        status: TaxPolicyApprovalStatus.FAILED,
+      },
+    });
+  });
+});
+
+function taxPolicyActivationHarness(provenance: TaxPolicyProvenance) {
+  const policy = {
+    ...approvalReadyTaxPolicy(),
+    effectiveFrom: new Date('2026-09-01T00:00:00.000Z'),
+    lifecycleStatus: TaxPolicyLifecycleStatus.SCHEDULED,
+    payloadHash: 'submitted-hash',
+    provenance,
+    status: TaxPolicyStatus.INACTIVE,
+  };
+  const request = {
+    activatedAt: null,
+    activationJobId: 'activate-approval-provenance',
+    createdAt: new Date('2026-08-12T01:00:00.000Z'),
+    decidedAt: new Date('2026-08-12T02:00:00.000Z'),
+    decidedByAdminId: 'checker-1',
+    decisionReason: 'Approve the exact reviewed policy payload.',
+    failureCode: null as string | null,
+    id: 'approval-provenance',
+    operatorReason: 'Submit the reviewed policy for independent approval.',
+    payloadHash: 'submitted-hash',
+    pendingKey: null,
+    policyVersion: policy,
+    policyVersionId: policy.id,
+    requestedAt: new Date('2026-08-12T01:00:00.000Z'),
+    requestedByAdminId: 'maker-1',
+    scheduledFor: policy.effectiveFrom,
+    status: TaxPolicyApprovalStatus.APPROVED,
+    updatedAt: new Date('2026-08-12T02:00:00.000Z'),
+  };
+  const tx = {
+    $queryRaw: vi.fn().mockResolvedValue([{ lockResult: '' }]),
+    adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-provenance' }) },
+    taxPolicyApprovalRequest: {
+      findUnique: vi.fn().mockImplementation(() => Promise.resolve(request)),
+      update: vi.fn().mockImplementation(({ data }: { data: Partial<typeof request> }) => {
+        Object.assign(request, data);
+        return Promise.resolve(request);
+      }),
+    },
+    taxPolicyVersion: {
+      findMany: vi.fn().mockResolvedValue([{ id: 'policy-current-active' }]),
+      findUnique: vi.fn().mockResolvedValue(policy),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+  };
+  const prisma = {
+    $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      callback(tx),
+    ),
+  };
+  return { request, service: new ProviderOnboardingService(prisma as never), tx };
+}
 
 describe('ProviderOnboardingService bank account submission', () => {
   it('makes a resubmitted bank account the only active primary account', async () => {

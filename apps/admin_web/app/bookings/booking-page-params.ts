@@ -102,6 +102,7 @@ const BOOKING_GATE_FILTERS = new Set<BookingGateFilter>([
 ]);
 
 const BOOKING_DATE_RANGE_FILTERS = new Set<BookingDateRangeFilter>([
+  'all',
   'today',
   'yesterday',
   '7d',
@@ -139,11 +140,14 @@ export function readBookingGateFilter(value: string | string[] | undefined): Boo
   return BOOKING_GATE_FILTERS.has(gate as BookingGateFilter) ? (gate as BookingGateFilter) : 'all';
 }
 
-export function readBookingDateRangeFilter(value: string | string[] | undefined): BookingDateRangeFilter {
+export function readBookingDateRangeFilter(
+  value: string | string[] | undefined,
+  fallback: BookingDateRangeFilter = 'today',
+): BookingDateRangeFilter {
   const range = readSearchParam(value);
   return BOOKING_DATE_RANGE_FILTERS.has(range as BookingDateRangeFilter)
     ? (range as BookingDateRangeFilter)
-    : 'today';
+    : fallback;
 }
 
 export function readBookingDateInput(value: string | string[] | undefined) {

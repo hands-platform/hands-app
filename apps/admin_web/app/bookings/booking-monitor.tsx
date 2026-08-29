@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import type { Socket } from 'socket.io-client';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import type {
   AdminAuditLog,
@@ -38,15 +37,12 @@ import type { BookingMonitorMatchingEscalationBoardProps } from './booking-monit
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
 import {
-  BOOKING_MONITOR_REALTIME_EVENTS,
   bookingMonitorIsRecordsView,
   bookingMonitorUsesRealtime,
+  startBookingMonitorRealtime,
   type BookingMonitorRealtimeState,
 } from './booking-monitor-realtime';
-import {
-  bookingListDefaultSort,
-  type BookingMonitorRouteKind,
-} from './booking-monitor-route-load-plan';
+import { bookingListDefaultSort, type BookingMonitorRouteKind } from './booking-monitor-route-load-plan';
 import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { emptyBookingMessage } from './booking-empty-message';
@@ -174,6 +170,7 @@ export function BookingMonitor({
   const [nowMs, setNowMs] = useState(initialNowMs ?? 0);
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const refreshPendingRef = useRef(false);
   const [realtimeState, setRealtimeState] = useState<BookingMonitorRealtimeState>('connecting');
   const [view, setView] = useState<BookingView>(initialView);
   const searchQuery = initialSearchQuery;
@@ -185,9 +182,7 @@ export function BookingMonitor({
         ? 'postMatchCancellations'
         : 'all';
   const defaultQueueSort = bookingListDefaultSort(routeKind, view);
-  const queueSort = readAdminQueueSort(
-    searchParamValue(dateRangeSearchParams, 'sort') || defaultQueueSort,
-  );
+  const queueSort = readAdminQueueSort(searchParamValue(dateRangeSearchParams, 'sort') || defaultQueueSort);
   const queueSlaFilter = readAdminQueueSlaFilter(searchParamValue(dateRangeSearchParams, 'sla'));
   const isPostMatchCancellationWorkspace = dateRangePath === '/bookings/post-match-cancellations';
   const statusFilter = 'all';
@@ -204,10 +199,17 @@ export function BookingMonitor({
     setNowMs(refreshedAt.getTime());
   }, []);
   const refreshBookingData = useCallback(() => {
+    if (refreshPendingRef.current) return;
+
+    refreshPendingRef.current = true;
     startTransition(() => {
       router.refresh();
     });
   }, [router]);
+
+  useEffect(() => {
+    refreshPendingRef.current = isPending;
+  }, [isPending]);
 
   const orderedBookings = useMemo(
     () => orderBookingsForQueue(bookings, queueSort, Boolean(serverPagination)),
@@ -250,7 +252,10 @@ export function BookingMonitor({
             ...rows,
             [
               'Oldest waiting',
-              relativeTimeLabel(completedOperationsSummary.oldestCloseoutAt, currentTimeMs).replace(/ ago$/u, ''),
+              relativeTimeLabel(completedOperationsSummary.oldestCloseoutAt, currentTimeMs).replace(
+                / ago$/u,
+                '',
+              ),
             ] as const,
           ]
         : rows;
@@ -312,8 +317,7 @@ export function BookingMonitor({
   );
   const visibleBookings = serverPagination ? orderedBookings : visibleBookingModel.visibleBookings;
   const bookingListRows = useMemo(
-    () =>
-      visibleBookings.map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs, view)),
+    () => visibleBookings.map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs, view)),
     [currentTimeMs, nowMs, view, visibleBookings],
   );
   const bookingViewCounts = useMemo(() => {
@@ -394,91 +398,32 @@ export function BookingMonitor({
       return () => window.clearTimeout(mountTimer);
     }
 
-    let socket: Socket | null = null;
-    let refreshTimer: number | null = null;
-    let reconnectTimer: number | null = null;
-    let closed = false;
-    const realtimeStateTimer = window.setTimeout(() => {
-      setRealtimeState('connecting');
-    }, 0);
-
-    const scheduleRealtimeRefresh = () => {
-      if (refreshTimer !== null) {
-        return;
-      }
-
-      refreshTimer = window.setTimeout(() => {
-        refreshTimer = null;
-        refreshBookingData();
-      }, 750);
-    };
-
-    const connectRealtime = async () => {
-      try {
-        const response = await fetch('/api/admin/realtime-token', { cache: 'no-store' });
-        if (!response.ok) {
-          throw new Error('Realtime token unavailable');
-        }
-
-        const body = (await response.json()) as { socketBaseUrl?: string; token?: string };
-        if (!body.socketBaseUrl || !body.token || closed) {
-          throw new Error('Realtime token response incomplete');
-        }
-
+    const stopRealtime = startBookingMonitorRealtime({
+      connectSocket: async ({ socketBaseUrl, token }) => {
         const { io } = await import('socket.io-client');
-        if (closed) {
-          return;
-        }
-
-        socket = io(body.socketBaseUrl, {
-          auth: { token: body.token },
+        return io(socketBaseUrl, {
+          auth: { token },
           transports: ['websocket', 'polling'],
           withCredentials: true,
         });
+      },
+      loadToken: async () => {
+        const response = await fetch('/api/admin/realtime-token', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Realtime token unavailable');
 
-        socket.on('connect', () => {
-          setRealtimeState('live');
-        });
-        socket.on('connect_error', () => {
-          if (closed || reconnectTimer !== null) {
-            return;
-          }
-          setRealtimeState('error');
-          socket?.disconnect();
-          reconnectTimer = window.setTimeout(() => {
-            reconnectTimer = null;
-            void connectRealtime();
-          }, 1000);
-        });
-        socket.on('disconnect', () => {
-          if (!closed) {
-            setRealtimeState('connecting');
-          }
-        });
-
-        for (const eventName of BOOKING_MONITOR_REALTIME_EVENTS) {
-          socket.on(eventName, scheduleRealtimeRefresh);
+        const body = (await response.json()) as { socketBaseUrl?: string; token?: string };
+        if (!body.socketBaseUrl || !body.token) {
+          throw new Error('Realtime token response incomplete');
         }
-      } catch {
-        if (!closed) {
-          setRealtimeState('error');
-        }
-      }
-    };
-
-    void connectRealtime();
+        return { socketBaseUrl: body.socketBaseUrl, token: body.token };
+      },
+      onStateChange: setRealtimeState,
+      refresh: refreshBookingData,
+    });
 
     return () => {
-      closed = true;
       window.clearTimeout(mountTimer);
-      window.clearTimeout(realtimeStateTimer);
-      if (refreshTimer !== null) {
-        window.clearTimeout(refreshTimer);
-      }
-      if (reconnectTimer !== null) {
-        window.clearTimeout(reconnectTimer);
-      }
-      socket?.disconnect();
+      stopRealtime();
     };
   }, [liveUpdates, markRefreshed, refreshBookingData, usesRealtime]);
 
@@ -534,14 +479,12 @@ export function BookingMonitor({
   );
   const hasActiveFilters = Boolean(
     searchQuery.trim() ||
-      (view !== 'no-show' && initialCancellationReasonFilter !== 'all') ||
-      queueAge !== 'all' ||
-      queueSlaFilter !== 'all' ||
-      (isPostMatchCancellationWorkspace &&
-        queueSort !== (view === 'post-match-cancellations' ? 'newest' : 'oldest')) ||
-      (isPostMatchCancellationWorkspace &&
-        view === 'post-match-cancellations' &&
-        dateRangeFilter !== '30d'),
+    (view !== 'no-show' && initialCancellationReasonFilter !== 'all') ||
+    queueAge !== 'all' ||
+    queueSlaFilter !== 'all' ||
+    (isPostMatchCancellationWorkspace &&
+      queueSort !== (view === 'post-match-cancellations' ? 'newest' : 'oldest')) ||
+    (isPostMatchCancellationWorkspace && view === 'post-match-cancellations' && dateRangeFilter !== '30d'),
   );
   const submitCustomDateRange = useCallback((event: FormEvent<HTMLFormElement>) => {
     const form = event.currentTarget;
@@ -574,7 +517,13 @@ export function BookingMonitor({
     <AdminPageTemplate
       actions={
         usesRealtime ? (
-          <BookingMonitorToolbarSection liveUpdates={liveUpdates} onToggleLiveUpdates={toggleLiveUpdates} />
+          <BookingMonitorToolbarSection
+            isPending={isPending}
+            liveUpdates={liveUpdates}
+            onRefreshNow={refreshBookingData}
+            onToggleLiveUpdates={toggleLiveUpdates}
+            realtimeState={realtimeDisplayState}
+          />
         ) : undefined
       }
       contentClassName={showCompletedCloseoutBoard ? 'booking-monitor booking-completed-monitor' : 'booking-monitor'}
@@ -670,14 +619,20 @@ export function BookingMonitor({
           (isPostMatchCancellationWorkspace && view === 'post-match-cancellations') ||
           dateRangePath === '/bookings/completed' ||
           !useOperationsTable ||
-          ['all', 'pre-match-cancelled', 'preferred-rejected', 'preferred-no-response', 'usage-unresolved'].includes(view)
+          [
+            'all',
+            'pre-match-cancelled',
+            'preferred-rejected',
+            'preferred-no-response',
+            'usage-unresolved',
+          ].includes(view)
         }
         queueAgeHelp={
           isPostMatchCancellationWorkspace
             ? 'Decision age starts at cancellation time. If unavailable, the latest recorded update is used.'
             : dateRangePath === '/bookings/completed'
-            ? 'Waiting time starts from the terminal booking event.'
-            : undefined
+              ? 'Waiting time starts from the terminal booking event.'
+              : undefined
         }
         queueAgeLabel={
           isPostMatchCancellationWorkspace
@@ -693,11 +648,11 @@ export function BookingMonitor({
                 { label: 'Newest first', value: 'newest' },
               ]
             : dateRangePath === '/bookings/completed'
-            ? [
-                { label: 'Longest waiting', value: 'oldest' },
-                { label: 'Recently closed', value: 'newest' },
-              ]
-            : undefined
+              ? [
+                  { label: 'Longest waiting', value: 'oldest' },
+                  { label: 'Recently closed', value: 'newest' },
+                ]
+              : undefined
         }
         showEmptyViewOptions={showEmptyViewOptions}
         showQueueAge={
@@ -729,8 +684,18 @@ export function BookingMonitor({
               : emptyBookingMessage(
                   view,
                   dateRangePath === '/bookings/completed' || isRecordsView
-                    ? { age: queueAge, dateRangeFilter, searchQuery }
-                    : undefined,
+                    ? {
+                        age: queueAge,
+                        completedWorkspace: dateRangePath === '/bookings/completed',
+                        dateRangeFilter,
+                        searchQuery,
+                      }
+                    : {
+                        age: queueAge,
+                        hasActiveFilters,
+                        queueLabel: activeView.label,
+                        searchQuery,
+                      },
                 )
           }
           emptyResetHref={isRecordsView && searchQuery.trim() ? filterResetHref : undefined}
@@ -741,6 +706,7 @@ export function BookingMonitor({
               ? bookingOperationsWorkspace(
                   view,
                   activeView.label,
+                  activeView.description,
                   dateRangePath,
                   serverPagination?.totalRows ?? visibleBookings.length,
                 )
@@ -902,27 +868,33 @@ function postMatchCancellationEmptyMessage(view: BookingPageView, hasActiveFilte
   return 'No resolved cancellation records are available in the selected decision period.';
 }
 
-function bookingOperationsWorkspace(
+export function bookingOperationsWorkspace(
   view: BookingPageView,
   activeViewLabel: string,
+  activeViewDescription: string,
   pagePath: string,
   resultCount: number,
 ) {
   if (pagePath === '/bookings/completed') {
     const descriptions: Partial<Record<BookingPageView, string>> = {
       closeout: 'Completed services with one or more missing closeout records.',
-      payment: 'Includes cash commission, refund mismatch, unresolved authorization, and payment release exceptions.',
+      payment:
+        'Includes cash commission, refund mismatch, unresolved authorization, and payment release exceptions.',
       pricing: 'Completed services whose booked price or Partner payout rule cannot be verified.',
       all: 'Completed, refunded, and expired records closed in the selected period.',
       expired: 'Expired booking records closed in the selected period.',
     };
     const historyView = view === 'expired' || view === 'all';
     return {
-      description: descriptions[view] ?? 'Terminal closeout work for the selected period and search.',
+      description: descriptions[view] ?? activeViewDescription,
       detailPagePath: pagePath,
       detailView: view,
       title: activeViewLabel,
-      tone: historyView ? ('neutral' as const) : resultCount > 0 ? ('warning' as const) : ('success' as const),
+      tone: historyView
+        ? ('neutral' as const)
+        : resultCount > 0
+          ? ('warning' as const)
+          : ('success' as const),
     };
   }
 
@@ -955,7 +927,8 @@ function bookingOperationsWorkspace(
       };
     case 'matching-delays':
       return {
-        description: 'Expired matching requests or requests past the configured wait threshold without participation.',
+        description:
+          'Expired matching requests or requests past the configured wait threshold without participation.',
         detailPagePath: pagePath,
         detailView: view,
         title: 'Matching delays',
@@ -964,7 +937,7 @@ function bookingOperationsWorkspace(
     case 'handoff-repair':
     case 'no-supply':
       return {
-        description: activeViewLabel,
+        description: activeViewDescription,
         detailPagePath: pagePath,
         detailView: view,
         title: activeViewLabel,
@@ -992,7 +965,7 @@ function bookingOperationsWorkspace(
     case 'active':
     case 'in-service':
       return {
-        description: 'Bookings currently moving through matching, dispatch, arrival, or service.',
+        description: activeViewDescription,
         detailPagePath: pagePath,
         detailView: view,
         title: activeViewLabel,
@@ -1000,7 +973,7 @@ function bookingOperationsWorkspace(
       };
     default:
       return {
-        description: 'Bookings currently moving through matching, dispatch, arrival, or service.',
+        description: activeViewDescription,
         detailPagePath: pagePath,
         detailView: view,
         title: activeViewLabel,

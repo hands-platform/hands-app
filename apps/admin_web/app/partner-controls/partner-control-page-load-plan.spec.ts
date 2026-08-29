@@ -1,6 +1,8 @@
 import {
   buildPartnerControlPageLoadPlan,
   partnerControlHref,
+  partnerControlNewReportHref,
+  partnerControlReportReviewHref,
   partnerControlWorkspaceHref,
 } from './partner-control-page-load-plan';
 
@@ -19,6 +21,7 @@ describe('partner control page load plan', () => {
       detailsMode: 'summary',
       listTake: 10,
       partnerSearchHref: null,
+      reportAuditHref: null,
       reportHref: null,
       reportsHref: null,
       sanctionsHref: null,
@@ -108,6 +111,9 @@ describe('partner control page load plan', () => {
       reviewReportId: 'report/outside-page',
     });
     expect(direct.reportHref).toBe('/admin/provider-reports/report%2Foutside-page');
+    expect(direct.reportAuditHref).toBe(
+      '/admin/provider-reports/report%2Foutside-page/audit-history',
+    );
     expect(direct.partnerSearchHref).toBeNull();
   });
 
@@ -141,6 +147,34 @@ describe('partner control page load plan', () => {
         {},
       ),
     ).toBe('/partner-controls?details=controls&review=kyc&sort=oldest&blockerPage=3');
+  });
+
+  it('separates new report and review report URL state', () => {
+    expect(
+      partnerControlNewReportHref({
+        details: 'reports',
+        partnerQ: 'linh',
+        reportPage: '4',
+        review: 'overdue',
+        reviewReportId: 'report-1',
+        severity: 'HIGH',
+        sort: 'oldest',
+        status: 'RESOLVED',
+      }),
+    ).toBe('/partner-controls?details=reports&newReport=1');
+
+    expect(
+      partnerControlReportReviewHref(
+        {
+          details: 'reports',
+          newReport: '1',
+          partnerQ: 'linh',
+          q: 'partner-1',
+          reportPage: '3',
+        },
+        'report/outside-page',
+      ),
+    ).toBe('/partner-controls?details=reports&q=partner-1&reportPage=3&reviewReportId=report%2Foutside-page');
   });
 
   it('drops inactive workspace state while preserving the shared Partner search', () => {

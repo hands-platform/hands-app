@@ -24,6 +24,7 @@ export function settlementAuditBlockerShortLabel(code: BlockerCode) {
     REVERSAL_CLEARING_MISSING: 'Reversal clearing',
     REVERSAL_JOURNAL_MISSING: 'Reversal journal',
     REVERSAL_LEDGER_MISSING: 'Reversal ledger',
+    REVERSAL_STATUS_MISMATCH: 'Reversal status',
     TAX_PERIOD_MISMATCH: 'Tax period',
   };
   return labels[code] ?? settlementAuditBlockerLabel(code);
@@ -39,12 +40,33 @@ export function settlementAuditRemediationLabel(code: BlockerCode) {
   return 'Open remediation workspace';
 }
 
-export function settlementAuditDueLabel(
-  dueAt: string | null | undefined,
-  priority: number | undefined,
-) {
+export function settlementAuditDueLabel(dueAt: string | null | undefined, priority: number | undefined) {
   if (dueAt) return `Due ${formatSettlementAuditTimestamp(dueAt)}`;
   return priority != null ? `Priority ${priority} · no due date recorded` : 'No due date recorded';
+}
+
+export function settlementAuditDueStatus(overdueCount: number, unknownCount: number) {
+  const overdue = Math.max(0, overdueCount);
+  const unknown = Math.max(0, unknownCount);
+  if (unknown > 0) {
+    return {
+      detail: 'Due-date coverage incomplete',
+      label: `${overdue} overdue / ${unknown} unknown`,
+      tone: 'warning' as const,
+    };
+  }
+  if (overdue > 0) {
+    return {
+      detail: 'Known due dates require action',
+      label: `${overdue} overdue / 0 unknown`,
+      tone: 'warning' as const,
+    };
+  }
+  return {
+    detail: 'No overdue or unknown due dates',
+    label: '0 overdue / 0 unknown',
+    tone: 'success' as const,
+  };
 }
 
 export function settlementAuditOwnerLabel(owner: string) {

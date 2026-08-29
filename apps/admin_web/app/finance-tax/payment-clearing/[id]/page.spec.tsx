@@ -60,7 +60,9 @@ describe('PaymentClearingDetailPage Vuexy links', () => {
     expect(source).toContain('These are unranked leads, not match recommendations.');
     expect(source).toContain('Manual comparison required');
     expect(source).toContain('activeMatchCount} active · {matches.length} history');
+    expect(source).toContain('No review owner was recorded for this retained evidence.');
     expect(source).toContain('No review owner has been assigned. Use Assign owner');
+    expect(source).toContain('Historical expected direction retained with this terminal evidence.');
     expect(source).toContain('Clearing {shortId(entry.id)}');
     expect(source).toContain('className="finance-evidence-key"');
     expect(source).toContain("entry.sourceKey.split(':')");

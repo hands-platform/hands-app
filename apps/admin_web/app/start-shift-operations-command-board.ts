@@ -20,11 +20,13 @@ export type OperationsCommandBoardItem = {
   impactLabel?: string;
   impactAmount?: number;
   isLiveBlock?: boolean;
+  isServiceBlock?: boolean;
   mineCount?: number;
   oldestAt?: string | null;
   oldestLabel?: string;
   overdueCount?: number;
   assigneeLabel?: string;
+  scopeLabel?: string;
   owner: 'Dispatch' | 'Finance' | 'Partner Ops' | 'Support' | 'Setup';
   status: string;
   value: string;
@@ -94,6 +96,7 @@ export function buildOperationsCommandBoard(
         ? `${adminCountLabel(openMatchingFollowUp, 'active booking row')} ${openMatchingFollowUp === 1 ? 'has' : 'have'} expired timers or no fresh nearby Partner.`
         : `${adminCountLabel(input.appPresence.liveOpenMatchingCustomers, 'customer')} ${input.appPresence.liveOpenMatchingCustomers === 1 ? 'is' : 'are'} live while matching is open.`,
       href: openMatchingFollowUp ? '/bookings?view=attention' : '/bookings?view=matching',
+      isLiveBlock: openMatchingFollowUp > 0,
       tone: openMatchingFollowUp ? 'danger' : input.bookingOps.openMatching ? 'warn' : 'ok',
       checks: [
         `${input.bookingDeepDive.openWithoutParticipants} without Partner`,

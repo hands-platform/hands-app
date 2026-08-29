@@ -95,7 +95,7 @@ describe('partner detail connected records model', () => {
 
     expect(linkByLabel(links, 'Latest booking')).toMatchObject({
       detail: 'No preferred, selected, or marketplace participation booking loaded.',
-      href: '#booking-chat-records',
+      href: '/partners/partner-empty?section=bookings#partner-booking-journey',
       tone: 'pill-neutral',
       value: 'None',
     });

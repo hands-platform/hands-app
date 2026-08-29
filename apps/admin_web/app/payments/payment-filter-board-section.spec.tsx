@@ -34,8 +34,8 @@ describe('PaymentFilterBoardSection', () => {
     expect(rendered).toContain('Evidence: verified');
     expect(rendered).toContain('Booking: COMPLETED');
     expect(rendered).toContain('Order: Oldest first');
-    expect(rendered).toContain('Capture ready 0');
-    expect(rendered).toContain('More queues Secondary and history');
+    expect(rendered).toContain('Capture ready 12');
+    expect(rendered).toContain('More queues Secondary work 0 · History separate');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining([
       '/payments?range=all&review=capture-ready&sort=oldest',
       '/payments?review=capture-ready',
@@ -76,6 +76,78 @@ describe('PaymentFilterBoardSection', () => {
 
     expect(normalizedText(section)).toContain('Showing 0 of 0');
   });
+
+  it('maps History aliases to scoped summary counts and keeps the active count equal to the table total', () => {
+    const section = PaymentFilterBoardSection({
+      activeFilterDescription: 'all authorization holds.',
+      activeFilterLabel: 'All authorized',
+      activeRange: 'all',
+      bookingStatus: '',
+      customerProfileId: '',
+      evidence: '',
+      filteredCount: 1,
+      historyAliasCounts: {
+        all: 3326,
+        authorized: 99,
+        'callback-verified': 27,
+      },
+      pageSize: 10,
+      paymentMethod: '',
+      paymentStatus: '',
+      q: '',
+      queueCounts: { 'capture-ready': 4, 'history-released': 12 },
+      rangeLabel: 'All dates',
+      review: 'authorized',
+      reviewLinks: [
+        { group: 'live', href: '/payments?review=capture-ready', label: 'Capture ready', review: 'capture-ready' },
+        { group: 'history', href: '/payments?review=authorized', label: 'All authorized', review: 'authorized' },
+        { group: 'history', href: '/payments?review=callback-verified', label: 'Verified callback history', review: 'callback-verified' },
+        { group: 'history', href: '/payments?review=all', label: 'All payments', review: 'all' },
+      ],
+      totalCount: 1,
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Capture ready 4');
+    expect(rendered).toContain('All authorized 1');
+    expect(rendered).toContain('Verified callback history 27');
+    expect(rendered).toContain('All payments 3326');
+  });
+
+  it('shows actionable Secondary work without adding History totals', () => {
+    const section = PaymentFilterBoardSection({
+      activeFilterDescription: 'terminal cash cleanup.',
+      activeFilterLabel: 'Terminal cash cleanup',
+      activeRange: 'all',
+      bookingStatus: '',
+      customerProfileId: '',
+      evidence: '',
+      filteredCount: 10,
+      historyAliasCounts: { all: 3326 },
+      pageSize: 10,
+      paymentMethod: '',
+      paymentStatus: '',
+      q: '',
+      queueCounts: {
+        'completed-authorization-blocked': 3,
+        'terminal-cash-cleanup': 667,
+      },
+      rangeLabel: 'All dates',
+      review: 'terminal-cash-cleanup',
+      reviewLinks: [
+        { group: 'exception', href: '/payments?review=terminal-cash-cleanup', label: 'Terminal cash cleanup', review: 'terminal-cash-cleanup' },
+        { group: 'exception', href: '/payments?review=completed-authorization-blocked', label: 'Completed authorization blocked', review: 'completed-authorization-blocked' },
+        { group: 'history', href: '/payments?review=all', label: 'All payments', review: 'all' },
+      ],
+      totalCount: 667,
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('More queues Secondary work 670 · History separate');
+    expect(rendered).toContain('Terminal cash cleanup 667');
+    expect(rendered).not.toContain('Secondary work 3996');
+    expect(openDetailsCount(section)).toBeGreaterThan(0);
+  });
 });
 
 function textContent(value: unknown): string {
@@ -98,6 +170,16 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(readRecord(value)?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function openDetailsCount(value: unknown): number {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') return 0;
+  if (Array.isArray(value)) return value.reduce((total, item) => total + openDetailsCount(item), 0);
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const open = record?.type === 'details' && props?.open === true ? 1 : 0;
+  return open + openDetailsCount(props?.children);
 }
 
 function resolveElement(value: unknown): unknown {

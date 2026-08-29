@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import type { ComponentProps, ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -12,6 +13,16 @@ vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND');
   }),
+}));
+
+vi.mock('next/link', () => ({
+  default: ({ children, ...props }: ComponentProps<'a'>) => <a {...props}>{children}</a>,
+}));
+
+vi.mock('./partner-detail-account-control-form', () => ({
+  PartnerDetailAccountControlForm: ({ children }: { readonly children: ReactNode }) => (
+    <form>{children}</form>
+  ),
 }));
 
 vi.mock('../../../lib/admin-api', async () => {
@@ -36,9 +47,10 @@ const providerDetailSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 describe('ProviderDetailPage data loading', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
     mockedAdminGetResult.mockReset();
-    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
-      data: fallback,
+    mockedAdminGetResult.mockImplementation(async (href, fallback, options) => ({
+      data: options ? await mockedAdminGet(href, fallback, options) : await mockedAdminGet(href, fallback),
       ok: true,
       status: 200,
     }));
@@ -48,17 +60,103 @@ describe('ProviderDetailPage data loading', () => {
   it('requests only the operations policy keys needed by partner dispatch readiness', async () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
-    await expect(
-      ProviderDetailPage({ params: Promise.resolve({ id: 'partner-policy-load' }) }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
+    const page = await ProviderDetailPage({ params: Promise.resolve({ id: 'partner-policy-load' }) });
 
-    const policyCall = mockedAdminGet.mock.calls.find(([href]) => href.startsWith('/admin/operational-policy'));
+    expect(page).toMatchObject({ props: { title: 'Partner data unavailable' } });
+
+    const policyCall = mockedAdminGet.mock.calls.find(([href]) =>
+      href.startsWith('/admin/operational-policy'),
+    );
     const policyHref = policyCall?.[0];
     expect(policyHref).toBe(
       '/admin/operational-policy?keys=matching.provider_response_window_minutes%2Cmatching.marketplace_partner_radius_meters%2Cmatching.marketplace_partner_location_max_age_minutes',
     );
     expect(policyCall?.[2]).toEqual(OPERATIONAL_POLICY_CACHE_OPTIONS);
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
+  });
+
+  it('uses not-found only for a confirmed Provider 404', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) =>
+      href === '/admin/partners/missing-partner/overview'
+        ? { data: null, ok: false, status: 404 }
+        : { data: fallback, ok: true, status: 200 },
+    );
+
+    await expect(ProviderDetailPage({ params: Promise.resolve({ id: 'missing-partner' }) })).rejects.toThrow(
+      'NEXT_NOT_FOUND',
+    );
+  });
+
+  it.each([
+    [401, 'Partner access restricted', 'You do not have permission to view this Partner record.'],
+    [403, 'Partner access restricted', 'You do not have permission to view this Partner record.'],
+    [500, 'Partner data unavailable', 'Partner data could not be loaded.'],
+    [null, 'Partner data unavailable', 'Partner data could not be loaded.'],
+  ] as const)('renders an explicit Provider failure state for status %s', async (status, title, message) => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) =>
+      href === '/admin/partners/provider-failure/overview'
+        ? { data: null, ok: false, status }
+        : { data: fallback, ok: true, status: 200 },
+    );
+
+    const markup = renderToStaticMarkup(
+      await ProviderDetailPage({ params: Promise.resolve({ id: 'provider-failure' }) }),
+    );
+
+    expect(markup).toContain(title);
+    expect(markup).toContain(message);
+    expect(markup).not.toContain('Partner One');
+    expect(markup).not.toContain('Can work now?');
+  });
+
+  it.each([
+    [403, 'Operational policy restricted'],
+    [500, 'Operational policy unavailable'],
+    [null, 'Operational policy unavailable'],
+  ] as const)(
+    'keeps Provider identity but pauses readiness when policy status is %s',
+    async (status, errorTitle) => {
+      mockProviderWithPolicyResult({ data: [], ok: false, status });
+
+      const markup = renderToStaticMarkup(
+        await ProviderDetailPage({ params: Promise.resolve({ id: 'partner-policy-failure' }) }),
+      );
+
+      expect(markup).toContain('Partner One');
+      expect(markup).toContain(errorTitle);
+      expect(markup).toContain('Pause matching and readiness decisions');
+      expect(markup).toContain('Work readiness');
+      expect(markup).toContain('Unavailable');
+      expect(markup).not.toContain('partner-fast-work-grid');
+    },
+  );
+
+  it('treats a malformed operational policy payload as unavailable', async () => {
+    mockProviderWithPolicyResult({
+      data: [{ value: 90 }] as never,
+      ok: true,
+      status: 200,
+    });
+
+    const markup = renderToStaticMarkup(
+      await ProviderDetailPage({ params: Promise.resolve({ id: 'partner-policy-malformed' }) }),
+    );
+
+    expect(markup).toContain('Partner One');
+    expect(markup).toContain('Operational policy unavailable');
+    expect(markup).not.toContain('partner-fast-work-grid');
+  });
+
+  it('renders normal readiness when Provider and operational policy requests succeed', async () => {
+    mockProviderWithPolicyResult({ data: [], ok: true, status: 200 });
+
+    const markup = renderToStaticMarkup(
+      await ProviderDetailPage({ params: Promise.resolve({ id: 'partner-success' }) }),
+    );
+
+    expect(markup).toContain('Partner One');
+    expect(markup).toContain('partner-fast-work-grid');
+    expect(markup).not.toContain('Operational policy unavailable');
   });
 
   it('renders the full compatibility URL as a bounded workspace index', async () => {
@@ -202,12 +300,12 @@ describe('ProviderDetailPage data loading', () => {
     });
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
-    await expect(
-      ProviderDetailPage({
-        params: Promise.resolve({ id: 'partner-master-diagnostics' }),
-        searchParams: Promise.resolve({ section: 'access' }),
-      }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
+    const standardPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-master-diagnostics' }),
+      searchParams: Promise.resolve({ section: 'access' }),
+    });
+
+    expect(standardPage).toMatchObject({ props: { title: 'Partner data unavailable' } });
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/partners/partner-master-diagnostics?includeDiagnostics=false',
@@ -216,12 +314,12 @@ describe('ProviderDetailPage data loading', () => {
 
     mockedAdminGet.mockClear();
 
-    await expect(
-      ProviderDetailPage({
-        params: Promise.resolve({ id: 'partner-master-diagnostics' }),
-        searchParams: Promise.resolve({ access: 'diagnostics', section: 'access' }),
-      }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
+    const diagnosticsPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-master-diagnostics' }),
+      searchParams: Promise.resolve({ access: 'diagnostics', section: 'access' }),
+    });
+
+    expect(diagnosticsPage).toMatchObject({ props: { title: 'Partner data unavailable' } });
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/partners/partner-master-diagnostics?includeDiagnostics=true',
@@ -315,23 +413,26 @@ describe('ProviderDetailPage data loading', () => {
       return fallback;
     });
 
-    const renderRecords = async () => renderToStaticMarkup(await ProviderDetailPage({
-      params: Promise.resolve({ id: 'partner-review-states' }),
-      searchParams: Promise.resolve({ control: 'records', section: 'control' }),
-    }));
+    const renderRecords = async () =>
+      renderToStaticMarkup(
+        await ProviderDetailPage({
+          params: Promise.resolve({ id: 'partner-review-states' }),
+          searchParams: Promise.resolve({ control: 'records', section: 'control' }),
+        }),
+      );
 
     const emptyMarkup = await renderRecords();
     expect(emptyMarkup).toContain('No customer review connected to this record.');
     expect(emptyMarkup).toContain('No Partner note connected to this record.');
     expect(emptyMarkup).not.toContain('Review records unavailable');
 
-    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 403 });
+    mockAdminGetResultFailure('/admin/reviews?', 403);
     const restrictedMarkup = await renderRecords();
     expect(restrictedMarkup).toContain('Review records restricted');
     expect(restrictedMarkup).toContain('You do not have permission to view Partner review records.');
     expect(restrictedMarkup).not.toContain('No customer review connected to this record.');
 
-    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 500 });
+    mockAdminGetResultFailure('/admin/reviews?', 500);
     const unavailableMarkup = await renderRecords();
     expect(unavailableMarkup).toContain('Review records unavailable');
     expect(unavailableMarkup).toContain('Partner review records could not be loaded.');
@@ -354,22 +455,25 @@ describe('ProviderDetailPage data loading', () => {
       return fallback;
     });
 
-    const renderFinance = async () => renderToStaticMarkup(await ProviderDetailPage({
-      params: Promise.resolve({ id: 'partner-finance-states' }),
-      searchParams: Promise.resolve({ dossier: 'finance', section: 'dossier' }),
-    }));
+    const renderFinance = async () =>
+      renderToStaticMarkup(
+        await ProviderDetailPage({
+          params: Promise.resolve({ id: 'partner-finance-states' }),
+          searchParams: Promise.resolve({ dossier: 'finance', section: 'dossier' }),
+        }),
+      );
 
     const emptyMarkup = await renderFinance();
     expect(emptyMarkup).toContain('Partner finance records');
     expect(emptyMarkup).not.toContain('Financial data restricted');
     expect(emptyMarkup).not.toContain('Financial data unavailable');
 
-    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 403 });
+    mockAdminGetResultFailure('/admin/provider-wallet/withdrawal-requests?', 403);
     const restrictedMarkup = await renderFinance();
     expect(restrictedMarkup).toContain('Financial data restricted');
     expect(restrictedMarkup).toContain('You do not have permission to view this financial data.');
 
-    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 500 });
+    mockAdminGetResultFailure('/admin/provider-wallet/withdrawal-requests?', 500);
     const unavailableMarkup = await renderFinance();
     expect(unavailableMarkup).toContain('Financial data unavailable');
     expect(unavailableMarkup).toContain('Financial data could not be loaded.');
@@ -484,9 +588,9 @@ describe('ProviderDetailPage data loading', () => {
         href.startsWith('/admin/provider-wallet/withdrawal-requests'),
       ),
     ).toBe(false);
-    expect(mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments'))).toBe(
-      false,
-    );
+    expect(
+      mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments')),
+    ).toBe(false);
 
     mockedAdminGet.mockClear();
     const evidencePage = await ProviderDetailPage({
@@ -527,7 +631,10 @@ describe('ProviderDetailPage data loading', () => {
     expect(financeMarkup).toContain('Partner finance records');
     expect(financeMarkup).toContain('Partner wallet detail');
     expect(financeMarkup).not.toContain('Partner registration dossier');
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/partners/partner-dossier?includeDiagnostics=false&view=finance', null);
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/partner-dossier?includeDiagnostics=false&view=finance',
+      null,
+    );
     expect(mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy'))).toBe(
       false,
     );
@@ -536,9 +643,9 @@ describe('ProviderDetailPage data loading', () => {
         href.startsWith('/admin/provider-wallet/withdrawal-requests'),
       ),
     ).toBe(true);
-    expect(mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments'))).toBe(
-      true,
-    );
+    expect(
+      mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments')),
+    ).toBe(true);
   });
 
   it('separates booking journey, retained evidence, and the Developer ledger', async () => {
@@ -679,38 +786,26 @@ describe('ProviderDetailPage data loading', () => {
     expect(providerDetailSource).toContain(
       'const partnerCommandSnapshotDiagnosticSection = shouldLoadAccessDiagnostics ? (',
     );
-    expect(providerDetailSource).toContain(
-      "detailSection === 'control' &&",
-    );
+    expect(providerDetailSource).toContain("detailSection === 'control' &&");
     expect(providerDetailSource).toContain("controlView === 'reference' ? (");
-    expect(providerDetailSource).toContain(
-      "detailSection === 'bookings' &&",
-    );
+    expect(providerDetailSource).toContain("detailSection === 'bookings' &&");
     expect(providerDetailSource).toContain("bookingsView === 'ledger' ? (");
     expect(providerDetailSource).toContain(
       'const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? (',
     );
-    expect(providerDetailSource).toContain(
-      "detailSection === 'access' &&",
-    );
-    expect(providerDetailSource).toContain(
-      "accessView === 'diagnostics';",
-    );
+    expect(providerDetailSource).toContain("detailSection === 'access' &&");
+    expect(providerDetailSource).toContain("accessView === 'diagnostics';");
     expect(
       providerDetailSource.indexOf(
         'const partnerCommandSnapshotDiagnosticSection = shouldLoadAccessDiagnostics ? (',
       ),
     ).toBeLessThan(providerDetailSource.indexOf('<PartnerDetailCommandSnapshotSection'));
-    expect(
-      providerDetailSource.indexOf(
-        "detailSection === 'control' &&",
-      ),
-    ).toBeLessThan(providerDetailSource.indexOf('<PartnerDetailFullRecordIndexSection'));
-    expect(
-      providerDetailSource.indexOf(
-        "detailSection === 'control' &&",
-      ),
-    ).toBeLessThan(providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'));
+    expect(providerDetailSource.indexOf("detailSection === 'control' &&")).toBeLessThan(
+      providerDetailSource.indexOf('<PartnerDetailFullRecordIndexSection'),
+    );
+    expect(providerDetailSource.indexOf("detailSection === 'control' &&")).toBeLessThan(
+      providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'),
+    );
     expect(
       providerDetailSource.indexOf(
         'const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? (',
@@ -723,7 +818,7 @@ describe('ProviderDetailPage data loading', () => {
     expect(providerDetailSource).toContain('<PartnerDetailFullRecordIndexSection');
     expect(providerDetailSource).not.toContain('PARTNER_DETAIL_DEFAULT_HISTORY_PREVIEW_LIMIT');
     expect(providerDetailSource).not.toContain('partnerBookingEvidencePreviewRows');
-    expect(providerDetailSource).not.toContain("isFullPartnerDetail ||");
+    expect(providerDetailSource).not.toContain('isFullPartnerDetail ||');
   });
 
   it('does not send ordinary partner detail repair actions to app session diagnostics', () => {
@@ -738,6 +833,15 @@ describe('ProviderDetailPage data loading', () => {
     expect(providerDetailSource).not.toContain('tax setup');
     expect(providerDetailSource).not.toContain('withdrawal setup blocker');
     expect(providerDetailSource).not.toContain("label: 'Withdrawal setup'");
+  });
+
+  it('uses Partner note terminology in the booking summary link', () => {
+    expect(providerDetailSource).toContain(
+      'customer review or internal Partner note record(s).',
+    );
+    expect(providerDetailSource).not.toContain(
+      'customer review or Partner evaluation record(s).',
+    );
   });
 
   it('uses operator-facing record wording instead of diagnostic snapshot copy', () => {
@@ -756,6 +860,36 @@ describe('ProviderDetailPage data loading', () => {
     expect(bookingGateSource).not.toContain('Address snapshot metadata missing');
   });
 });
+
+function mockAdminGetResultFailure(hrefPrefix: string, status: number | null) {
+  mockedAdminGetResult.mockImplementation(async (href, fallback, options) =>
+    href.startsWith(hrefPrefix)
+      ? { data: fallback, ok: false, status }
+      : {
+          data: options
+            ? await mockedAdminGet(href, fallback, options)
+            : await mockedAdminGet(href, fallback),
+          ok: true,
+          status: 200,
+        },
+  );
+}
+
+function mockProviderWithPolicyResult(policyResult: {
+  readonly data: unknown;
+  readonly ok: boolean;
+  readonly status: number | null;
+}) {
+  mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+    if (href.startsWith('/admin/partners/')) {
+      return { data: partnerDetail(), ok: true, status: 200 };
+    }
+    if (href.startsWith('/admin/operational-policy')) {
+      return policyResult as never;
+    }
+    return { data: fallback, ok: true, status: 200 };
+  });
+}
 
 function partnerDetail(): AdminProvider {
   return {

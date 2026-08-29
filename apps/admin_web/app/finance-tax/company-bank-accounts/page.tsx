@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { AlertTriangle, Archive, Pencil, Plus, RotateCcw, ShieldCheck } from 'lucide-react';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import { AdminDirectoryFilterForm } from '../../../components/admin-directory-filter-form';
 import {
@@ -16,12 +17,13 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminNoticeCard } from '../../../components/admin-surface';
+import { AdminDisclosure, AdminNoticeCard } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminAuditLog, AdminAuditLogPage, AdminCompanyBankAccount } from '../../../lib/admin-api';
 import {
   AdminApiRequestError,
+  adminDeleteOrThrow,
   adminGetResult,
   adminPatchOrThrow,
   adminPostOrThrow,
@@ -32,6 +34,7 @@ import { hasAdminOperatorCategory } from '../../../lib/admin-operator-access-mod
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceTablePanel } from '../finance-table-panel';
 import {
+  COMPANY_BANK_ACCOUNT_CLASSIFICATION_INTENT,
   COMPANY_BANK_ACCOUNT_CREATE_INTENT,
   COMPANY_BANK_ACCOUNT_EVIDENCE_MIN_LENGTH,
   COMPANY_BANK_ACCOUNT_STATUS_INTENT,
@@ -86,6 +89,8 @@ type CompanyBankAccountOperationsRow = AdminCompanyBankAccount & {
 };
 
 type CompanyBankAccountOperationsPage = {
+  filterContract: CompanyBankAccountFilterContract;
+  filters: CompanyBankAccountListFilters;
   generatedAt: string;
   items: CompanyBankAccountOperationsRow[];
   pagination: { skip: number; take: number; totalCount: number };
@@ -109,6 +114,7 @@ type CompanyBankAccountOperationsPage = {
 type CompanyBankAccountView = 'archived' | 'current' | 'pending' | 'remediation';
 
 type CompanyBankAccountRecentChangesPage = AdminAuditLogPage & {
+  actionableRequestIds: string[];
   accountSnapshots: Array<{
     accountNumberMasked: string | null;
     bankName: string;
@@ -125,13 +131,16 @@ type CompanyBankAccountListFilters = {
   verification: string;
 };
 
+type CompanyBankAccountFilterContract = Record<keyof CompanyBankAccountListFilters, string[]>;
+
 type CompanyBankAccountStatusPreflight = {
   accountId: string;
   archiveImpact: {
     ready: boolean;
     sources: Array<{
-      coverage: 'COMPLETE' | 'ERROR' | 'INCOMPLETE';
+      coverage: 'COMPLETE' | 'ERROR' | 'INCOMPLETE' | 'NOT_APPLICABLE' | 'TIMEOUT';
       openCount: number | null;
+      reason?: string | null;
       source: string;
       totalCount: number | null;
     }>;
@@ -156,12 +165,19 @@ type CompanyBankAccountStatusPreflight = {
   mode: 'ACTIVATION' | 'ARCHIVE';
   preflightHash: string;
   ready: boolean;
-  replacementAccount: { id: string; name: string } | null;
+  replacementAccount: { id: string; name: string; updatedAt?: string } | null;
   replacementCandidates: Array<{ accountNumberMasked: string | null; bankName: string; id: string; name: string }>;
   statementImportEvidence: { id: string; importedAt: string } | null;
 };
 
 const COMPANY_BANK_ACCOUNTS_PATH = '/finance-tax/company-bank-accounts';
+const COMPANY_BANK_ACCOUNT_EVIDENCE_MAX_BYTES = 10 * 1024 * 1024;
+const COMPANY_BANK_ACCOUNT_EVIDENCE_CONTENT_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
 
 export default async function CompanyBankAccountsPage({ searchParams }: CompanyBankAccountsPageProps) {
   const params = searchParams ? await searchParams : {};
@@ -170,21 +186,19 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
   const page = Math.max(Number.parseInt(readParam(params, 'page') || '1', 10) || 1, 1);
   const take = 25;
   const skip = (page - 1) * take;
-  const filters: CompanyBankAccountListFilters = {
+  const requestedFilters: CompanyBankAccountListFilters = {
     currency: readParam(params, 'currency'),
     health: readParam(params, 'health'),
     purpose: readParam(params, 'purpose'),
     status: readParam(params, 'status'),
     verification: readParam(params, 'verification'),
   };
-  const filtersActive = Object.values(filters).some(Boolean);
-  const listHref = companyBankAccountPageHref({ filters, page, view });
   const operationsQuery = new URLSearchParams({
     view,
     skip: String(skip),
     take: String(take),
   });
-  for (const [key, value] of Object.entries(filters)) {
+  for (const [key, value] of Object.entries(requestedFilters)) {
     if (value) operationsQuery.set(key, value);
   }
   const requestedAccountId = readParam(params, 'accountId');
@@ -195,6 +209,7 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
       emptyCompanyBankAccountOperationsPage(view, skip, take),
     ),
     adminGetResult<CompanyBankAccountRecentChangesPage>('/admin/company-bank-accounts/recent-changes?take=20', {
+      actionableRequestIds: [],
       accountSnapshots: [],
       items: [],
       skip: 0,
@@ -207,6 +222,17 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
     ),
     getCurrentAdminOperatorAccess(),
   ]);
+  const filters = accountsResult.ok
+    ? (accountsResult.data.filters ?? requestedFilters)
+    : requestedFilters;
+  const filterContract = accountsResult.ok
+    ? (accountsResult.data.filterContract ?? emptyCompanyBankAccountFilterContract(view))
+    : emptyCompanyBankAccountFilterContract(view);
+  if (accountsResult.ok && accountsResult.data.filters && !companyBankAccountFiltersEqual(requestedFilters, filters)) {
+    redirect(companyBankAccountPageHref({ filters, view }));
+  }
+  const filtersActive = Object.values(filters).some(Boolean);
+  const listHref = companyBankAccountPageHref({ filters, page, view });
   const accounts = accountsResult.data.items;
   const operationsSummary = accountsResult.data.summary;
   const operationalReadiness = companyBankAccountOperationalReadiness(operationsSummary);
@@ -218,7 +244,15 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
   );
   const pendingCount = operationsSummary.pendingApprovalCount;
   const accountAuditLogs = accountAuditPage.items;
-  const accountAuditLifecycles = groupCompanyBankAccountAuditLifecycles(accountAuditLogs);
+  const actionableAuditRequestIds = new Set(accountAuditPage.actionableRequestIds ?? []);
+  const accountAuditLifecycles = prioritizeCompanyBankAccountAuditLifecycles(
+    groupCompanyBankAccountAuditLifecycles(accountAuditLogs),
+    {
+      actionableRequestIds: actionableAuditRequestIds,
+      visibleAccountIds: new Set(accounts.map((account) => account.id)),
+      view,
+    },
+  );
   const canOpenFullAuditLog = hasAdminOperatorCategory(currentOperatorAccess, 'SYSTEM_AUDIT');
   const canRequestChanges = hasAdminOperatorCategory(currentOperatorAccess, 'SYSTEM_POLICY');
   const canSubmitRequest = canRequestChanges && approverReadinessResult.ok && approverReadinessResult.data.ready;
@@ -232,6 +266,9 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
     }] as const),
   ]);
   const editingAccount = dialog === 'edit' ? accounts.find((account) => account.id === requestedAccountId) ?? null : null;
+  const classificationAccount = dialog === 'classification'
+    ? accounts.find((account) => account.id === requestedAccountId && account.dataScope === 'UNKNOWN') ?? null
+    : null;
   const statusAccount =
     statusConfirmationRequested
       ? accounts.find((account) => account.id === requestedAccountId) ?? null
@@ -264,42 +301,6 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
         </>
       }
       description="Manage verified company accounts used for collections, refunds, payouts, and bank reconciliation."
-      metrics={accountsResult.ok ? [
-        {
-          helper: 'Active accounts explicitly classified as production data.',
-          kind: operationsSummary.usableRealAccountCount > 0 ? 'live' : 'risk',
-          label: 'Usable production accounts',
-          scope: 'Current',
-          value: formatWholeNumber(operationsSummary.usableRealAccountCount),
-        },
-        {
-          helper: operationsSummary.oldestPendingRequestedAt
-            ? `Oldest request: ${companyBankAccountCompactDate(operationsSummary.oldestPendingRequestedAt)}`
-            : 'No account request is waiting for a checker.',
-          kind: pendingCount > 0 ? 'risk' : 'action',
-          label: 'Pending approval',
-          scope: 'Maker / checker',
-          value: formatWholeNumber(pendingCount),
-        },
-        {
-          helper: `${pluralizeTransactions(operationsSummary.unmatchedCount)} unmatched or partially matched.`,
-          kind: operationsSummary.reconciliationHealth === 'HEALTHY' ? 'action' : 'risk',
-          label: 'Import & reconciliation',
-          scope: 'Current',
-          value: operationsSummary.reconciliationHealth === 'HEALTHY' ? 'Healthy' : 'Attention',
-        },
-        {
-          helper: operationsSummary.lastRecordedStatementImport?.account
-            ? `${operationsSummary.lastRecordedStatementImport.account.bankName} · ${operationsSummary.lastRecordedStatementImport.account.accountNumberMasked ?? 'Masked account'}`
-            : 'No statement import record is available.',
-          kind: 'record',
-          label: 'Last statement import',
-          scope: 'Evidence',
-          value: operationsSummary.lastRecordedStatementImport
-            ? companyBankAccountCompactDate(operationsSummary.lastRecordedStatementImport.importedAt)
-            : 'Unavailable',
-        },
-      ] : []}
       title="Company bank accounts"
     >
       {accountsResult.ok ? (
@@ -321,15 +322,44 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
           <span>Eligible separate approvers: {approverReadinessResult.ok ? formatWholeNumber(approverReadinessResult.data.eligibleApproverCount) : 'Unavailable'}</span>
         </AdminInlineNotice>
       ) : null}
-      {accountsResult.ok && (operationsSummary.unknownDataScopeCount > 0 || operationsSummary.syntheticCount > 0) ? (
-        <AdminNoticeCard tone="danger">
-          <strong>Unclassified or synthetic accounts are isolated from Finance operations</strong>
-          <p>
-            {formatWholeNumber(operationsSummary.unknownDataScopeCount)} unclassified and {formatWholeNumber(operationsSummary.syntheticCount)} synthetic records cannot be used for imports or transactions. Review them in Remediation; do not classify or remove records without authoritative evidence and a reviewed cleanup manifest.
-          </p>
-          <AdminFormControlLink className="button-secondary" href={`${COMPANY_BANK_ACCOUNTS_PATH}?view=remediation`}>
-            Open remediation
-          </AdminFormControlLink>
+      {accountsResult.ok && (
+        operationsSummary.unknownDataScopeCount > 0 ||
+        operationsSummary.syntheticCount > 0 ||
+        !approverReadinessResult.ok ||
+        !canRequestChanges ||
+        !approverReadinessResult.data.ready
+      ) ? (
+        <AdminNoticeCard
+          className="company-bank-account-resolution-panel"
+          tone={operationsSummary.unknownDataScopeCount > 0 ? 'danger' : 'warning'}
+        >
+          <strong>Resolve Finance account readiness</strong>
+          <ul>
+            {operationsSummary.unknownDataScopeCount > 0 || operationsSummary.syntheticCount > 0 ? (
+              <li>
+                {formatWholeNumber(operationsSummary.unknownDataScopeCount)} unclassified and {formatWholeNumber(operationsSummary.syntheticCount)} synthetic records remain isolated from imports and transactions until authoritative evidence is reviewed.
+              </li>
+            ) : null}
+            {!approverReadinessResult.ok ? (
+              <li>Approver readiness is unavailable, so account records remain read-only for change requests.</li>
+            ) : !canRequestChanges ? (
+              <li>System Policy permission is required to submit a maker request; current access is read-only.</li>
+            ) : !approverReadinessResult.data.ready ? (
+              <li>No separate eligible Finance checker is available for maker/checker approval.</li>
+            ) : null}
+          </ul>
+          <div className="actions">
+            {view !== 'remediation' && operationsSummary.unknownDataScopeCount > 0 ? (
+              <AdminFormControlLink className="button-secondary" href={`${COMPANY_BANK_ACCOUNTS_PATH}?view=remediation`}>
+                Open remediation
+              </AdminFormControlLink>
+            ) : null}
+            {canRequestChanges && (!approverReadinessResult.ok || !approverReadinessResult.data.ready) ? (
+              <AdminFormControlLink className="button-secondary" href="/finance-tax/finance-approvers">
+                Review Finance approvers
+              </AdminFormControlLink>
+            ) : null}
+          </div>
         </AdminNoticeCard>
       ) : null}
       {notice ? (
@@ -354,28 +384,14 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
         </AdminNoticeCard>
       ) : null}
 
-      {accountsResult.ok && !approverReadinessResult.ok ? (
-        <AdminNoticeCard tone="warning">
-          <strong>Approver readiness is unavailable</strong>
-          <p>Account records are available, but no change request can be submitted until the approver check succeeds.</p>
-        </AdminNoticeCard>
-      ) : accountsResult.ok && !canRequestChanges ? (
-        <AdminNoticeCard tone="info">
-          <strong>Read-only Finance access</strong>
-          <p>You can inspect accounts and recent changes. System Policy permission is required to submit a change request.</p>
-        </AdminNoticeCard>
-      ) : accountsResult.ok && !approverReadinessResult.data.ready ? (
-        <AdminNoticeCard tone="warning">
-          <strong>No separate Finance approver is available</strong>
-          <p>Assign a backup Finance approver before creating, editing, activating, or archiving an account.</p>
-          <AdminFormControlLink className="button-secondary" href="/finance-tax/finance-approvers">
-            Review Finance approvers
-          </AdminFormControlLink>
-        </AdminNoticeCard>
-      ) : null}
-
       {dialog === 'new' && canSubmitRequest ? (
         <CompanyBankAccountCreateForm returnHref={listHref} />
+      ) : dialog === 'classification' && classificationAccount && canSubmitRequest ? (
+        <CompanyBankAccountClassificationForm account={classificationAccount} returnHref={listHref} />
+      ) : dialog === 'classification' && canSubmitRequest ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+          This unclassified account is no longer available for classification. Reload Remediation before retrying.
+        </AdminInlineNotice>
       ) : dialog === 'edit' && editingAccount && canSubmitRequest ? (
         <CompanyBankAccountEditForm account={editingAccount} returnHref={listHref} />
       ) : dialog === 'edit' && canSubmitRequest ? (
@@ -463,11 +479,11 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
       >
         <AdminDirectoryFilterForm className="company-bank-account-filters" method="get">
           <input name="view" type="hidden" value={view} />
-          <AdminFormSelect defaultValue={filters.purpose} label="Purpose" labelVisibility="visible" name="purpose" options={companyBankPurposeFilterOptions} />
-          <AdminFormSelect defaultValue={filters.currency} label="Currency" labelVisibility="visible" name="currency" options={companyBankCurrencyFilterOptions} />
-          <AdminFormSelect defaultValue={filters.verification} label="Verification" labelVisibility="visible" name="verification" options={companyBankVerificationFilterOptions} />
-          <AdminFormSelect defaultValue={filters.health} label="Health" labelVisibility="visible" name="health" options={companyBankHealthFilterOptions} />
-          <AdminFormSelect defaultValue={filters.status} label="Status" labelVisibility="visible" name="status" options={companyBankStatusFilterOptions} />
+          {filterContract.purpose.length > 0 ? <AdminFormSelect defaultValue={filters.purpose} label="Purpose" labelVisibility="visible" name="purpose" options={companyBankAccountFilterOptions('purpose', filterContract.purpose)} /> : null}
+          {filterContract.currency.length > 0 ? <AdminFormSelect defaultValue={filters.currency} label="Currency" labelVisibility="visible" name="currency" options={companyBankAccountFilterOptions('currency', filterContract.currency)} /> : null}
+          {filterContract.verification.length > 0 ? <AdminFormSelect defaultValue={filters.verification} label="Verification" labelVisibility="visible" name="verification" options={companyBankAccountFilterOptions('verification', filterContract.verification)} /> : null}
+          {filterContract.health.length > 0 ? <AdminFormSelect defaultValue={filters.health} label="Health" labelVisibility="visible" name="health" options={companyBankAccountFilterOptions('health', filterContract.health)} /> : null}
+          {filterContract.status.length > 0 ? <AdminFormSelect defaultValue={filters.status} label="Status" labelVisibility="visible" name="status" options={companyBankAccountFilterOptions('status', filterContract.status)} /> : null}
           <div className="actions company-bank-account-filter-actions">
             <AdminFormControlButton className="button-primary" type="submit">Apply filters</AdminFormControlButton>
             <AdminFormControlLink className="button-secondary" href={`${COMPANY_BANK_ACCOUNTS_PATH}?view=${view}`}>Reset</AdminFormControlLink>
@@ -542,6 +558,44 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
                       >
                         Review exact request
                       </AdminFormControlLink>
+                    ) : view === 'remediation' ? (
+                      canSubmitRequest ? (
+                        <AdminFormControlLink
+                          className="button-secondary"
+                          href={companyBankAccountPageHref({
+                            accountId: account.id,
+                            dialog: 'classification',
+                            filters,
+                            page,
+                            view,
+                          })}
+                        >
+                          <ShieldCheck aria-hidden="true" size={16} />
+                          Start classification review
+                        </AdminFormControlLink>
+                      ) : (
+                        <>
+                          <AdminFormControlButton
+                            className="button-secondary"
+                            disabled
+                            title={companyBankAccountClassificationDisabledReason({
+                              approverCheckAvailable: approverReadinessResult.ok,
+                              canRequestChanges,
+                              checkerReady: approverReadinessResult.data.ready,
+                            })}
+                            type="button"
+                          >
+                            Start classification review
+                          </AdminFormControlButton>
+                          <span className="muted">
+                            {companyBankAccountClassificationDisabledReason({
+                              approverCheckAvailable: approverReadinessResult.ok,
+                              canRequestChanges,
+                              checkerReady: approverReadinessResult.data.ready,
+                            })}
+                          </span>
+                        </>
+                      )
                     ) : canSubmitRequest ? (
                       <>
                         <AdminFormControlLink
@@ -611,76 +665,27 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
         {accountAuditLifecycles.length === 0 ? (
           <p className="empty-state">No recent company bank account changes were returned.</p>
         ) : (
-        <ol aria-label="Recent company bank account request lifecycles" className="company-bank-account-lifecycle-list">
-          {accountAuditLifecycles.map((lifecycle) => {
-            const { decision, requested } = lifecycle;
-            const latest = decision ?? requested ?? lifecycle.events[0];
-            if (!latest) return null;
-            const approvalLifecycle = isCompanyBankAccountApprovalLifecycle(lifecycle);
-            const accountId = latest.target.slice('company_bank_account:'.length);
-            const account = accountById.get(accountId);
-            const requestMetadata = readPlainRecord(requested?.metadata);
-            const decisionMetadata = readPlainRecord(decision?.metadata);
-            const before = decisionMetadata?.before ?? requestMetadata?.before ?? null;
-            const after = decisionMetadata?.after ?? requestMetadata?.proposed ?? null;
-            const changes = companyBankAccountAuditChanges(before, after);
-            return (
-              <li className="company-bank-account-lifecycle-item" key={lifecycle.id}>
-                <div className="company-bank-account-lifecycle-heading">
-                  <div>
-                    <strong>{account?.name ?? 'Account record unavailable'}</strong>
-                    {account ? (
-                      <span className="muted">
-                        {account.bankName} · {account.accountNumberMasked ?? 'Masked identity unavailable'}
-                      </span>
-                    ) : null}
-                  </div>
-                  <StatusBadge tone={auditLifecycleTone(lifecycle)}>{auditLifecycleLabel(lifecycle)}</StatusBadge>
-                </div>
-                <div className="company-bank-account-audit-lifecycle">
-                  {approvalLifecycle && requested ? <span><strong>Requested</strong><DateTimeText value={requested.createdAt} /></span> : null}
-                  {approvalLifecycle && decision ? <span><strong>Decided</strong><DateTimeText value={decision.createdAt} /></span> : null}
-                  {!approvalLifecycle ? <span><strong>Recorded</strong><DateTimeText value={latest.createdAt} /></span> : null}
-                </div>
-                <div className="company-bank-account-audit-actors">
-                  {approvalLifecycle ? (
-                    <>
-                      <span><strong>Maker</strong>{requested ? adminAuditActorLabel(requested) : 'Not recorded'}</span>
-                      <span><strong>Checker</strong>{decision ? adminAuditActorLabel(decision) : 'Awaiting decision'}</span>
-                    </>
-                  ) : (
-                    <span><strong>Operator</strong>{adminAuditActorLabel(latest)}</span>
-                  )}
-                </div>
-                <div className="company-bank-account-audit-evidence">
-                  <strong>{lifecycle.requestId ? `Request ${shortIdentifier(lifecycle.requestId)}` : 'Request ID unavailable'}</strong>
-                  <span className="muted">
-                    {typeof decisionMetadata?.decisionReason === 'string'
-                      ? decisionMetadata.decisionReason
-                      : typeof decisionMetadata?.operatorReason === 'string'
-                        ? decisionMetadata.operatorReason
-                      : typeof requestMetadata?.operatorReason === 'string'
-                        ? requestMetadata.operatorReason
-                        : 'Evidence retained in audit log'}
-                  </span>
-                  {changes.length > 0 ? (
-                    <details>
-                      <summary>Review {formatWholeNumber(changes.length)} changed fields</summary>
-                      <dl className="company-bank-account-change-list">
-                        {changes.map((change) => (
-                          <div key={change.field}>
-                            <dt>{change.label}</dt>
-                            <dd><span>{change.before}</span><span aria-hidden="true">→</span><strong>{change.after}</strong></dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </details>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+        <>
+          <ol aria-label="Recent company bank account request lifecycles" className="company-bank-account-lifecycle-list">
+            {accountAuditLifecycles.slice(0, 5).map((lifecycle) => companyBankAccountAuditLifecycleItem({
+              account: companyBankAccountAuditLifecycleAccount(lifecycle, accountById),
+              actionable: Boolean(lifecycle.requestId && actionableAuditRequestIds.has(lifecycle.requestId)),
+              lifecycle,
+            }))}
+          </ol>
+          {accountAuditLifecycles.length > 5 ? (
+            <AdminDisclosure className="company-bank-account-recent-disclosure">
+              <summary>Show {formatWholeNumber(accountAuditLifecycles.length - 5)} more</summary>
+              <ol aria-label="Additional company bank account request lifecycles" className="company-bank-account-lifecycle-list" start={6}>
+                {accountAuditLifecycles.slice(5).map((lifecycle) => companyBankAccountAuditLifecycleItem({
+                  account: companyBankAccountAuditLifecycleAccount(lifecycle, accountById),
+                  actionable: Boolean(lifecycle.requestId && actionableAuditRequestIds.has(lifecycle.requestId)),
+                  lifecycle,
+                }))}
+              </ol>
+            </AdminDisclosure>
+          ) : null}
+        </>
         )}
       </FinanceTablePanel> : null}
     </AdminPageTemplate>
@@ -758,6 +763,79 @@ function CompanyBankAccountCreateForm({ returnHref }: { readonly returnHref: str
         <AdminDrawerActionFooter className="company-bank-account-drawer-footer">
           <CompanyBankAccountDrawerCancelButton />
           <AdminFormControlButton className="button-primary" type="submit">Submit for approval</AdminFormControlButton>
+        </AdminDrawerActionFooter>
+      </CompanyBankAccountRequestForm>
+    </CompanyBankAccountDrawerShell>
+  );
+}
+
+function CompanyBankAccountClassificationForm({
+  account,
+  returnHref,
+}: {
+  readonly account: CompanyBankAccountOperationsRow;
+  readonly returnHref: string;
+}) {
+  return (
+    <CompanyBankAccountDrawerShell
+      returnFocusHref={`${COMPANY_BANK_ACCOUNTS_PATH}?view=remediation&dialog=classification&accountId=${encodeURIComponent(account.id)}`}
+      returnHref={returnHref}
+      title="Start production classification review"
+    >
+      <CompanyBankAccountRequestForm action={createCompanyBankAccountClassificationAction} className="company-bank-account-drawer-form">
+        <input name="accountId" type="hidden" value={account.id} />
+        <input name="confirmationAccountId" type="hidden" value={account.id} />
+        <input name="confirmationIntent" type="hidden" value={COMPANY_BANK_ACCOUNT_CLASSIFICATION_INTENT} />
+        <input name="expectedAccountUpdatedAt" type="hidden" value={account.updatedAt} />
+        <input name="idempotencyKey" type="hidden" value={randomUUID()} />
+        <AdminDrawerFormGridFields>
+          <div className="company-bank-account-form-section">
+            <h3>Account under review</h3>
+            <AdminFormStaticValue
+              label="Restricted account identity"
+              labelVisibility="visible"
+              value={`${account.bankName} · ${account.accountNumberMasked ?? 'Masked identity unavailable'}`}
+            />
+            <AdminInlineNotice role="status" tone="warning">
+              Classification changes only the data scope after a separate checker verifies retained ownership evidence. It does not activate the account.
+            </AdminInlineNotice>
+          </div>
+          <div className="company-bank-account-form-section">
+            <h3>Restricted ownership evidence</h3>
+            <AdminFormInput
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              ariaDescribedBy="company-bank-account-classification-file-help"
+              label="Ownership evidence file"
+              labelVisibility="visible"
+              name="evidenceFile"
+              required
+              type="file"
+            />
+            <p className="muted" id="company-bank-account-classification-file-help">
+              PDF, JPEG, PNG, or WebP; maximum 10 MB. The file is retained as private Finance evidence.
+            </p>
+            <CompanyBankAccountFieldError field="evidenceFile" />
+          </div>
+          <div className="company-bank-account-form-section">
+            <h3>Maker evidence</h3>
+            <AdminFormTextarea
+              label="Why does this evidence establish company ownership?"
+              labelVisibility="visible"
+              maxLength={500}
+              minLength={COMPANY_BANK_ACCOUNT_EVIDENCE_MIN_LENGTH}
+              name="operatorReason"
+              placeholder="Identify the legal owner and the controlled source reviewed. Do not enter a full account number."
+              required
+              rows={4}
+            />
+            <CompanyBankAccountFieldError field="operatorReason" />
+          </div>
+        </AdminDrawerFormGridFields>
+        <AdminDrawerActionFooter className="company-bank-account-drawer-footer">
+          <CompanyBankAccountDrawerCancelButton />
+          <AdminFormControlButton className="button-primary" type="submit">
+            Submit classification request
+          </AdminFormControlButton>
         </AdminDrawerActionFooter>
       </CompanyBankAccountRequestForm>
     </CompanyBankAccountDrawerShell>
@@ -869,6 +947,96 @@ async function createCompanyBankAccountAction(
   } catch (error) {
     return companyBankAccountFormErrorState(companyBankAccountActionError(error), error);
   }
+}
+
+async function createCompanyBankAccountClassificationAction(
+  _previousState: CompanyBankAccountRequestFormState,
+  formData: FormData,
+): Promise<CompanyBankAccountRequestFormState> {
+  'use server';
+  const accountId = readFormString(formData, 'accountId');
+  const operatorReason = readFormString(formData, 'operatorReason');
+  if (
+    !accountId ||
+    !isConfirmedCompanyBankAccountAction({
+      accountId,
+      confirmationAccountId: readFormString(formData, 'confirmationAccountId'),
+      confirmationIntent: readFormString(formData, 'confirmationIntent'),
+      evidence: operatorReason,
+      expectedIntent: COMPANY_BANK_ACCOUNT_CLASSIFICATION_INTENT,
+    })
+  ) {
+    return companyBankAccountFormErrorState('confirmation-required');
+  }
+  const evidenceFile = formData.get('evidenceFile');
+  if (!(evidenceFile instanceof File) || evidenceFile.size === 0) {
+    return companyBankAccountEvidenceFileError('Choose a retained ownership evidence file.');
+  }
+  const contentType = evidenceFile.type.trim().toLowerCase();
+  if (!COMPANY_BANK_ACCOUNT_EVIDENCE_CONTENT_TYPES.has(contentType)) {
+    return companyBankAccountEvidenceFileError('Use a PDF, JPEG, PNG, or WebP evidence file.');
+  }
+  if (evidenceFile.size > COMPANY_BANK_ACCOUNT_EVIDENCE_MAX_BYTES) {
+    return companyBankAccountEvidenceFileError('Ownership evidence files must be 10 MB or smaller.');
+  }
+
+  let fileAssetId = '';
+  try {
+    const presigned = await adminPostOrThrow<{
+      file: { id: string };
+      upload: { headers?: Record<string, string>; method: string; url: string };
+    }>('/files/presign', {
+      contentType,
+      fileName: evidenceFile.name,
+      purpose: 'finance-evidence',
+      sizeBytes: evidenceFile.size,
+      visibility: 'PRIVATE',
+    });
+    fileAssetId = presigned.file.id;
+    if (!/^https?:\/\//u.test(presigned.upload.url)) {
+      await adminDeleteOrThrow(`/files/${encodeURIComponent(fileAssetId)}`).catch(() => undefined);
+      fileAssetId = '';
+      return companyBankAccountEvidenceFileError('Private Finance evidence storage is unavailable.');
+    }
+    const upload = await fetch(presigned.upload.url, {
+      body: Buffer.from(await evidenceFile.arrayBuffer()),
+      headers: presigned.upload.headers ?? { 'content-type': contentType },
+      method: presigned.upload.method || 'PUT',
+    });
+    if (!upload.ok) {
+      await adminDeleteOrThrow(`/files/${encodeURIComponent(fileAssetId)}`).catch(() => undefined);
+      fileAssetId = '';
+      return companyBankAccountEvidenceFileError('Evidence upload failed. Choose the file and try again.');
+    }
+    await adminPostOrThrow(`/files/${encodeURIComponent(fileAssetId)}/complete`, {
+      sizeBytes: evidenceFile.size,
+    });
+    const requested = await adminPostOrThrow<AdminCompanyBankAccount>(
+      `/admin/company-bank-accounts/${encodeURIComponent(accountId)}/evidence-review-requests`,
+      {
+        expectedAccountUpdatedAt: readFormString(formData, 'expectedAccountUpdatedAt'),
+        fileAssetId,
+        idempotencyKey: readFormString(formData, 'idempotencyKey'),
+        intent: 'CLASSIFY_PRODUCTION',
+        operatorReason,
+      },
+    );
+    revalidatePath(COMPANY_BANK_ACCOUNTS_PATH);
+    return companyBankAccountReceiptState(requested);
+  } catch (error) {
+    if (fileAssetId) {
+      await adminDeleteOrThrow(`/files/${encodeURIComponent(fileAssetId)}`).catch(() => undefined);
+    }
+    return companyBankAccountFormErrorState(companyBankAccountActionError(error), error);
+  }
+}
+
+function companyBankAccountEvidenceFileError(message: string): CompanyBankAccountRequestFormState {
+  return {
+    error: 'The classification request was not submitted. Review the evidence file.',
+    fieldErrors: { evidenceFile: message },
+    status: 'error',
+  };
 }
 
 async function updateCompanyBankAccountNameAction(
@@ -1111,16 +1279,16 @@ function companyBankAccountViewEmptyMessage(view: CompanyBankAccountView) {
 function companyBankAccountOperationalReadiness(summary: CompanyBankAccountOperationsPage['summary']) {
   if (summary.usableRealAccountCount === 0) {
     return {
-      detail: 'No active production-classified account is available for Finance operations.',
-      label: 'NOT READY',
-      tone: 'danger' as const,
+      detail: 'No production account is available; reconciliation health is not applicable.',
+      label: 'NOT APPLICABLE',
+      tone: 'info' as const,
     };
   }
   if (!summary.lastRecordedStatementImport) {
     return {
       detail: 'An active production account exists, but a successful statement import is not proven.',
-      label: 'NOT READY',
-      tone: 'danger' as const,
+      label: 'NOT PROVEN',
+      tone: 'warning' as const,
     };
   }
   if (summary.unmatchedCount > 0 || summary.pendingApprovalCount > 0 || summary.unknownDataScopeCount > 0) {
@@ -1137,12 +1305,23 @@ function companyBankAccountOperationalReadiness(summary: CompanyBankAccountOpera
   };
 }
 
+function companyBankAccountClassificationDisabledReason(input: {
+  approverCheckAvailable: boolean;
+  canRequestChanges: boolean;
+  checkerReady: boolean;
+}) {
+  if (!input.canRequestChanges) return 'System Policy permission is required to start classification.';
+  if (!input.approverCheckAvailable) return 'Approver readiness must be restored before classification.';
+  if (!input.checkerReady) return 'A separate eligible Finance checker is required.';
+  return 'Classification is not available for this record.';
+}
+
 function readFormString(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
 }
 
 type CompanyBankAccountPendingApproval = {
-  operation: 'CREATE' | 'UPDATE';
+  operation: 'CLASSIFY_PRODUCTION' | 'CREATE' | 'UPDATE' | 'VERIFY_STATEMENT';
   requestedByAdminId: string;
   requestId: string;
 };
@@ -1155,7 +1334,10 @@ function readCompanyBankAccountPendingApproval(value: unknown): CompanyBankAccou
     typeof pending?.requestedByAdminId === 'string' ? pending.requestedByAdminId.trim() : '';
   const requestId = typeof pending?.requestId === 'string' ? pending.requestId.trim() : '';
   if (
-    (operation !== 'CREATE' && operation !== 'UPDATE') ||
+    (operation !== 'CREATE' &&
+      operation !== 'UPDATE' &&
+      operation !== 'CLASSIFY_PRODUCTION' &&
+      operation !== 'VERIFY_STATEMENT') ||
     !requestedByAdminId ||
     !requestId
   ) {
@@ -1174,6 +1356,13 @@ type CompanyBankAccountAuditLifecycle = {
   id: string;
   requested: AdminAuditLog | null;
   requestId: string | null;
+};
+
+type CompanyBankAccountAuditSnapshot = {
+  accountNumberMasked: string | null;
+  bankName: string;
+  id: string;
+  name: string;
 };
 
 function groupCompanyBankAccountAuditLifecycles(logs: AdminAuditLog[]): CompanyBankAccountAuditLifecycle[] {
@@ -1202,8 +1391,126 @@ function groupCompanyBankAccountAuditLifecycles(logs: AdminAuditLog[]): CompanyB
   return [...lifecycles.values()];
 }
 
-function auditLifecycleLabel(lifecycle: CompanyBankAccountAuditLifecycle) {
-  if (!lifecycle.decision) return lifecycle.requested ? 'Awaiting checker' : 'Evidence recorded';
+function prioritizeCompanyBankAccountAuditLifecycles(
+  lifecycles: CompanyBankAccountAuditLifecycle[],
+  input: {
+    actionableRequestIds: ReadonlySet<string>;
+    view: CompanyBankAccountView;
+    visibleAccountIds: ReadonlySet<string>;
+  },
+) {
+  return lifecycles
+    .map((lifecycle, index) => {
+      const latest = lifecycle.decision ?? lifecycle.requested ?? lifecycle.events[0];
+      const accountId = latest?.target.startsWith('company_bank_account:')
+        ? latest.target.slice('company_bank_account:'.length)
+        : '';
+      const actionable = Boolean(lifecycle.requestId && input.actionableRequestIds.has(lifecycle.requestId));
+      const priority = input.view === 'pending'
+        ? actionable ? 2 : input.visibleAccountIds.has(accountId) ? 1 : 0
+        : input.visibleAccountIds.has(accountId) ? 1 : 0;
+      return { index, lifecycle, priority };
+    })
+    .sort((left, right) => right.priority - left.priority || left.index - right.index)
+    .map(({ lifecycle }) => lifecycle);
+}
+
+function companyBankAccountAuditLifecycleAccount(
+  lifecycle: CompanyBankAccountAuditLifecycle,
+  accounts: ReadonlyMap<string, CompanyBankAccountAuditSnapshot>,
+) {
+  const latest = lifecycle.decision ?? lifecycle.requested ?? lifecycle.events[0];
+  if (!latest?.target.startsWith('company_bank_account:')) return undefined;
+  return accounts.get(latest.target.slice('company_bank_account:'.length));
+}
+
+function companyBankAccountAuditLifecycleItem({
+  account,
+  actionable,
+  lifecycle,
+}: {
+  account?: CompanyBankAccountAuditSnapshot;
+  actionable: boolean;
+  lifecycle: CompanyBankAccountAuditLifecycle;
+}) {
+  const { decision, requested } = lifecycle;
+  const latest = decision ?? requested ?? lifecycle.events[0];
+  if (!latest) return null;
+  const approvalLifecycle = isCompanyBankAccountApprovalLifecycle(lifecycle);
+  const requestMetadata = readPlainRecord(requested?.metadata);
+  const decisionMetadata = readPlainRecord(decision?.metadata);
+  const before = decisionMetadata?.before ?? requestMetadata?.before ?? null;
+  const after = decisionMetadata?.after ?? requestMetadata?.proposed ?? null;
+  const changes = companyBankAccountAuditChanges(before, after);
+  const state = { accountExists: Boolean(account), actionable };
+  return (
+    <li className="company-bank-account-lifecycle-item" key={lifecycle.id}>
+      <div className="company-bank-account-lifecycle-heading">
+        <div>
+          <strong>{account?.name ?? 'Account record unavailable'}</strong>
+          {account ? (
+            <span className="muted">
+              {account.bankName} · {account.accountNumberMasked ?? 'Masked identity unavailable'}
+            </span>
+          ) : null}
+        </div>
+        <StatusBadge tone={auditLifecycleTone(lifecycle, state)}>
+          {auditLifecycleLabel(lifecycle, state)}
+        </StatusBadge>
+      </div>
+      <div className="company-bank-account-audit-lifecycle">
+        {approvalLifecycle && requested ? <span><strong>Requested</strong><DateTimeText value={requested.createdAt} /></span> : null}
+        {approvalLifecycle && decision ? <span><strong>Decided</strong><DateTimeText value={decision.createdAt} /></span> : null}
+        {!approvalLifecycle ? <span><strong>Recorded</strong><DateTimeText value={latest.createdAt} /></span> : null}
+      </div>
+      <div className="company-bank-account-audit-actors">
+        {approvalLifecycle ? (
+          <>
+            <span><strong>Maker</strong>{requested ? adminAuditActorLabel(requested) : 'Not recorded'}</span>
+            <span><strong>Checker</strong>{decision ? adminAuditActorLabel(decision) : actionable ? 'Awaiting decision' : 'No longer actionable'}</span>
+          </>
+        ) : (
+          <span><strong>Operator</strong>{adminAuditActorLabel(latest)}</span>
+        )}
+      </div>
+      <div className="company-bank-account-audit-evidence">
+        <strong>{lifecycle.requestId ? `Request ${shortIdentifier(lifecycle.requestId)}` : 'Request ID unavailable'}</strong>
+        <span className="muted">
+          {typeof decisionMetadata?.decisionReason === 'string'
+            ? decisionMetadata.decisionReason
+            : typeof decisionMetadata?.operatorReason === 'string'
+              ? decisionMetadata.operatorReason
+            : typeof requestMetadata?.operatorReason === 'string'
+              ? requestMetadata.operatorReason
+              : 'Evidence retained in audit log'}
+        </span>
+        {changes.length > 0 ? (
+          <details>
+            <summary>Review {formatWholeNumber(changes.length)} changed fields</summary>
+            <dl className="company-bank-account-change-list">
+              {changes.map((change) => (
+                <div key={change.field}>
+                  <dt>{change.label}</dt>
+                  <dd><span>{change.before}</span><span aria-hidden="true">→</span><strong>{change.after}</strong></dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function auditLifecycleLabel(
+  lifecycle: CompanyBankAccountAuditLifecycle,
+  state: { accountExists: boolean; actionable: boolean },
+) {
+  if (!lifecycle.decision && lifecycle.requested) {
+    if (state.actionable) return 'Awaiting checker';
+    return state.accountExists ? 'No longer actionable' : 'Orphaned request evidence';
+  }
+  if (!lifecycle.decision) return 'Evidence recorded';
   if (lifecycle.decision.action === 'company_bank_account.approval_rejected') return 'Rejected';
   if (
     isCompanyBankAccountApprovalLifecycle(lifecycle) &&
@@ -1221,9 +1528,12 @@ function isCompanyBankAccountApprovalLifecycle(lifecycle: CompanyBankAccountAudi
   return metadata?.decision === 'APPROVE' || metadata?.decision === 'REJECT';
 }
 
-function auditLifecycleTone(lifecycle: CompanyBankAccountAuditLifecycle) {
+function auditLifecycleTone(
+  lifecycle: CompanyBankAccountAuditLifecycle,
+  state: { accountExists: boolean; actionable: boolean },
+) {
   if (lifecycle.decision?.action === 'company_bank_account.approval_rejected') return 'danger' as const;
-  if (!lifecycle.decision && lifecycle.requested) return 'warning' as const;
+  if (!lifecycle.decision && lifecycle.requested) return state.actionable ? 'warning' as const : 'neutral' as const;
   return lifecycle.decision ? 'success' as const : 'info' as const;
 }
 
@@ -1367,42 +1677,74 @@ const companyBankPurposeOptions = [
   { label: 'Adjustments', value: 'ADJUSTMENT' },
 ] as const;
 
-const companyBankPurposeFilterOptions = [
-  { label: 'All purposes', value: '' },
-  ...companyBankPurposeOptions.slice(1),
-];
+const companyBankAccountFilterLabels: Record<keyof CompanyBankAccountListFilters, Record<string, string>> = {
+  currency: { VND: 'VND' },
+  health: { ATTENTION: 'Needs reconciliation', HEALTHY: 'Healthy' },
+  purpose: {
+    ADJUSTMENT: 'Adjustments',
+    COLLECTION: 'Collections',
+    PAYOUT: 'Partner payouts',
+    RECONCILIATION: 'Reconciliation',
+    REFUND: 'Refunds',
+  },
+  status: {
+    ARCHIVED_WITH_HISTORY: 'Archived with history',
+    DISABLED_BY_SYSTEM: 'Disabled by system',
+    NEVER_ACTIVATED: 'Never activated',
+    PENDING_ACTIVATION: 'Pending activation',
+    PENDING_CHANGE: 'Pending change',
+    REJECTED: 'Rejected',
+  },
+  verification: {
+    EVIDENCE_SUBMITTED: 'Evidence submitted',
+    FAILED: 'Failed verification',
+    UNVERIFIED: 'Unverified',
+    VERIFIED: 'Verified',
+  },
+};
 
-const companyBankCurrencyFilterOptions = [
-  { label: 'All currencies', value: '' },
-  { label: 'VND', value: 'VND' },
-] as const;
+const companyBankAccountFilterAllLabels: Record<keyof CompanyBankAccountListFilters, string> = {
+  currency: 'All currencies',
+  health: 'All reconciliation health',
+  purpose: 'All purposes',
+  status: 'All lifecycle states',
+  verification: 'All verification states',
+};
 
-const companyBankVerificationFilterOptions = [
-  { label: 'All verification states', value: '' },
-  { label: 'Unverified', value: 'UNVERIFIED' },
-  { label: 'Evidence submitted', value: 'EVIDENCE_SUBMITTED' },
-  { label: 'Verified', value: 'VERIFIED' },
-  { label: 'Failed verification', value: 'FAILED' },
-] as const;
+function companyBankAccountFilterOptions(
+  key: keyof CompanyBankAccountListFilters,
+  values: readonly string[],
+) {
+  return [
+    { label: companyBankAccountFilterAllLabels[key], value: '' },
+    ...values.map((value) => ({
+      label: companyBankAccountFilterLabels[key][value] ?? value.replaceAll('_', ' ').toLowerCase(),
+      value,
+    })),
+  ];
+}
 
-const companyBankHealthFilterOptions = [
-  { label: 'All reconciliation health', value: '' },
-  { label: 'Healthy', value: 'HEALTHY' },
-  { label: 'Needs reconciliation', value: 'ATTENTION' },
-] as const;
+function emptyCompanyBankAccountFilterContract(view: CompanyBankAccountView): CompanyBankAccountFilterContract {
+  return {
+    currency: ['VND'],
+    health: view === 'remediation' ? [] : ['HEALTHY', 'ATTENTION'],
+    purpose: ['COLLECTION', 'REFUND', 'PAYOUT', 'RECONCILIATION', 'ADJUSTMENT'],
+    status: view === 'pending'
+      ? ['PENDING_ACTIVATION', 'PENDING_CHANGE']
+      : view === 'archived'
+        ? ['NEVER_ACTIVATED', 'REJECTED', 'ARCHIVED_WITH_HISTORY', 'DISABLED_BY_SYSTEM']
+        : [],
+    verification: ['UNVERIFIED', 'EVIDENCE_SUBMITTED', 'VERIFIED', 'FAILED'],
+  };
+}
 
-const companyBankStatusFilterOptions = [
-  { label: 'All lifecycle states', value: '' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Pending activation', value: 'PENDING_ACTIVATION' },
-  { label: 'Pending change', value: 'PENDING_CHANGE' },
-  { label: 'Never activated', value: 'NEVER_ACTIVATED' },
-  { label: 'Rejected', value: 'REJECTED' },
-  { label: 'Archived with history', value: 'ARCHIVED_WITH_HISTORY' },
-  { label: 'Disabled by system', value: 'DISABLED_BY_SYSTEM' },
-  { label: 'Synthetic', value: 'SYNTHETIC' },
-  { label: 'Unknown data scope', value: 'UNKNOWN_DATA_SCOPE' },
-] as const;
+function companyBankAccountFiltersEqual(
+  left: CompanyBankAccountListFilters,
+  right: CompanyBankAccountListFilters,
+) {
+  return (Object.keys(left) as Array<keyof CompanyBankAccountListFilters>)
+    .every((key) => left[key].toUpperCase() === right[key].toUpperCase());
+}
 
 const companyBankDirectionOptions = [
   { label: 'Select direction', value: '' },
@@ -1433,6 +1775,8 @@ function emptyCompanyBankAccountOperationsPage(
   take: number,
 ): CompanyBankAccountOperationsPage {
   return {
+    filterContract: emptyCompanyBankAccountFilterContract(view),
+    filters: { currency: '', health: '', purpose: '', status: '', verification: '' },
     generatedAt: new Date(0).toISOString(),
     items: [],
     pagination: { skip, take, totalCount: 0 },
@@ -1540,12 +1884,13 @@ function CompanyBankAccountPreflightSummary({
               <div key={source.source}>
                 <dt>{companyBankAccountArchiveSourceLabel(source.source)}</dt>
                 <dd>
-                  <StatusBadge tone={source.coverage === 'COMPLETE' ? 'success' : 'warning'}>{source.coverage}</StatusBadge>
+                  <StatusBadge tone={source.coverage === 'COMPLETE' ? 'success' : source.coverage === 'NOT_APPLICABLE' ? 'neutral' : 'warning'}>{source.coverage.replaceAll('_', ' ')}</StatusBadge>
                   <span>
                     {typeof source.totalCount === 'number' && Number.isFinite(source.totalCount)
                       ? `${formatWholeNumber(source.totalCount)} linked`
                       : 'Linked total unavailable'}
                   </span>
+                  {source.reason ? <span className="muted">{source.reason}</span> : null}
                   <span>
                     {typeof source.openCount === 'number' && Number.isFinite(source.openCount)
                       ? `${formatWholeNumber(source.openCount)} open`
@@ -1639,13 +1984,4 @@ function lifecycleTone(value: string) {
   if (value.startsWith('PENDING')) return 'warning' as const;
   if (value === 'REJECTED' || value === 'DISABLED_BY_SYSTEM' || value === 'TEST_FIXTURE') return 'danger' as const;
   return 'neutral' as const;
-}
-
-function companyBankAccountCompactDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Unavailable' : new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(date);
 }

@@ -12,7 +12,9 @@ const AUDIT_CURSOR_HISTORY_LIMIT = 12;
 
 type OperationsPolicyParams = Record<string, string | string[] | undefined>;
 type OperationsPolicyLoadPlanOptions = {
+  readonly allowAdvancedAudit?: boolean;
   readonly allowFullDiagnostics?: boolean;
+  readonly allowPolicyAudit?: boolean;
 };
 
 export type OperationsPolicyLoadPlan = {
@@ -36,11 +38,13 @@ export type OperationsPolicyLoadPlan = {
   readonly shouldRenderDecisionSummary: boolean;
   readonly shouldRenderFullDiagnostics: boolean;
   readonly shouldRenderMatchingPolicy: boolean;
+  readonly shouldRenderMatchingHistory: boolean;
   readonly shouldRenderMatchingReview: boolean;
   readonly shouldRenderMatchingSimulation: boolean;
   readonly shouldRenderMatchingSupply: boolean;
   readonly shouldRenderPolicyOverview: boolean;
   readonly shouldRenderPermissionDenied: boolean;
+  readonly shouldRenderSupplyDiagnostics: boolean;
 };
 
 export function buildOperationsPolicyLoadPlan(
@@ -53,24 +57,32 @@ export function buildOperationsPolicyLoadPlan(
   const auditSource = normalizeOperationsPolicyAuditSource(readSearchParam(params.audit));
   const auditCursor = normalizeOperationsPolicyAuditCursor(readSearchParam(params.cursor));
   const auditCursorHistory = auditCursor ? normalizeOperationsPolicyAuditHistory(params.auditHistory) : [];
-  const requiresDiagnostics =
-    (requestedDetailsMode === 'matching' && requestedMatchingMode !== 'policy') ||
+  const diagnosticsAllowed = options.allowFullDiagnostics !== false;
+  const policyAuditAllowed = options.allowPolicyAudit ?? diagnosticsAllowed;
+  const advancedAuditAllowed = options.allowAdvancedAudit ?? diagnosticsAllowed;
+  const matchingDiagnosticsRequested =
+    requestedDetailsMode === 'matching' && requestedMatchingMode !== 'policy';
+  const policyAuditRequested =
     requestedDetailsMode === 'audit' ||
     (requestedDetailsMode === 'decisions' && requestedDecisionMode === 'evidence');
-  const diagnosticsAllowed = options.allowFullDiagnostics !== false;
-  const diagnosticsDenied = requiresDiagnostics && !diagnosticsAllowed;
+  const diagnosticsDenied =
+    (matchingDiagnosticsRequested && !diagnosticsAllowed) ||
+    (policyAuditRequested && !policyAuditAllowed) ||
+    (policyAuditRequested && auditSource !== 'operator' && !advancedAuditAllowed);
   const detailsMode = requestedDetailsMode;
   const matchingMode = detailsMode === 'matching' ? requestedMatchingMode : 'policy';
   const decisionMode = detailsMode === 'decisions' ? requestedDecisionMode : 'editor';
   const matchingSupply = !diagnosticsDenied && detailsMode === 'matching' && matchingMode === 'supply';
   const matchingSimulation = !diagnosticsDenied && detailsMode === 'matching' && matchingMode === 'simulation';
+  const supplyDiagnostics = matchingSupply && readSearchParam(params.diagnostics) === 'complete';
+  const matchingHistory = matchingSimulation && readSearchParam(params.history) === 'review';
   const decisionEvidence = !diagnosticsDenied && detailsMode === 'decisions' && decisionMode === 'evidence';
   const auditReview = !diagnosticsDenied && (detailsMode === 'audit' || decisionEvidence);
   const policyOverview =
     detailsMode === 'summary' ||
     (detailsMode === 'matching' && matchingMode === 'policy') ||
     (detailsMode === 'decisions' && decisionMode === 'editor');
-  const needsBookingSample = matchingSupply || matchingSimulation;
+  const needsBookingSample = supplyDiagnostics || matchingHistory;
   const editKey = readSearchParam(params.edit).trim();
 
   return {
@@ -84,7 +96,7 @@ export function buildOperationsPolicyLoadPlan(
     decisionMode,
     detailsMode,
     matchingMode,
-    matchingPreviewHref: matchingSimulation
+    matchingPreviewHref: matchingSupply || matchingSimulation
       ? '/admin/operations-policy/matching-preview'
       : null,
     policyAuditHref: auditReview
@@ -93,10 +105,14 @@ export function buildOperationsPolicyLoadPlan(
     policyWriteAuditHealthHref: policyOverview && editKey
       ? '/admin/operational-policy/audit?source=operator&take=1'
       : null,
-    providersHref: matchingSupply
+    providersHref: supplyDiagnostics
       ? `/admin/operations-policy/providers?take=${MATCHING_PROVIDER_SAMPLE_TAKE}`
       : null,
-    settingsHref: diagnosticsDenied || detailsMode === 'audit' ? null : '/admin/operational-policy',
+    settingsHref: diagnosticsDenied || detailsMode === 'audit' ||
+      (matchingSupply && !supplyDiagnostics) ||
+      (matchingSimulation && !matchingHistory)
+      ? null
+      : '/admin/operational-policy',
     shouldRenderAdvancedIndex: false,
     shouldRenderAuditReview: auditReview,
     shouldRenderDecisionEvidence: decisionEvidence,
@@ -104,11 +120,13 @@ export function buildOperationsPolicyLoadPlan(
     shouldRenderDecisionSummary: detailsMode === 'decisions' && decisionMode === 'editor',
     shouldRenderFullDiagnostics: needsBookingSample || auditReview,
     shouldRenderMatchingPolicy: detailsMode === 'matching' && matchingMode === 'policy',
+    shouldRenderMatchingHistory: matchingHistory,
     shouldRenderMatchingReview: detailsMode === 'matching',
     shouldRenderMatchingSimulation: matchingSimulation,
     shouldRenderMatchingSupply: matchingSupply,
     shouldRenderPolicyOverview: policyOverview,
     shouldRenderPermissionDenied: diagnosticsDenied,
+    shouldRenderSupplyDiagnostics: supplyDiagnostics,
   };
 }
 

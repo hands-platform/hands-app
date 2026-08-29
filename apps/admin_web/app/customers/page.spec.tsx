@@ -120,7 +120,8 @@ describe('CustomersPage', () => {
   });
 
   it('sets the customer directory document title', () => {
-    expect(customerPageSource).toContain("title: 'Customers | HANDS Admin'");
+    expect(customerPageSource).toContain("title: 'Customers'");
+    expect(customerPageSource).not.toContain('HANDS Admin');
   });
 
   it('keeps directory-only customers visible without exposing profile links', async () => {

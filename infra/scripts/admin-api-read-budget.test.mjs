@@ -10,6 +10,10 @@ import {
   positiveInteger,
   summarizeSamples,
 } from './admin-api-read-budget.mjs';
+import {
+  buildFinanceOverviewDurationReport,
+  parseFinanceOverviewDurationEvents,
+} from './finance-overview-summary-duration-report.mjs';
 
 test('prefers an explicit or operator-scoped budget token over the legacy maintenance token', () => {
   const env = {
@@ -316,4 +320,72 @@ test('reports latency and payload violations independently', () => {
     ),
     [],
   );
+});
+
+test('parses raw and wrapped Finance Overview duration logs without retaining unrelated lines', () => {
+  const event = {
+    event: 'finance_overview_summary_duration',
+    status: 'ok',
+    range: '30d',
+    period: '2026-07',
+    durationMs: 800,
+    summaryDurationMs: { paymentSummary: 120 },
+    paymentSummaryPhaseDurationMs: { aggregateAndCountMs: 90, ageAndSlaMs: 30, durationMs: 120 },
+  };
+  const events = parseFinanceOverviewDurationEvents(
+    [
+      'unrelated output',
+      JSON.stringify(event),
+      JSON.stringify({ message: JSON.stringify({ ...event, durationMs: 900 }) }),
+      '{"event":"finance_overview_summary_duration","status":"bad"}',
+    ].join('\n'),
+  );
+
+  assert.equal(events.length, 2);
+  assert.deepEqual(events.map((item) => item.durationMs), [800, 900]);
+  assert.deepEqual(events[0]?.paymentSummaryPhaseDurationMs, {
+    aggregateAndCountMs: 90,
+    ageAndSlaMs: 30,
+    durationMs: 120,
+  });
+});
+
+test('reports scope-specific Finance Overview p50 and p95 only after enough successful samples', () => {
+  const events = [
+    ...Array.from({ length: 20 }, (_, index) => ({
+      event: 'finance_overview_summary_duration',
+      status: 'ok',
+      range: '30d',
+      period: '2026-07',
+      durationMs: 100 + index,
+      summaryDurationMs: { slowSummary: 50 + index, fastSummary: 20 },
+      paymentSummaryPhaseDurationMs: {
+        aggregateAndCountMs: 40 + index,
+        ageAndSlaMs: 10,
+        durationMs: 50 + index,
+      },
+    })),
+    {
+      event: 'finance_overview_summary_duration',
+      status: 'ok',
+      range: 'today',
+      period: '2026-08',
+      durationMs: 80,
+      summaryDurationMs: { slowSummary: 40 },
+    },
+  ];
+
+  const report = buildFinanceOverviewDurationReport(events);
+  const thirtyDay = report.scopes.find((scope) => scope.range === '30d');
+  const today = report.scopes.find((scope) => scope.range === 'today');
+
+  assert.equal(thirtyDay?.decision, 'READY_FOR_PERFORMANCE_REVIEW');
+  assert.deepEqual(thirtyDay?.durationMs, { samples: 20, p50Ms: 109, p95Ms: 118, maxMs: 119 });
+  assert.deepEqual(thirtyDay?.summaries.map((summary) => summary.name), ['slowSummary', 'fastSummary']);
+  assert.deepEqual(thirtyDay?.paymentSummaryPhases.map((phase) => phase.name), [
+    'durationMs',
+    'aggregateAndCountMs',
+    'ageAndSlaMs',
+  ]);
+  assert.equal(today?.decision, 'INSUFFICIENT_SAMPLES');
 });

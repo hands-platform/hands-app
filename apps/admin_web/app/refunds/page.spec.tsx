@@ -9,7 +9,7 @@ import type {
   AdminRefundQueueMeta,
 } from '../../lib/admin-api';
 import { adminGetResult } from '../../lib/admin-api';
-import RefundsPage from './page';
+import RefundsPage, { metadata } from './page';
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(() => {
@@ -74,6 +74,48 @@ describe('RefundsPage', () => {
     );
   });
 
+  it('connects the Other review metric, queue option, and API predicate', async () => {
+    mockPageData(queueMeta({ reviewRequiredCount: 2, selectedTotal: 1 }), [refundRow()]);
+
+    const markup = renderToStaticMarkup(
+      await RefundsPage({ searchParams: Promise.resolve({ range: 'all', review: 'other' }) }),
+    );
+
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/refunds/queue-meta?range=all&review=other',
+      expect.any(Object),
+    );
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/refunds?range=all&review=other&take=10&sort=oldest',
+      [],
+    );
+    expect(markup).toContain('href="/refunds?range=all&amp;review=other&amp;sort=oldest"');
+    expect(markup).toContain('<option value="other" selected="">Other review</option>');
+  });
+
+  it('clears only customer scope, preserves the other filters, and returns to page 1', async () => {
+    mockPageData(queueMeta({ selectedTotal: 60 }), [refundRow()]);
+
+    const markup = renderToStaticMarkup(await RefundsPage({
+      searchParams: Promise.resolve({
+        age: '3-7d',
+        customerProfileId: 'customer-profile-123456789',
+        page: '2',
+        pageSize: '25',
+        q: 'Customer One',
+        range: '30d',
+        review: 'open',
+        sla: 'overdue',
+        sort: 'newest',
+      }),
+    }));
+
+    expect(markup).toContain('Customer scope · customer');
+    expect(markup).toContain(
+      'href="/refunds?range=30d&amp;review=open&amp;sort=newest&amp;age=3-7d&amp;sla=overdue&amp;q=Customer+One&amp;pageSize=25">Clear customer scope</a>',
+    );
+  });
+
   it('renders server-owned workstream fields and direct payment detail links', async () => {
     mockPageData(queueMeta({ selectedTotal: 1, requestedCount: 1 }), [refundRow()]);
 
@@ -107,6 +149,30 @@ describe('RefundsPage', () => {
     expect(markup).toContain('Source: Created while closing an unmatched booking');
     expect(markup).toContain('Source: Legacy request · source not recorded');
     expect(markup).toContain('Source: Other source · Partner support import (PARTNER_SUPPORT_IMPORT)');
+  });
+
+  it('separates required readiness, not-required evidence, action blockers, and historical gaps', async () => {
+    mockPageData(queueMeta({ selectedTotal: 4 }), [
+      { ...refundRow(), id: 'refund-cash', payment: { ...refundRow().payment!, method: 'CASH' } },
+      { ...refundRow(), id: 'refund-legacy', metadata: {} },
+      {
+        ...refundRow(),
+        id: 'refund-gateway-missing',
+        payment: { ...refundRow().payment!, callbackAttempts: [], providerRef: null },
+      },
+      { ...refundRow(), id: 'refund-mismatch', stateMismatchReason: 'Payment already refunded.' },
+    ]);
+
+    const markup = renderToStaticMarkup(
+      await RefundsPage({ searchParams: Promise.resolve({ range: 'all', review: 'open' }) }),
+    );
+
+    expect(markup).toContain('4/4 required facts available · 1 not required');
+    expect(markup).toContain('No action blockers · Historical evidence complete');
+    expect(markup).toContain('4/5 required facts available');
+    expect(markup).toContain('No action blockers · 1 historical evidence item unavailable');
+    expect(markup).toContain('1 action blocker · Historical evidence complete');
+    expect(markup).not.toContain('No control gaps');
   });
 
   it('distinguishes an empty today view from the all-date open backlog', async () => {
@@ -178,9 +244,7 @@ describe('RefundsPage', () => {
     const markup = renderToStaticMarkup(await RefundsPage({
       searchParams: Promise.resolve({ review: 'state-mismatch' }),
     }));
-    const source = readFileSync('app/refunds/page.tsx', 'utf8');
-
-    expect(source).toContain("title: 'Refunds | HANDS Admin'");
+    expect(metadata).toEqual({ title: 'Refunds' });
     expect(markup).toContain('Review state mismatch');
     expect(markup).toContain('requestId=refund-1');
     expect(markup).not.toContain('/finance-closeout');

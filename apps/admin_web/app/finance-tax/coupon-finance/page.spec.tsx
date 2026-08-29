@@ -25,7 +25,10 @@ describe('CouponFinancePage Vuexy links', () => {
   it('keeps action, period totals, filters, and records visible on one page', () => {
     expect(source).toContain('const couponRangeScope = dateRangeLabel(filters.range);');
     expect(source).toContain('<FinanceListCommandBoard ariaLabel="Coupon finance command board">');
-    expect(source).toContain('label="Coupon review flags"');
+    expect(source).toContain('label="Needs review"');
+    expect(source).toContain('label="All coupon records"');
+    expect(source).toContain('compact');
+    expect(source).toContain('title="No coupon activity in this scope"');
     expect(source).toContain('title="Current filtered totals"');
     expect(source).toContain('id="coupon-finance-records"');
     expect(source).toContain('COUPON_FINANCE_REVIEW_LINKS');
@@ -33,5 +36,9 @@ describe('CouponFinancePage Vuexy links', () => {
     expect(source).toContain('summary.reversedCompanyCouponExpense');
     expect(source).not.toContain('metrics={[');
     expect(source).not.toContain('Coupon discount amount applied to customer payment in the active bounded queue.');
+    expect(source).not.toContain('customerProfile?.user?.phone');
+    expect(source).not.toContain('providerProfile?.user?.phone');
+    expect(source).not.toContain('No customer phone');
+    expect(source).not.toContain('No partner phone');
   });
 });

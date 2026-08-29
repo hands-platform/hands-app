@@ -7,6 +7,7 @@ import { AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminChatMessage } from '../../../lib/admin-api';
+import { BookingDetailChatHashFocus } from './booking-detail-chat-hash-focus';
 
 export type BookingDetailChatTranscriptSectionProps = {
   readonly messages: readonly AdminChatMessage[];
@@ -30,6 +31,7 @@ export function BookingDetailChatTranscriptSection({
       id="booking-chat-history"
       title="Customer and Partner chat history"
     >
+      <BookingDetailChatHashFocus />
       <AdminChatWindow
         avatarLabel="HANDS"
         emptyMessage="No retained chat yet."

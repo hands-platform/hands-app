@@ -5,6 +5,7 @@ import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../../lib/operations-po
 import type { PartnerActivityRecord } from './partner-detail-activity-model';
 import type { PartnerBookingArchiveBooking, PartnerBookingArchiveRecord } from './partner-detail-booking-model';
 import { amountValue, dateValue, formatCurrency, formatDate, locationAgeLabel, locationAgeMinutes, shortRecordId } from './partner-detail-format';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 const ACTIVE_BOOKING_STATUSES: readonly string[] = ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'];
 const STAFF_ACTIVITY_TYPES: readonly string[] = ['VERIFY', 'DOCUMENT', 'BANK', 'TAX', 'AGREEMENT', 'REPORT', 'SANCTION', 'PROFILE', 'OPS'];
@@ -41,7 +42,7 @@ type PartnerOperationsDigestProvider = {
   readonly documents?: readonly { readonly type?: string | null; readonly status?: string | null }[] | null;
   readonly earnings?: readonly PartnerOperationsDigestEarning[] | null;
   readonly gender?: string | null;
-  readonly id?: string;
+  readonly id: string;
   readonly kyc?: { readonly reviewedAt?: string | null; readonly status?: string | null; readonly submittedAt?: string | null } | null;
   readonly legalName?: string | null;
   readonly locationSnapshots?: readonly { readonly recordedAt?: string | null }[] | null;
@@ -93,7 +94,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       lane: 'Identity',
       status: provider.legalName?.trim() ? 'Profile linked' : 'Profile incomplete',
       detail: `${marketplaceDisplayText(provider.legalName ?? 'No legal name')} / ${provider.user?.phone ?? 'No phone'} / ${provider.city ?? 'No city'}`,
-      href: '#partner-master-facts',
+      href: buildPartnerDetailTargetHref(provider.id, 'master-facts'),
       latestAt: optionalDate(provider.user?.updatedAt ?? provider.user?.createdAt),
       tone: provider.legalName?.trim() ? 'pill-success' : 'pill-warn',
       evidence: [provider.activityNickname ?? provider.displayName ?? 'No activity name', provider.gender ?? 'No gender', formatDate(provider.dateOfBirth)],
@@ -102,7 +103,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       lane: 'Activity gate',
       status: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation clear' : 'Marketplace participation on hold',
       detail: bookingAcceptance.primaryReason,
-      href: '#final-booking-gate',
+      href: buildPartnerDetailTargetHref(provider.id, 'booking-gate'),
       latestAt: latestBooking?.createdAt,
       tone: bookingAcceptance.canJoinMarketplace ? 'pill-success' : 'pill-warn',
       evidence: [`${providerServicePricing.readyCount} bookable option(s)`, cashDebt > 0 ? `${formatCurrency(cashDebt)} cash fee debt` : 'Cash fee clear', provider.blockedAt ? 'Account held' : 'Account open'],
@@ -111,7 +112,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       lane: 'Bookings',
       status: `${bookingArchive.length} total`,
       detail: latestBooking ? `Latest ${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestBooking)}.` : 'No preferred, selected, or marketplace participation booking is loaded.',
-      href: '#booking-chat-records',
+      href: buildPartnerDetailTargetHref(provider.id, 'booking-journey'),
       latestAt: latestBooking?.createdAt,
       tone: activeBookings.length ? 'pill-info' : completedBookings.length ? 'pill-success' : 'pill-neutral',
       evidence: [`${activeBookings.length} active`, `${completedBookings.length} completed`, latestBooking ? shortRecordId(latestBooking.id) : 'No latest booking'],
@@ -120,7 +121,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       lane: 'Chat archive',
       status: `${chatRooms.length} room(s)`,
       detail: `${chatMessages} retained message(s). Admin keeps chat history after mobile closeout.`,
-      href: '#booking-chat-records',
+      href: buildPartnerDetailTargetHref(provider.id, 'booking-evidence'),
       latestAt: chatRooms[0]?.booking.chatRoom?.messages?.[0]?.createdAt ?? chatRooms[0]?.booking.createdAt,
       tone: chatRooms.length ? 'pill-success' : 'pill-neutral',
       evidence: ['Retained for admin', `${chatMessages} message(s)`, 'Customer coordination evidence'],
@@ -129,7 +130,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       lane: 'KYC and files',
       status: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
       detail: missingKycDocs.length > 0 ? `Missing approved file(s): ${missingKycDocs.map(providerDocumentLabel).join(', ')}.` : 'Required identity files are approved or ready for final decision.',
-      href: '#kyc',
+      href: buildPartnerDetailTargetHref(provider.id, 'documents'),
       latestAt: optionalDate(provider.kyc?.reviewedAt ?? provider.kyc?.submittedAt ?? provider.user?.createdAt),
       tone: missingKycDocs.length ? 'pill-warn' : 'pill-success',
       evidence: [`${provider.documents?.length ?? 0} document row(s)`, `${provider.verification?.files?.length ?? 0} verification file(s)`, `Profile ${provider.verification?.status ?? 'DRAFT'}`],
@@ -140,7 +141,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       detail: latestLocationSaved
         ? `Latest Partner location saved for dispatch checks. Policy freshness ${dispatchPolicy.locationFreshnessMinutes}m.`
         : 'No latest location pin is saved.',
-      href: '#location',
+      href: buildPartnerDetailTargetHref(provider.id, 'location'),
       latestAt: optionalDate(provider.currentLocationUpdatedAt ?? provider.locationSnapshots?.[0]?.recordedAt),
       tone: locationFresh ? 'pill-success' : 'pill-warn',
       evidence: [`${provider.locationSnapshots?.length ?? 0} record(s)`, `${Math.round(dispatchPolicy.backupRadiusMeters / 1000)}km marketplace radius`, locationFresh ? 'Fresh enough' : 'Refresh needed'],
@@ -149,7 +150,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       lane: 'App reachability',
       status: enabledPushCount > 0 ? 'Push-ready' : 'Push missing',
       detail: latestAccessAt ? `Last app access ${formatDate(latestAccessAt)}.` : 'No app access row is loaded for this partner.',
-      href: '#app-activity',
+      href: buildPartnerDetailTargetHref(provider.id, 'app-activity'),
       latestAt: latestAccessAt ?? undefined,
       tone: enabledPushCount > 0 ? 'pill-success' : 'pill-warn',
       evidence: [`${provider.devices?.length ?? 0} device row(s)`, `${provider.sessions?.length ?? 0} session row(s)`, `${enabledPushCount} enabled push device(s)`],
@@ -158,7 +159,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       lane: 'Staff trail',
       status: `${provider.auditLogs?.length ?? 0} audit row(s)`,
       detail: latestStaffRecord ? `${latestStaffRecord.title} / ${latestStaffRecord.detail}` : 'No staff record appears in the selected filter.',
-      href: '#partner-operator-notes',
+      href: buildPartnerDetailTargetHref(provider.id, 'operator-notes'),
       latestAt: latestStaffRecord?.at,
       tone: latestStaffRecord ? 'pill-info' : 'pill-neutral',
       evidence: [`${provider.verificationLogs?.length ?? 0} verification log(s)`, `${provider.reports?.length ?? 0} report row(s)`, `${provider.sanctions?.length ?? 0} account control row(s)`],

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional, UnauthorizedException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Socket } from 'socket.io';
+import { adminAuditCanonicalCreateData } from '../admin/admin-audit-event-registry';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminSocketRevocation, RedisStateService } from '../redis/redis-state.service';
 import { AuthenticatedUser } from './auth.types';
@@ -131,15 +132,16 @@ export class SocketAuthService implements OnModuleInit, OnModuleDestroy {
     if (!this.prisma || !user.roles.includes(Role.ADMIN)) return;
     try {
       await this.prisma.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId: user.id,
           action: 'admin_operator.realtime.authorization_denied',
+          source: 'admin_realtime_authorization',
           target,
           metadata: {
             reason,
             sessionId: user.sessionId ?? null,
           },
-        },
+        }),
       });
     } catch {
       this.logger.warn('Could not record Admin realtime authorization denial');

@@ -78,7 +78,7 @@ export class AdminCustomerRoutes {
     @Query('includeDiagnostics') includeDiagnostics?: string,
   ) {
     return this.admin.getCustomerDetail(customerProfileId, {
-      includeDiagnostics: includeDiagnostics !== 'false',
+      includeDiagnostics: includeDiagnostics === 'true',
     });
   }
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import type { AdminPushCampaign, AdminPushCampaignSummary } from '../../../lib/admin-api';
 import { adminGetResult } from '../../../lib/admin-api';
@@ -9,6 +10,7 @@ import {
 } from '../../../components/admin-data-table';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminDisclosure } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -23,6 +25,7 @@ import {
   buildPushCampaignSummaryApiHref,
   normalizePushCampaignDateRange,
   normalizePushCampaignPage,
+  PUSH_CAMPAIGN_MAX_PAGE,
   pushCampaignDateRangeLabel,
   pushCampaignDateRangeLinks,
   pushCampaignStatusView,
@@ -42,6 +45,9 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const params = (await searchParams) ?? {};
   const campaignRange = normalizePushCampaignDateRange(readParam(params.campaignRange));
   const campaignPage = normalizePushCampaignPage(readParam(params.campaignPage));
+  if (campaignPage > PUSH_CAMPAIGN_MAX_PAGE) {
+    redirect(buildPushCampaignPageHref(PUSH_CAMPAIGN_MAX_PAGE, params));
+  }
   const browserFixture = pushSendBrowserFixture(readParam(params.fixture));
   const [campaignResult, summaryResult] = browserFixture
     ? [
@@ -55,14 +61,17 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const campaigns = campaignResult.data;
   const summary = summaryResult.data;
   const totalCampaigns = summary?.totalCount ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCampaigns / 20));
+  const totalPages = Math.min(PUSH_CAMPAIGN_MAX_PAGE, Math.max(1, Math.ceil(totalCampaigns / 20)));
+  if (summaryResult.ok && campaignPage > totalPages) {
+    redirect(buildPushCampaignPageHref(totalPages, params));
+  }
   const visibleFrom = campaigns.length ? (campaignPage - 1) * 20 + 1 : 0;
   const visibleTo = campaigns.length ? visibleFrom + campaigns.length - 1 : 0;
 
   return (
     <AdminPageTemplate
       contentClassName="notification-push-send-page"
-      description="Server-verified manual campaigns. Preview, confirm, queue, then inspect Partner delivery evidence."
+      description="Server-verified manual campaigns. Preview, confirm, queue, then inspect recipient delivery evidence."
       title="Push Send"
     >
       <PushRiskStrip summary={summary} summaryOk={summaryResult.ok} />
@@ -106,6 +115,11 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             </AdminDataTable>
           </AdminTableScroll>
         )}
+        {campaignPage === totalPages && totalCampaigns > visibleTo ? (
+          <AdminInlineNotice tone="info">
+            Older campaigns are beyond this browsing boundary. Narrow the history range to access them.
+          </AdminInlineNotice>
+        ) : null}
         <AdminTablePaginationFooter
           activePage={campaignPage}
           ariaLabel="Push campaign pagination"

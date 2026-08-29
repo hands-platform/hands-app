@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 
+import { formatDateTime } from '../../../lib/admin-format';
 import { PaymentDetailActionMapSection } from './payment-detail-action-map-section';
 
 describe('PaymentDetailActionMapSection', () => {
@@ -19,6 +20,7 @@ describe('PaymentDetailActionMapSection', () => {
         state: 'VERIFIED',
         verifiedAt: '2026-08-09T02:00:00.000Z',
       },
+      evaluatedAt: '2026-08-09T03:00:00.000Z',
       paymentStatus: 'AUTHORIZED',
     });
     const rendered = normalizedText(section);
@@ -28,6 +30,8 @@ describe('PaymentDetailActionMapSection', () => {
     expect(rendered).toContain('Current state AUTHORIZED Booking: COMPLETED');
     expect(rendered).toContain('Payment evidence Verified callback Signature and amount match.');
     expect(rendered).toContain('Policy check admin-payment-actions-v1');
+    expect(rendered).toContain(`Evidence verified ${formatDateTime('2026-08-09T02:00:00.000Z')}`);
+    expect(rendered).toContain(`Policy evaluated ${formatDateTime('2026-08-09T03:00:00.000Z')}`);
     expect(rendered).toContain('Confirm capture against current evidence.');
   });
 
@@ -40,6 +44,7 @@ describe('PaymentDetailActionMapSection', () => {
       confirmation: null,
       decisions: [],
       evidence: undefined,
+      evaluatedAt: null,
       paymentStatus: 'AUTHORIZED',
     });
     const rendered = normalizedText(section);
@@ -47,6 +52,8 @@ describe('PaymentDetailActionMapSection', () => {
     expect(rendered).toContain('No executable action');
     expect(rendered).toContain('No action decision returned');
     expect(rendered).toContain('Do not execute a payment action');
+    expect(rendered).toContain('Evidence verified Not recorded');
+    expect(rendered).toContain('Policy evaluated Not recorded');
     expect(rendered).not.toContain('No urgent block');
   });
 

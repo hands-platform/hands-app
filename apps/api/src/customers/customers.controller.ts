@@ -12,6 +12,7 @@ import {
   SetCustomerFavoriteProviderDto,
 } from './customers.dto';
 import { CustomersService } from './customers.service';
+import { assertCouponLaunchEnabled } from '../common/launch-features';
 
 @Controller('customer')
 export class CustomersController {
@@ -21,6 +22,7 @@ export class CustomersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)
   previewCoupon(@Body() body: PreviewCouponDto) {
+    assertCouponLaunchEnabled();
     return this.customers.previewCoupon(body);
   }
 

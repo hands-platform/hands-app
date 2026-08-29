@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 import { AdminOperatorPermissionCategory, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
+import { adminAuditCanonicalCreateData } from './admin-audit-event-registry';
 
 type RequiredAdminCategory = AdminOperatorPermissionCategory;
 
@@ -9,11 +10,21 @@ type AdminRequest = {
   body?: Record<string, unknown>;
   method?: string;
   originalUrl?: string;
+  query?: Record<string, unknown>;
   url?: string;
   user?: AuthenticatedUser;
 };
 
 const ADMIN_RECENT_REAUTHENTICATION_WINDOW_MS = 10 * 60_000;
+
+export const FINANCE_MONEY_MOVEMENT_PERMISSION_CATEGORIES = [
+  AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+  AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
+  AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+  AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+  AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+  AdminOperatorPermissionCategory.FINANCE_TAX,
+] as const;
 
 const RECENT_REAUTHENTICATION_ROUTES = [
   /^POST \/admin\/bank-reconciliation\/[^/]+\/ignore$/u,
@@ -23,6 +34,10 @@ const RECENT_REAUTHENTICATION_ROUTES = [
   /^POST \/admin\/company-bank-accounts\/[^/]+\/approval-decision$/u,
   /^POST \/admin\/payment-fee-policies\/[^/]+\/(?:approval-reject|activate)$/u,
   /^POST \/admin\/payments\/[^/]+\/(?:capture|refund|release)$/u,
+  /^POST \/admin\/notifications\/push-campaigns$/u,
+  /^PATCH \/admin\/operational-policy\/[^/]+$/u,
+  /^POST \/admin\/(?:providers|partners)\/[^/]+\/sanctions$/u,
+  /^POST \/admin\/(?:provider-sanctions|partner-sanctions)\/[^/]+\/lift$/u,
   /^POST \/admin\/provider-wallet\/deposits$/u,
   /^POST \/admin\/provider-wallet\/deposit-requests\/[^/]+\/(?:approve|reject)$/u,
   /^POST \/admin\/provider-wallet\/withdrawal-requests\/[^/]+\/reversal$/u,
@@ -52,6 +67,13 @@ const CATEGORY_RULES: Array<{
   {
     category: AdminOperatorPermissionCategory.FINANCE_TAX,
     patterns: [/^\/admin\/(?:providers|partners)\/[^/]+\/tax-profile(?:\/|$)/u],
+    prefixes: [],
+  },
+  {
+    category: AdminOperatorPermissionCategory.FINANCE_TAX,
+    patterns: [
+      /^\/admin\/referrals\/rewards\/[^/]+\/tax-review-(?:approve|hold|reject)$/u,
+    ],
     prefixes: [],
   },
   {
@@ -182,6 +204,10 @@ const CATEGORY_RULES: Array<{
     category: AdminOperatorPermissionCategory.NOTIFICATIONS_RETRY,
     patterns: [/^\/admin\/notifications\/[^/]+\/retry$/u],
     prefixes: [],
+  },
+  {
+    category: AdminOperatorPermissionCategory.NOTIFICATIONS_DELIVERY,
+    prefixes: ['/admin/notification-delivery-incidents'],
   },
   {
     category: AdminOperatorPermissionCategory.DEVELOPER_SYSTEM,
@@ -316,12 +342,40 @@ export class AdminOperatorCategoryGuard implements CanActivate {
       throw new ForbiddenException('Admin operator access has been revoked');
     }
     const categories = storedAccess.adminOperatorPermission?.categories ?? [];
+    const missingCategory = storedAccess.roles.includes(Role.MASTER_ADMIN)
+      ? null
+      : adminOperatorRequiredCategoriesForRequest(method, path).find(
+          (category) => !adminOperatorHasRequiredCategory(categories, category),
+        ) ?? null;
+    if (missingCategory) {
+      await this.recordAuthorizationDenial(user, method, path, 'CATEGORY_MISSING', missingCategory);
+      throw new ForbiddenException(`Admin operator lacks ${missingCategory} access`);
+    }
+
+    const customerDiagnosticsRequested =
+      method === 'GET' &&
+      path !== '/admin/customers/summary' &&
+      /^\/admin\/customers\/[^/]+$/u.test(path) &&
+      request.query?.includeDiagnostics === 'true';
     if (
+      customerDiagnosticsRequested &&
       !storedAccess.roles.includes(Role.MASTER_ADMIN) &&
-      !adminOperatorHasRequiredCategory(categories, requiredCategory)
+      !adminOperatorHasRequiredCategory(
+        categories,
+        AdminOperatorPermissionCategory.DEVELOPER_APP_SESSIONS_DIAGNOSTICS,
+      )
     ) {
-      await this.recordAuthorizationDenial(user, method, path, 'CATEGORY_MISSING', requiredCategory);
-      throw new ForbiddenException(`Admin operator lacks ${requiredCategory} access`);
+      await this.recordAuthorizationDenial(
+        user,
+        method,
+        path,
+        'CATEGORY_MISSING',
+        AdminOperatorPermissionCategory.DEVELOPER_APP_SESSIONS_DIAGNOSTICS,
+      );
+      throw new ForbiddenException({
+        code: 'ADMIN_OPERATOR_ACCESS_DENIED',
+        message: 'Admin operator access denied',
+      });
     }
 
     if (requiresRecentAdminReauthentication(method, path, request.body)) {
@@ -362,7 +416,7 @@ export class AdminOperatorCategoryGuard implements CanActivate {
     ) {
       throw new ForbiddenException({
         code: 'RECENT_REAUTH_REQUIRED',
-        message: 'Recent reauthentication is required for this finance action',
+        message: 'Recent reauthentication is required for this high-risk Admin action',
       });
     }
   }
@@ -376,9 +430,10 @@ export class AdminOperatorCategoryGuard implements CanActivate {
   ) {
     try {
       await this.prisma.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId: user.id,
           action: 'admin_operator.authorization.denied',
+          source: 'admin_permission_guard',
           target: `admin_route:${method}:${path}`,
           metadata: {
             authProvider: user.authProvider ?? null,
@@ -386,7 +441,7 @@ export class AdminOperatorCategoryGuard implements CanActivate {
             requiredCategory: requiredCategory ?? null,
             sessionId: user.sessionId ?? null,
           },
-        },
+        }),
       });
     } catch {
       // Authorization remains fail closed even if audit persistence is temporarily unavailable.
@@ -402,6 +457,9 @@ export function requiresRecentAdminReauthentication(
   const route = `${method.toUpperCase()} ${normalizeAdminPath(path)}`;
   if (RECENT_REAUTHENTICATION_ROUTES.some((pattern) => pattern.test(route))) {
     return true;
+  }
+  if (/^PATCH \/admin\/services\/groups\/[^/]+$/u.test(route)) {
+    return body?.intent === 'PUBLISH' || body?.intent === 'HIDE' || body?.intent === 'ARCHIVE';
   }
   return (
     (/^PATCH \/admin\/monthly-tax-closings\/[^/]+\/status$/u.test(route) ||
@@ -433,6 +491,20 @@ export function adminOperatorCategoryForPath(path: string): RequiredAdminCategor
 
 function adminOperatorCategoryForRequest(method: string, path: string): RequiredAdminCategory | null {
   const normalizedPath = normalizeAdminPath(path);
+  if (
+    method === 'GET' &&
+    (normalizedPath === '/admin/customers' || normalizedPath === '/admin/customers/summary')
+  ) {
+    return AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY;
+  }
+  if (
+    normalizedPath === '/admin/notification-delivery-incidents' ||
+    normalizedPath.startsWith('/admin/notification-delivery-incidents/')
+  ) {
+    return method === 'GET'
+      ? AdminOperatorPermissionCategory.NOTIFICATIONS_DELIVERY
+      : AdminOperatorPermissionCategory.NOTIFICATIONS_INCIDENTS;
+  }
   if (method !== 'GET' && normalizedPath === '/admin/marketing/spend-daily') {
     return AdminOperatorPermissionCategory.GROWTH_MARKETING_SPEND;
   }
@@ -451,7 +523,8 @@ function adminOperatorCategoryForRequest(method: string, path: string): Required
     if (
       normalizedPath.endsWith('/publish') ||
       normalizedPath.endsWith('/rollback') ||
-      normalizedPath.endsWith('/take-offline')
+      normalizedPath.endsWith('/take-offline') ||
+      normalizedPath.endsWith('/cache-invalidation')
     ) {
       return AdminOperatorPermissionCategory.CONTENT_PUBLISH;
     }
@@ -461,13 +534,27 @@ function adminOperatorCategoryForRequest(method: string, path: string): Required
     method !== 'GET' &&
     (normalizedPath.startsWith('/admin/payment-fee-policies') ||
       normalizedPath === '/admin/company-bank-accounts' ||
-      /^\/admin\/company-bank-accounts\/[^/]+$/u.test(normalizedPath)) &&
+      /^\/admin\/company-bank-accounts\/[^/]+(?:\/evidence-review-requests)?$/u.test(normalizedPath)) &&
     !normalizedPath.endsWith('/approval-decision')
   ) {
     return AdminOperatorPermissionCategory.SYSTEM_POLICY;
   }
 
   return adminOperatorCategoryForPath(normalizedPath);
+}
+
+function adminOperatorRequiredCategoriesForRequest(method: string, path: string) {
+  const primary = adminOperatorCategoryForRequest(method, path);
+  if (!primary) return [];
+  const normalizedPath = normalizeAdminPath(path);
+  const companyBankAccountMakerWrite =
+    method !== 'GET' &&
+    (normalizedPath === '/admin/company-bank-accounts' ||
+      /^\/admin\/company-bank-accounts\/[^/]+(?:\/evidence-review-requests)?$/u.test(normalizedPath)) &&
+    !normalizedPath.endsWith('/approval-decision');
+  return companyBankAccountMakerWrite
+    ? [primary, AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION]
+    : [primary];
 }
 
 export function isAllowlistedAdminWrite(method: string, path: string) {
@@ -482,8 +569,11 @@ export function adminOperatorHasRequiredCategory(
   categories: readonly AdminOperatorPermissionCategory[],
   requiredCategory: RequiredAdminCategory,
 ) {
-  if (requiredCategory === AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH) {
-    return categories.includes(AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH);
+  if (
+    requiredCategory === AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH ||
+    requiredCategory === AdminOperatorPermissionCategory.NOTIFICATIONS_INCIDENTS
+  ) {
+    return categories.includes(requiredCategory);
   }
   const parent = PARENT_CATEGORIES[requiredCategory];
   const legacySystemSetup =

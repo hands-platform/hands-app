@@ -21,6 +21,18 @@ export function adminNotificationDataScopeSql(
   return production;
 }
 
+export function adminNotificationDataScopeValueSql(
+  notification = Prisma.sql`notification`,
+) {
+  const synthetic = adminNotificationSyntheticDataSql(notification);
+  return Prisma.sql`CASE
+    WHEN ${synthetic} THEN 'synthetic'
+    WHEN LOWER(COALESCE(${notification}.data->>'dataScope', '')) = 'production'
+      THEN 'production'
+    ELSE 'unknown'
+  END`;
+}
+
 export function adminNotificationDataScopeWhere(
   value: string | undefined,
 ): Prisma.NotificationWhereInput {

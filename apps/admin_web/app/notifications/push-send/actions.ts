@@ -43,6 +43,7 @@ export type PushConfirmActionState = {
   readonly campaign?: AdminPushCampaign & { replayed?: boolean };
   readonly error?: string;
   readonly fieldErrors?: Readonly<Record<string, string>>;
+  readonly requiresReauthentication?: boolean;
 };
 
 export const INITIAL_PUSH_ACCOUNT_SEARCH_STATE: PushAccountSearchState = { status: 'idle' };
@@ -159,7 +160,11 @@ export async function confirmPushCampaign(
     revalidatePath('/audit-log');
     return { status: 'success', campaign };
   } catch (error) {
-    return { status: 'error', error: pushActionError(error, 'confirm') };
+    return {
+      status: 'error',
+      error: pushActionError(error, 'confirm'),
+      requiresReauthentication: isRecentReauthenticationRequired(error),
+    };
   }
 }
 
@@ -167,6 +172,12 @@ function pushActionError(error: unknown, operation: 'preview' | 'confirm') {
   if (error instanceof AdminApiRequestError) {
     if (error.status === 400) return 'The audience, copy, language, or destination is invalid. Draft preserved.';
     if (error.status === 401) return 'Your Admin Web session expired. Sign in again; draft preserved.';
+    if (error.status === 403 && apiErrorCode(error.payload) === 'MFA_ENROLLMENT_REQUIRED') {
+      return 'Complete Admin MFA enrollment before using Push Send. Draft preserved.';
+    }
+    if (error.status === 403 && isRecentReauthenticationRequired(error)) {
+      return 'Confirm your password and MFA below, then retry with this same preview and draft.';
+    }
     if (error.status === 403) return 'You do not have Push Send permission.';
     if (error.status === 404) return operation === 'preview'
       ? 'The selected account no longer exists. Choose another account.'
@@ -188,6 +199,12 @@ function pushActionError(error: unknown, operation: 'preview' | 'confirm') {
     : 'Preview could not be created. Draft preserved.';
 }
 
+function isRecentReauthenticationRequired(error: unknown) {
+  return error instanceof AdminApiRequestError &&
+    error.status === 403 &&
+    apiErrorCode(error.payload) === 'RECENT_REAUTH_REQUIRED';
+}
+
 function searchError(status: number | null) {
   if (status === 401) return 'Your Admin Web session expired.';
   if (status === 403) return 'You do not have Push Send permission.';
@@ -207,6 +224,12 @@ function apiErrorMessage(payload: unknown) {
   const message = (payload as { message?: unknown }).message;
   if (Array.isArray(message)) return message.filter((item): item is string => typeof item === 'string').join(' ');
   return typeof message === 'string' ? message : '';
+}
+
+function apiErrorCode(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return '';
+  const code = (payload as { code?: unknown }).code;
+  return typeof code === 'string' ? code : '';
 }
 
 function maskPhone(value?: string | null) {

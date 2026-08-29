@@ -21,6 +21,7 @@ type PaymentDetailActionMapSectionProps = {
   readonly confirmation: ReactNode;
   readonly decisions: readonly AdminPaymentActionDecision[];
   readonly evidence?: AdminPaymentEvidenceSummary;
+  readonly evaluatedAt?: string | null;
   readonly paymentStatus: string;
 };
 
@@ -33,6 +34,7 @@ export function PaymentDetailActionMapSection({
   confirmation,
   decisions,
   evidence,
+  evaluatedAt,
   paymentStatus,
 }: PaymentDetailActionMapSectionProps) {
   const recommended = decisions.find((decision) => decision.recommended && decision.state !== 'BLOCKED') ??
@@ -50,7 +52,6 @@ export function PaymentDetailActionMapSection({
       : evidence?.state === 'CONFLICT'
         ? 'Evidence conflict'
         : 'No executable action';
-  const verifiedAt = recommended?.verifiedAt ?? evidence?.verifiedAt ?? null;
 
   return (
     <AdminTablePanel
@@ -81,11 +82,12 @@ export function PaymentDetailActionMapSection({
           <span>Payment evidence</span>
           <StatusBadge tone={evidenceTone}>{evidence?.label ?? 'Unavailable'}</StatusBadge>
           <small>{evidence?.reason ?? 'No evidence summary was returned by the API.'}</small>
+          <small>Evidence verified <DateTimeText fallback="Not recorded" value={evidence?.verifiedAt} /></small>
         </div>
         <div>
           <span>Policy check</span>
           <strong>{recommended?.policyVersion ?? decisions[0]?.policyVersion ?? 'Unavailable'}</strong>
-          <small>{verifiedAt ? <>Verified <DateTimeText value={verifiedAt} /></> : 'No verified decision timestamp'}</small>
+          <small>Policy evaluated <DateTimeText fallback="Not recorded" value={evaluatedAt} /></small>
         </div>
       </div>
 

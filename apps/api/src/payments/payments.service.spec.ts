@@ -1722,6 +1722,33 @@ describe('PaymentsService conditional transitions', () => {
     expect(adapter.capture).not.toHaveBeenCalled();
   });
 
+  it('rejects terminal admin sync before creating a success receipt or provider operation', async () => {
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const released = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: 'gateway-payment-1',
+      status: PaymentStatus.RELEASED,
+    });
+    const { prisma, service } = createService({
+      existingPayment: released,
+      momoPaymentAdapter: adapter,
+    });
+    prisma.payment.findUnique.mockResolvedValueOnce(
+      paymentActionRecord(released, BookingStatus.EXPIRED),
+    );
+
+    await expect(
+      service.syncStatusForAdmin('admin-1', released.id, {
+        idempotencyKey: 'sync-released-payment-1',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'PAYMENT_STATE_NOT_SYNCABLE' }),
+    });
+    expect(adapter.checkStatus).not.toHaveBeenCalled();
+    expect(prisma.paymentAdminOperationClaim.create).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledOnce();
+  });
+
   it('returns an auditable receipt and replays the same admin capture only once', async () => {
     const adapter = gatewayAdapter(PaymentMethod.MOMO);
     const authorized = payment({

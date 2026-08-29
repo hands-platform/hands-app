@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -7,6 +8,10 @@ import { adminGet, adminGetResult } from '../../lib/admin-api';
 import { OPERATIONAL_POLICY_CACHE_OPTIONS } from '../../lib/operations-policy';
 import { buildPartnerOperationRow } from './partner-operation-row';
 import ProvidersPage from './page';
+
+vi.mock('next/link', () => ({
+  default: ({ children, ...props }: ComponentProps<'a'>) => <a {...props}>{children}</a>,
+}));
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
@@ -64,13 +69,80 @@ describe('ProvidersPage', () => {
     );
     expect(markup).toContain('href="/partners?review=unsettled"');
     expect(markup).not.toContain('0 matching Partners');
+    expect(markup).not.toContain('aria-label="Partner list pages"');
+    expect(markup).not.toContain('partner-primary-list-tabs');
     expect(
-      mockedAdminGet.mock.calls.find(([href]) => href.startsWith('/admin/operational-policy')),
+      mockedAdminGetResult.mock.calls.find(([href]) => href.startsWith('/admin/operational-policy')),
     ).toEqual([
       expect.stringContaining('/admin/operational-policy?keys='),
       [],
       OPERATIONAL_POLICY_CACHE_OPTIONS,
     ]);
+  });
+
+  it.each([403, 500, null])(
+    'keeps Partner records visible and marks fallback policy signals when policy status is %s',
+    async (status) => {
+      const serverRow = {
+        currentLat: 10.7769,
+        currentLng: 106.7009,
+        currentLocationUpdatedAt: new Date(Date.now() - 45 * 60_000).toISOString(),
+        displayName: 'Policy-independent Partner',
+        id: 'policy-independent-partner',
+        status: 'OFFLINE',
+        user: {
+          createdAt: '2026-06-01T09:00:00.000Z',
+          fullName: 'Policy-independent Partner',
+          id: 'policy-independent-user',
+          phone: '+84900002222',
+        },
+        userId: 'policy-independent-user',
+      } as AdminProvider;
+
+      mockedAdminGet.mockImplementation(async (href, fallback) => {
+        if (href.startsWith('/admin/partners/list-providers/summary')) return { totalCount: 1 };
+        if (href.startsWith('/admin/partners/list-providers')) return [serverRow];
+        return fallback;
+      });
+      mockedAdminGetResult.mockImplementation(async (href, fallback) =>
+        href.startsWith('/admin/operational-policy')
+          ? { data: fallback, ok: false, status }
+          : { data: await mockedAdminGet(href, fallback), ok: true, status: 200 },
+      );
+
+      const page = await ProvidersPage({ searchParams: Promise.resolve({ details: 'all' }) });
+      const markup = renderToStaticMarkup(page);
+
+      expect(markup).toContain('Policy-independent Partner');
+      expect(markup).toContain('Operational policy unavailable');
+      expect(markup).toContain('signals use fallback thresholds and are not confirmed current policy');
+      expect(markup).toContain('Location freshness: unavailable');
+      expect(markup).toContain('Freshness unavailable');
+      expect(markup).not.toContain('Location freshness: 90m');
+      expect(markup).not.toContain('Location recent');
+      expect(markup).not.toContain('Partner action snapshot');
+      expect(markup).not.toContain('Load operations analysis');
+      expect(markup).toContain('href="/partners"');
+    },
+  );
+
+  it.each([30, 90])('keeps a live %sm policy value unchanged when the policy request succeeds', async (minutes) => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners/list-providers/summary')) return { totalCount: 0 };
+      if (href.startsWith('/admin/partners/list-providers')) return [];
+      if (href.startsWith('/admin/operational-policy')) {
+        return [{ key: 'matching.marketplace_partner_location_max_age_minutes', value: minutes }];
+      }
+      return fallback;
+    });
+
+    const page = await ProvidersPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(`Location freshness: ${minutes}m`);
+    expect(markup).not.toContain('Operational policy unavailable');
+    expect(markup).not.toContain('aria-label="Partner list pages"');
+    expect(markup).not.toContain('partner-primary-list-tabs');
   });
 
   it('uses the shared Vuexy badge atom for the active sort summary', () => {
@@ -146,6 +218,60 @@ describe('ProvidersPage', () => {
       'matching.marketplace_partner_radius_meters',
       'matching.provider_response_window_minutes',
     ]);
+  });
+
+  it('renders wallet debt snapshot rows without issuing a separate mutable summary read', async () => {
+    const snapshotRow = {
+      activitySummary: { walletBalance: -305000 },
+      displayName: 'Snapshot Debt Partner',
+      id: 'snapshot-debt-partner',
+      status: 'OFFLINE',
+      user: {
+        createdAt: '2026-06-01T09:00:00.000Z',
+        fullName: 'Snapshot Debt Partner',
+        id: 'snapshot-debt-user',
+        phone: '+84900002222',
+      },
+      userId: 'snapshot-debt-user',
+    } as AdminProvider;
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/wallet-debt-page?take=10') {
+        return {
+          generatedAt: '2026-08-24T10:00:01.000Z',
+          items: [snapshotRow],
+          page: {
+            currentCursor: 'snapshot-current',
+            hasNextPage: true,
+            nextCursor: 'cursor-2',
+            offset: 0,
+            returned: 1,
+            snapshotCursor: 'snapshot-current',
+            totalCount: 12,
+          },
+          snapshotAt: '2026-08-24T10:00:00.000Z',
+        };
+      }
+      if (href.startsWith('/admin/operational-policy?keys=')) return [];
+      return fallback;
+    });
+
+    const page = await ProvidersPage({
+      searchParams: Promise.resolve({ review: 'unsettled', sort: 'wallet-debt' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Snapshot Debt Partner');
+    expect(markup).toContain('-305.000 VND');
+    expect(markup).toContain('Snapshot');
+    expect(markup).toContain('24 Aug 2026, 17:00');
+    expect(markup).toContain('Next page');
+    expect(markup).toContain('cursor=cursor-2');
+    expect(markup).toContain(
+      '/api/admin/partners/export?review=unsettled&amp;sort=wallet-debt&amp;cursor=snapshot-current',
+    );
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('/admin/partners/list-providers/summary')]),
+    );
   });
 
   it('renders deep operations filter summary on a shared Vuexy surface', async () => {
@@ -244,7 +370,7 @@ describe('ProvidersPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Partner approvals');
+    expect(markup).toContain('<h1>Approvals</h1>');
     expect(markup).toContain('Submitted / Age');
     expect(markup).toContain('Verification Submitted for review');
     expect(markup).toContain('KYC Review pending');
@@ -276,7 +402,6 @@ describe('ProvidersPage', () => {
     expect(markup).not.toContain('Export');
     expect(markup).not.toContain('Bookings');
     expect(markup).not.toContain('Revenue');
-    expect(markup).toContain('href="/partners?review=unsettled"');
   });
 
   it('normalizes marketplace-ready drilldowns to the server-backed ready-now list', async () => {

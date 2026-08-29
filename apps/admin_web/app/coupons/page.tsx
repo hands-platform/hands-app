@@ -14,7 +14,8 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminNoticeCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { StatusBadge } from '../../components/status-badge';
-import { deleteCoupon, toggleCoupon, updateCoupon } from './actions';
+import { couponLaunchEnabled } from '../../lib/launch-features';
+import { activateCoupon, deleteCoupon, pauseCoupon, updateCoupon } from './actions';
 import {
   buildCouponDeleteConfirmation,
   buildCouponToggleConfirmation,
@@ -29,7 +30,7 @@ import { couponApiState, parseCouponListFilters } from './coupon-filters';
 import { CouponManagementDrawer } from './coupon-management-drawer';
 import { formatCouponIctDateTime } from './coupon-ict-time';
 import { buildCouponCreateNotice, buildCouponPageModel } from './coupon-page-model';
-import { couponReturnTo } from './coupon-return-context';
+import { couponReturnTo, sanitizeCouponReturnTo } from './coupon-return-context';
 import { CouponsTableSection } from './coupons-table-section';
 
 type CouponsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -46,6 +47,21 @@ const EMPTY_COUPON_SUMMARY: AdminCouponSummary = {
 };
 
 export default async function CouponsPage({ searchParams }: { searchParams?: CouponsPageSearchParams }) {
+  if (!couponLaunchEnabled()) {
+    return (
+      <AdminPageTemplate
+        contentClassName="coupons-page"
+        description="Coupon creation, activation, checkout preview, and redemption are disabled for the current launch. Historical finance and audit records remain retained."
+        title="Coupons"
+      >
+        <AdminNoticeCard tone="warning">
+          <strong>Not active for current launch</strong>
+          <p>Coupon operations require a separate launch approval and an enabled server feature gate.</p>
+        </AdminNoticeCard>
+      </AdminPageTemplate>
+    );
+  }
+
   const params = searchParams ? await searchParams : {};
   const filters = parseCouponListFilters(params);
   const couponPage = readPositiveInteger(readSingleParam(params.couponPage));
@@ -56,13 +72,16 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
   const usageCouponId = readSingleParam(params.usageCouponId);
   const drawer = readSingleParam(params.drawer);
   const targetCouponId = confirmCouponId || editCouponId || usageCouponId;
-  const returnTo = couponReturnTo(params);
+  const returnTo = readSingleParam(params.returnTo)
+    ? sanitizeCouponReturnTo(readSingleParam(params.returnTo))
+    : couponReturnTo(params);
   const couponSkip = (couponPage - 1) * COUPON_LIST_PAGE_SIZE;
   const usageSkip = (usagePage - 1) * COUPON_USAGE_PAGE_SIZE;
   const couponListParams = new URLSearchParams({ take: String(COUPON_LIST_PAGE_SIZE) });
   const couponState = couponApiState(filters.view);
   if (couponState) couponListParams.set('state', couponState);
   if (filters.q) couponListParams.set('q', filters.q);
+  if (filters.sort !== 'code') couponListParams.set('sort', filters.sort);
   if (couponSkip > 0) couponListParams.set('skip', String(couponSkip));
 
   const couponSummaryParams = new URLSearchParams();
@@ -116,14 +135,15 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         : null
     : null;
   const confirmationRequested = confirmAction === 'toggle' || confirmAction === 'delete';
-  const confirmationAction = confirmAction === 'delete' ? deleteCoupon : toggleCoupon;
+  const confirmationAction = confirmAction === 'delete'
+    ? deleteCoupon
+    : isCouponToggleConfirmation(confirmation) && confirmation.currentActive
+      ? pauseCoupon
+      : activateCoupon;
   const confirmationInputs: ConfirmationHiddenInput[] = confirmation
     ? [
         { name: 'couponId', value: confirmation.couponId },
         { name: 'returnTo', value: returnTo },
-        ...(isCouponToggleConfirmation(confirmation)
-          ? [{ name: 'active', value: confirmation.currentActive } as const]
-          : []),
       ]
     : [];
   const panelParams = new URL(returnTo, 'https://admin.hands.vn').searchParams;
@@ -191,8 +211,12 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             disabled={!mutationsEnabled || (isCouponToggleConfirmation(confirmation) && confirmation.disabled)}
             hiddenInputs={confirmationInputs}
             id={`coupon-${confirmAction}-${confirmation.couponId}`}
+            requireValidForm={isCouponToggleConfirmation(confirmation)}
             supportingLinks={isCouponToggleConfirmation(confirmation) && confirmation.supportingHref
               ? [{ href: confirmation.supportingHref, label: 'Update coupon window' }]
+              : []}
+            textInputs={isCouponToggleConfirmation(confirmation)
+              ? [{ label: 'Operational reason', maxLength: 500, name: 'reason', required: true }]
               : []}
             title={confirmation.title}
             tone={confirmation.tone}
@@ -325,6 +349,8 @@ function UnavailableCouponDrawer({ closeHref, title }: { readonly closeHref: str
 function filteredCountForView(summary: AdminCouponSummary, view: ReturnType<typeof parseCouponListFilters>['view']) {
   if (view === 'live') return summary.liveCount;
   if (view === 'scheduled') return summary.scheduledCount;
+  if (view === 'paused') return summary.pausedCount;
+  if (view === 'expired') return summary.expiredCount;
   if (view === 'records') return summary.expiredCount + summary.pausedCount;
   return summary.totalCount;
 }

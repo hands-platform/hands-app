@@ -69,11 +69,11 @@ describe('dashboard trace summary model', () => {
       <DashboardDataScopeStatus scope="all-open" sourceState="unavailable" />,
     );
 
-    expect(freshMarkup).toContain('Today so far');
+    expect(freshMarkup).toContain('Shift activity · Today (Vietnam)');
     expect(freshMarkup).toContain('Updated');
-    expect(freshMarkup).toContain('ICT · All data sources current');
+    expect(freshMarkup).toContain('ICT · Command data current');
     expect(freshMarkup).toContain('Test data excluded');
-    expect(freshMarkup).toContain('Refresh every 60s');
+    expect(freshMarkup).toContain('Checks for updates every 60s');
     expect(partialMarkup).toContain('Today');
     expect(partialMarkup).toContain('Partial data · 2 sources unavailable · updated');
     expect(staleMarkup).toContain('Historical');

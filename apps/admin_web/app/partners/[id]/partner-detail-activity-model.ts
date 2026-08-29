@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 import type { DetailActivityOrder } from './partner-detail-filters';
 import { orderPartnerActivityRecords } from './partner-detail-filters';
 import { formatDate } from './partner-detail-format';
+import {
+  buildPartnerDetailTargetHref,
+  buildPartnerDetailWorkspaceHref,
+} from './partner-detail-workspace-model';
 
 export type PartnerActivityRecord = {
   readonly id: string;
@@ -36,14 +40,31 @@ const VERIFICATION_ACTIVITY_TYPES = new Set([
   'OPS',
 ]);
 
-export function partnerActivityRecordHref(record: PartnerActivityRecord) {
-  if (BOOKING_ACTIVITY_TYPES.has(record.type)) return '#booking-chat-records';
-  if (FINANCE_ACTIVITY_TYPES.has(record.type)) return '#payout';
-  if (record.type === 'LOCATION' || APP_DEVICE_ACTIVITY_TYPES.has(record.type)) return '#app-activity';
-  if (VERIFICATION_ACTIVITY_TYPES.has(record.type)) {
-    return '#documents';
+export function partnerActivityRecordHref(
+  providerId: string,
+  record: PartnerActivityRecord,
+  canLoadDiagnostics = false,
+) {
+  if (BOOKING_ACTIVITY_TYPES.has(record.type)) {
+    return buildPartnerDetailTargetHref(providerId, 'booking-evidence');
   }
-  return '#app-activity';
+  if (FINANCE_ACTIVITY_TYPES.has(record.type)) {
+    return buildPartnerDetailTargetHref(providerId, 'payout');
+  }
+  if (record.type === 'LOCATION') {
+    return buildPartnerDetailTargetHref(providerId, 'location');
+  }
+  if (APP_DEVICE_ACTIVITY_TYPES.has(record.type)) {
+    return canLoadDiagnostics
+      ? buildPartnerDetailTargetHref(providerId, 'app-activity')
+      : buildPartnerDetailWorkspaceHref(providerId, 'access', 'readiness');
+  }
+  if (VERIFICATION_ACTIVITY_TYPES.has(record.type)) {
+    return buildPartnerDetailTargetHref(providerId, 'documents');
+  }
+  return canLoadDiagnostics
+    ? buildPartnerDetailTargetHref(providerId, 'app-activity')
+    : buildPartnerDetailWorkspaceHref(providerId, 'access', 'readiness');
 }
 
 export function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {

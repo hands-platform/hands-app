@@ -11,6 +11,24 @@ export type PartnerControlView = 'work' | 'records' | 'reference';
 export type PartnerBookingsView = 'journey' | 'evidence' | 'ledger';
 export type PartnerAccessView = 'readiness' | 'controls' | 'diagnostics';
 export type PartnerDossierView = 'approval' | 'evidence' | 'finance';
+export type PartnerDetailTarget =
+  | 'account-controls'
+  | 'app-activity'
+  | 'bank'
+  | 'booking-evidence'
+  | 'booking-gate'
+  | 'booking-journey'
+  | 'cash-debt'
+  | 'connected-records'
+  | 'control-queue'
+  | 'documents'
+  | 'location'
+  | 'master-facts'
+  | 'operator-notes'
+  | 'payout'
+  | 'review-history'
+  | 'service-pricing'
+  | 'tax';
 
 type PartnerDetailSearchParams = Record<string, string | string[] | undefined>;
 
@@ -80,7 +98,43 @@ export function buildPartnerDetailWorkspaceHref(
   if (section === 'access' && (view === 'controls' || view === 'diagnostics')) {
     query.set('access', view);
   }
-  return `/partners/${providerId}?${query.toString()}`;
+  return `/partners/${encodeURIComponent(providerId)}?${query.toString()}`;
+}
+
+const PARTNER_DETAIL_TARGETS: Record<
+  PartnerDetailTarget,
+  {
+    readonly hash: string;
+    readonly section: Exclude<PartnerDetailSection, 'overview' | 'full'>;
+    readonly view: PartnerControlView | PartnerBookingsView | PartnerAccessView | PartnerDossierView;
+  }
+> = {
+  'account-controls': { hash: 'partner-reports-controls', section: 'access', view: 'controls' },
+  'app-activity': { hash: 'app-activity', section: 'access', view: 'diagnostics' },
+  bank: { hash: 'bank', section: 'dossier', view: 'finance' },
+  'booking-evidence': { hash: 'booking-chat-records', section: 'bookings', view: 'evidence' },
+  'booking-gate': { hash: 'partner-booking-gate-decision', section: 'access', view: 'readiness' },
+  'booking-journey': { hash: 'partner-booking-journey', section: 'bookings', view: 'journey' },
+  'cash-debt': { hash: 'cash-debt-origin', section: 'dossier', view: 'finance' },
+  'connected-records': {
+    hash: 'partner-connected-operations-records',
+    section: 'control',
+    view: 'work',
+  },
+  'control-queue': { hash: 'partner-operator-command-queue', section: 'control', view: 'work' },
+  documents: { hash: 'documents', section: 'dossier', view: 'evidence' },
+  location: { hash: 'location', section: 'dossier', view: 'evidence' },
+  'master-facts': { hash: 'partner-master-facts', section: 'control', view: 'reference' },
+  'operator-notes': { hash: 'partner-operator-notes', section: 'control', view: 'records' },
+  payout: { hash: 'payout-operations', section: 'dossier', view: 'finance' },
+  'review-history': { hash: 'partner-review-history', section: 'dossier', view: 'evidence' },
+  'service-pricing': { hash: 'service-pricing', section: 'dossier', view: 'evidence' },
+  tax: { hash: 'tax', section: 'dossier', view: 'finance' },
+};
+
+export function buildPartnerDetailTargetHref(providerId: string, target: PartnerDetailTarget) {
+  const destination = PARTNER_DETAIL_TARGETS[target];
+  return `${buildPartnerDetailWorkspaceHref(providerId, destination.section, destination.view)}#${destination.hash}`;
 }
 
 export function partnerDetailWorkspaceHref(
@@ -88,5 +142,23 @@ export function partnerDetailWorkspaceHref(
   section: Exclude<PartnerDetailSection, 'overview' | 'full'>,
   hash = '',
 ) {
-  return `/partners/${encodeURIComponent(providerId)}?section=${section}${hash}`;
+  const legacyTarget: Partial<Record<string, PartnerDetailTarget>> = {
+    '#admin': 'account-controls',
+    '#app-activity': 'app-activity',
+    '#bank': 'bank',
+    '#booking-chat-records': 'booking-evidence',
+    '#kyc': 'documents',
+    '#location': 'location',
+    '#partner-access-section': 'booking-gate',
+    '#partner-booking-journey': 'booking-journey',
+    '#partner-operator-notes': 'operator-notes',
+    '#payout': 'payout',
+    '#service-pricing': 'service-pricing',
+    '#tax': 'tax',
+  };
+  const target = legacyTarget[hash];
+  if (target) {
+    return buildPartnerDetailTargetHref(providerId, target);
+  }
+  return `${buildPartnerDetailWorkspaceHref(providerId, section)}${hash}`;
 }

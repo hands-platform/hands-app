@@ -33,12 +33,17 @@ type FinalPartnerChoiceMatrix = {
 };
 
 type OperationsPolicyFinalPartnerChoiceSectionProps = {
+  readonly canOpenPartnerEvidence?: boolean;
   readonly matrix: FinalPartnerChoiceMatrix;
 };
 
 export function OperationsPolicyFinalPartnerChoiceSection({
+  canOpenPartnerEvidence = true,
   matrix,
 }: OperationsPolicyFinalPartnerChoiceSectionProps) {
+  const matchingImpact = matrix.impact.filter(
+    (item) => item.label !== 'Bank review' && Number(item.value) > 0,
+  );
   return (
     <AdminSection
       className="admin-mb-16"
@@ -68,19 +73,19 @@ export function OperationsPolicyFinalPartnerChoiceSection({
         ))}
       </AdminTaskGrid>
       <AdminSectionHeader
-        actions={(
+        actions={canOpenPartnerEvidence ? (
           <AdminFormControlLink className="button-secondary" href="/partners">
             <Users size={16} aria-hidden="true" />
             Open Partner queue
           </AdminFormControlLink>
-        )}
+        ) : null}
         className="admin-mt-18"
         description={`Applies the policy posture to ${policyCountLabel(matrix.sampledPartnerCount, 'sampled Partner')}. Blocker categories overlap, so do not total these cards.`}
         title="Current partner acceptance impact"
       />
       <AdminTraceSummary
         className="admin-mt-12"
-        metrics={matrix.impact.map((item) => ({
+        metrics={matchingImpact.map((item) => ({
           detail: item.helper,
           kind: item.kind,
           label: item.label,
@@ -88,6 +93,14 @@ export function OperationsPolicyFinalPartnerChoiceSection({
           value: item.value,
         }))}
       />
+      {canOpenPartnerEvidence ? (
+        <p className="muted admin-mt-10">
+          Withdrawal bank evidence stays in{' '}
+          <AdminFormControlLink className="policy-inline-action" href="/partner-controls?details=controls&review=bank">
+            Partner Controls
+          </AdminFormControlLink>.
+        </p>
+      ) : null}
     </AdminSection>
   );
 }

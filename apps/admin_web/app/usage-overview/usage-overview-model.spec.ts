@@ -3,6 +3,7 @@ import {
   usageOverviewWithDefaults,
   normalizeUsageOverviewRange,
   usageOverviewCustomHref,
+  usageOverviewEmptyRangeAction,
   usageOverviewHref,
   usageOverviewRangeOptions,
   validateUsageCustomRange,
@@ -27,6 +28,24 @@ describe('usage overview page model', () => {
       '/usage-overview?range=custom&from=2026-08-07&to=2026-08-13',
     );
     expect(usageOverviewRangeOptions.some((option) => option.value === ('all' as never))).toBe(false);
+  });
+
+  it('offers only empty-state range actions that change the current report', () => {
+    expect(usageOverviewEmptyRangeAction('today')).toEqual({
+      href: '/usage-overview?range=7d',
+      label: 'Use last 7 days',
+    });
+    expect(usageOverviewEmptyRangeAction('yesterday')).toEqual({
+      href: '/usage-overview?range=7d',
+      label: 'Use last 7 days',
+    });
+    expect(usageOverviewEmptyRangeAction('7d')).toEqual({
+      href: '/usage-overview?range=30d',
+      label: 'Try 30 days',
+    });
+    expect(usageOverviewEmptyRangeAction('30d')).toBeNull();
+    expect(usageOverviewEmptyRangeAction('month')).toBeNull();
+    expect(usageOverviewEmptyRangeAction('custom')).toBeNull();
   });
 
   it('defaults usage overview to today for the initial operations view', () => {

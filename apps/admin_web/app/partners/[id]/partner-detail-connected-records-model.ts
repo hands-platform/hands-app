@@ -3,6 +3,7 @@ import type { PartnerBookingArchiveBooking, PartnerBookingArchiveRecord } from '
 import { auditLogNoteText } from './partner-detail-record-helpers';
 import { dateValue, formatDate, shortRecordId } from './partner-detail-format';
 import { partnerOpsPillClass, type PartnerOpsTone } from './partner-detail-tone';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 const PARTNER_OPS_NOTE_ACTION = 'provider.ops_note.add';
 
@@ -79,7 +80,9 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       detail: latestBooking
         ? `${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestBooking)}`
         : 'No preferred, selected, or marketplace participation booking loaded.',
-      href: latestBooking ? `/bookings/${latestBooking.id}` : '#booking-chat-records',
+      href: latestBooking
+        ? `/bookings/${latestBooking.id}`
+        : buildPartnerDetailTargetHref(provider.id, 'booking-journey'),
       tone: latestBooking ? 'pill-info' : 'pill-neutral',
     },
     {
@@ -104,7 +107,7 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       label: 'KYC and documents',
       value: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
       detail: `${kycEvidence.missingDocuments.length} required document(s) missing approval.`,
-      href: '#kyc',
+      href: buildPartnerDetailTargetHref(provider.id, 'documents'),
       tone: canApproveKyc ? 'pill-success' : 'pill-warn',
     },
     {
@@ -114,21 +117,21 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       detail: latestLocationSaved
         ? 'Latest Partner location saved for dispatch checks.'
         : 'No latest location loaded.',
-      href: '#location',
+      href: buildPartnerDetailTargetHref(provider.id, 'location'),
       tone: provider.currentLocationUpdatedAt ? 'pill-info' : 'pill-warn',
     },
     {
       label: 'Wallet and payout',
       value: payoutOps.status,
       detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
-      href: '#payout',
+      href: buildPartnerDetailTargetHref(provider.id, 'payout'),
       tone: partnerOpsPillClass(payoutOps.tone),
     },
     {
       label: 'Operator notes',
       value: `${partnerOpsNotes.length} note(s)`,
       detail: partnerOpsNotes[0] ? auditLogNoteText(partnerOpsNotes[0]) : 'No manual partner note saved.',
-      href: '#partner-operator-notes',
+      href: buildPartnerDetailTargetHref(provider.id, 'operator-notes'),
       tone: partnerOpsNotes.length ? 'pill-info' : 'pill-neutral',
     },
   ];

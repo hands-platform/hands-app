@@ -58,6 +58,7 @@ Old planning snapshots were removed because their useful content is now covered 
 - Delete planning snapshots when their useful content has moved into active docs.
 - Do not add policy that conflicts with `hands-mvp-final-authority.md`.
 - Keep visible product language as Partner even when code still uses Provider internally.
+- Use `Asia/Ho_Chi_Minh` (`ICT`, `UTC+7`) as the only IANA timezone identifier for Vietnam business time in active and generated documentation.
 
 ## Naming Rule
 

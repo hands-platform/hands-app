@@ -168,6 +168,7 @@ const referralStoreEnvKeys = [
   'CUSTOMER_IOS_APP_URL',
 ] as const;
 const dashboardSource = readFileSync('app/referrals/referral-dashboard.tsx', 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 const storeSetupSource = readFileSync('app/referrals/referral-store-setup-status.tsx', 'utf8');
 
 function defaultReferralDashboardFiltersForTest() {
@@ -339,6 +340,24 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('>Review</a>');
     expect(markup).toContain('/referrals/customers/parent-customer?rewardId=reward-available-1');
     expect(markup.indexOf('Needs action')).toBeLessThan(markup.indexOf('All parent records'));
+  });
+
+  it('keeps reward queue cells in the table formatting context and grids only their content', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        policy={policy}
+        rewardRows={rewardRows}
+        rows={rows}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('<td class="referral-reward-relationship-cell"><div class="referral-reward-cell-content">');
+    expect(markup).toContain('<td class="referral-reward-evidence-cell"><div class="referral-reward-cell-content">');
+    expect(markup).toContain('<td class="referral-reward-value-cell"><div class="referral-reward-cell-content">');
+    expect(markup).toContain('<td class="referral-reward-decision-cell"><div class="referral-reward-cell-content">');
+    expect(globalCss).toContain('.referral-reward-cell-content {');
+    expect(globalCss).not.toMatch(/\.referral-reward-relationship-cell,[\s\S]{0,400}display:\s*grid;/);
   });
 
   it('keeps fixture inspection in Developer/System mode with no operational action', () => {

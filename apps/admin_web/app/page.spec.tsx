@@ -15,6 +15,7 @@ import type {
   AdminStartShiftSummary,
 } from '../lib/admin-api';
 import { adminGet, apiGet } from '../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../lib/admin-operator-access';
 import DashboardPage from './page';
 
 vi.mock('../lib/admin-api', async () => {
@@ -27,8 +28,13 @@ vi.mock('../lib/admin-api', async () => {
   };
 });
 
+vi.mock('../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn(),
+}));
+
 const mockedAdminGet = vi.mocked(adminGet);
 const mockedApiGet = vi.mocked(apiGet);
+const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const dashboardSource = readFileSync('app/page.tsx', 'utf8');
 const dashboardTraceSummarySource = readFileSync('app/dashboard-trace-summary.tsx', 'utf8');
 const globalCss = readFileSync('app/globals.css', 'utf8');
@@ -373,6 +379,8 @@ describe('DashboardPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
     mockedApiGet.mockReset();
+    mockedGetCurrentAdminOperatorAccess.mockReset();
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue(null);
   });
 
   it('uses the shared Vuexy trace summary atom for dashboard metric groups', () => {
@@ -410,6 +418,41 @@ describe('DashboardPage', () => {
     expect(dashboardSource).toContain('scope="current-shift"');
     expect(dashboardSource).toContain('sourceState={startShiftScopeSourceState}');
     expect(dashboardSource).toContain('href="/operations-handoff"');
+  });
+
+  it('hides the dashboard handoff entry when the launch gate is off', async () => {
+    vi.stubEnv('SHIFT_HANDOFF_LAUNCH_ENABLED', 'false');
+    try {
+      mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+      const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+      const markup = await renderDashboardMarkup(page);
+
+      expect(markup).not.toContain('href="/operations-handoff"');
+      expect(markup).not.toContain('Open handoff');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('identifies a proxy-forwarded operator by short ID without another API request', async () => {
+    const aggregate = startShiftSummaryFixture();
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['BOOKINGS_REALTIME'],
+      id: 'admin_cmrj5gbxp000nvy0k4e7vfq3w',
+      roles: ['ADMIN'],
+    });
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = await renderDashboardMarkup(page);
+
+    expect(markup).toContain('<strong>Operator admin_cm...</strong>');
+    expect(markup).not.toContain('Signed-in operator');
+    expect(mockedGetCurrentAdminOperatorAccess).toHaveBeenCalledTimes(1);
+    expect(mockedAdminGet).toHaveBeenCalledTimes(2);
   });
 
   it('does not use vague current view copy in operator-facing dashboard messages', () => {
@@ -470,14 +513,16 @@ describe('DashboardPage', () => {
     aggregate.earnings = earningSummary;
     aggregate.cashSettlements = cashSettlementSummary;
     aggregate.refunds = refundSummary;
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({ details: 'operations', range: 'today' }),
     });
     const markup = await renderDashboardMarkup(page);
     expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
-    expect(markup).toContain('Finance work is prioritized in Next action and Open queues above.');
+    expect(markup).toContain('Finance work is prioritized in Next action and Remaining queues above.');
     expect(mockedAdminGet).toHaveBeenCalledTimes(2);
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/dashboard/start-shift-summary?dateRange=today',
@@ -534,6 +579,41 @@ describe('DashboardPage', () => {
     expect(markup).toContain('Analytics loading');
   });
 
+  it('keeps Command health current when the section-scoped Analytics source fails', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.analytics = null;
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === START_SHIFT_SUMMARY_HREF) return aggregate;
+      if (href === START_SHIFT_ANALYTICS_HREF) return null;
+      return fallback;
+    });
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = await renderDashboardMarkup(page);
+
+    expect(markup).toContain('Command data current');
+    expect(markup).toContain('<h2 id="dashboard-today-result-title">Today result</h2>');
+    expect(markup).toContain('Analytics unavailable');
+  });
+
+  it('keeps a successful Analytics section separate when the Command summary fails', async () => {
+    const aggregate = startShiftSummaryFixture();
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === START_SHIFT_SUMMARY_HREF) return null;
+      if (href === START_SHIFT_ANALYTICS_HREF) return aggregate.analytics;
+      return fallback;
+    });
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = await renderDashboardMarkup(page);
+
+    expect(markup).toContain('Shift activity · Today (Vietnam)');
+    expect(markup).toContain('Source unavailable');
+    expect(markup).toContain('<h2 id="dashboard-today-result-title">Today result</h2>');
+    expect(markup).toContain('Operational events');
+    expect(markup).not.toContain('Analytics unavailable');
+  });
+
   it('uses one Start Shift aggregate request when every summary source is available', async () => {
     const aggregate = startShiftSummaryFixture();
     mockedApiGet.mockResolvedValue({
@@ -541,13 +621,16 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: aggregate.generatedAt,
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
     const markup = await renderDashboardMarkup(page);
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(markup).toContain('<h2 id="dashboard-needs-action-now-title">Next action</h2>');
+    expect(markup).toContain('Command data current');
     const liveSection = markup.slice(
       markup.indexOf('id="dashboard-needs-action-now"'),
       markup.indexOf('id="dashboard-open-queues"'),
@@ -565,7 +648,7 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('Request-to-completion');
     expect(markup).toContain('Money flow');
     expect(markup).toContain('Customer activity');
-    expect(markup).toContain('Open queues');
+    expect(markup).toContain('Remaining queues');
     expect(markup).not.toContain('Finance review ownership');
     expect(markup).not.toContain('Finance review queues clear');
     expect(markup).toContain('<h3>Payment holds</h3>');
@@ -609,7 +692,9 @@ describe('DashboardPage', () => {
       over48hCount: 1,
       pendingCount: 1,
     };
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
     const markup = await renderDashboardMarkup(page);
@@ -619,9 +704,10 @@ describe('DashboardPage', () => {
     );
     const nextActionSection = commandSection.slice(0, commandSection.indexOf('id="dashboard-open-queues"'));
 
-    expect(nextActionSection).toContain('<h3>Bank account approvals</h3>');
-    expect(nextActionSection).toContain('href="/finance-tax/approval-queue?view=bank-accounts"');
-    expect(nextActionSection.match(/Review oldest bank account approvals/g)).toHaveLength(1);
+    expect(nextActionSection).toContain('<h3>Matching delays</h3>');
+    expect(nextActionSection).toContain('Review matching delays');
+    expect(nextActionSection).not.toContain('<h3>Bank account approvals</h3>');
+    expect(commandSection.match(/Open work · All dates/g)).toHaveLength(2);
     expect(commandSection).toContain('<h3>Bank reconciliation</h3>');
     expect(commandSection).toContain('<h3>Bank account approvals</h3>');
     expect(commandSection).toContain('1 bank account change request await independent Finance approval.');
@@ -635,14 +721,108 @@ describe('DashboardPage', () => {
       'href="/finance-tax/bank-reconciliation?range=all&amp;review=unmatched&amp;owner=unassigned"',
     );
     expect(commandSection).toContain('href="/finance-tax/approval-queue?view=bank-accounts"');
-    expect(markup).toContain('3 overdue · 2 unassigned · 2 backlog · 1.550.000 VND exposed');
+    expect(markup).toContain(
+      '3 open Finance reviews · 3 of 3 over 48h · 2 of 3 unassigned · 2 historical money cases · 800.000 VND under Finance review · 750.000 VND historical exposure',
+    );
+    expect(markup).not.toContain('3 overdue · 2 unassigned · 2 backlog');
+  });
+
+  it('does not sum potentially overlapping historical money cohorts', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.operations!.actionQueue = {
+      completedPaymentHolds: 0,
+      completedWithoutSettlement: 4,
+      completedWithoutSettlementBacklog: 1,
+      completedWithoutSettlementRecent: 3,
+      customerChoice: 0,
+      matchingExpired: 0,
+      matchingWithoutParticipants: 0,
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = await renderDashboardMarkup(page);
+
+    expect(markup).toContain('1 settlement backlog case');
+    expect(markup).toContain('2 historical money cases');
+    expect(markup).not.toContain('3 historical backlog cases');
+  });
+
+  it('reserves the live-block priority signal for matching delays', () => {
+    expect(dashboardSource).toContain(
+      "isLiveBlock: action.key === 'matching-delays' && item.scope !== 'legacy'",
+    );
+    expect(dashboardSource).not.toContain("isLiveBlock: item.category === 'customer'");
+  });
+
+  it('separates zero Today activity from all-date Finance backlog', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.financeReviewWorkload.bankReconciliation = {
+      currency: 'VND',
+      openAmount: 800_000,
+      openCount: 2,
+      owners: [],
+      unassigned: {
+        oldestOccurredAt: '2026-07-20T00:00:00.000Z',
+        openAmount: 800_000,
+        openCount: 2,
+        over48hAmount: 800_000,
+        over48hCount: 2,
+      },
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = await renderDashboardMarkup(page);
+
+    expect(markup).toContain('Shift activity · Today (Vietnam)');
+    expect(markup).toContain('<h3>Bank reconciliation</h3>');
+    expect(markup).toContain('2 cases');
+    expect(markup).toContain('Open work · All dates');
+    expect(markup).toContain(
+      'href="/finance-tax/bank-reconciliation?range=all&amp;review=unmatched&amp;age=48h"',
+    );
+  });
+
+  it.each(['7d', '30d'] as const)('preserves the %s analytics range switch', async (range) => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.analytics = { ...aggregate.analytics!, range };
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === `/admin/dashboard/start-shift-summary?dateRange=${range}`) return aggregate;
+      if (href === `/admin/dashboard/start-shift-analytics?dateRange=${range}`) return aggregate.analytics;
+      return fallback;
+    });
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({ range }) });
+    const markup = await renderDashboardMarkup(page);
+
+    expect(markup).toContain('<h2 id="dashboard-today-result-title">Period result</h2>');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      `/admin/dashboard/start-shift-summary?dateRange=${range}`,
+      null,
+      expect.objectContaining({ freshness: 'aggregate' }),
+    );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      `/admin/dashboard/start-shift-analytics?dateRange=${range}`,
+      null,
+      expect.objectContaining({ freshness: 'aggregate' }),
+    );
   });
 
   it('does not repeat Needs action queues in Additional work', async () => {
     const aggregate = startShiftSummaryFixture();
     aggregate.analytics!.needsAction = aggregate.analytics!.needsAction.map((item) =>
       item.key === 'partner-approvals'
-        ? { ...item, count: 3, oldestAt: aggregate.generatedAt }
+        ? {
+            ...item,
+            count: 3,
+            nextCases: { current: ['partner-oldest-1'], legacy: [], overdue: [] },
+            oldestAt: aggregate.generatedAt,
+          }
         : item.key === 'notification-failures'
           ? { ...item, count: 5, oldestAt: aggregate.generatedAt }
           : item,
@@ -654,7 +834,9 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: aggregate.generatedAt,
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
     const markup = await renderDashboardMarkup(page);
@@ -668,9 +850,34 @@ describe('DashboardPage', () => {
     );
 
     expect(commandSection).toContain('<h3>Partner approvals</h3>');
+    expect(commandSection).toContain('<dt>Team</dt><dd>Partner Ops</dd>');
+    expect(commandSection).toContain('<dt>Oldest</dt>');
+    expect(commandSection).toContain('href="/partners/partner-oldest-1?section=full"');
     expect(commandSection).toContain('<h3>Notification failures</h3>');
     expect(additionalSection).not.toContain('Partner approvals');
     expect(additionalSection).not.toContain('Failed notifications');
+  });
+
+  it('uses a compact row for one or two Additional work queues', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.operations!.appPresence.disabledPushCustomers = 1;
+    aggregate.operations!.partnerSupply.noLocation = 1;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = await renderDashboardMarkup(page);
+    const additionalSection = markup.slice(
+      markup.indexOf('id="dashboard-today-work"'),
+      markup.indexOf('id="dashboard-today-result"'),
+    );
+
+    expect(additionalSection).toContain('start-shift-metric-strip is-compact');
+    expect(additionalSection).toContain('Ready Partner location');
+    expect(additionalSection).toContain('Customer push disabled');
+    expect(globalCss).toContain('.dashboard-page .start-shift-metric-strip.is-compact {');
+    expect(globalCss).toContain('grid-template-columns: repeat(2, minmax(240px, 360px));');
   });
 
   it('uses the factual Partner approval queue instead of subtracting every non-Level-2 Partner', () => {
@@ -698,13 +905,15 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: aggregate.generatedAt,
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
     const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('Next action');
-    expect(markup).toContain('Open queues');
+    expect(markup).toContain('Remaining queues');
     expect(markup).toContain('Overdue operational');
     expect(markup).toContain('Current operational');
     expect(markup).toContain('Historical backlog');
@@ -749,7 +958,9 @@ describe('DashboardPage', () => {
     } as AdminExternalReadiness);
     const aggregate = startShiftSummaryFixture();
     aggregate.payoutBatches = payoutSummary;
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
@@ -816,7 +1027,9 @@ describe('DashboardPage', () => {
     aggregate.analytics!.needsAction = aggregate.analytics!.needsAction.map((item) =>
       item.key === 'notification-failures' ? { ...item, count: 19 } : item,
     );
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
@@ -896,7 +1109,9 @@ describe('DashboardPage', () => {
     const aggregate = startShiftSummaryFixture();
     aggregate.operations = dashboardSummary;
     aggregate.analytics = null;
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
@@ -961,7 +1176,9 @@ describe('DashboardPage', () => {
     const aggregate = startShiftSummaryFixture();
     aggregate.operations = dashboardSummary;
     aggregate.analytics = null;
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
@@ -1000,7 +1217,9 @@ describe('DashboardPage', () => {
     } as AdminExternalReadiness);
     const aggregate = startShiftSummaryFixture();
     aggregate.payments = paymentSummary;
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
@@ -1067,7 +1286,9 @@ describe('DashboardPage', () => {
     const aggregate = startShiftSummaryFixture();
     aggregate.operations = dashboardSummary;
     aggregate.analytics = null;
-    mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      startShiftAdminResponse(href, fallback, aggregate),
+    );
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
     const markup = await renderDashboardMarkup(page);
@@ -1104,7 +1325,7 @@ describe('DashboardPage', () => {
 
     expect(markup).toContain('<h1>Shift Command</h1>');
     expect(markup).toContain('aria-label="Shift context"');
-    expect(markup).toContain('Today so far');
+    expect(markup).toContain('Shift activity · Today (Vietnam)');
     expect(markup).toContain('Open handoff');
     expect(markup).not.toContain('href="/?range=all"');
     expect(markup).not.toContain('Live start-of-shift workspace');
@@ -1120,15 +1341,21 @@ describe('DashboardPage', () => {
     expect(markup).toContain('<h2 id="dashboard-needs-action-now-title">Next action</h2>');
     expect(markup).toContain('class="admin-form-control-link button button-primary"');
     expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-open-queues"');
-    expect(markup).toContain('<h2 id="dashboard-open-queues-title">Open queues</h2>');
-    expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-money-status"');
+    expect(markup).toContain('<h2 id="dashboard-open-queues-title">Remaining queues</h2>');
+    expect(markup).toContain('4 more queues');
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20 start-shift-compact-section" id="dashboard-money-status"',
+    );
     expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
     expect(markup).toContain('No money queue needs action.');
     expect(markup).not.toContain('<h3>Available payout</h3>');
-    expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-today-work"');
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20 start-shift-compact-section" id="dashboard-today-work"',
+    );
     expect(markup).toContain('<h2 id="dashboard-today-work-title">Additional work</h2>');
     expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-today-result"');
     expect(markup).toContain('<h2 id="dashboard-today-result-title">Today result</h2>');
+    expect(markup).not.toContain('<span class="pill pill-info">Today (Vietnam)</span>');
     expect(markup.indexOf('id="dashboard-needs-action-now"')).toBeLessThan(
       markup.indexOf('id="dashboard-open-queues"'),
     );

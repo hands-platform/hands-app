@@ -45,6 +45,15 @@ export function buildAppSessionSummaryApiHref(filters: SessionFilters) {
   return query ? `/admin/app-sessions/summary?${query}` : '/admin/app-sessions/summary';
 }
 
+export function buildAppSessionCanonicalPageHref(filters: SessionFilters, totalRows: number) {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  if (safeTotalRows === 0) return null;
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  return filters.page > totalPages
+    ? sessionFilterHref({ ...filters, page: totalPages })
+    : null;
+}
+
 function appendAppSessionFilterParams(params: URLSearchParams, filters: SessionFilters) {
   if (filters.role) params.set('role', filters.role);
   params.set('state', filters.state ?? 'live');
@@ -100,7 +109,7 @@ export function sessionFilterLabel(filters: SessionFilters) {
 
   return parts.length
     ? `Filtered to ${parts.join(', ')}`
-    : 'Showing live customer, partner, and admin app sessions';
+    : 'Showing live Customer and Partner app sessions';
 }
 
 function singleParam(value: string | string[] | undefined) {

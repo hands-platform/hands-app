@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const globalsCss = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+const globalsCss = readFileSync(new URL('../globals.css', import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
 describe('Vietnam overview map tooltip CSS', () => {
   it('keeps map dot tooltips aligned with the Vuexy Tooltip typography and padding', () => {

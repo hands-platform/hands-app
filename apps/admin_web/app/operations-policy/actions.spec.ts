@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { revalidatePath, updateTag } from 'next/cache';
 import { vi } from 'vitest';
 
@@ -7,7 +8,8 @@ import {
   adminGetResult,
   adminPatchOrThrow,
 } from '../../lib/admin-api';
-import { initialOperationsPolicyActionState, updateOperationalPolicy } from './actions';
+import { initialOperationsPolicyActionState } from './action-state';
+import { updateOperationalPolicy } from './actions';
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), updateTag: vi.fn() }));
 vi.mock('../../lib/admin-api', async (importOriginal) => {
@@ -16,6 +18,13 @@ vi.mock('../../lib/admin-api', async (importOriginal) => {
 });
 
 describe('operations policy actions', () => {
+  it('keeps the use-server module free of exported runtime state objects', () => {
+    const source = readFileSync(new URL('./actions.ts', import.meta.url), 'utf8');
+
+    expect(source).not.toContain('export const initialOperationsPolicyActionState');
+    expect(source).toContain('export async function updateOperationalPolicy');
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(adminGetResult).mockResolvedValue({
@@ -51,7 +60,7 @@ describe('operations policy actions', () => {
       success: {
         after: '12',
         auditId: 'audit-1',
-        auditHref: '/audit-log?bucket=Operations%2FPolicy&event=audit-1&range=all&sort=newest',
+        auditHref: '/operations-policy?details=audit#policy-audit-audit-1',
         before: '10',
         changedBy: 'Policy Admin',
       },
@@ -168,6 +177,24 @@ describe('operations policy actions', () => {
 
     expect(result).toMatchObject({ status: 'error' });
     expect(result.message).toContain(message);
+  });
+
+  it('returns an explicit recent-reauth state without retrying or dropping the draft', async () => {
+    vi.mocked(adminPatchOrThrow).mockRejectedValueOnce(
+      new AdminApiRequestError('PATCH', '/admin/operational-policy/key', 403, {
+        code: 'RECENT_REAUTH_REQUIRED',
+        message: 'Recent reauthentication is required',
+      }),
+    );
+
+    const result = await updateOperationalPolicy(initialOperationsPolicyActionState, policyChangeForm());
+
+    expect(result).toMatchObject({
+      message: expect.stringContaining('password and MFA'),
+      reauthRequired: true,
+      status: 'error',
+    });
+    expect(adminPatchOrThrow).toHaveBeenCalledTimes(1);
   });
 });
 

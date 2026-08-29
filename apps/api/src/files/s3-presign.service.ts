@@ -156,6 +156,29 @@ export class S3PresignService {
     };
   }
 
+  async contentSha256(key: string, visibility: 'PUBLIC' | 'PRIVATE') {
+    const url = this.presign({
+      method: 'GET',
+      key,
+      bucket: this.bucketForVisibility(visibility),
+      expiresInSeconds: 120,
+    });
+    if (!url) {
+      throw new ServiceUnavailableException('Storage object integrity verification is unavailable');
+    }
+    const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!response.ok) {
+      throw new ServiceUnavailableException(
+        `Storage object integrity verification failed with status ${response.status}`,
+      );
+    }
+    const content = new Uint8Array(await response.arrayBuffer());
+    return {
+      contentSha256: createHash('sha256').update(content).digest('hex'),
+      sizeBytes: content.byteLength,
+    };
+  }
+
   async deleteObject(key: string, visibility: 'PUBLIC' | 'PRIVATE') {
     const url = this.presign({
       method: 'DELETE',

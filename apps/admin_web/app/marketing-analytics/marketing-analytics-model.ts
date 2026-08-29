@@ -180,6 +180,13 @@ export function marketingSpendPanelHref(
   return `/marketing-analytics?${params.toString()}#marketing-spend-panel`;
 }
 
+export function marketingSpendMissingDateHref(filters: MarketingAnalyticsFilters, spendDate: string) {
+  const params = marketingAnalyticsSearchParams({ ...filters, view: 'campaigns' });
+  params.set('spend', 'add');
+  params.set('spendDate', spendDate);
+  return `/marketing-analytics?${params.toString()}#marketing-spend-panel`;
+}
+
 export function marketingSpendDailyApiPath(draft: MarketingSpendDraft) {
   const params = new URLSearchParams({
     campaignId: draft.campaignId,

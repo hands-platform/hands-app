@@ -33,6 +33,7 @@ describe('public news helpers', () => {
             subtitle: 'Article subtitle',
             body: 'Article body',
             imageUrl: '/images/news/story.jpg',
+            imageAlt: 'News story thumbnail',
             actionLabel: null,
             actionHref: null,
             items: [],

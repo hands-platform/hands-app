@@ -13,6 +13,7 @@ export type PartnerControlPageLoadPlan = {
   readonly partnerSearchHref: string | null;
   readonly providersHref: string | null;
   readonly reportsHref: string | null;
+  readonly reportAuditHref: string | null;
   readonly reportHref: string | null;
   readonly reportsPage: number;
   readonly sanctionsHref: string | null;
@@ -76,6 +77,10 @@ export function buildPartnerControlPageLoadPlan(
           withTotal: 'true',
         })
       : null,
+    reportAuditHref:
+      shouldLoadReports && reviewReportId
+        ? `/admin/provider-reports/${encodeURIComponent(reviewReportId)}/audit-history`
+        : null,
     reportHref:
       shouldLoadReports && reviewReportId ? `/admin/provider-reports/${encodeURIComponent(reviewReportId)}` : null,
     reportsPage,
@@ -114,6 +119,32 @@ export function partnerControlWorkspaceHref(
     { q: readSearchParam(params.q) },
     { details: detailsMode },
   );
+}
+
+export function partnerControlNewReportHref(params: PartnerControlPageLoadPlanParams = {}) {
+  return partnerControlHref(params, {
+    details: 'reports',
+    newReport: '1',
+    partnerQ: undefined,
+    reportPage: undefined,
+    review: undefined,
+    reviewReportId: undefined,
+    severity: undefined,
+    sort: undefined,
+    status: undefined,
+  });
+}
+
+export function partnerControlReportReviewHref(
+  params: PartnerControlPageLoadPlanParams,
+  reportId: string,
+) {
+  return partnerControlHref(params, {
+    details: 'reports',
+    newReport: undefined,
+    partnerQ: undefined,
+    reviewReportId: reportId,
+  });
 }
 
 export function partnerControlHref(

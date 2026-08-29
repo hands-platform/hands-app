@@ -66,6 +66,33 @@ describe('OperationsPolicyAuditTrailSection', () => {
     expect(hrefsIn(section)).toContain('/audit-log?bucket=Operations%2FPolicy&event=audit-1&range=all&sort=newest');
   });
 
+  it('keeps long Before and After values in the visual text instead of a tooltip-only contract', () => {
+    const section = OperationsPolicyAuditTrailSection({
+      rows: [{
+        actorName: 'Ops Admin',
+        createdAt: '2026-08-27T10:00:00.000Z',
+        effect: 'Applies immediately.',
+        environment: 'production',
+        enforced: true,
+        id: 'audit-long-value',
+        key: 'cancellation.after_match_policy',
+        label: 'Customer cancellation after match',
+        policyContext: 'Decision',
+        previousValue: 'ADMIN_FEE_REVIEW_AFTER_MATCH',
+        reason: 'Reviewed the cancellation evidence.',
+        restoration: false,
+        runId: null,
+        source: 'operator',
+        value: 'ADMIN_REVIEW_FOR_MVP',
+      }],
+    });
+    const rendered = normalizedTextContent(section);
+
+    expect(rendered).toContain('ADMIN_FEE_REVIEW_AFTER_MATCH');
+    expect(rendered).toContain('ADMIN_REVIEW_FOR_MVP');
+    expect(rendered).not.toContain('title=');
+  });
+
   it.each([
     ['operator', 'No operator policy change has been audited yet.'],
     ['automated_smoke', 'No server-verified automated smoke policy change is available.'],
@@ -91,5 +118,39 @@ describe('OperationsPolicyAuditTrailSection', () => {
     expect(rendered).toContain('Newer records');
     expect(rendered).toContain('Older records');
     expect(rendered).toContain('Operator · All recorded history · Page 3 · Older available');
+  });
+
+  it('keeps scoped Operator evidence visible without exposing advanced or full audit links', () => {
+    const section = OperationsPolicyAuditTrailSection({
+      canViewAdvancedSources: false,
+      canViewFullAudit: false,
+      rows: [
+        {
+          actorName: 'Policy operator',
+          createdAt: '2026-08-27T10:00:00.000Z',
+          effect: 'New bookings use the current value.',
+          environment: 'production',
+          enforced: true,
+          id: 'audit-scoped-1',
+          key: 'matching.provider_response_window_minutes',
+          label: 'First-pick response window',
+          policyContext: 'Matching',
+          previousValue: '10',
+          reason: 'Reviewed active matching evidence.',
+          restoration: false,
+          runId: null,
+          source: 'operator',
+          value: '12',
+        },
+      ],
+    });
+    const rendered = normalizedTextContent(section);
+
+    expect(rendered).toContain('Policy operator');
+    expect(rendered).toContain('Scoped record ID: audit-scoped-1');
+    expect(rendered).not.toContain('Automated smoke');
+    expect(rendered).not.toContain('Legacy / unknown');
+    expect(rendered).not.toContain('Open full audit');
+    expect(rendered).not.toContain('Open evidence');
   });
 });

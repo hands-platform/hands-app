@@ -38,6 +38,7 @@ import { paymentCaptureSourceStatuses, transitionPaymentStatus } from '../paymen
 import { throwProviderWalletBlocked } from '../provider-wallet/provider-wallet.policy';
 import { lockProviderWalletLedger } from '../provider-wallet/provider-wallet-lock';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertCouponLaunchEnabled } from '../common/launch-features';
 import { ProviderAvailabilityLifecycleService } from '../providers/provider-availability-lifecycle.service';
 import {
   addProviderMatchingDistance,
@@ -79,9 +80,14 @@ import {
   preferredProviderRejectionReasonCodes,
   type PreferredProviderRejectionReasonCode,
 } from './bookings.dto';
+import { normalizeProviderBookingAlertPreferences } from './bookings.alert-preferences';
 import {
-  normalizeProviderBookingAlertPreferences,
-} from './bookings.alert-preferences';
+  COUPON_RELEASE_REASON,
+  consumeCouponRedemptionForBooking,
+  normalizeBookingCouponCode,
+  prepareCouponRedemptionReservation,
+  releaseCouponRedemptionForBooking,
+} from './bookings.coupon-redemption';
 import {
   clientBookingResponse,
   clientBookingResponses,
@@ -553,7 +559,8 @@ export class BookingsService {
                 bookingId,
                 effect: effect.label,
                 attempts,
-                error: lastError instanceof Error
+                error:
+                  lastError instanceof Error
                   ? lastError.message.slice(0, 500)
                   : String(lastError).slice(0, 500),
                 ...(notificationRecoveries ? { notificationRecoveries } : {}),
@@ -593,6 +600,9 @@ export class BookingsService {
       currentLocationUpdatedAt?: string;
     },
   ) {
+    if (input.couponCode?.trim()) {
+      assertCouponLaunchEnabled();
+    }
     const { customer, customerUserId } = await this.requireCustomerForBookingCreation(userId);
     assertBookingServiceId(input.serviceId);
     assertBookingPaymentMethod(input.paymentMethod);
@@ -608,10 +618,9 @@ export class BookingsService {
       providerId: input.providerId,
       serviceId: service.id,
     });
-    const { coupon, customerPrice, payoutRule, priceSummary } = await this.resolveBookingPricingForCreation({
+    const { customerPrice, payoutRule, priceSummary } = await this.resolveBookingPricingForCreation({
       service,
       providerServicePrice: providerService?.price,
-      couponCode: input.couponCode,
     });
     const selectedLocation = await this.resolveCustomerSelectedBookingLocation({
       customerProfileId: customer.id,
@@ -722,13 +731,14 @@ export class BookingsService {
       preferredProvider,
       bookingGateSnapshot: distanceGate.bookingGateSnapshot,
       serviceId: service.id,
+      adminMinimumAmount: service.basePrice,
       customerPrice,
       payoutRule,
       paymentMethod: input.paymentMethod,
       priceSummary,
       preferredProviderDistanceMeters: distanceGate.preferredProviderDistanceMeters,
       requiresPostBookingAuthorization,
-      couponCode: coupon?.code,
+      couponCode: input.couponCode === undefined ? null : normalizeBookingCouponCode(input.couponCode),
     });
     let booking: OpenBookingForClientResponse = creation.booking;
 
@@ -766,6 +776,9 @@ export class BookingsService {
       await this.scheduleBookingPaymentStatusCheck(booking);
       return clientBookingResponse(booking);
     }
+    if (booking.status !== BookingStatus.OPEN_MATCHING) {
+      return clientBookingResponse(booking);
+    }
 
     const eligibleBackupProviders = await this.findInitialEligibleBackupProviders({
       booking,
@@ -780,12 +793,13 @@ export class BookingsService {
       timeoutAt: booking.expiresAt ?? timing.expiresAt,
       tolerateInfrastructureFailure: true,
     });
+    const paymentMetadata = jsonObject(booking.payment?.rawMeta);
     await this.announceInitialOpenMatchingBooking({
       userId: customerUserId,
       bookingId: booking.id,
       preferredProvider,
-      couponCode: coupon?.code,
-      customerDiscountAmount: priceSummary.discountAmount,
+      couponCode: stringOrUndefined(paymentMetadata.couponCode),
+      customerDiscountAmount: nonNegativeNumber(paymentMetadata.discountAmount),
       matchingPayload: result,
       matchingPolicy,
       eligibleBackupProviders,
@@ -865,19 +879,16 @@ export class BookingsService {
   private async resolveBookingPricingForCreation(input: {
     service: { id: string; basePrice: number; priceStep?: number | null };
     providerServicePrice?: number | null;
-    couponCode?: string;
   }) {
     const customerPrice = resolveCustomerPrice(input.service, input.providerServicePrice);
     const payoutRule = await this.requireServicePayoutRule(input.service.id, customerPrice);
-    const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     return {
-      coupon,
       customerPrice,
       payoutRule,
       priceSummary: resolveBookingPriceSummary({
         customerPrice,
         adminMinimumAmount: input.service.basePrice,
-        coupon,
+        coupon: null,
       }),
     };
   }
@@ -1144,10 +1155,7 @@ export class BookingsService {
             {
               label: 'preferred-partner-notification',
               run: () =>
-                this.notifyPreferredProviderRequested(
-                  input.preferredProvider!.userId,
-                  input.bookingId,
-                ),
+                this.notifyPreferredProviderRequested(input.preferredProvider!.userId, input.bookingId),
             },
             {
               label: 'preferred-partner-realtime',
@@ -1195,6 +1203,7 @@ export class BookingsService {
     preferredProvider?: { id: string; status: ProviderStatus } | null;
     bookingGateSnapshot: unknown;
     serviceId: string;
+    adminMinimumAmount: number;
     customerPrice: number;
     payoutRule: {
       id: string;
@@ -1220,10 +1229,13 @@ export class BookingsService {
       preferredProviderId: input.preferredProvider?.id,
       serviceId: input.serviceId,
     });
-    const createArgs = {
+    const bookingCreateArgs = (priceSummary: ReturnType<typeof resolveBookingPriceSummary>) =>
+      ({
       data: {
         customerProfileId: input.customerProfileId,
-        status: input.requiresPostBookingAuthorization ? BookingStatus.CREATED : BookingStatus.OPEN_MATCHING,
+          status: input.requiresPostBookingAuthorization
+            ? BookingStatus.CREATED
+            : BookingStatus.OPEN_MATCHING,
         scheduledStartAt: input.timing.scheduledStartAt,
         scheduledEndAt: input.timing.scheduledEndAt,
         address: input.addressPayload,
@@ -1256,9 +1268,9 @@ export class BookingsService {
         payment: bookingPaymentCreate(
           this.payments.buildAuthorization(
             input.paymentMethod,
-            input.priceSummary.finalAmount,
+              priceSummary.finalAmount,
             'pending-booking',
-            input.priceSummary.paymentMetadata,
+              priceSummary.paymentMetadata,
           ),
         ),
         participants: input.preferredProvider
@@ -1270,7 +1282,7 @@ export class BookingsService {
           : undefined,
       },
       include: openBookingForClientInclude,
-    } satisfies Prisma.BookingCreateArgs;
+      }) satisfies Prisma.BookingCreateArgs;
 
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(
@@ -1297,8 +1309,34 @@ export class BookingsService {
         return { booking: existing, replayed: true as const };
       }
 
+      const couponReservation =
+        input.couponCode === null || input.couponCode === undefined
+          ? null
+          : await prepareCouponRedemptionReservation(tx, {
+              adminMinimumAmount: input.adminMinimumAmount,
+              couponCode: input.couponCode,
+              customerPrice: input.customerPrice,
+              customerProfileId: input.customerProfileId,
+            });
+      const priceSummary = couponReservation?.priceSummary ?? input.priceSummary;
+      const createBooking = async () => {
+        const booking = await tx.booking.create(bookingCreateArgs(priceSummary));
+        if (couponReservation) {
+          await tx.couponRedemption.create({
+            data: {
+              bookingId: booking.id,
+              couponId: couponReservation.couponId,
+              currency: 'VND',
+              customerProfileId: input.customerProfileId,
+              discountAmount: couponReservation.discountAmount,
+            },
+          });
+        }
+        return booking;
+      };
+
       if (input.paymentMethod !== PaymentMethod.CUSTOMER_WALLET) {
-        return { booking: await tx.booking.create(createArgs), replayed: false as const };
+        return { booking: await createBooking(), replayed: false as const };
       }
 
       await tx.$queryRaw(
@@ -1311,23 +1349,23 @@ export class BookingsService {
         _sum: { amount: true },
       });
       const balance = wallet._sum.amount ?? 0;
-      if (balance < input.priceSummary.finalAmount) {
+      if (balance < priceSummary.finalAmount) {
         throw new BadRequestException('Insufficient customer wallet balance');
       }
 
-      const booking = await tx.booking.create(createArgs);
+      const booking = await createBooking();
       if (!booking.payment?.id) {
         throw new BadRequestException('Customer wallet payment was not created');
       }
       await tx.customerWalletLedgerEntry.create({
         data: {
-          amount: -input.priceSummary.finalAmount,
+          amount: -priceSummary.finalAmount,
           bookingId: booking.id,
           currency: 'VND',
           customerProfileId: input.customerProfileId,
           metadata: {
             bookingId: booking.id,
-            customerPaymentAmount: input.priceSummary.finalAmount,
+            customerPaymentAmount: priceSummary.finalAmount,
             paymentId: booking.payment.id,
             paymentMethod: PaymentMethod.CUSTOMER_WALLET,
             reservationState: 'HELD',
@@ -1356,13 +1394,13 @@ export class BookingsService {
     booking: OpenBookingForClientResponse,
     requiresPostBookingAuthorization: boolean,
   ) {
-    if (
-      booking.status !== BookingStatus.CREATED ||
-      !booking.payment ||
-      jsonObject(booking.payment.rawMeta).authorizationState !== 'PENDING'
-    ) {
+    if (booking.status !== BookingStatus.CREATED || !booking.payment) {
       return booking;
     }
+    if (booking.payment.status === PaymentStatus.FAILED) {
+      return this.finalizeFailedBookingPaymentAuthorization(booking.id, booking.payment.id);
+    }
+    if (jsonObject(booking.payment.rawMeta).authorizationState !== 'PENDING') return booking;
 
     const authorized = await this.refreshBookingPaymentAuthorization(booking);
     return this.openBookingAfterPaymentAuthorization(authorized, requiresPostBookingAuthorization);
@@ -1385,6 +1423,10 @@ export class BookingsService {
     if (!this.payments.requiresPostBookingAuthorization(booking.payment.method)) {
       return { skipped: true, reason: 'NOT_GATEWAY_PAYMENT', bookingId };
     }
+    if (booking.payment.status === PaymentStatus.FAILED) {
+      await this.finalizeFailedBookingPaymentAuthorization(booking.id, booking.payment.id);
+      return { closed: true, reason: 'PAYMENT_AUTHORIZATION_FAILED', bookingId };
+    }
 
     let paymentMetadata = jsonObject(booking.payment.rawMeta);
     if (paymentMetadata.authorizationState === 'PENDING') {
@@ -1400,6 +1442,10 @@ export class BookingsService {
         return { skipped: true, reason: 'BOOKING_NOT_CREATED', bookingId, status: booking.status };
       }
       paymentMetadata = jsonObject(booking.payment.rawMeta);
+      if (booking.payment.status === PaymentStatus.FAILED) {
+        await this.finalizeFailedBookingPaymentAuthorization(booking.id, booking.payment.id);
+        return { closed: true, reason: 'PAYMENT_AUTHORIZATION_FAILED', bookingId };
+      }
     }
     if (
       paymentMetadata.authorizationState !== 'READY' ||
@@ -1498,6 +1544,9 @@ export class BookingsService {
     if (!requiresPostBookingAuthorization) {
       return booking;
     }
+    if (booking.payment?.status === PaymentStatus.FAILED) {
+      return this.finalizeFailedBookingPaymentAuthorization(booking.id, booking.payment.id);
+    }
     if (
       booking.payment &&
       !this.payments.paymentCanOpenMatching(booking.payment.method, booking.payment.status)
@@ -1518,28 +1567,72 @@ export class BookingsService {
     });
   }
 
+  private async finalizeFailedBookingPaymentAuthorization(bookingId: string, paymentId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await lockBookingLifecycle(tx, bookingId);
+      const booking = await tx.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        include: openBookingForClientInclude,
+      });
+      if (booking.payment?.id !== paymentId || booking.payment.status !== PaymentStatus.FAILED) {
+        throw new ConflictException('Booking payment authorization state changed; reload and try again');
+    }
+
+      const alreadyClosed =
+        booking.status === BookingStatus.CANCELLED && booking.closedReason === 'payment_authorization_failed';
+      if (!alreadyClosed && booking.status !== BookingStatus.CREATED) {
+        throw this.bookingStateChangedError();
+  }
+
+      const closedAt = booking.closedAt ?? new Date();
+      if (!alreadyClosed) {
+        const transition = await tx.booking.updateMany({
+          where: { id: bookingId, status: BookingStatus.CREATED },
+          data: {
+            status: BookingStatus.CANCELLED,
+            closedAt,
+            closedReason: 'payment_authorization_failed',
+            closedNote: 'Payment authorization failed before matching opened.',
+          },
+    });
+        if (transition.count !== 1) throw this.bookingStateChangedError();
+    }
+
+      await releaseCouponRedemptionForBooking(tx, {
+        bookingId,
+        occurredAt: closedAt,
+        reason: COUPON_RELEASE_REASON.PAYMENT_AUTHORIZATION_FAILED,
+      });
+      await tx.adminAuditLog.upsert({
+        where: { eventId: `booking-payment-authorization-failed:${bookingId}` },
+        update: {},
+        create: {
+          eventId: `booking-payment-authorization-failed:${bookingId}`,
+          actorId: null,
+          actorKey: 'booking-payment-recovery-worker',
+          actorLabelSnapshot: 'HANDS booking payment recovery worker',
+          actorType: 'SYSTEM',
+          action: 'booking.payment_authorization.failed',
+          area: 'BOOKING',
+          objectId: bookingId,
+          objectType: 'Booking',
+          outcome: 'SUCCEEDED',
+          source: 'booking_payment_recovery',
+          target: `booking:${bookingId}`,
+          metadata: { bookingId, paymentId },
+        },
+      });
+      return tx.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        include: openBookingForClientInclude,
+      });
+    });
+    }
+
   private async scheduleBookingPaymentStatusCheck(booking: OpenBookingForClientResponse) {
     if (booking.payment?.id) {
       await this.payments.scheduleStatusCheck(booking.payment.id);
     }
-  }
-
-  private async resolveCoupon(code: string) {
-    const coupon = await this.prisma.coupon.findUnique({
-      where: { code: code.trim().toUpperCase() },
-    });
-    if (!coupon || !coupon.active) {
-      throw new BadRequestException('Coupon is not available');
-    }
-
-    const now = Date.now();
-    if (coupon.startsAt && coupon.startsAt.getTime() > now) {
-      throw new BadRequestException('Coupon is not active yet');
-    }
-    if (coupon.endsAt && coupon.endsAt.getTime() < now) {
-      throw new BadRequestException('Coupon has expired');
-    }
-    return coupon;
   }
 
   private async requireServicePayoutRule(serviceId: string, customerPrice: number) {
@@ -1646,6 +1739,7 @@ export class BookingsService {
     let updated: Prisma.BookingGetPayload<{ include: typeof clientBookingListInclude }>;
     try {
       updated = await this.prisma.$transaction(async (transaction) => {
+        const closedAt = new Date();
         const booking = await transaction.booking.update({
           where: {
             id: bookingId,
@@ -1659,7 +1753,7 @@ export class BookingsService {
             ],
           },
           data: {
-            ...customerCancellationCloseData(),
+            ...customerCancellationCloseData(closedAt),
             opsTasks: {
               upsert: {
                 where: {
@@ -1680,6 +1774,11 @@ export class BookingsService {
             },
           },
           include: clientBookingListInclude,
+        });
+        await releaseCouponRedemptionForBooking(transaction, {
+          bookingId,
+          occurredAt: closedAt,
+          reason: COUPON_RELEASE_REASON.CUSTOMER_CANCELLED,
         });
         await transaction.adminAuditLog.create({
           data: {
@@ -1742,10 +1841,7 @@ export class BookingsService {
     TBooking extends { id: string; payment?: { id: string } | null },
   >(booking: TBooking, reason: string, actorId: string) {
     const closure = booking.payment
-      ? await this.payments.closeUnmatchedBookingPayment(
-          booking.payment.id,
-          reason,
-        )
+      ? await this.payments.closeUnmatchedBookingPayment(booking.payment.id, reason)
       : null;
     await this.prisma.booking.update({
       where: { id: booking.id },
@@ -1756,9 +1852,7 @@ export class BookingsService {
               bookingId_type: { bookingId: booking.id, type: BookingOpsTaskType.PAYMENT_REVIEWED },
             },
             update: {
-              status: closure?.refundRequested
-                ? BookingOpsTaskStatus.PENDING
-                : BookingOpsTaskStatus.DONE,
+              status: closure?.refundRequested ? BookingOpsTaskStatus.PENDING : BookingOpsTaskStatus.DONE,
               note: closure?.refundRequested
                 ? 'Captured payment refund is pending finance review.'
                 : 'Payment closure completed after booking cancellation.',
@@ -1766,9 +1860,7 @@ export class BookingsService {
             },
             create: {
               type: BookingOpsTaskType.PAYMENT_REVIEWED,
-              status: closure?.refundRequested
-                ? BookingOpsTaskStatus.PENDING
-                : BookingOpsTaskStatus.DONE,
+              status: closure?.refundRequested ? BookingOpsTaskStatus.PENDING : BookingOpsTaskStatus.DONE,
               note: closure?.refundRequested
                 ? 'Captured payment refund is pending finance review.'
                 : 'Payment closure completed after booking cancellation.',
@@ -2189,11 +2281,7 @@ export class BookingsService {
         {
           label: 'first-pick-rejected-notification',
           run: () =>
-            this.notifyCustomerFirstPickRejected(
-              booking.customerProfile.userId,
-              bookingId,
-              provider.id,
-            ),
+            this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id),
         },
         {
           label: 'cancellation-realtime',
@@ -2258,9 +2346,13 @@ export class BookingsService {
         { label: 'matching-close', run: () => this.matching.closeBooking(bookingId) },
         {
           label: 'first-pick-rejected-notification',
-          run: () => this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id),
+          run: () =>
+            this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id),
         },
-        { label: 'cancellation-realtime', run: () => this.matchingGateway.emitBookingExpired(bookingId, clientResult) },
+        {
+          label: 'cancellation-realtime',
+          run: () => this.matchingGateway.emitBookingExpired(bookingId, clientResult),
+        },
       ]);
       return clientResult;
     }
@@ -2393,9 +2485,7 @@ export class BookingsService {
   }) {
     await createNotifications(this.notifications, [
       ...(input.selectedProviderUserId
-        ? [
-            selectedPartnerMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
-          ]
+        ? [selectedPartnerMatchedProviderNotification(input.selectedProviderUserId, input.bookingId)]
         : []),
       selectedPartnerMatchedCustomerNotification({
           userId: input.customerUserId,
@@ -2510,6 +2600,11 @@ export class BookingsService {
             },
           },
           include: firstPickRejectedBookingInclude,
+        });
+        await releaseCouponRedemptionForBooking(transaction, {
+          bookingId: input.bookingId,
+          occurredAt: booking.closedAt ?? new Date(),
+          reason: COUPON_RELEASE_REASON.PREFERRED_PARTNER_REJECTED,
         });
         await transaction.providerBookingRequestEvent.create({
           data: {
@@ -2685,9 +2780,7 @@ export class BookingsService {
   }) {
     await createNotifications(this.notifications, [
       ...(input.selectedProviderUserId
-        ? [
-            firstPickMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
-          ]
+        ? [firstPickMatchedProviderNotification(input.selectedProviderUserId, input.bookingId)]
         : []),
       firstPickMatchedCustomerNotification({
           userId: input.customerUserId,
@@ -2900,9 +2993,7 @@ export class BookingsService {
         return;
       }
     }
-    throw new ConflictException(
-      'Booking notification evidence changed concurrently; retry trace recording.',
-    );
+    throw new ConflictException('Booking notification evidence changed concurrently; retry trace recording.');
   }
 
   private bookingPolicy(
@@ -2945,9 +3036,7 @@ export class BookingsService {
       customerGender: input.customerGender,
       customerNationality: input.customerNationality,
     });
-    const walletTotals = await this.backupProviderWalletTotals(
-      dispatchCandidates.matchingAlerts,
-    );
+    const walletTotals = await this.backupProviderWalletTotals(dispatchCandidates.matchingAlerts);
 
     return finalizeBackupProviderDispatchCandidates(
       dispatchCandidates.matchingAlerts,
@@ -3246,10 +3335,7 @@ export class BookingsService {
         where: {
           payment: { bookingId: input.bookingId },
           status: {
-            in: [
-              PaymentAdminOperationStatus.IN_PROGRESS,
-              PaymentAdminOperationStatus.REVIEW_REQUIRED,
-            ],
+            in: [PaymentAdminOperationStatus.IN_PROGRESS, PaymentAdminOperationStatus.REVIEW_REQUIRED],
           },
         },
         select: { id: true, status: true },
@@ -3329,6 +3415,11 @@ export class BookingsService {
       if (transition.count !== 1) {
         throw this.bookingStateChangedError();
       }
+      await releaseCouponRedemptionForBooking(tx, {
+        bookingId: input.bookingId,
+        occurredAt: closedAt,
+        reason: COUPON_RELEASE_REASON.PARTNER_CANCELLED,
+      });
 
       const updated = await tx.booking.update({
         where: { id: input.bookingId },
@@ -3507,13 +3598,16 @@ export class BookingsService {
       await this.payments.confirmGatewayCaptureForBookingCompletion(providerUserId, bookingId);
       booking = await this.prisma.$transaction(async (tx) => {
         await lockBookingLifecycle(tx, bookingId);
-        await this.recordProviderBookingActionLocation({
+        await this.recordProviderBookingActionLocation(
+          {
           bookingId,
           providerProfileId: provider.id,
           addressText: input.addressText,
           lat: input.lat,
           lng: input.lng,
-        }, tx);
+          },
+          tx,
+        );
         const payment = await tx.payment.findUniqueOrThrow({
           where: { bookingId },
           select: { id: true, method: true },
@@ -3524,8 +3618,9 @@ export class BookingsService {
           paymentId: payment.id,
           targetStatus: PaymentStatus.CAPTURED,
         });
-        const allowedPreviousStatuses =
-          providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE];
+        const allowedPreviousStatuses = providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [
+          BookingStatus.IN_SERVICE,
+        ];
         const completedAt = new Date();
         const transition = await tx.booking.updateMany({
           where: {
@@ -3538,6 +3633,7 @@ export class BookingsService {
         if (transition.count !== 1) {
           throw this.bookingStateChangedError();
         }
+        await consumeCouponRedemptionForBooking(tx, { bookingId, occurredAt: completedAt });
         await this.earnings.createForCompletedBooking(
           bookingId,
           provider.id,
@@ -3595,8 +3691,9 @@ export class BookingsService {
           where: { id: input.bookingId },
           select: { selectedProviderId: true, status: true },
         });
-        const allowedPreviousStatuses =
-          providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE];
+        const allowedPreviousStatuses = providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [
+          BookingStatus.IN_SERVICE,
+        ];
         if (
           booking.selectedProviderId !== input.providerProfileId ||
           !allowedPreviousStatuses.includes(booking.status)
@@ -3703,13 +3800,16 @@ export class BookingsService {
     }
   }
 
-  private async recordProviderBookingActionLocation(input: {
+  private async recordProviderBookingActionLocation(
+    input: {
     bookingId: string;
     providerProfileId: string;
     addressText?: string;
     lat?: number;
     lng?: number;
-  }, client: PrismaService | Prisma.TransactionClient = this.prisma) {
+    },
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
     this.assertProviderBookingActionLocationInput(input);
     const lat = normalizeBookingCoordinate(input.lat, 'lat');
     const lng = normalizeBookingCoordinate(input.lng, 'lng');
@@ -3948,8 +4048,7 @@ function isCustomerPaymentClosureRetry(booking: {
     !booking.selectedProviderId &&
     booking.opsTasks?.some(
       (task) =>
-        task.type === BookingOpsTaskType.PAYMENT_REVIEWED &&
-        task.status === BookingOpsTaskStatus.PENDING,
+        task.type === BookingOpsTaskType.PAYMENT_REVIEWED && task.status === BookingOpsTaskStatus.PENDING,
     ) === true
   );
 }
@@ -3973,8 +4072,7 @@ function isPreferredProviderPaymentClosureRetry(
     !booking.selectedProviderId &&
     booking.opsTasks?.some(
       (task) =>
-        task.type === BookingOpsTaskType.PAYMENT_REVIEWED &&
-        task.status === BookingOpsTaskStatus.PENDING,
+        task.type === BookingOpsTaskType.PAYMENT_REVIEWED && task.status === BookingOpsTaskStatus.PENDING,
     ) === true
   );
 }
@@ -3997,8 +4095,7 @@ function isProviderPaymentClosureRetry(
     cancellation.reasonCode === reasonCode &&
     booking.opsTasks?.some(
       (task) =>
-        task.type === BookingOpsTaskType.PAYMENT_REVIEWED &&
-        task.status === BookingOpsTaskStatus.PENDING,
+        task.type === BookingOpsTaskType.PAYMENT_REVIEWED && task.status === BookingOpsTaskStatus.PENDING,
     ) === true
   );
 }
@@ -4059,9 +4156,7 @@ function cleanOptionalLocationAddress(value: string | null | undefined) {
 }
 
 async function lockBookingLifecycle(tx: Prisma.TransactionClient, bookingId: string) {
-  await tx.$queryRaw(
-    Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`,
-  );
+  await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`);
 }
 
 async function lockProviderBookingAssignment(tx: Prisma.TransactionClient, providerProfileId: string) {
@@ -4077,8 +4172,12 @@ async function lockProviderBookingReadiness(tx: Prisma.TransactionClient, provid
 }
 
 function safeBookingCompletionErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : 'Booking completion failed after capture reservation';
-  return message.replace(/[\r\n\t]+/g, ' ').trim().slice(0, 500);
+  const message =
+    error instanceof Error ? error.message : 'Booking completion failed after capture reservation';
+  return message
+    .replace(/[\r\n\t]+/g, ' ')
+    .trim()
+    .slice(0, 500);
 }
 
 function bookingPostCommitEffectRetryable(label: string) {

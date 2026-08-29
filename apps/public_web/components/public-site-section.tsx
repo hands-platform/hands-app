@@ -1,12 +1,13 @@
+/* eslint-disable @next/next/no-img-element -- Published CMS image hosts are validated content, not a build-time Next Image allowlist. */
 import type { PublicSitePage } from '../lib/site-content';
 
 type PublicSiteSectionData = PublicSitePage['sections'][number];
 
 export function PublicSiteSection({ section }: { readonly section: PublicSiteSectionData }) {
   const { renderModel } = section;
-  const { eyebrow, title, subtitle, body, actionLabel, actionHref, items } = renderModel;
+  const { eyebrow, title, subtitle, body, imageUrl, imageAlt, actionLabel, actionHref, items } = renderModel;
 
-  if (!eyebrow && !title && !body && !items.length && !(actionLabel && actionHref)) {
+  if (!eyebrow && !title && !subtitle && !body && !imageUrl && !items.length && !(actionLabel && actionHref)) {
     return null;
   }
 
@@ -16,6 +17,7 @@ export function PublicSiteSection({ section }: { readonly section: PublicSiteSec
       {eyebrow ? <p>{eyebrow}</p> : null}
       {title ? <Heading>{title}</Heading> : null}
       {subtitle ? <p>{subtitle}</p> : null}
+      {imageUrl && imageAlt ? <img alt={imageAlt} decoding="async" loading={section.kind === 'HERO' ? 'eager' : 'lazy'} src={imageUrl} /> : null}
       {body ? <p>{body}</p> : null}
       {items.length ? (
         <ul>

@@ -24,6 +24,8 @@ export type ProviderFilters = {
   approvalMissing: string;
   approvalRisk: string;
   city?: string;
+  cursor?: string;
+  cursorHistory?: string;
   page: number;
   pageSize: number;
   q: string;
@@ -45,28 +47,30 @@ export type ProviderFilters = {
 export type PartnerDataHrefs = {
   readonly listHref: string;
   readonly listIsServerPaginated: boolean;
+  readonly listUsesSnapshotCursor?: boolean;
   readonly summaryHref: string;
   readonly summaryMatchesVisibleFilter: boolean;
 };
 
 export function buildProviderFilters(params: Record<string, string | string[] | undefined>): ProviderFilters {
   const requestedReview = normalizePartnerReviewFilter(readParam(params.review));
-  const legacyReadiness = requestedReview
-    ? ''
-    : normalizePartnerReadinessFilter(readParam(params.readiness));
+  const legacyReadiness = requestedReview ? '' : normalizePartnerReadinessFilter(readParam(params.readiness));
   const review =
     requestedReview ||
     ({
       ready: 'ready-now',
       'push-missing': 'push',
       'needs-review': 'approval-incomplete',
-    }[legacyReadiness] ?? '');
+    }[legacyReadiness] ??
+      '');
   const approvalQueue = review === 'approval-pending';
   const onboardingQueue = review === 'unapproved';
   const walletDebtQueue = review === 'unsettled';
   const primaryTaskQueue = approvalQueue || onboardingQueue || walletDebtQueue;
   const approvedOffline = legacyReadiness === 'approved-offline';
   const requestedSort = readPartnerSort(readParam(params.sort));
+  const walletDebtSnapshot = walletDebtQueue && requestedSort === 'wallet-debt';
+  const cursor = walletDebtSnapshot ? readParam(params.cursor) : '';
 
   return {
     age: onboardingQueue || walletDebtQueue ? 'all' : readAdminQueueAge(params.age),
@@ -75,7 +79,9 @@ export function buildProviderFilters(params: Record<string, string | string[] | 
     approvalMissing: approvalQueue ? normalizePartnerApprovalMissing(readParam(params.approvalMissing)) : '',
     approvalRisk: approvalQueue ? normalizePartnerApprovalRisk(readParam(params.approvalRisk)) : '',
     city: readParam(params.city),
-    page: readPageNumber(params.page),
+    cursor,
+    cursorHistory: cursor ? readParam(params.cursorHistory) : '',
+    page: walletDebtSnapshot ? (cursor ? readPageNumber(params.page) : 1) : readPageNumber(params.page),
     pageSize: readPageSize(params.pageSize),
     q: readParam(params.q),
     qualityRange: normalizePartnerQualityRange(readParam(params.qualityRange)),
@@ -94,7 +100,15 @@ export function buildProviderFilters(params: Record<string, string | string[] | 
     review,
     serviceId: readParam(params.serviceId),
     sla: review === 'approval-pending' ? readAdminQueueSlaFilter(params.sla) : 'all',
-    sort: approvalQueue ? 'oldest' : primaryTaskQueue && requestedSort === 'oldest' ? 'newest' : requestedSort,
+    sort: approvalQueue
+      ? 'oldest'
+      : requestedSort === 'wallet-debt'
+        ? walletDebtQueue
+          ? 'wallet-debt'
+          : 'newest'
+        : primaryTaskQueue && requestedSort === 'oldest'
+          ? 'newest'
+          : requestedSort,
     walletStatus: normalizePartnerWalletStatus(readParam(params.walletStatus)),
   };
 }
@@ -105,8 +119,24 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
   const listIsServerPaginated = true;
   const summaryMatchesVisibleFilter = true;
   const listTake = filters.pageSize;
+  const usesSnapshotCursor = filters.review === 'unsettled' && filters.sort === 'wallet-debt';
 
   listParams.set('take', String(listTake));
+  if (usesSnapshotCursor) {
+    if (filters.q) listParams.set('q', filters.q);
+    if (filters.cursor) listParams.set('cursor', filters.cursor);
+    summaryParams.set('review', 'unsettled');
+    if (filters.q) summaryParams.set('q', filters.q);
+
+    return {
+      listHref: `/admin/partners/wallet-debt-page?${listParams.toString()}`,
+      listIsServerPaginated,
+      listUsesSnapshotCursor: true,
+      summaryHref: `/admin/partners/list-providers/summary?${summaryParams.toString()}`,
+      summaryMatchesVisibleFilter,
+    };
+  }
+
   if (listIsServerPaginated) {
     const skip = (filters.page - 1) * filters.pageSize;
     if (skip > 0) {
@@ -144,7 +174,7 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
     listParams.set('sla', filters.sla);
     summaryParams.set('sla', filters.sla);
   }
-  if (filters.sort === 'name' || filters.sort === 'oldest') {
+  if (filters.sort === 'name' || filters.sort === 'oldest' || filters.sort === 'wallet-debt') {
     listParams.set('sort', filters.sort);
   }
 
@@ -243,6 +273,8 @@ export function buildPartnerListHref(filters: ProviderFilters, overrides: Partia
       params.set(key, value);
     }
   });
+  if (next.cursor) params.set('cursor', next.cursor);
+  if (next.cursorHistory) params.set('cursorHistory', next.cursorHistory);
   if (next.pageSize !== DEFAULT_PARTNER_PAGE_SIZE) {
     params.set('pageSize', String(next.pageSize));
   }
@@ -254,10 +286,41 @@ export function buildPartnerListHref(filters: ProviderFilters, overrides: Partia
   return query ? `/partners?${query}` : '/partners';
 }
 
-export function buildPartnerExportHref(filters: ProviderFilters) {
+export function buildPartnerExportHref(filters: ProviderFilters, snapshotCursor = filters.cursor) {
   const params = partnerFilterSearchParams(filters);
+  if (filters.review === 'unsettled' && filters.sort === 'wallet-debt' && snapshotCursor) {
+    params.set('cursor', snapshotCursor);
+  }
   const query = params.toString();
   return query ? `/api/admin/partners/export?${query}` : '/api/admin/partners/export';
+}
+
+export function buildPartnerSnapshotFirstHref(filters: ProviderFilters, snapshotCursor = '') {
+  return buildPartnerListHref(filters, { cursor: snapshotCursor, cursorHistory: '', page: 1 });
+}
+
+export function buildPartnerSnapshotNextHref(
+  filters: ProviderFilters,
+  nextCursor: string,
+  currentCursor = filters.cursor || null,
+) {
+  const history = [...decodePartnerCursorHistory(filters.cursorHistory), currentCursor];
+  return buildPartnerListHref(filters, {
+    cursor: nextCursor,
+    cursorHistory: encodePartnerCursorHistory(history),
+    page: filters.page + 1,
+  });
+}
+
+export function buildPartnerSnapshotPreviousHref(filters: ProviderFilters) {
+  const history = decodePartnerCursorHistory(filters.cursorHistory);
+  const previousCursor = history.at(-1) ?? '';
+  const nextHistory = history.slice(0, -1);
+  return buildPartnerListHref(filters, {
+    cursor: previousCursor ?? '',
+    cursorHistory: nextHistory.length > 0 ? encodePartnerCursorHistory(nextHistory) : '',
+    page: Math.max(1, filters.page - 1),
+  });
 }
 
 export function buildProviderActiveFilters(filters: ProviderFilters) {
@@ -596,19 +659,20 @@ export function emptyProviderMessage(activeFilters: Array<{ description: string 
 export function partnerHasAdvancedOperationalFilters(filters: ProviderFilters) {
   return Boolean(
     filters.bookingFlow ||
-      filters.city ||
-      filters.location ||
-      filters.serviceId ||
-      filters.security ||
-      filters.readiness ||
-      filters.walletStatus ||
-      (filters.review && !isPrimaryPartnerReview(filters.review)),
+    filters.city ||
+    filters.location ||
+    filters.serviceId ||
+    filters.security ||
+    filters.readiness ||
+    filters.walletStatus ||
+    (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
 }
 
 export function partnerSortLabel(sort: string) {
   if (sort === 'name') return 'name';
   if (sort === 'oldest') return 'oldest first';
+  if (sort === 'wallet-debt') return 'debt high to low';
   return 'newest first';
 }
 
@@ -860,7 +924,23 @@ function isServerPartnerActivityFilter(value: string) {
 }
 
 function readPartnerSort(value: string) {
-  return ['newest', 'name', 'oldest'].includes(value) ? value : 'newest';
+  return ['newest', 'name', 'oldest', 'wallet-debt'].includes(value) ? value : 'newest';
+}
+
+function decodePartnerCursorHistory(value: string | undefined): Array<string | null> {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string | null => item === null || typeof item === 'string').slice(-20)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function encodePartnerCursorHistory(value: Array<string | null>) {
+  return Buffer.from(JSON.stringify(value.slice(-20))).toString('base64url');
 }
 
 function isPrimaryPartnerReview(value: string) {

@@ -8,12 +8,14 @@ import {
   BANK_STATEMENT_ESCALATION_INTERVAL_MS,
   BANK_STATEMENT_ESCALATION_JOB_NAME,
   BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
+  PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME,
+  PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_SCHEDULER_ID,
   type BankStatementEscalationJob,
 } from './bank-statement-escalation.queue';
 import { BankStatementEscalationScheduler } from './bank-statement-escalation.scheduler';
 
 describe('Bank statement escalation queue', () => {
-  it('registers stable five-minute escalation and failure-monitor schedulers', async () => {
+  it('registers stable five-minute Admin maintenance schedulers', async () => {
     const queue = {
       upsertJobScheduler: vi.fn().mockResolvedValue(undefined),
     };
@@ -47,7 +49,20 @@ describe('Bank statement escalation queue', () => {
         }),
       }),
     );
-    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
+    expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
+      PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_SCHEDULER_ID,
+      { every: BANK_STATEMENT_ESCALATION_INTERVAL_MS },
+      expect.objectContaining({
+        data: {},
+        name: PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME,
+        opts: expect.objectContaining({
+          attempts: 3,
+          removeOnComplete: { count: 25 },
+          removeOnFail: { count: 100 },
+        }),
+      }),
+    );
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(3);
     expect(BANK_STATEMENT_ESCALATION_INTERVAL_MS).toBe(5 * 60_000);
     scheduler.onModuleDestroy();
   });
@@ -60,7 +75,7 @@ describe('Bank statement escalation queue', () => {
     await scheduler.onApplicationBootstrap();
     await vi.advanceTimersByTimeAsync(BANK_STATEMENT_ESCALATION_INTERVAL_MS);
 
-    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(4);
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(6);
     scheduler.onModuleDestroy();
     vi.useRealTimers();
   });
@@ -76,10 +91,10 @@ describe('Bank statement escalation queue', () => {
     const scheduler = new BankStatementEscalationScheduler(queue as unknown as Queue);
 
     await scheduler.onApplicationBootstrap();
-    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(3);
 
     await vi.advanceTimersByTimeAsync(5_000);
-    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(4);
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(6);
 
     scheduler.onModuleDestroy();
     vi.useRealTimers();
@@ -91,13 +106,11 @@ describe('Bank statement escalation queue', () => {
       releaseRegistration = resolve;
     });
     const queue = {
-      upsertJobScheduler: vi.fn()
-        .mockReturnValueOnce(registration)
-        .mockResolvedValue(undefined),
+      upsertJobScheduler: vi.fn().mockReturnValueOnce(registration).mockResolvedValue(undefined),
     };
     const scheduler = new BankStatementEscalationScheduler(queue as unknown as Queue);
     const bootstrap = scheduler.onApplicationBootstrap();
-    await vi.waitFor(() => expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(3));
     let shutdownComplete = false;
     const shutdown = scheduler.onModuleDestroy().then(() => {
       shutdownComplete = true;
@@ -146,10 +159,12 @@ describe('Bank statement escalation queue', () => {
       backgroundJobs as unknown as AdminBackgroundJobsService,
     );
 
-    await expect(processor.process({
-      data: {},
-      name: BANK_STATEMENT_ESCALATION_JOB_NAME,
-    } as Job<BankStatementEscalationJob>)).resolves.toMatchObject({
+    await expect(
+      processor.process({
+        data: {},
+        name: BANK_STATEMENT_ESCALATION_JOB_NAME,
+      } as Job<BankStatementEscalationJob>),
+    ).resolves.toMatchObject({
       escalatedCount: 1,
       reviewEscalations: { escalatedCount: 1 },
       partnerDepositEscalations: { escalatedCount: 1 },
@@ -178,10 +193,12 @@ describe('Bank statement escalation queue', () => {
       backgroundJobs as unknown as AdminBackgroundJobsService,
     );
 
-    await expect(processor.process({
-      data: {},
-      name: BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME,
-    } as Job<BankStatementEscalationJob>)).resolves.toEqual({
+    await expect(
+      processor.process({
+        data: {},
+        name: BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME,
+      } as Job<BankStatementEscalationJob>),
+    ).resolves.toEqual({
       failures: { alertedCount: 1, scannedCount: 1 },
       missingJobs: { registeredCount: 2, scannedCount: 2 },
       queueHealth: { alertedCount: 1, scannedCount: 4 },
@@ -193,6 +210,41 @@ describe('Bank statement escalation queue', () => {
     expect(admin.syncCompanyBankTransactionReviewEscalations).not.toHaveBeenCalled();
     expect(admin.syncCompanyBankTransactionReviewEscalationResolutions).not.toHaveBeenCalled();
     expect(admin.syncPartnerBankDepositReconciliationEscalations).not.toHaveBeenCalled();
+  });
+
+  it('physically purges expired Partner wallet debt snapshots in a dedicated job', async () => {
+    const admin = {
+      purgeExpiredPartnerWalletDebtSnapshots: vi.fn().mockResolvedValue({ hasMore: false, purgedCount: 2 }),
+    };
+    const processor = new BankStatementEscalationProcessor(
+      admin as unknown as AdminService,
+      {} as AdminBackgroundJobsService,
+    );
+
+    await expect(
+      processor.process({
+        data: {},
+        name: PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME,
+      } as Job<BankStatementEscalationJob>),
+    ).resolves.toEqual({ hasMore: false, purgedCount: 2 });
+    expect(admin.purgeExpiredPartnerWalletDebtSnapshots).toHaveBeenCalledOnce();
+  });
+
+  it('retries and escalates when an expired snapshot backlog remains after a full batch', async () => {
+    const admin = {
+      purgeExpiredPartnerWalletDebtSnapshots: vi.fn().mockResolvedValue({ hasMore: true, purgedCount: 500 }),
+    };
+    const processor = new BankStatementEscalationProcessor(
+      admin as unknown as AdminService,
+      {} as AdminBackgroundJobsService,
+    );
+
+    await expect(
+      processor.process({
+        data: {},
+        name: PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME,
+      } as Job<BankStatementEscalationJob>),
+    ).rejects.toThrow('snapshot backlog remains after purging 500 records');
   });
 
   it('does not run the sweep for an unexpected queue job', async () => {
@@ -212,10 +264,12 @@ describe('Bank statement escalation queue', () => {
       backgroundJobs as unknown as AdminBackgroundJobsService,
     );
 
-    await expect(processor.process({
-      data: {},
-      name: 'unexpected-job',
-    } as Job<BankStatementEscalationJob>)).resolves.toEqual({
+    await expect(
+      processor.process({
+        data: {},
+        name: 'unexpected-job',
+      } as Job<BankStatementEscalationJob>),
+    ).resolves.toEqual({
       reason: 'UNSUPPORTED_JOB',
       skipped: true,
     });

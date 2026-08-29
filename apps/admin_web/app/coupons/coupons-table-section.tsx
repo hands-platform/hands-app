@@ -146,7 +146,15 @@ export function CouponsTableSection({
                       </AdminTextLink>
                       <ActionMenu
                         actions={[
-                          {
+                          row.usageCountKnown && row.usageBookingCount > 0 ? {
+                            description: 'Used coupons are retained for audit. Pause the coupon instead of deleting it.',
+                            disabled: true,
+                            href: deleteHrefForCoupon(row.id),
+                            icon: PauseCircle,
+                            kind: 'link',
+                            label: 'Pause only · usage retained',
+                          } : {
+                            description: 'Delete is allowed only when no booking usage exists.',
                             href: deleteHrefForCoupon(row.id),
                             icon: Trash2,
                             kind: 'link',
@@ -155,6 +163,9 @@ export function CouponsTableSection({
                           },
                         ]}
                         label={`More actions for ${row.code}`}
+                        managedDropdown
+                        title="More actions"
+                        variant="dropdown"
                       />
                     </div>
                   ) : (

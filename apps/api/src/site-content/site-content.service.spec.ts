@@ -7,11 +7,38 @@ import {
 
 import {
   normalizePublicSiteSection,
+  publicSiteCacheInvalidationTargets,
+  publicSiteManifestHealth,
+  publicSiteManifestQueue,
   publicSiteRevisionReadiness,
   SiteContentService,
 } from './site-content.service';
 
 describe('SiteContentService revision contract', () => {
+  it.each([
+    ['HERO', { title: 'Hero' }],
+    ['FAQ', { items: [{ question: 'Question', answer: 'Answer' }] }],
+    ['LEGAL_DOCUMENT', { title: 'Terms', body: 'Body' }],
+    ['CTA', { title: 'Book', actionLabel: 'Open', actionHref: '/book' }],
+    ['APP_OVERVIEW', { title: 'Overview' }],
+    ['PARTNER_DIRECTORY', { title: 'Partners' }],
+    ['PARTNER_DETAIL', { title: 'Profile' }],
+    ['RECRUITMENT_BENEFITS', { title: 'Benefits' }],
+    ['RECRUITMENT_PROCESS', { title: 'Process' }],
+    ['COMPANY_INFORMATION', { title: 'Company' }],
+    ['CONTACT', { title: 'Contact' }],
+  ])('normalizes a visible %s contract', (kind, content) => {
+    expect(normalizePublicSiteSection(kind, content)).not.toBeNull();
+  });
+
+  it('keeps generic subtitle and image content visible while blocking unsafe or inaccessible media', () => {
+    expect(normalizePublicSiteSection('APP_OVERVIEW', { subtitle: 'Visible subtitle' })).toMatchObject({ subtitle: 'Visible subtitle' });
+    expect(normalizePublicSiteSection('APP_OVERVIEW', { imageUrl: '/images/app.jpg', imageAlt: 'HANDS app screen' })).toMatchObject({ imageUrl: '/images/app.jpg', imageAlt: 'HANDS app screen' });
+    expect(normalizePublicSiteSection('APP_OVERVIEW', { imageUrl: '/images/app.jpg' })).toBeNull();
+    expect(normalizePublicSiteSection('APP_OVERVIEW', { imageUrl: 'javascript:alert(1)', imageAlt: 'Unsafe' })).toBeNull();
+    expect(normalizePublicSiteSection('APP_OVERVIEW', { title: 'Visible', actionLabel: 'Open', actionHref: 'javascript:alert(1)' })).toBeNull();
+  });
+
   it('uses the same renderability contract for readiness and public output', () => {
     const ready = publicSiteRevisionReadiness({
       seoTitle: 'HANDS',
@@ -191,6 +218,64 @@ describe('SiteContentService revision contract', () => {
     await expect(service.createPreviewToken(page.id)).rejects.toThrow(
       'Draft preview signing is not configured',
     );
+    await expect(service.createPreviewToken(page.id)).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'SITE_CONTENT_PREVIEW_NOT_CONFIGURED' }),
+    });
+  });
+
+  it('purges every configured Public Web host outside the mutation transaction and records only redacted evidence', async () => {
+    const page = pageFixture();
+    const auditCreate = vi.fn().mockResolvedValue({ id: 'audit-1' });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    const config = { get: vi.fn((key: string) => ({
+      NODE_ENV: 'production',
+      SITE_CONTENT_CACHE_INVALIDATION_SECRET: 'cache-secret-at-least-32-characters-long',
+      SITE_CONTENT_CACHE_INVALIDATION_URLS: 'https://hands.vn, https://join.hands.vn',
+    } as Record<string, string>)[key]) };
+    const service = new SiteContentService({
+      publicSitePage: { findUnique: vi.fn().mockResolvedValue(page) },
+      adminAuditLog: { create: auditCreate },
+    } as never, config as never);
+
+    const result = await service.retryPublicCacheInvalidation('publisher-1', page.id);
+
+    expect(result).toMatchObject({ status: 'SUCCEEDED', hostCount: 2, succeededHostCount: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
+      'https://hands.vn/api/site-content-cache',
+      'https://join.hands.vn/api/site-content-cache',
+    ]);
+    const auditJson = JSON.stringify(auditCreate.mock.calls);
+    expect(auditJson).toContain('PUBLIC_SITE_CACHE_INVALIDATION');
+    expect(auditJson).not.toContain('cache-secret');
+    expect(auditJson).not.toContain('https://');
+    vi.unstubAllGlobals();
+  });
+
+  it('accepts local HTTP cache hosts only outside production and deduplicates them', () => {
+    expect(publicSiteCacheInvalidationTargets('http://localhost:3200,http://localhost:3200', 'development')).toEqual([
+      'http://localhost:3200/api/site-content-cache',
+    ]);
+    expect(publicSiteCacheInvalidationTargets('http://localhost:3200', 'production')).toEqual([]);
+  });
+
+  it('resolves revision publisher labels from bounded page audit evidence', async () => {
+    const page = pageFixture();
+    const service = new SiteContentService({
+      publicSitePage: { findUnique: vi.fn().mockResolvedValue(page) },
+      adminAuditLog: { findMany: vi.fn().mockResolvedValue([{
+        id: 'audit-1',
+        action: 'PUBLIC_SITE_DRAFT_PUBLISHED',
+        createdAt: new Date(),
+        actor: { id: 'publisher-0', fullName: 'Content Publisher', email: 'publisher@example.com' },
+        metadata: { revisionId: 'active-1' },
+      }]) },
+    } as never);
+
+    const result = await service.getAdminPage(page.id);
+
+    expect(result.revisions[0]).toMatchObject({ id: 'active-1', publishedByLabel: 'Content Publisher' });
   });
 
   it('applies server pagination to route groups without returning section JSON', async () => {
@@ -217,13 +302,24 @@ describe('SiteContentService revision contract', () => {
       take: 20,
       total: 1_000,
       summary: {
-        missingRoutes: 35,
-        missingTranslations: 175,
-        recentlyPublished: 1,
-        scope: { contentType: 'pages' },
+        manifestHealth: { missingRoutes: 35, missingTranslations: 175, staleTranslations: null },
+        viewScope: { recentlyPublished: 1, scope: { contentType: 'pages' } },
       },
     });
-    expect(JSON.stringify(findMany.mock.calls[0]?.[0]?.select)).not.toContain('"content"');
+    expect(JSON.stringify(findMany.mock.calls.map((call) => call[0]?.select))).not.toContain('"content"');
+  });
+
+  it('keeps global manifest health stable and makes both gap queues add up to the health counts', () => {
+    const existing = [{ site: PublicSiteKey.MAIN, path: '/', locale: 'vi' }];
+    const health = publicSiteManifestHealth(existing);
+    const routeQueue = publicSiteManifestQueue(existing, 'missing-routes');
+    const translationQueue = publicSiteManifestQueue(existing, 'missing-translations');
+
+    expect(routeQueue).toHaveLength(health.missingRoutes);
+    expect(translationQueue).toHaveLength(health.missingTranslations);
+    expect(health.staleTranslations).toBeNull();
+    expect(health.staleTranslationsApplicable).toBe(false);
+    expect(routeQueue[0]).toEqual(expect.objectContaining({ site: expect.any(String), path: expect.any(String), locale: expect.any(String), reason: expect.any(String), recommendedAction: expect.any(String) }));
   });
 
   it('keeps the article list available when only summary aggregation fails', async () => {

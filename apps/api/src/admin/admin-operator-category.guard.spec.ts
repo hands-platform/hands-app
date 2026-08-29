@@ -3,6 +3,7 @@ import {
   AdminOperatorCategoryGuard,
   adminOperatorCategoryForPath,
   adminOperatorCategoryForWritePath,
+  FINANCE_MONEY_MOVEMENT_PERMISSION_CATEGORIES,
   isAllowlistedAdminRoute,
   isAllowlistedAdminWrite,
   requiresRecentAdminReauthentication,
@@ -64,6 +65,11 @@ describe('AdminOperatorCategoryGuard', () => {
       data: expect.objectContaining({
         action: 'admin_operator.authorization.denied',
         actorId: 'operator-user-1',
+        actorType: 'HUMAN',
+        area: 'SECURITY',
+        outcome: 'DENIED',
+        severity: 'REVIEW',
+        source: 'admin_permission_guard',
         metadata: expect.objectContaining({
           reason: 'CATEGORY_MISSING',
           requiredCategory: AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
@@ -71,6 +77,41 @@ describe('AdminOperatorCategoryGuard', () => {
         target: 'admin_route:POST:/admin/payout-batches',
       }),
     });
+  });
+
+  it('keeps authorization fail closed when denial evidence cannot be persisted', async () => {
+    const { guard, prisma } = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.CUSTOMERS] },
+    });
+    prisma.adminAuditLog.create.mockRejectedValueOnce(new Error('audit persistence unavailable'));
+
+    await expect(
+      guard.canActivate(contextFixture('POST', '/api/admin/payout-batches')),
+    ).rejects.toThrow('Admin operator lacks FINANCE_SETTLEMENTS access');
+  });
+
+  it('requires FINANCE_TAX for referral tax decisions while keeping cashout approval in settlements', async () => {
+    const settlements = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS] },
+    });
+    const tax = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.FINANCE_TAX] },
+    });
+    const taxDecisionPath = '/api/admin/referrals/rewards/reward-1/tax-review-approve';
+
+    expect(adminOperatorCategoryForWritePath(taxDecisionPath)).toBe(
+      AdminOperatorPermissionCategory.FINANCE_TAX,
+    );
+    await expect(settlements.guard.canActivate(contextFixture('POST', taxDecisionPath))).rejects.toThrow(
+      'Admin operator lacks FINANCE_TAX access',
+    );
+    await expect(tax.guard.canActivate(contextFixture('POST', taxDecisionPath))).resolves.toBe(true);
+    expect(
+      adminOperatorCategoryForWritePath('/api/admin/referrals/rewards/reward-1/cashout-approve'),
+    ).toBe(AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS);
   });
 
   it('keeps marketing reads separate from manual spend management', async () => {
@@ -110,6 +151,233 @@ describe('AdminOperatorCategoryGuard', () => {
     await expect(
       pushOperator.guard.canActivate(contextFixture('POST', '/api/admin/notifications/push-campaigns')),
     ).resolves.toBe(true);
+    expect(pushOperator.prisma.adminWebSession.findUnique).toHaveBeenCalledTimes(1);
+    expect(requiresRecentAdminReauthentication('POST', '/api/admin/notifications/push-campaigns')).toBe(true);
+    expect(requiresRecentAdminReauthentication('POST', '/api/admin/notifications/push-campaigns/preview')).toBe(false);
+  });
+
+  it.each([
+    ['stale', { reauthenticatedAt: new Date(Date.now() - 11 * 60_000), revokedAt: null, userId: 'operator-user-1' }],
+    ['wrong-user', { reauthenticatedAt: new Date(), revokedAt: null, userId: 'operator-user-2' }],
+    ['revoked', { reauthenticatedAt: new Date(), revokedAt: new Date(), userId: 'operator-user-1' }],
+  ])('rejects Push confirm for a %s Admin Web session while leaving preview available', async (_case, session) => {
+    const { guard, prisma } = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH] },
+    });
+    prisma.adminWebSession.findUnique.mockResolvedValue({
+      expiresAt: new Date(Date.now() + 60_000),
+      mfaVerifiedAt: new Date(),
+      ...session,
+    });
+
+    await expect(
+      guard.canActivate(contextFixture('POST', '/api/admin/notifications/push-campaigns')),
+    ).rejects.toMatchObject({ response: expect.objectContaining({ code: 'RECENT_REAUTH_REQUIRED' }) });
+    prisma.adminWebSession.findUnique.mockClear();
+    await expect(
+      guard.canActivate(contextFixture('POST', '/api/admin/notifications/push-campaigns/preview')),
+    ).resolves.toBe(true);
+    expect(prisma.adminWebSession.findUnique).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['missing', null],
+    [
+      'stale password',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(),
+        reauthenticatedAt: new Date(Date.now() - 10 * 60_000 - 1_000),
+        revokedAt: null,
+        userId: 'operator-user-1',
+      },
+    ],
+    [
+      'stale MFA',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(Date.now() - 10 * 60_000 - 1_000),
+        reauthenticatedAt: new Date(),
+        revokedAt: null,
+        userId: 'operator-user-1',
+      },
+    ],
+    [
+      'revoked',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(),
+        reauthenticatedAt: new Date(),
+        revokedAt: new Date(),
+        userId: 'operator-user-1',
+      },
+    ],
+    [
+      'wrong user',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(),
+        reauthenticatedAt: new Date(),
+        revokedAt: null,
+        userId: 'operator-user-2',
+      },
+    ],
+  ])('rejects an operational policy PATCH with a %s reauthentication session', async (_case, session) => {
+    const { guard, prisma } = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.SYSTEM_POLICY] },
+    });
+    prisma.adminWebSession.findUnique.mockResolvedValue(session);
+
+    await expect(
+      guard.canActivate(
+        contextFixture(
+          'PATCH',
+          '/api/admin/operational-policy/matching.provider_response_window_minutes',
+        ),
+      ),
+    ).rejects.toMatchObject({ response: expect.objectContaining({ code: 'RECENT_REAUTH_REQUIRED' }) });
+  });
+
+  it('allows the same Admin Web session inside the password and MFA reauthentication boundary', async () => {
+    const { guard, prisma } = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.SYSTEM_POLICY] },
+    });
+    prisma.adminWebSession.findUnique.mockResolvedValue({
+      expiresAt: new Date(Date.now() + 60_000),
+      mfaVerifiedAt: new Date(Date.now() - 10 * 60_000 + 1_000),
+      reauthenticatedAt: new Date(Date.now() - 10 * 60_000 + 1_000),
+      revokedAt: null,
+      userId: 'operator-user-1',
+    });
+
+    await expect(
+      guard.canActivate(
+        contextFixture(
+          'PATCH',
+          '/api/admin/operational-policy/matching.provider_response_window_minutes',
+        ),
+      ),
+    ).resolves.toBe(true);
+    expect(requiresRecentAdminReauthentication(
+      'PATCH',
+      '/api/admin/operational-policy/matching.provider_response_window_minutes',
+    )).toBe(true);
+  });
+
+  it.each([
+    ['missing', null],
+    [
+      'stale password',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(),
+        reauthenticatedAt: new Date(Date.now() - 11 * 60_000),
+        revokedAt: null,
+        userId: 'operator-user-1',
+      },
+    ],
+    [
+      'stale MFA',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(Date.now() - 11 * 60_000),
+        reauthenticatedAt: new Date(),
+        revokedAt: null,
+        userId: 'operator-user-1',
+      },
+    ],
+    [
+      'revoked',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(),
+        reauthenticatedAt: new Date(),
+        revokedAt: new Date(),
+        userId: 'operator-user-1',
+      },
+    ],
+    [
+      'wrong session owner',
+      {
+        expiresAt: new Date(Date.now() + 60_000),
+        mfaVerifiedAt: new Date(),
+        reauthenticatedAt: new Date(),
+        revokedAt: null,
+        userId: 'operator-user-2',
+      },
+    ],
+  ])('rejects a live service catalog intent with a %s proof', async (_case, session) => {
+    const { guard, prisma } = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.SYSTEM_SERVICES] },
+    });
+    prisma.adminWebSession.findUnique.mockResolvedValue(session);
+
+    await expect(
+      guard.canActivate(
+        contextFixture(
+          'PATCH',
+          '/api/admin/services/groups/aroma_massage',
+          {},
+          { intent: 'PUBLISH' },
+        ),
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'RECENT_REAUTH_REQUIRED' }),
+    });
+  });
+
+  it('requires recent reauthentication only for allowlisted live service catalog intents', async () => {
+    const { guard, prisma } = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.SYSTEM_SERVICES] },
+    });
+
+    for (const intent of ['PUBLISH', 'HIDE', 'ARCHIVE'] as const) {
+      await expect(
+        guard.canActivate(
+          contextFixture(
+            'PATCH',
+            '/api/admin/services/groups/aroma_massage',
+            {},
+            { intent },
+          ),
+        ),
+      ).resolves.toBe(true);
+    }
+    expect(prisma.adminWebSession.findUnique).toHaveBeenCalledTimes(3);
+    prisma.adminWebSession.findUnique.mockClear();
+
+    for (const intent of ['SAVE_DRAFT', 'NOT_A_REAL_INTENT']) {
+      await expect(
+        guard.canActivate(
+          contextFixture(
+            'PATCH',
+            '/api/admin/services/groups/aroma_massage',
+            {},
+            { intent },
+          ),
+        ),
+      ).resolves.toBe(true);
+    }
+    expect(prisma.adminWebSession.findUnique).not.toHaveBeenCalled();
+    expect(
+      requiresRecentAdminReauthentication(
+        'PATCH',
+        '/api/admin/services/groups/aroma_massage',
+        { intent: 'PUBLISH' },
+      ),
+    ).toBe(true);
+    expect(
+      requiresRecentAdminReauthentication(
+        'PATCH',
+        '/api/admin/services/groups/aroma_massage',
+        { intent: 'SAVE_DRAFT' },
+      ),
+    ).toBe(false);
   });
 
   it('denies unmapped Admin writes by default', async () => {
@@ -191,6 +459,75 @@ describe('AdminOperatorCategoryGuard', () => {
     ).resolves.toBe(true);
   });
 
+  it('requires both System Policy and Bank Reconciliation for company bank account maker writes', async () => {
+    const systemOnly = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.SYSTEM_POLICY] },
+    });
+    const bankOnly = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: {
+        categories: [AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION],
+      },
+    });
+    const both = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: {
+        categories: [
+          AdminOperatorPermissionCategory.SYSTEM_POLICY,
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+        ],
+      },
+    });
+    const inheritedFinance = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: {
+        categories: [
+          AdminOperatorPermissionCategory.SYSTEM_POLICY,
+          AdminOperatorPermissionCategory.FINANCE,
+        ],
+      },
+    });
+    const master = createGuard({
+      roles: [Role.ADMIN, Role.MASTER_ADMIN],
+      adminOperatorPermission: null,
+    });
+
+    await expect(
+      systemOnly.guard.canActivate(contextFixture('POST', '/api/admin/company-bank-accounts')),
+    ).rejects.toThrow('Admin operator lacks FINANCE_BANK_RECONCILIATION access');
+    await expect(
+      bankOnly.guard.canActivate(contextFixture('POST', '/api/admin/company-bank-accounts')),
+    ).rejects.toThrow('Admin operator lacks SYSTEM_POLICY access');
+    await expect(
+      both.guard.canActivate(contextFixture('POST', '/api/admin/company-bank-accounts')),
+    ).resolves.toBe(true);
+    await expect(
+      systemOnly.guard.canActivate(
+        contextFixture(
+          'POST',
+          '/api/admin/company-bank-accounts/account-1/evidence-review-requests',
+        ),
+      ),
+    ).rejects.toThrow('Admin operator lacks FINANCE_BANK_RECONCILIATION access');
+    await expect(
+      both.guard.canActivate(
+        contextFixture(
+          'POST',
+          '/api/admin/company-bank-accounts/account-1/evidence-review-requests',
+        ),
+      ),
+    ).resolves.toBe(true);
+    await expect(
+      inheritedFinance.guard.canActivate(
+        contextFixture('PATCH', '/api/admin/company-bank-accounts/account-1'),
+      ),
+    ).resolves.toBe(true);
+    await expect(
+      master.guard.canActivate(contextFixture('POST', '/api/admin/company-bank-accounts')),
+    ).resolves.toBe(true);
+  });
+
   it('maps finance approver reads, history, requests, and decisions to separate guard categories', async () => {
     expect(adminOperatorCategoryForPath('/admin/finance-approver-governance/operators')).toBe(
       AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
@@ -217,8 +554,200 @@ describe('AdminOperatorCategoryGuard', () => {
     });
 
     await expect(guard.canActivate(contextFixture('GET', '/api/admin/customers'))).rejects.toThrow(
-      'Admin operator lacks CUSTOMERS_DETAIL access',
+      'Admin operator lacks CUSTOMERS_DIRECTORY access',
     );
+  });
+
+  it('separates Customer directory collection reads from Customer detail access', async () => {
+    const directory = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: {
+        categories: [AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY],
+      },
+    });
+    const detail = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.CUSTOMERS_DETAIL] },
+    });
+
+    await expect(
+      directory.guard.canActivate(contextFixture('GET', '/api/admin/customers')),
+    ).resolves.toBe(true);
+    await expect(
+      directory.guard.canActivate(contextFixture('GET', '/api/admin/customers/summary')),
+    ).resolves.toBe(true);
+    await expect(
+      directory.guard.canActivate(contextFixture('GET', '/api/admin/customers/customer-1')),
+    ).rejects.toThrow('Admin operator lacks CUSTOMERS_DETAIL access');
+    await expect(
+      directory.guard.canActivate(
+        contextFixture('GET', '/api/admin/customers/customer-1/wallet-ledger'),
+      ),
+    ).rejects.toThrow('Admin operator lacks CUSTOMERS_DETAIL access');
+    await expect(
+      detail.guard.canActivate(contextFixture('GET', '/api/admin/customers')),
+    ).rejects.toThrow('Admin operator lacks CUSTOMERS_DIRECTORY access');
+  });
+
+  it('keeps scoped service evidence separate from the full audit log permission', async () => {
+    const servicesOnly = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.SYSTEM_SERVICES] },
+    });
+    const auditOnly = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.SYSTEM_AUDIT] },
+    });
+    const both = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: {
+        categories: [
+          AdminOperatorPermissionCategory.SYSTEM_SERVICES,
+          AdminOperatorPermissionCategory.SYSTEM_AUDIT,
+        ],
+      },
+    });
+    const master = createGuard({
+      roles: [Role.ADMIN, Role.MASTER_ADMIN],
+      adminOperatorPermission: null,
+    });
+    const neither = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.CUSTOMERS] },
+    });
+    const scopedPath = '/api/admin/services/groups/aroma_massage/audit-evidence';
+    const fullAuditPath = '/api/admin/audit-logs';
+
+    await expect(servicesOnly.guard.canActivate(contextFixture('GET', scopedPath))).resolves.toBe(true);
+    await expect(servicesOnly.guard.canActivate(contextFixture('GET', fullAuditPath))).rejects.toThrow(
+      'Admin operator lacks SYSTEM_AUDIT access',
+    );
+    await expect(auditOnly.guard.canActivate(contextFixture('GET', scopedPath))).rejects.toThrow(
+      'Admin operator lacks SYSTEM_SERVICES access',
+    );
+    await expect(auditOnly.guard.canActivate(contextFixture('GET', fullAuditPath))).resolves.toBe(true);
+    await expect(both.guard.canActivate(contextFixture('GET', scopedPath))).resolves.toBe(true);
+    await expect(both.guard.canActivate(contextFixture('GET', fullAuditPath))).resolves.toBe(true);
+    await expect(master.guard.canActivate(contextFixture('GET', scopedPath))).resolves.toBe(true);
+    await expect(master.guard.canActivate(contextFixture('GET', fullAuditPath))).resolves.toBe(true);
+    await expect(neither.guard.canActivate(contextFixture('GET', scopedPath))).rejects.toThrow(
+      'Admin operator lacks SYSTEM_SERVICES access',
+    );
+    await expect(neither.guard.canActivate(contextFixture('GET', fullAuditPath))).rejects.toThrow(
+      'Admin operator lacks SYSTEM_AUDIT access',
+    );
+  });
+
+  it('protects exact wallet adjustment records with the wallet adjustment category', async () => {
+    const unrelated = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.CUSTOMERS] },
+    });
+    const financeWallet = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: {
+        categories: [AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS],
+      },
+    });
+
+    await expect(
+      unrelated.guard.canActivate(
+        contextFixture('GET', '/api/admin/wallet-adjustments/customer-ledger-exact'),
+      ),
+    ).rejects.toThrow('Admin operator lacks FINANCE_WALLET_ADJUSTMENTS access');
+    await expect(
+      financeWallet.guard.canActivate(
+        contextFixture('GET', '/api/admin/wallet-adjustments/customer-ledger-exact'),
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it('keeps Partner report audit history inside the Partner detail permission boundary', async () => {
+    const partnerOperator = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.PARTNERS_DETAIL] },
+    });
+    const customerOperator = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.CUSTOMERS_DETAIL] },
+    });
+    const path = '/api/admin/provider-reports/report-1/audit-history';
+
+    expect(adminOperatorCategoryForPath(path)).toBe(AdminOperatorPermissionCategory.PARTNERS_DETAIL);
+    await expect(partnerOperator.guard.canActivate(contextFixture('GET', path))).resolves.toBe(true);
+    await expect(customerOperator.guard.canActivate(contextFixture('GET', path))).rejects.toThrow(
+      'Admin operator lacks PARTNERS_DETAIL access',
+    );
+  });
+
+  it('requires explicit Developer diagnostics access for customer detail diagnostics', async () => {
+    const customerOperator = createGuard(null);
+    const diagnosticsOperator = createGuard(null);
+    const masterAdmin = createGuard({
+      roles: [Role.ADMIN, Role.MASTER_ADMIN],
+      adminOperatorPermission: null,
+    });
+
+    await expect(
+      customerOperator.guard.canActivate(
+        contextFixture('GET', '/api/admin/customers/customer-1', {
+          adminPermissionCategories: [AdminOperatorPermissionCategory.CUSTOMERS_DETAIL],
+        }),
+      ),
+    ).resolves.toBe(true);
+    await expect(
+      customerOperator.guard.canActivate(
+        contextFixture('GET', '/api/admin/customers/customer-1?includeDiagnostics=false', {
+          adminPermissionCategories: [AdminOperatorPermissionCategory.CUSTOMERS_DETAIL],
+        }),
+      ),
+    ).resolves.toBe(true);
+    await expect(
+      customerOperator.guard.canActivate(
+        contextFixture('GET', '/api/admin/customers/customer-1?includeDiagnostics=true', {
+          adminPermissionCategories: [AdminOperatorPermissionCategory.CUSTOMERS_DETAIL],
+        }),
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ADMIN_OPERATOR_ACCESS_DENIED',
+        message: 'Admin operator access denied',
+      },
+    });
+    expect(customerOperator.prisma.adminAuditLog.create).toHaveBeenLastCalledWith({
+      data: expect.objectContaining({
+        action: 'admin_operator.authorization.denied',
+        actorType: 'HUMAN',
+        area: 'SECURITY',
+        outcome: 'DENIED',
+        severity: 'REVIEW',
+        source: 'admin_permission_guard',
+        metadata: expect.objectContaining({
+          reason: 'CATEGORY_MISSING',
+          requiredCategory: AdminOperatorPermissionCategory.DEVELOPER_APP_SESSIONS_DIAGNOSTICS,
+        }),
+        target: 'admin_route:GET:/admin/customers/customer-1',
+      }),
+    });
+    expect(JSON.stringify(customerOperator.prisma.adminAuditLog.create.mock.calls)).not.toContain(
+      'includeDiagnostics',
+    );
+
+    await expect(
+      diagnosticsOperator.guard.canActivate(
+        contextFixture('GET', '/api/admin/customers/customer-1?includeDiagnostics=true', {
+          adminPermissionCategories: [
+            AdminOperatorPermissionCategory.CUSTOMERS_DETAIL,
+            AdminOperatorPermissionCategory.DEVELOPER_APP_SESSIONS_DIAGNOSTICS,
+          ],
+        }),
+      ),
+    ).resolves.toBe(true);
+    await expect(
+      masterAdmin.guard.canActivate(
+        contextFixture('GET', '/api/admin/customers/customer-1?includeDiagnostics=true'),
+      ),
+    ).resolves.toBe(true);
   });
 
   it('keeps the matching preview inside Developer/System diagnostics access', async () => {
@@ -310,6 +839,28 @@ describe('AdminOperatorCategoryGuard', () => {
   });
 
   it.each([
+    '/api/admin/providers/partner-1/sanctions',
+    '/api/admin/provider-sanctions/sanction-1/lift',
+  ])('requires recent password and MFA verification for Partner control mutation %s', async (path) => {
+    const { guard, prisma } = createGuard({
+      roles: [Role.ADMIN],
+      adminOperatorPermission: { categories: [AdminOperatorPermissionCategory.PARTNERS_DETAIL] },
+    });
+    prisma.adminWebSession.findUnique.mockResolvedValue({
+      expiresAt: new Date(Date.now() + 60_000),
+      mfaVerifiedAt: new Date(),
+      reauthenticatedAt: new Date(Date.now() - 11 * 60_000),
+      revokedAt: null,
+      userId: 'operator-user-1',
+    });
+
+    await expect(guard.canActivate(contextFixture('POST', path))).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'RECENT_REAUTH_REQUIRED' }),
+    });
+    expect(requiresRecentAdminReauthentication('POST', path)).toBe(true);
+  });
+
+  it.each([
     '/api/admin/bank-reconciliation/transaction-1/matches',
     '/api/admin/bank-reconciliation/transaction-1/matches/match-1/reverse',
     '/api/admin/bank-reconciliation/transaction-1/ignore',
@@ -387,6 +938,19 @@ describe('AdminOperatorCategoryGuard', () => {
 });
 
 describe('adminOperatorCategoryForWritePath', () => {
+  it('keeps Finance summary coverage aligned with the money-movement route categories', () => {
+    const routedCategories = new Set([
+      adminOperatorCategoryForWritePath('/admin/payments/payment-1/capture'),
+      adminOperatorCategoryForWritePath('/admin/accounting-journal-batches/batch-1/reverse'),
+      adminOperatorCategoryForWritePath('/admin/bank-reconciliation/transaction-1/ignore'),
+      adminOperatorCategoryForWritePath('/admin/wallet-adjustments'),
+      adminOperatorCategoryForWritePath('/admin/payout-batches/batch-1/reversal'),
+      adminOperatorCategoryForWritePath('/admin/tax-policy-approval-requests/request-1/decision'),
+    ]);
+
+    expect(routedCategories).toEqual(new Set(FINANCE_MONEY_MOVEMENT_PERMISSION_CATEGORIES));
+  });
+
   it.each([
     ['/admin/bookings/booking-1/closeout', AdminOperatorPermissionCategory.BOOKINGS_DETAIL],
     ['/admin/customers/customer-1/ops-note', AdminOperatorPermissionCategory.CUSTOMERS_DETAIL],
@@ -399,10 +963,13 @@ describe('adminOperatorCategoryForWritePath', () => {
     ],
     ['/admin/bank-reconciliation/transaction-1/ignore', AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION],
     ['/admin/notifications/notification-1/retry', AdminOperatorPermissionCategory.NOTIFICATIONS_RETRY],
-    ['/admin/coupons/coupon-1', AdminOperatorPermissionCategory.SYSTEM_COUPONS],
+    ['/admin/notification-delivery-incidents', AdminOperatorPermissionCategory.NOTIFICATIONS_INCIDENTS],
+    ['/admin/notification-delivery-incidents/incident-1/resolve', AdminOperatorPermissionCategory.NOTIFICATIONS_INCIDENTS],
+    ['/admin/coupons/coupon-1/activate', AdminOperatorPermissionCategory.SYSTEM_COUPONS],
     ['/admin/site-pages/page-1/sections', AdminOperatorPermissionCategory.CONTENT_EDIT],
     ['/admin/site-pages/sections/section-1', AdminOperatorPermissionCategory.CONTENT_EDIT],
     ['/admin/site-pages/page-1/take-offline', AdminOperatorPermissionCategory.CONTENT_PUBLISH],
+    ['/admin/site-pages/page-1/cache-invalidation', AdminOperatorPermissionCategory.CONTENT_PUBLISH],
     ['/admin/company-bank-accounts', AdminOperatorPermissionCategory.SYSTEM_POLICY],
     ['/admin/payment-fee-policies/policy-1/rules', AdminOperatorPermissionCategory.SYSTEM_POLICY],
     ['/admin/tax-policy-versions', AdminOperatorPermissionCategory.FINANCE_TAX],
@@ -429,6 +996,7 @@ describe('adminOperatorCategoryForWritePath', () => {
     ['/admin/site-pages', AdminOperatorPermissionCategory.CONTENT_VIEW],
     ['/admin/operations-policy/matching-preview', AdminOperatorPermissionCategory.DEVELOPER_SYSTEM],
     ['/admin/referrals/customers/fixtures', AdminOperatorPermissionCategory.DEVELOPER_SYSTEM],
+    ['/admin/notification-delivery-incidents', AdminOperatorPermissionCategory.NOTIFICATIONS_DELIVERY],
     ['/health/external', AdminOperatorPermissionCategory.DEVELOPER_HEALTH],
   ])('maps read or specialized path %s to %s', (path, category) => {
     expect(adminOperatorCategoryForPath(path)).toBe(category);
@@ -500,12 +1068,14 @@ function contextFixture(
   }> = {},
   body?: Record<string, unknown>,
 ) {
+  const query = Object.fromEntries(new URL(originalUrl, 'http://localhost').searchParams);
   return {
     switchToHttp: () => ({
       getRequest: () => ({
         method,
         originalUrl,
         body,
+        query,
         user: {
           id: 'operator-user-1',
           roles: [Role.ADMIN],

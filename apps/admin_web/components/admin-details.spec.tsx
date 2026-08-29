@@ -13,6 +13,7 @@ describe('AdminDetails', () => {
     } as unknown as HTMLDetailsElement;
 
     expect(closeAdminDetailsOnEscape('Enter', details)).toBe(false);
+    expect(closeAdminDetailsOnEscape(' ', details)).toBe(false);
     expect(details.open).toBe(true);
     expect(closeAdminDetailsOnEscape('Escape', details)).toBe(true);
     expect(details.open).toBe(false);

@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 
 import { adminGetResult } from '../../lib/admin-api';
 import WebsiteContentPage from './page';
@@ -12,6 +12,7 @@ const mockedGet = vi.mocked(adminGetResult);
 
 describe('WebsiteContentPage', () => {
   beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.unstubAllEnvs());
 
   it('starts with a server-paginated Pages directory and no article form', async () => {
     mockedGet.mockResolvedValue({ data: listResult([routeGroup()]), ok: true, status: 200 });
@@ -52,6 +53,57 @@ describe('WebsiteContentPage', () => {
     expect(html).not.toContain('Pages could not be loaded');
   });
 
+  it('keeps global canonical health visible under filtered readiness and links to real queues', async () => {
+    const result = listResult([routeGroup()]);
+    result.summary.manifestHealth.missingRoutes = 19;
+    result.summary.manifestHealth.missingTranslations = 95;
+    mockedGet.mockResolvedValue({ data: result, ok: true, status: 200 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ readiness: 'UNKNOWN' }) }));
+
+    expect(html).toContain('>19<');
+    expect(html).toContain('>95<');
+    expect(html).toContain('queue=missing-routes');
+    expect(html).toContain('queue=missing-translations');
+    expect(html).toContain('canonical health is global');
+  });
+
+  it('renders manifest diff rows as an actionable queue', async () => {
+    const result = {
+      ...listResult([]),
+      items: [{ key: 'translation:MAIN:/about:ko', kind: 'MISSING_TRANSLATION', site: 'MAIN', path: '/about', locale: 'KO', label: 'About HANDS', ownership: 'CODE_FALLBACK', reason: 'No managed KO Draft exists.', recommendedAction: 'Create the missing language Draft.' }],
+      total: 1,
+    };
+    mockedGet.mockResolvedValue({ data: result, ok: true, status: 200 } as never);
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ queue: 'missing-translations' }) }));
+
+    expect(mockedGet).toHaveBeenCalledWith(expect.stringContaining('queue=missing-translations'), expect.anything());
+    expect(html).toContain('Missing translation queue');
+    expect(html).toContain('No managed KO Draft exists.');
+    expect(html).toContain('Create the missing language Draft.');
+  });
+
+  it('separates visitor Live state from Draft work state in every locale cell', async () => {
+    const group = routeGroup();
+    const base = group.translations[0];
+    const translations = [
+      { ...base, id: 'ko', locale: 'ko', draftRevision: null },
+      { ...base, id: 'en', locale: 'en', activeRevision: null },
+      { ...base, id: 'vi', locale: 'vi', draftRevision: { ...base.draftRevision, readinessState: 'BLOCKED' } },
+      { ...base, id: 'ja', locale: 'ja', activeRevision: null, draftRevision: { ...base.draftRevision, readinessState: 'UNKNOWN' } },
+    ];
+    mockedGet.mockResolvedValue({ data: listResult([{ ...group, translations }] as never), ok: true, status: 200 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({}) }));
+
+    expect(html).toContain('KO · Live; No changes');
+    expect(html).toContain('EN · Not live; Draft ready');
+    expect(html).toContain('VI · Live; Draft blocked');
+    expect(html).toContain('JA · Not live; Needs review');
+    expect(html).toContain('ZH · Missing');
+  });
+
   it('renders a selected route workspace without appending the global directory', async () => {
     mockedGet
       .mockResolvedValueOnce({ data: detailPage(), ok: true, status: 200 })
@@ -64,6 +116,39 @@ describe('WebsiteContentPage', () => {
     expect(html).toContain('Open Live page');
     expect(html).not.toContain('Managed pages');
     expect(html).not.toContain('Route filters');
+  });
+
+  it('keeps Draft editing available while hiding every destructive lifecycle entry point', async () => {
+    vi.stubEnv('CMS_DESTRUCTIVE_LIFECYCLE_ENABLED', 'false');
+    mockedGet
+      .mockResolvedValueOnce({ data: detailPage(), ok: true, status: 200 })
+      .mockResolvedValueOnce({ data: { token: 'signed', path: '/about', locale: 'vi', site: 'MAIN', expiresAt: '2026-08-11T10:00:00Z', revisionId: 'draft-2', version: 3 }, ok: true, status: 200 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({
+      pageId: 'page-1',
+      workspace: 'content',
+      sectionId: 'section-1',
+      deletePageId: 'page-1',
+      deleteSectionId: 'section-1',
+      discardDraft: '1',
+      confirmPublish: '1',
+      takeOffline: '1',
+      rollbackRevisionId: 'active-1',
+    }) }));
+
+    expect(html).toContain('Manual publication only');
+    expect(html).toContain('Preview Draft');
+    expect(html).toContain('Edit Hero');
+    expect(html).toContain('Save Draft section');
+    expect(html).not.toContain('Delete this Draft route?');
+    expect(html).not.toContain('Delete Draft section?');
+    expect(html).not.toContain('Discard this Draft?');
+    expect(html).not.toContain('Publish this Draft?');
+    expect(html).not.toContain('Take this page offline?');
+    expect(html).not.toContain('Restore previous Live revision?');
+    expect(html).not.toContain('Review Draft discard');
+    expect(html).not.toContain('Review take offline');
+    expect(html).not.toContain('Review deletion');
   });
 
   it('does not present an unevaluated legacy Draft as ready to publish', async () => {
@@ -82,6 +167,92 @@ describe('WebsiteContentPage', () => {
     expect(html).toContain('Readiness has not been evaluated for this legacy Draft. Save the Draft before publishing.');
     expect(html).not.toContain('This Draft passes the shared renderer readiness checks.');
   });
+
+  it('drops stale section query state from non-Content workspace links', async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: detailPage(), ok: true, status: 200 })
+      .mockResolvedValueOnce({ data: { token: 'signed', path: '/about', locale: 'vi', site: 'MAIN', expiresAt: '2026-08-11T10:00:00Z', revisionId: 'draft-2', version: 3 }, ok: true, status: 200 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ pageId: 'page-1', workspace: 'activity', sectionId: 'section-1' }) }));
+
+    expect(html).toContain('href="/website-content?view=pages&amp;pageId=page-1&amp;workspace=activity"');
+    expect(html).not.toContain('workspace=activity&amp;sectionId=section-1');
+  });
+
+  it('uses a section-kind layout and keeps the internal key in Advanced details', async () => {
+    const page = detailPage();
+    const draft = page.draftRevision!;
+    const section = { ...draft.sections[0], content: { title: 'Hero title', imageUrl: '/images/hero.jpg', imageAlt: 'A partner preparing a room' } };
+    mockedGet
+      .mockResolvedValueOnce({ data: { ...page, draftRevision: { ...draft, sections: [section] } }, ok: true, status: 200 })
+      .mockResolvedValueOnce({ data: { token: 'signed', path: '/about', locale: 'vi', site: 'MAIN', expiresAt: '2026-08-11T10:00:00Z', revisionId: 'draft-2', version: 3 }, ok: true, status: 200 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ pageId: 'page-1', workspace: 'content', sectionId: 'section-1' }) }));
+
+    expect(html).toContain('Edit Hero');
+    expect(html).not.toContain('Edit hero-1');
+    expect(html).toContain('Internal section ID');
+    expect(html).toContain('website-content-field-body');
+    expect(html).toContain('website-content-field-image-url');
+    expect(html).toContain('alt="A partner preparing a room"');
+  });
+
+  it('describes Activity as successful evidence and shows a human publisher label', async () => {
+    const page = detailPage();
+    const revisions = page.revisions.map((revision) => ({ ...revision, publishedByLabel: 'Content Publisher' }));
+    mockedGet
+      .mockResolvedValueOnce({ data: { ...page, revisions }, ok: true, status: 200 })
+      .mockResolvedValueOnce({ data: { token: 'signed', path: '/about', locale: 'vi', site: 'MAIN', expiresAt: '2026-08-11T10:00:00Z', revisionId: 'draft-2', version: 3 }, ok: true, status: 200 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ pageId: 'page-1', workspace: 'activity' }) }));
+
+    expect(html).toContain('Successful publishing, rollback, offline, deletion and cache refresh actions');
+    expect(html).not.toContain('deletion attempts');
+    expect(html).toContain('Content Publisher');
+    expect(html).not.toContain('<code>publisher-1</code>');
+  });
+
+  it('surfaces preview configuration failure with a safe retry and no secret detail', async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: detailPage(), ok: true, status: 200 })
+      .mockResolvedValueOnce({ data: null, errorCode: 'SITE_CONTENT_PREVIEW_NOT_CONFIGURED', ok: false, status: 503 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ pageId: 'page-1', workspace: 'overview' }) }));
+
+    expect(html).toContain('Draft preview is not configured');
+    expect(html).toContain('Retry preview');
+    expect(html).not.toContain('SITE_CONTENT_PREVIEW_SECRET');
+    expect(html).not.toContain('Preview Draft');
+  });
+
+  it('keeps a committed publish distinct from a pending public cache refresh', async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: detailPage(), ok: true, status: 200 })
+      .mockResolvedValueOnce({ data: { token: 'signed', path: '/about', locale: 'vi', site: 'MAIN', expiresAt: '2026-08-11T10:00:00Z', revisionId: 'draft-2', version: 3 }, ok: true, status: 200 });
+
+    const html = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({
+      pageId: 'page-1',
+      status: 'published-cache-pending',
+      workspace: 'publishing',
+    }) }));
+
+    expect(html).toContain('Draft published; public cache refresh pending');
+    expect(html).toContain('Retry cache refresh only');
+    expect(html).toContain('name="returnTo" value="/website-content?view=pages&amp;pageId=page-1&amp;workspace=publishing&amp;status=published-cache-pending"');
+  });
+
+  it('distinguishes detail permission, missing record, and retryable service failures', async () => {
+    mockedGet.mockResolvedValueOnce({ data: null, ok: false, status: 403 }).mockResolvedValueOnce({ data: null, ok: false, status: 403 });
+    expect(renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ pageId: 'page-1' }) }))).toContain('Page access is not permitted');
+
+    mockedGet.mockResolvedValueOnce({ data: null, ok: false, status: 404 }).mockResolvedValueOnce({ data: null, ok: false, status: 404 });
+    expect(renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ pageId: 'page-1' }) }))).toContain('This page no longer exists');
+
+    mockedGet.mockResolvedValueOnce({ data: null, ok: false, status: 503 }).mockResolvedValueOnce({ data: null, ok: false, status: 503 });
+    const unavailable = renderToStaticMarkup(await WebsiteContentPage({ searchParams: Promise.resolve({ pageId: 'page-1' }) }));
+    expect(unavailable).toContain('Page details could not be loaded');
+    expect(unavailable).toContain('Retry');
+  });
 });
 
 function listResult(items: ReturnType<typeof routeGroup>[]) {
@@ -91,7 +262,11 @@ function listResult(items: ReturnType<typeof routeGroup>[]) {
     take: 20,
     total: items.length,
     totalPages: 1,
-    summary: { routes: items.length, live: items.length, draftChanges: items.length, ready: items.length, needsAttention: 0, missingRoutes: 0, missingTranslations: 0, staleTranslations: 0, recentlyPublished: 1, scope: { contentType: 'pages', site: null, locale: null, q: null, status: 'all' }, generatedAt: '2026-08-12T00:00:00Z' },
+    summary: {
+      viewScope: { routes: items.length, live: items.length, draftChanges: items.length, ready: items.length, needsAttention: 0, recentlyPublished: 1, scope: { contentType: 'pages' as const, site: null, locale: null, q: null, status: 'all', readiness: null, ownership: null } },
+      manifestHealth: { scope: 'GLOBAL_CANONICAL' as const, expectedRoutes: 35, expectedRows: 175, missingRoutes: 0, missingTranslations: 0, staleTranslations: null, staleTranslationsApplicable: false },
+      generatedAt: '2026-08-12T00:00:00Z',
+    },
     summaryAvailable: true,
   };
 }

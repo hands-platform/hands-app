@@ -10,6 +10,7 @@ import {
   AccountingJournalEntrySide,
   AccountingJournalSourceType,
   BankReconciliationStatus,
+  CompanyBankTransactionType,
   PartnerBankDepositRequestStatus,
   PartnerTaxLineKind,
   BookingStatus,
@@ -238,36 +239,125 @@ type AdminFinanceListQuery = {
 };
 
 const PAYOUT_BANK_MATCH_INCOMPLETE_EVIDENCE = 'bank-match-incomplete';
+const PAYOUT_REPAIR_EVIDENCE_FILTERS = new Set([
+  'missing-transfer-ref',
+  'withholding-review',
+  'wallet-ledger-mismatch',
+  'posted-gl-journal-missing',
+]);
 
 type AdminWithdrawalRequestListQuery = AdminFinanceListQuery & {
+  readonly id?: string | null;
   readonly providerProfileId?: string | null;
   readonly reconciliation?: string | null;
   readonly status?: ProviderWalletWithdrawalRequestStatus | string | null;
 };
 
-type PayoutBatchPostPaymentEvidence = {
-  readonly currency: string;
+type PayoutBatchPostPaymentEvidenceRow = {
   readonly id: string;
-  readonly status: PayoutBatchStatus;
-  readonly totalNetAmount: number;
-  readonly transferRef: string | null;
-  readonly earnings: readonly {
-    readonly withholdingAmount: number;
-  }[];
-  readonly withholdingLogs: readonly {
-    readonly status: string;
-  }[];
+  readonly missingTransferRef: boolean;
+  readonly postedGlJournalMissing: boolean;
+  readonly walletLedgerMismatch: boolean;
+  readonly withholdingIncomplete: boolean;
 };
 
-const payoutBatchPostPaymentEvidenceSelect = {
-  currency: true,
-  id: true,
-  status: true,
-  totalNetAmount: true,
-  transferRef: true,
-  earnings: { select: { withholdingAmount: true } },
-  withholdingLogs: { select: { status: true } },
-} satisfies Prisma.ProviderPayoutBatchSelect;
+export function payoutBatchRepairEvidenceSql(candidateIds: readonly string[]) {
+  if (candidateIds.length === 0) {
+    return Prisma.sql`
+      SELECT
+        ''::text AS "id",
+        false AS "missingTransferRef",
+        false AS "withholdingIncomplete",
+        false AS "walletLedgerMismatch",
+        false AS "postedGlJournalMissing"
+      WHERE false
+    `;
+  }
+
+  const candidateRows = Prisma.join(candidateIds.map((id) => Prisma.sql`(${id}::text)`));
+  return Prisma.sql`
+    WITH "candidateIds" ("id") AS (VALUES ${candidateRows}),
+    "earningEvidence" AS (
+      SELECT earning."payoutBatchId", SUM(earning."withholdingAmount")::bigint AS "withholdingAmount"
+      FROM "ProviderEarning" earning
+      INNER JOIN "candidateIds" candidate ON candidate."id" = earning."payoutBatchId"
+      GROUP BY earning."payoutBatchId"
+    ),
+    "withholdingEvidence" AS (
+      SELECT
+        withholding."payoutBatchId",
+        COUNT(*)::bigint AS "logCount",
+        COUNT(*) FILTER (WHERE withholding."status" <> 'PAID')::bigint AS "incompleteCount"
+      FROM "WithholdingLog" withholding
+      INNER JOIN "candidateIds" candidate ON candidate."id" = withholding."payoutBatchId"
+      GROUP BY withholding."payoutBatchId"
+    ),
+    "walletEvidence" AS (
+      SELECT ledger."payoutBatchId", SUM(ledger."amount")::bigint AS "ledgerAmount"
+      FROM "ProviderWalletLedgerEntry" ledger
+      INNER JOIN "candidateIds" candidate ON candidate."id" = ledger."payoutBatchId"
+      GROUP BY ledger."payoutBatchId"
+    ),
+    "journalEvidence" AS (
+      SELECT
+        journal."sourceId",
+        BOOL_OR(
+          journal."sourceKey" = CONCAT(
+            'accounting-journal:provider-payout-batch:',
+            journal."sourceId",
+            ':paid'
+          )
+          AND journal."status" = 'POSTED'
+          AND journal."totalCredit" = batch."totalNetAmount"
+          AND journal."totalDebit" = batch."totalNetAmount"
+        ) AS "hasPostedPaidJournal"
+      FROM "AccountingJournalBatch" journal
+      INNER JOIN "candidateIds" candidate ON candidate."id" = journal."sourceId"
+      INNER JOIN "ProviderPayoutBatch" batch ON batch."id" = journal."sourceId"
+      WHERE journal."sourceType" = 'PROVIDER_PAYOUT_BATCH'
+      GROUP BY journal."sourceId"
+    )
+    SELECT
+      batch."id",
+      NULLIF(BTRIM(batch."transferRef"), '') IS NULL AS "missingTransferRef",
+      COALESCE(earning."withholdingAmount", 0) > 0
+        AND (
+          COALESCE(withholding."logCount", 0) = 0
+          OR COALESCE(withholding."incompleteCount", 0) > 0
+        ) AS "withholdingIncomplete",
+      COALESCE(wallet."ledgerAmount", 0) <> -batch."totalNetAmount"::bigint AS "walletLedgerMismatch",
+      NOT COALESCE(journal."hasPostedPaidJournal", false) AS "postedGlJournalMissing"
+    FROM "candidateIds" candidate
+    INNER JOIN "ProviderPayoutBatch" batch ON batch."id" = candidate."id"
+    LEFT JOIN "earningEvidence" earning ON earning."payoutBatchId" = batch."id"
+    LEFT JOIN "withholdingEvidence" withholding ON withholding."payoutBatchId" = batch."id"
+    LEFT JOIN "walletEvidence" wallet ON wallet."payoutBatchId" = batch."id"
+    LEFT JOIN "journalEvidence" journal ON journal."sourceId" = batch."id"
+  `;
+}
+
+function payoutRepairEvidenceMatches(
+  row: PayoutBatchPostPaymentEvidenceRow,
+  evidence: string | null | undefined,
+) {
+  switch (normalizeOptionalQuery(evidence)) {
+    case 'missing-transfer-ref':
+      return row.missingTransferRef;
+    case 'withholding-review':
+      return row.withholdingIncomplete;
+    case 'wallet-ledger-mismatch':
+      return row.walletLedgerMismatch;
+    case 'posted-gl-journal-missing':
+      return row.postedGlJournalMissing;
+    default:
+      return (
+        row.missingTransferRef ||
+        row.withholdingIncomplete ||
+        row.walletLedgerMismatch ||
+        row.postedGlJournalMissing
+      );
+  }
+}
 
 const ADMIN_FINANCE_LIST_DEFAULT_LIMIT = 50;
 const ADMIN_FINANCE_LIST_MAX_LIMIT = 100;
@@ -332,12 +422,7 @@ function adminEarningListWhere(options: AdminFinanceListQuery): Prisma.ProviderE
 function adminPayoutBatchListWhere(
   options: AdminFinanceListQuery,
 ): Prisma.ProviderPayoutBatchWhereInput | undefined {
-  const fixtureIdentifiers: Prisma.ProviderPayoutBatchWhereInput[] = ['smoke', 'seed-'].flatMap((prefix) => [
-    { id: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
-    { providerProfileId: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
-  ]);
   const productionWhere: Prisma.ProviderPayoutBatchWhereInput = {
-    NOT: { OR: fixtureIdentifiers },
     earnings: { every: { booking: { is: adminBookingProductionDataWhere() } } },
   };
   const reviewWhere = adminPayoutBatchReviewWhere(options.review);
@@ -365,11 +450,15 @@ function adminWithdrawalRequestListWhere(
   options: AdminWithdrawalRequestListQuery,
 ): Prisma.ProviderWalletWithdrawalRequestWhereInput | undefined {
   let where: Prisma.ProviderWalletWithdrawalRequestWhereInput = {};
+  const id = cleanQueryText(options.id);
   const providerProfileId = cleanQueryText(options.providerProfileId);
   const reconciliation = normalizeOptionalQuery(options.reconciliation);
   const status = normalizeWithdrawalRequestStatus(options.status);
   const dateRange = adminFinanceDateRangeWhere(options.range);
 
+  if (id) {
+    where.id = id;
+  }
   if (providerProfileId) {
     where.providerProfileId = providerProfileId;
   }
@@ -1101,7 +1190,9 @@ export class EarningsService {
       if (existingEarning.providerProfileId !== providerProfileId) {
         throw new BadRequestException('Completed booking earning belongs to another Partner');
       }
-      return existingEarning;
+      if (!options?.preserveExistingLifecycle) {
+        return existingEarning;
+      }
     }
 
     const occurredAt = options?.occurredAt ?? booking.closedAt;
@@ -1160,6 +1251,28 @@ export class EarningsService {
       withholdingAmount: tax.withholdingAmount,
       companyCouponExpense: couponSettlement.companyCouponExpense,
     });
+    if (
+      existingEarning &&
+      (existingEarning.status === EarningStatus.CANCELLED ||
+        existingEarning.status === EarningStatus.PAID ||
+        existingEarning.payoutBatchId)
+    ) {
+      throw new ConflictException(
+        'Existing earning lifecycle is locked; use the governed historical settlement reconstruction path.',
+      );
+    }
+    if (
+      existingEarning &&
+      (existingEarning.grossAmount !== grossAmount ||
+        existingEarning.platformFee !== platformFee.platformFeeAmount ||
+        existingEarning.withholdingAmount !== tax.withholdingAmount ||
+        existingEarning.netAmount !== netAmount ||
+        existingEarning.currency !== currency)
+    ) {
+      throw new ConflictException(
+        'Existing earning amounts no longer match the canonical settlement evidence.',
+      );
+    }
     const earning = await tx.providerEarning.upsert({
       where: { bookingId },
       update: {},
@@ -1234,8 +1347,13 @@ export class EarningsService {
     return earning;
   }
 
-  async previewPaidBookingSettlementReconstruction(bookingId: string, providerProfileId: string) {
-    const booking = await this.prisma.booking.findUnique({
+  async previewPaidBookingSettlementReconstruction(
+    bookingId: string,
+    providerProfileId: string,
+    transactionClient?: TxClient,
+  ) {
+    const client = transactionClient ?? this.prisma;
+    const booking = await client.booking.findUnique({
       where: { id: bookingId },
       select: historicalPaidSettlementBookingSelect,
     });
@@ -1247,7 +1365,7 @@ export class EarningsService {
       return { ...analysis, settlementDryRun: null };
     }
 
-    const paymentFee = await this.calculatePaymentFee(this.prisma, {
+    const paymentFee = await this.calculatePaymentFee(client, {
       customerPaymentAmount: analysis.evidence.customerPaymentAmount,
       occurredAt: analysis.evidence.occurredAt,
       paymentMethod: analysis.evidence.paymentMethod,
@@ -1269,13 +1387,14 @@ export class EarningsService {
     bookingId: string,
     providerProfileId: string,
     context: { actorId: string; approvalAdminId: string; reason: string },
+    transactionClient?: TxClient,
   ) {
     const settlements = this.settlements;
     if (!settlements) {
       throw new BadRequestException('Settlement service is unavailable.');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const reconstruct = async (tx: TxClient) => {
       await this.lockBookingSettlement(tx, bookingId);
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
@@ -1321,7 +1440,9 @@ export class EarningsService {
         earningId: evidence.providerEarningId,
         settlementSnapshot,
       };
-    });
+    };
+
+    return transactionClient ? reconstruct(transactionClient) : this.prisma.$transaction(reconstruct);
   }
 
   async listForProviderUser(userId: string) {
@@ -1932,90 +2053,39 @@ export class EarningsService {
       return adminPayoutBatchListWhere(options);
     }
 
+    const repairEvidence = normalizeOptionalQuery(options.evidence);
+    if (repairEvidence && !PAYOUT_REPAIR_EVIDENCE_FILTERS.has(repairEvidence)) {
+      throw new BadRequestException(`Unsupported payout repair evidence filter: ${repairEvidence}`);
+    }
+
     const candidateWhere = adminPayoutBatchListWhere({
       ...options,
+      evidence: null,
       queue: null,
       status: PayoutBatchStatus.PAID,
     });
     const candidates = await this.prisma.providerPayoutBatch.findMany({
       ...(candidateWhere ? { where: candidateWhere } : {}),
-      select: payoutBatchPostPaymentEvidenceSelect,
+      select: { id: true },
     });
-    const repairIds = await this.payoutBatchPostPaymentRepairIds(candidates);
+    const repairIds = await this.payoutBatchPostPaymentRepairIds(
+      candidates.map((candidate) => candidate.id),
+      options.evidence,
+    );
     return mergePayoutBatchWhere(candidateWhere, { id: { in: [...repairIds] } });
   }
 
   private async payoutBatchPostPaymentRepairIds(
-    paidBatchEvidence: readonly PayoutBatchPostPaymentEvidence[],
+    paidBatchIds: readonly string[],
+    evidence?: string | null,
   ) {
-    const paidBatchIds = paidBatchEvidence.map((batch) => batch.id);
     if (paidBatchIds.length === 0) {
       return new Set<string>();
     }
-
-    const paidBatchEvidenceById = new Map(paidBatchEvidence.map((batch) => [batch.id, batch]));
-    const [paidLedgerEvidence, paidJournalEvidence] = await Promise.all([
-      this.prisma.providerWalletLedgerEntry.findMany({
-        where: { payoutBatchId: { in: paidBatchIds } },
-        select: { amount: true, payoutBatchId: true },
-      }),
-      this.prisma.accountingJournalBatch.findMany({
-        where: {
-          sourceId: { in: paidBatchIds },
-          sourceType: AccountingJournalSourceType.PROVIDER_PAYOUT_BATCH,
-        },
-        select: {
-          sourceId: true,
-          sourceKey: true,
-          status: true,
-          totalCredit: true,
-          totalDebit: true,
-        },
-      }),
-    ]);
-    const paidLedgerAmountByBatchId = new Map<string, number>();
-    for (const entry of paidLedgerEvidence) {
-      if (!entry.payoutBatchId) continue;
-      paidLedgerAmountByBatchId.set(
-        entry.payoutBatchId,
-        (paidLedgerAmountByBatchId.get(entry.payoutBatchId) ?? 0) + entry.amount,
-      );
-    }
-    const postedPaidJournalBatchIds = new Set(
-      paidJournalEvidence
-        .filter((journal) => {
-          const batch = paidBatchEvidenceById.get(journal.sourceId);
-          return (
-            batch &&
-            journal.sourceKey === `accounting-journal:provider-payout-batch:${batch.id}:paid` &&
-            journal.status === AccountingJournalBatchStatus.POSTED &&
-            journal.totalCredit === batch.totalNetAmount &&
-            journal.totalDebit === batch.totalNetAmount
-          );
-        })
-        .map((journal) => journal.sourceId),
+    const rows = await this.prisma.$queryRaw<PayoutBatchPostPaymentEvidenceRow[]>(
+      payoutBatchRepairEvidenceSql(paidBatchIds),
     );
-
-    return new Set(
-      paidBatchEvidence
-        .filter((batch) => {
-          const withholdingAmount = batch.earnings.reduce(
-            (sum, earning) => sum + earning.withholdingAmount,
-            0,
-          );
-          const withholdingIncomplete =
-            withholdingAmount > 0 &&
-            (batch.withholdingLogs.length === 0 ||
-              batch.withholdingLogs.some((log) => log.status !== 'PAID'));
-          return (
-            !batch.transferRef?.trim() ||
-            withholdingIncomplete ||
-            (paidLedgerAmountByBatchId.get(batch.id) ?? 0) !== -batch.totalNetAmount ||
-            !postedPaidJournalBatchIds.has(batch.id)
-          );
-        })
-        .map((batch) => batch.id),
-    );
+    return new Set(rows.filter((row) => payoutRepairEvidenceMatches(row, evidence)).map((row) => row.id));
   }
 
   async listPayoutBatchesForAdmin(options: AdminFinanceListQuery = {}) {
@@ -2164,11 +2234,16 @@ export class EarningsService {
       }),
     ]);
 
-    const postPaymentRepairCount = (
-      await this.payoutBatchPostPaymentRepairIds(
-        moneyFlowEvidence.filter((batch) => batch.status === PayoutBatchStatus.PAID),
-      )
-    ).size;
+    const postPaymentRepairCount =
+      normalizeOptionalQuery(options.queue) === 'repair'
+        ? total
+        : (
+            await this.payoutBatchPostPaymentRepairIds(
+              moneyFlowEvidence
+                .filter((batch) => batch.status === PayoutBatchStatus.PAID)
+                .map((batch) => batch.id),
+            )
+          ).size;
 
     const evidenceBatchCount = moneyFlowEvidence.filter((batch) => batch.earnings.length > 0).length;
     const grossAmount = moneyFlowEvidence.reduce(
@@ -2571,16 +2646,60 @@ export class EarningsService {
       },
     });
 
-    return requests.map((request) => ({
-      ...request,
-      reconciliationState:
-        request.status === ProviderWalletWithdrawalRequestStatus.PAID
-          ? request.bankReconciliationMatches.length > 0
-            ? 'MATCHED'
-            : 'UNMATCHED'
-          : 'NOT_APPLICABLE',
-      bankReconciliationMatch: request.bankReconciliationMatches[0] ?? null,
-    }));
+    const unmatchedRequests = requests.filter(
+      (request) =>
+        request.status === ProviderWalletWithdrawalRequestStatus.PAID &&
+        request.bankReconciliationMatches.length === 0 &&
+        Boolean(request.transferRef?.trim()),
+    );
+    const unmatchedTransferRefs = Array.from(
+      new Set(unmatchedRequests.map((request) => request.transferRef!.trim())),
+    );
+    const bankTransactionCandidates = unmatchedTransferRefs.length
+      ? await this.prisma.companyBankTransaction.findMany({
+          where: {
+            status: BankReconciliationStatus.UNMATCHED,
+            transferRef: { in: unmatchedTransferRefs },
+            type: CompanyBankTransactionType.OUTFLOW,
+          },
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          select: { amount: true, currency: true, id: true, occurredAt: true, transferRef: true },
+        })
+      : [];
+    const candidatesByTransferRef = new Map<string, typeof bankTransactionCandidates>();
+    for (const candidate of bankTransactionCandidates) {
+      if (!candidate.transferRef) continue;
+      const candidates = candidatesByTransferRef.get(candidate.transferRef) ?? [];
+      candidates.push(candidate);
+      candidatesByTransferRef.set(candidate.transferRef, candidates);
+    }
+
+    return requests.map((request) => {
+      const candidates = request.transferRef?.trim()
+        ? (candidatesByTransferRef.get(request.transferRef.trim()) ?? []).filter(
+            (candidate) => candidate.amount === request.amount && candidate.currency === request.currency,
+          )
+        : [];
+      const exactCandidate = candidates.length === 1 ? candidates[0] : null;
+      return {
+        ...request,
+        reconciliationState:
+          request.status === ProviderWalletWithdrawalRequestStatus.PAID
+            ? request.bankReconciliationMatches.length > 0
+              ? 'MATCHED'
+              : 'UNMATCHED'
+            : 'NOT_APPLICABLE',
+        bankReconciliationMatch: request.bankReconciliationMatches[0] ?? null,
+        bankReconciliationCandidate: exactCandidate
+          ? {
+              id: exactCandidate.id,
+              occurredAt: exactCandidate.occurredAt,
+              transferRef: exactCandidate.transferRef,
+            }
+          : null,
+        bankReconciliationCandidateCount: candidates.length,
+      };
+    });
   }
 
   async providerWalletWithdrawalRequestSummaryForAdmin(

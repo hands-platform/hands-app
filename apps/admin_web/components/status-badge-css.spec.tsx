@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
 describe('Status badge CSS', () => {
   it('keeps shared status chips on the Vuexy compact chip contract', () => {

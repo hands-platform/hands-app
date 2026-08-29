@@ -1,6 +1,11 @@
 import { ArrowRight } from 'lucide-react';
-import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary } from '../../lib/admin-api';
-import { adminGet, adminGetResult } from '../../lib/admin-api';
+import type {
+  AdminOperationalPolicySetting,
+  AdminPartnerWalletDebtPage,
+  AdminProvider,
+  AdminProviderSummary,
+} from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
@@ -15,6 +20,7 @@ import {
   buildPartnerExportSlug,
   buildPartnerDataHrefs,
   buildPartnerListHref,
+  buildPartnerSnapshotFirstHref,
   buildProviderActiveFilters,
   buildProviderFilters,
   partnerRowsPagination,
@@ -57,18 +63,12 @@ import { buildPartnerOperationRow } from './partner-operation-row';
 import { PartnerFilterBoard } from './partner-filter-board';
 import { PartnerMasterListSection } from './partner-master-list-section';
 import { PartnerOperationsListSection } from './partner-operations-list-section';
-import { PartnerPrimaryListTabs } from './partner-primary-list-tabs';
 import { buildPartnerMasterRow } from './partner-master-row';
 import { PartnerChecklistLaneSection } from './partner-checklist-lane-section';
 import { PartnerChecklistWorkQueueSection } from './partner-checklist-work-queue-section';
 import { PartnerDispatchHandoffSection } from './partner-dispatch-handoff-section';
 import { providerDisplayName } from './partner-display';
-import {
-  partnerPrimaryListMode,
-  partnerDeepOpsAvailable,
-  partnerReviewModeContent,
-  shouldLoadPartnerDeepOps,
-} from './partner-review-mode';
+import { partnerDeepOpsAvailable, partnerReviewModeContent, shouldLoadPartnerDeepOps } from './partner-review-mode';
 import {
   buildPartnerChecklistLaneItems,
   buildPartnerPriorityLane as buildProviderPriorityLane,
@@ -106,18 +106,45 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const filters = buildProviderFilters(params);
   const dataHrefs = buildPartnerDataHrefs(filters);
   const currentHref = buildPartnerListHref(filters, { page: filters.page });
-  const [providersResult, summaryResult, operationalPolicies] = await Promise.all([
-    adminGetResult<AdminProvider[]>(dataHrefs.listHref, []),
-    adminGetResult<AdminProviderSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
-    adminGet<AdminOperationalPolicySetting[]>(
+  const snapshotCursorFallback: AdminPartnerWalletDebtPage = {
+    generatedAt: '',
+    items: [],
+    page: {
+      currentCursor: '',
+      hasNextPage: false,
+      nextCursor: null,
+      offset: 0,
+      returned: 0,
+      snapshotCursor: '',
+      totalCount: 0,
+    },
+    snapshotAt: '',
+  };
+  const [providersResult, summaryResult, operationalPoliciesResult] = await Promise.all([
+    adminGetResult<AdminProvider[] | AdminPartnerWalletDebtPage>(
+      dataHrefs.listHref,
+      dataHrefs.listUsesSnapshotCursor ? snapshotCursorFallback : [],
+    ),
+    dataHrefs.listUsesSnapshotCursor
+      ? Promise.resolve({
+          data: { totalCount: 0 } as AdminProviderSummary,
+          ok: true,
+          status: 200,
+        })
+      : adminGetResult<AdminProviderSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
+    adminGetResult<AdminOperationalPolicySetting[]>(
       buildProviderOpsPolicyApiHref(),
       [],
       OPERATIONAL_POLICY_CACHE_OPTIONS,
     ),
   ]);
-  const partnerListMode = partnerPrimaryListMode(filters.review);
   const partnerReviewContent = partnerReviewModeContent(filters.review);
-  const partnerPageTitle = partnerReviewContent?.title ?? 'Partner directory';
+  const partnerPageTitle =
+    filters.review === 'approval-pending'
+      ? 'Approvals'
+      : filters.review === 'unapproved'
+        ? 'Onboarding Blockers'
+        : (partnerReviewContent?.title ?? 'Directory');
 
   if (!providersResult.ok || !summaryResult.ok) {
     return (
@@ -129,19 +156,35 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         }
         title={partnerPageTitle}
       >
-        <PartnerPrimaryListTabs activeMode={partnerListMode} />
         <AdminErrorState
-          action={<AdminFormControlLink href={currentHref}>Refresh</AdminFormControlLink>}
-          message="Partner data could not be loaded. Refresh before using this directory for an operational decision."
-          title="Unable to load Partners"
+          action={
+            <AdminFormControlLink
+              href={dataHrefs.listUsesSnapshotCursor ? buildPartnerSnapshotFirstHref(filters) : currentHref}
+            >
+              {dataHrefs.listUsesSnapshotCursor ? 'Restart snapshot' : 'Refresh'}
+            </AdminFormControlLink>
+          }
+          message={
+            dataHrefs.listUsesSnapshotCursor
+              ? 'The wallet debt snapshot could not be loaded or has expired. Restart it before making an operational decision.'
+              : 'Partner data could not be loaded. Refresh before using this directory for an operational decision.'
+          }
+          title={
+            dataHrefs.listUsesSnapshotCursor ? 'Wallet debt snapshot unavailable' : 'Unable to load Partners'
+          }
         />
       </AdminPageTemplate>
     );
   }
 
-  const rawProviders = providersResult.data;
-  const providerDirectorySummary = summaryResult.data;
-  const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
+  const snapshotPage = dataHrefs.listUsesSnapshotCursor
+    ? (providersResult.data as AdminPartnerWalletDebtPage)
+    : null;
+  const rawProviders = snapshotPage ? snapshotPage.items : (providersResult.data as AdminProvider[]);
+  const providerDirectorySummary = snapshotPage
+    ? { generatedAt: snapshotPage.generatedAt, totalCount: snapshotPage.page.totalCount }
+    : summaryResult.data;
+  const opsPolicy = buildProviderOpsPolicy(operationalPoliciesResult.data);
   const allProviders = dataHrefs.listIsServerPaginated
     ? rawProviders
     : sortProviders(rawProviders, opsPolicy, filters.sort, PARTNER_LIST_QUERY_DEPS);
@@ -152,15 +195,28 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const partnerDirectoryTotalCount = dataHrefs.summaryMatchesVisibleFilter
     ? providerDirectorySummary.totalCount || rawProviders.length
     : providers.length;
-  const providerPagination = partnerRowsPagination(providers, filters, {
-    serverPaginated: dataHrefs.listIsServerPaginated,
-    totalRows: partnerDirectoryTotalCount,
-  });
+  const providerPagination = snapshotPage
+    ? {
+        from: partnerDirectoryTotalCount === 0 ? 0 : snapshotPage.page.offset + 1,
+        page: Math.floor(snapshotPage.page.offset / filters.pageSize) + 1,
+        pageSize: filters.pageSize,
+        rows: providers,
+        to: snapshotPage.page.offset + providers.length,
+        totalPages: Math.max(1, Math.ceil(partnerDirectoryTotalCount / filters.pageSize)),
+        totalRows: partnerDirectoryTotalCount,
+      }
+    : partnerRowsPagination(providers, filters, {
+        serverPaginated: dataHrefs.listIsServerPaginated,
+        totalRows: partnerDirectoryTotalCount,
+      });
   const visibleProviders = providerPagination.rows;
+  const operationalPolicyAvailable = operationalPoliciesResult.ok;
   const hiddenProviderCount = Math.max(partnerDirectoryTotalCount - visibleProviders.length, 0);
   const detailsMode = readSearchParam(params.details);
-  const deepPartnerOpsAvailable = partnerDeepOpsAvailable(filters.review);
-  const showDeepPartnerOpsSections = shouldLoadPartnerDeepOps(filters.review, detailsMode);
+  const deepPartnerOpsAvailable =
+    operationalPolicyAvailable && partnerDeepOpsAvailable(filters.review);
+  const showDeepPartnerOpsSections =
+    operationalPolicyAvailable && shouldLoadPartnerDeepOps(filters.review, detailsMode);
   const showGeneralPartnerDeepOps = showDeepPartnerOpsSections && filters.review !== 'kyc';
   const showPartnerOperationsList = showGeneralPartnerDeepOps;
   const deepPartnerOps = showDeepPartnerOpsSections
@@ -220,7 +276,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     ? providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length
     : 0;
   const partnerMasterRows = visibleProviders.map((provider) =>
-    buildPartnerMasterRow(provider, opsPolicy, { displayName: providerDisplayName }),
+    buildPartnerMasterRow(provider, opsPolicy, {
+      displayName: providerDisplayName,
+      operationalPolicyAvailable,
+    }),
   );
   const partnerMasterPagination = { ...providerPagination, rows: partnerMasterRows };
   const partnerMasterListMode =
@@ -228,7 +287,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       ? filters.review
       : 'default';
   const showAdvancedPartnerFilters = partnerHasAdvancedOperationalFilters(filters);
-  const partnerListCsvHref = buildPartnerExportHref(filters);
+  const partnerListCsvHref = buildPartnerExportHref(filters, snapshotPage?.page.currentCursor);
   const compactPartnerListHref = buildPartnerListHref(filters);
   const deepPartnerOpsHref = `${compactPartnerListHref}${compactPartnerListHref.includes('?') ? '&' : '?'}details=all`;
   const accountConfirmation = buildPartnerAccountActionConfirmation(
@@ -319,7 +378,14 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           tone={pushDeviceConfirmation.tone}
         />
       ) : null}
-      <PartnerPrimaryListTabs activeMode={partnerListMode} />
+      {!operationalPoliciesResult.ok ? (
+        <AdminErrorState
+          action={<AdminFormControlLink href={currentHref}>Retry policy</AdminFormControlLink>}
+          className="admin-mb-16"
+          message="Location and readiness signals use fallback thresholds and are not confirmed current policy. Partner records remain available for non-policy decisions."
+          title="Operational policy unavailable"
+        />
+      ) : null}
       {filters.review !== 'approval-pending' || partnerDirectoryTotalCount > 0 ? (
         <PartnerFilterBoard
           activeFilters={activeFilters}
@@ -329,7 +395,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           csvHref={partnerListCsvHref}
           filteredCount={visibleProviders.length}
           filters={filters}
-          locationFreshnessLabel={`Location freshness: ${opsPolicy.staleLocationMinutes}m`}
+          locationFreshnessLabel={
+            operationalPoliciesResult.ok
+              ? `Location freshness: ${opsPolicy.staleLocationMinutes}m`
+              : 'Location freshness: unavailable'
+          }
           showAdvancedFilters={showAdvancedPartnerFilters}
           totalCount={partnerDirectoryTotalCount}
         />
@@ -384,6 +454,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         filters={filters}
         mode={partnerMasterListMode}
         pagination={partnerMasterPagination}
+        snapshotPage={
+          snapshotPage ? { ...snapshotPage.page, snapshotAt: snapshotPage.snapshotAt } : undefined
+        }
       />
       {showPartnerOperationsList ? (
         <PartnerOperationsListSection

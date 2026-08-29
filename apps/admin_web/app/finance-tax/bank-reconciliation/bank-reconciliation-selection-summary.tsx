@@ -31,10 +31,11 @@ export function BankReconciliationSelectionSummary({
   visibleCount,
 }: BankReconciliationSelectionSummaryProps) {
   const [selection, setSelection] = useState<readonly BankReconciliationSelection[]>([]);
-  const [canSubmit, setCanSubmit] = useState(false);
+  const [assigneeAdminId, setAssigneeAdminId] = useState('');
   const [ownerOptions, setOwnerOptions] = useState<readonly { readonly label: string; readonly value: string }[] | null>(null);
   const [ownerOptionsError, setOwnerOptionsError] = useState(false);
   const [ownerOptionsLoading, setOwnerOptionsLoading] = useState(false);
+  const [reason, setReason] = useState('');
   const loadOwnerOptionsRef = useRef(loadOwnerOptions);
 
   useEffect(() => {
@@ -58,11 +59,12 @@ export function BankReconciliationSelectionSummary({
       });
       form.dataset.hasSelection = selected.length > 0 ? 'true' : 'false';
       setSelection(selected);
-      setCanSubmit(selected.length > 0 && form.checkValidity());
       if (resetOwnerState && selected.length === 0) {
+        setAssigneeAdminId('');
         setOwnerOptions(null);
         setOwnerOptionsError(false);
         setOwnerOptionsLoading(false);
+        setReason('');
       }
     };
 
@@ -107,6 +109,13 @@ export function BankReconciliationSelectionSummary({
     };
   }, [hasSelection, ownerOptions]);
 
+  const canSubmit = bankReconciliationBulkAssignmentReady(
+    summary.count,
+    ownerOptions,
+    assigneeAdminId,
+    reason,
+  );
+
   const toggleVisible = () => {
     const form = document.getElementById(formId);
     if (!(form instanceof HTMLFormElement)) return;
@@ -143,12 +152,13 @@ export function BankReconciliationSelectionSummary({
         ) : ownerOptions && ownerOptions.length > 1 ? (
           <AdminFormGridFields className="compact-form finance-bank-bulk-controls">
             <AdminFormSelect
-              defaultValue=""
               label="Assign selected to"
               labelVisibility="visible"
               name="assigneeAdminId"
+              onChange={(event) => setAssigneeAdminId(event.currentTarget.value)}
               options={ownerOptions}
               required
+              value={assigneeAdminId}
             />
             <AdminFormInput
               label="Assignment reason"
@@ -156,8 +166,10 @@ export function BankReconciliationSelectionSummary({
               maxLength={500}
               minLength={12}
               name="reason"
+              onChange={(event) => setReason(event.currentTarget.value)}
               placeholder="Why should this operator own the selected reviews?"
               required
+              value={reason}
             />
             <AdminFormActionRow>
               <AdminFormControlButton
@@ -191,4 +203,16 @@ export function summarizeBankReconciliationSelection(selection: readonly BankRec
     count: selection.length,
     overdueCount: selection.filter((item) => item.overdue).length,
   };
+}
+
+export function bankReconciliationBulkAssignmentReady(
+  selectedCount: number,
+  ownerOptions: readonly { readonly value: string }[] | null,
+  assigneeAdminId: string,
+  reason: string,
+) {
+  return selectedCount > 0 &&
+    Boolean(assigneeAdminId) &&
+    Boolean(ownerOptions?.some((option) => option.value === assigneeAdminId)) &&
+    reason.trim().length >= 12;
 }

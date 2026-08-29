@@ -29,6 +29,7 @@ export type AdminOperatorPermissionCategory =
   | 'NOTIFICATIONS_PUSH'
   | 'NOTIFICATIONS_DELIVERY'
   | 'NOTIFICATIONS_RETRY'
+  | 'NOTIFICATIONS_INCIDENTS'
   | 'SYSTEM'
   | 'SYSTEM_SERVICES'
   | 'SYSTEM_COUPONS'
@@ -113,7 +114,11 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'FINANCE_SETTLEMENTS',
-    prefixes: ['/finance-tax/approval-queue'],
+    prefixes: [
+      '/finance-tax/approval-queue',
+      '/finance-tax/booking-settlement-audit',
+      '/finance-tax/settlement-reversals',
+    ],
   },
   {
     category: 'FINANCE_GENERAL_LEDGER',
@@ -270,6 +275,8 @@ const apiCategoryRules: Array<{
     prefixes: [
       '/admin/finance-approval-queue',
       '/admin/booking-settlement-gaps',
+      '/admin/booking-settlement-reversals',
+      '/admin/booking-settlement-snapshots',
       '/admin/booking-settlements',
       '/admin/cash-settlement-earnings',
       '/admin/cash-settlements',
@@ -451,9 +458,27 @@ export function adminOperatorCategoryForAdminApiPath(
   if (/^\/admin\/notifications\/[^/]+\/review-legacy$/u.test(normalizedPath)) {
     return 'DEVELOPER_SYSTEM';
   }
+  if (
+    normalizedPath === '/admin/notification-delivery-incidents' ||
+    normalizedPath.startsWith('/admin/notification-delivery-incidents/')
+  ) {
+    return 'NOTIFICATIONS_INCIDENTS';
+  }
+  if (
+    /^\/admin\/referrals\/rewards\/[^/]+\/tax-review-(?:approve|hold|reject)$/u.test(
+      normalizedPath,
+    )
+  ) {
+    return 'FINANCE_TAX';
+  }
   if (normalizedPath === '/admin/site-pages' || normalizedPath.startsWith('/admin/site-pages/')) {
     if (method === 'DELETE') return 'CONTENT_DELETE';
-    if (normalizedPath.endsWith('/publish') || normalizedPath.endsWith('/rollback')) {
+    if (
+      normalizedPath.endsWith('/publish') ||
+      normalizedPath.endsWith('/rollback') ||
+      normalizedPath.endsWith('/take-offline') ||
+      normalizedPath.endsWith('/cache-invalidation')
+    ) {
       return 'CONTENT_PUBLISH';
     }
     return 'CONTENT_EDIT';
@@ -485,7 +510,7 @@ export function hasAdminOperatorCategory(
     return true;
   }
 
-  if (category === 'NOTIFICATIONS_PUSH') {
+  if (category === 'NOTIFICATIONS_PUSH' || category === 'NOTIFICATIONS_INCIDENTS') {
     return accessIncludesCategory(access?.categories ?? [], category);
   }
 

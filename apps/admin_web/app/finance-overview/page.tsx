@@ -31,6 +31,7 @@ import {
   buildFinanceOverviewApiHrefs,
   buildFinanceOverviewComparisonKpis,
   buildFinanceOverviewCurrentPositionKpis,
+  buildFinanceOverviewEmptyMovementCopy,
   buildFinanceOverviewFilters,
   buildFinanceOverviewPageSections,
   buildFinanceOverviewRangeLabel,
@@ -95,7 +96,7 @@ export default async function FinanceOverviewPage({
     : null;
   const isRangeMovementClear = isFlowWorkspace && isFinanceOverviewRangeMovementClear(overviewInput);
   const sections = isFlowWorkspace
-    ? buildFinanceOverviewPageSections(overviewInput).filter(
+    ? buildFinanceOverviewPageSections(overviewInput, filters.range).filter(
         (section) => !isRangeMovementClear || section.title !== 'Revenue & Platform Fee',
       )
     : [];
@@ -313,7 +314,7 @@ export default async function FinanceOverviewPage({
         <>
           {isRangeMovementClear ? (
             <AdminInlineNotice className="finance-overview-range-clear" role="status" tone="info">
-              No movement in {rangeLabel.toLowerCase()}. Current liabilities and open queues remain shown below.
+              {buildFinanceOverviewEmptyMovementCopy(filters.range)}
             </AdminInlineNotice>
           ) : (
             <AdminOverviewCommandGrid
@@ -342,7 +343,7 @@ export default async function FinanceOverviewPage({
             <AdminSection
               bodyClassName="finance-overview-comparison-strip"
               className="finance-overview-comparison-section"
-              description="Equal-length comparison with the immediately preceding period."
+              description="Equal-length comparison with the immediately preceding period. Links open current-range records."
               statusLabel={rangeLabel}
               statusTone="info"
               title="Compared with previous period"
@@ -525,12 +526,16 @@ function FinanceOverviewSectionCard({
         : section.title === 'Reconciliation'
           ? 'Current + all-open'
           : section.title === 'Tax Overview'
-            ? `${period} tax + profiles`
+            ? period
             : section.title === 'Partner Settlement'
               ? 'Current queue'
               : section.title === 'Payment Method Status'
-                ? 'Current status'
+                ? rangeLabel
               : rangeLabel;
+  const showSectionAction =
+    section.title === 'Payment Method Status' &&
+    Boolean(section.href) &&
+    section.rows.some((row) => Number(row.value ?? 0) > 0);
 
   return (
     <AdminSection
@@ -566,6 +571,22 @@ function FinanceOverviewSectionCard({
           </AdminRowItem>
         );
       })}
+      {showSectionAction && section.href ? (
+        <AdminRowLink
+          ariaLabel={`Open Payments for ${rangeLabel}`}
+          className="finance-overview-row finance-overview-section-action"
+          href={section.href}
+        >
+          <div>
+            <strong>Open Payments</strong>
+            <small>Review the payment records behind this range.</small>
+          </div>
+          <span className="finance-overview-row-tail">
+            <span>{rangeLabel}</span>
+            <ChevronRight aria-hidden="true" size={16} />
+          </span>
+        </AdminRowLink>
+      ) : null}
     </AdminSection>
   );
 }
@@ -576,7 +597,7 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
 
   return (
     <AdminRowLink
-      ariaLabel={`Open ${item.label}. ${item.countLabel}. ${item.oldestLabel ?? 'Oldest time unavailable'}. Owner ${item.ownerLabel}${item.assigneeLabel ? `, ${item.assigneeLabel}` : ''}.`}
+      ariaLabel={financeOverviewActionItemAriaLabel(item)}
       className={`finance-overview-queue-row is-${item.tone}`}
       href={item.href}
     >
@@ -602,6 +623,24 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
       </span>
     </AdminRowLink>
   );
+}
+
+function financeOverviewActionItemAriaLabel(item: FinanceOverviewActionItem) {
+  const impact =
+    item.amount === undefined
+      ? item.amountLabel
+      : formatMoney(item.amount, item.currency ?? 'VND');
+  const assignee = item.assigneeLabel && item.assigneeLabel !== item.countLabel
+    ? `, ${item.assigneeLabel}`
+    : '';
+
+  return [
+    `Open ${item.label}.`,
+    `${item.countLabel}.`,
+    item.oldestLabel ? `${item.oldestLabel}.` : 'Oldest time unavailable.',
+    ...(impact ? [`Impact ${impact}.`] : []),
+    `Owner ${item.ownerLabel}${assignee}.`,
+  ].join(' ');
 }
 
 function financeOverviewActionItemMeta(item: FinanceOverviewActionItem) {

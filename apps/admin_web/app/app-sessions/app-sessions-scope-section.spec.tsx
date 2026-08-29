@@ -32,7 +32,7 @@ describe('AppSessionsScopeSection', () => {
       title: 'App session filters',
     });
     expect(rendered).toContain('App session filters');
-    expect(rendered).toContain('Filtered to partner sessions, live heartbeat. Showing 3 of 12 heartbeat record(s).');
+    expect(rendered).toContain('Filtered to partner sessions, live heartbeat. Current page sample — 3 of 12 heartbeat record(s).');
     expect(rendered).toContain('Scope: Filtered to partner sessions, live heartbeat');
     expect(rendered).toContain('Role: Partner sessions');
     expect(rendered).toContain('State: Live heartbeat');

@@ -41,7 +41,12 @@ describe('payment action confirmation', () => {
     });
     expect(confirmation?.description).toContain('Verified evidence supports capture.');
     expect(confirmation?.description).toContain('Evidence: Verified callback.');
+    expect(confirmation?.description).toContain('150.000 VND');
     expect(confirmation?.idempotencyKey).toContain(`payments:capture:${payment.id}:`);
+    expect(confirmation?.facts).toEqual(expect.arrayContaining([
+      { format: 'datetime', label: 'Evidence verified', value: '2026-08-09T02:00:00.000Z' },
+      { format: 'datetime', label: 'Policy evaluated', value: null },
+    ]));
   });
 
   it('fails closed when the requested decision is blocked or absent', () => {
@@ -82,6 +87,32 @@ describe('payment action confirmation', () => {
     expect(url.searchParams.get('confirm')).toBe('refund');
     expect(url.searchParams.get('paymentId')).toBe('payment 1');
     expect(url.searchParams.get('returnTo')).toBe('/payments?review=all');
+  });
+
+  it('copies safe list context into the confirmation background and rejects external context', () => {
+    const returnTo = '/payments?review=release-recommended&q=booking-1&sort=oldest&page=3&paymentMethod=MOMO&paymentStatus=AUTHORIZED&bookingStatus=EXPIRED&evidence=verified&range=30d&age=4-24h&sla=critical';
+    const href = paymentActionConfirmHref('payment-1', 'release', returnTo);
+    const url = new URL(href, 'http://admin.local');
+
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      age: '4-24h',
+      bookingStatus: 'EXPIRED',
+      confirm: 'release',
+      evidence: 'verified',
+      page: '3',
+      paymentId: 'payment-1',
+      paymentMethod: 'MOMO',
+      paymentStatus: 'AUTHORIZED',
+      q: 'booking-1',
+      range: '30d',
+      returnTo,
+      review: 'release-recommended',
+      sla: 'critical',
+      sort: 'oldest',
+    });
+
+    expect(paymentActionConfirmHref('payment-1', 'release', 'https://evil.example/payments'))
+      .toBe('/payments?confirm=release&paymentId=payment-1&returnTo=%2Fpayments');
   });
 });
 

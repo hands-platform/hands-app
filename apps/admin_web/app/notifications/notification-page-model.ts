@@ -202,6 +202,8 @@ const FINANCE_OVERDUE_TYPE_SET: ReadonlySet<string> = new Set(FINANCE_OVERDUE_TY
 const NOTIFICATION_TABLE_PAGE_SIZE = 10;
 const NOTIFICATION_TABLE_DELIVERY_LIMIT = 10;
 const NOTIFICATION_API_TAKE = NOTIFICATION_TABLE_PAGE_SIZE;
+export const NOTIFICATION_RECORD_MAX_SKIP = 10000;
+export const NOTIFICATION_RECORD_MAX_PAGE = NOTIFICATION_RECORD_MAX_SKIP / NOTIFICATION_API_TAKE + 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const VIETNAM_UTC_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DELIVERY_GAP_MINUTES = 15;
@@ -509,7 +511,7 @@ export function buildNotificationListHref(
 
 export function buildNotificationApiHref(params: Record<string, string | string[] | undefined>) {
   const filters = buildNotificationFilters(params);
-  const page = readNotificationTablePage(params.page);
+  const page = Math.min(readNotificationTablePage(params.page), NOTIFICATION_RECORD_MAX_PAGE);
   const skip = (page - 1) * NOTIFICATION_API_TAKE;
   const query = new URLSearchParams({ take: String(NOTIFICATION_API_TAKE) });
   appendNotificationQueueParams(query, filters);
@@ -1121,7 +1123,10 @@ export function paginateServerNotificationRows(
   pageSize = NOTIFICATION_TABLE_PAGE_SIZE,
 ): NotificationTablePagination {
   const boundedTotalRows = Math.max(0, totalRows);
-  const totalPages = Math.max(1, Math.ceil(boundedTotalRows / pageSize));
+  const totalPages = Math.min(
+    NOTIFICATION_RECORD_MAX_PAGE,
+    Math.max(1, Math.ceil(boundedTotalRows / pageSize)),
+  );
   const page = Math.min(Math.max(1, requestedPage), totalPages);
   const pageStart = (page - 1) * pageSize;
 
@@ -1618,6 +1623,8 @@ function notificationDeliveryIncident(
     return undefined;
   }
   const runbook = notificationFailureRunbook(failureCode);
+  const dataScope = actionContext.dataScope ?? 'production';
+  const sourceKey = notificationDeliveryIncidentSourceKey({ dataScope, failureCode, provider });
   const href = buildNotificationDeliveryHref(
     buildNotificationDeliveryView({ dataScope: actionContext.dataScope }),
     {
@@ -1636,13 +1643,36 @@ function notificationDeliveryIncident(
     historical: data?.deliveryIncidentHistory === true,
     href,
     lastOccurredAt,
+    manageHref: notificationDeliveryIncidentManageHref(actionContext, { failureCode, provider }),
     notificationCount: positiveInteger(data?.deliveryIncidentNotificationCount),
     ownerLabel: runbook.ownerLabel,
     provider,
+    sourceKey,
     retryCondition: runbook.retryCondition,
     technicalAction: runbook.technicalAction,
     windowMinutes: positiveInteger(data?.deliveryIncidentWindowMinutes) || 60,
   };
+}
+
+export function notificationDeliveryIncidentSourceKey(input: {
+  readonly dataScope: string;
+  readonly failureCode: string;
+  readonly provider: string;
+}) {
+  return `delivery-failure:v1:${input.dataScope}:${encodeURIComponent(input.provider.toUpperCase())}:${encodeURIComponent(input.failureCode)}`;
+}
+
+function notificationDeliveryIncidentManageHref(
+  context: NotificationActionReturnContext,
+  input: { readonly failureCode: string; readonly provider: string },
+) {
+  const url = new URL('/notifications', 'http://admin.local');
+  for (const [key, value] of Object.entries(context)) {
+    if (typeof value === 'string' && value) url.searchParams.set(key, value);
+  }
+  url.searchParams.set('incidentProvider', input.provider);
+  url.searchParams.set('incidentFailureCode', input.failureCode);
+  return `${url.pathname}${url.search}`;
 }
 
 function notificationDeliveryRouteGroup(notification: AdminNotification): NotificationTableRow['routeGroup'] {

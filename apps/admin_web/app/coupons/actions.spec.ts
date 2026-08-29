@@ -4,13 +4,13 @@ import { redirect } from 'next/navigation';
 import {
   adminDeleteOrThrow,
   adminGetResult,
-  adminPatchOrThrow,
   adminPostOrThrow,
 } from '../../lib/admin-api';
 import {
+  activateCoupon,
   createCoupon,
   deleteCoupon,
-  toggleCoupon,
+  pauseCoupon,
 } from './actions';
 import { INITIAL_COUPON_CREATE_STATE } from './coupon-create-state';
 
@@ -28,7 +28,6 @@ vi.mock('../../lib/admin-api', () => ({
 const mockedAdminPostOrThrow = vi.mocked(adminPostOrThrow);
 const mockedAdminDeleteOrThrow = vi.mocked(adminDeleteOrThrow);
 const mockedAdminGetResult = vi.mocked(adminGetResult);
-const mockedAdminPatchOrThrow = vi.mocked(adminPatchOrThrow);
 const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
 
@@ -40,6 +39,18 @@ describe('coupon server actions', () => {
       failedCount: 0,
       results: ['WELCOME10', 'SUMMER15', 'FRIEND20', 'VIP30'].map((code) => ({ code, ok: true })),
     });
+  });
+
+  it('rejects create before the Admin API when the launch gate is off', async () => {
+    vi.stubEnv('COUPON_LAUNCH_ENABLED', 'false');
+    try {
+      const state = await createCoupon(INITIAL_COUPON_CREATE_STATE, new FormData());
+
+      expect(state.message).toContain('not active for the current launch');
+      expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('creates one bounded batch as paused with ICT-safe timestamps', async () => {
@@ -88,6 +99,20 @@ describe('coupon server actions', () => {
     expect(mockedRedirect).not.toHaveBeenCalled();
   });
 
+  it('rejects an equal ICT start and end before creating coupons', async () => {
+    const formData = new FormData();
+    formData.set('codes', 'WELCOME10');
+    formData.set('percent', '10');
+    formData.set('startsAt', '2026-06-27T09:30');
+    formData.set('endsAt', '2026-06-27T09:30');
+
+    await expect(createCoupon(INITIAL_COUPON_CREATE_STATE, formData)).resolves.toMatchObject({
+      message: expect.stringContaining('must be before'),
+      status: 'error',
+    });
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+  });
+
   it('keeps an expired-session error inside the create drawer', async () => {
     const formData = new FormData();
     formData.set('codes', 'WELCOME10');
@@ -101,10 +126,10 @@ describe('coupon server actions', () => {
     });
   });
 
-  it('blocks expired activation before sending a patch', async () => {
+  it('blocks expired activation before sending a state request', async () => {
     const formData = new FormData();
     formData.set('couponId', 'coupon-1');
-    formData.set('active', 'false');
+    formData.set('reason', 'Approved campaign relaunch');
     formData.set('returnTo', '/coupons?view=records&couponPage=2');
     mockedAdminGetResult.mockResolvedValue({
       data: { active: false, code: 'OLD10', discount: { type: 'percent', value: 10 }, endsAt: '2020-01-01T00:00:00.000Z', id: 'coupon-1' },
@@ -112,12 +137,52 @@ describe('coupon server actions', () => {
       status: 200,
     });
 
-    await toggleCoupon(formData);
+    await activateCoupon(formData);
 
-    expect(mockedAdminPatchOrThrow).not.toHaveBeenCalled();
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
     expect(mockedRedirect).toHaveBeenCalledWith(
       '/coupons?couponPage=2&view=records&couponNotice=activate-expired',
     );
+  });
+
+  it('uses explicit activate and pause endpoints with trimmed reasons', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: { active: false, code: 'BACK20', discount: { type: 'percent', value: 20 }, id: 'coupon-1' },
+      ok: true,
+      status: 200,
+    });
+    mockedAdminPostOrThrow.mockResolvedValue({ active: true, id: 'coupon-1' });
+    const activateData = new FormData();
+    activateData.set('couponId', 'coupon-1');
+    activateData.set('reason', '  Campaign owner approved  ');
+    activateData.set('returnTo', '/coupons?couponPage=2&q=BACK');
+
+    await activateCoupon(activateData);
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/coupons/coupon-1/activate', {
+      reason: 'Campaign owner approved',
+    });
+    expect(mockedRedirect).toHaveBeenCalledWith('/coupons?couponPage=2&q=BACK&couponNotice=toggled');
+
+    vi.clearAllMocks();
+    mockedAdminPostOrThrow.mockResolvedValue({ active: false, id: 'coupon-1' });
+    const pauseData = new FormData();
+    pauseData.set('couponId', 'coupon-1');
+    pauseData.set('reason', 'Campaign ended');
+    await pauseCoupon(pauseData);
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/coupons/coupon-1/pause', {
+      reason: 'Campaign ended',
+    });
+  });
+
+  it('does not send a coupon state request without a non-blank reason', async () => {
+    const formData = new FormData();
+    formData.set('couponId', 'coupon-1');
+    formData.set('reason', '   ');
+
+    await pauseCoupon(formData);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith('/coupons?couponNotice=state-reason-required');
   });
 
   it('explains that used coupons must be paused when deletion is blocked', async () => {

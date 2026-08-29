@@ -1,11 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
 
 import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
+import { ClientActionDropdownSurface } from '../../components/client-action-dropdown';
 import {
   PartnerCustomerEvaluationsSection,
   type PartnerCustomerEvaluationTableRow,
 } from './partner-customer-evaluations-section';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/reviews/partner-customer-evaluations',
+}));
 
 describe('PartnerCustomerEvaluationsSection', () => {
   it('uses the shared filter, details, table, and pagination atoms', () => {
@@ -54,6 +60,10 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(rendered).toContain('View moderation history');
     expect(rendered).toContain('Retain');
     expect(rendered).toContain('Restrict');
+    expect(rendered).toContain('Newest first');
+    expect(rendered).toContain('Oldest first');
+    expect(rendered).not.toContain('Most recently submitted');
+    expect(rendered).not.toContain('Oldest submitted');
     expect(rendered).not.toContain('Rating');
     expect(rendered).not.toContain('+84900000000');
     expect(hrefsIn(section)).toEqual(
@@ -74,6 +84,30 @@ describe('PartnerCustomerEvaluationsSection', () => {
     );
     expect(renderToStaticMarkup(section)).toContain('partner-notes-table');
     expect(renderToStaticMarkup(section)).toContain('tabindex="-1"');
+    expect(renderToStaticMarkup(section)).toContain('<h3>Full immutable note</h3>');
+    expect(renderToStaticMarkup(section)).toContain('<h3>Context</h3>');
+    expect(renderToStaticMarkup(section)).toContain('<h3>Moderation</h3>');
+    expect(renderToStaticMarkup(section)).not.toContain('<h4>Full immutable note</h4>');
+  });
+
+  it('renders one managed button action trigger for each exact Partner note row', () => {
+    const firstRow = buildRow();
+    const secondRow = { ...buildRow(), id: 'partner-evaluation-2' };
+    const markup = renderToStaticMarkup(
+      PartnerCustomerEvaluationsSection({
+        dateError: '',
+        filters: filters(),
+        pagination: pagination([firstRow, secondRow]),
+        returnTo: '/reviews/partner-customer-evaluations',
+        rows: [firstRow, secondRow],
+        summary: summary({ totalCount: 2 }),
+      }),
+    );
+
+    expect(markup).toContain('aria-label="Actions for Partner note partner-evaluation-1"');
+    expect(markup).toContain('aria-label="Actions for Partner note partner-evaluation-2"');
+    expect(markup.match(/aria-haspopup="menu"/g)).toHaveLength(2);
+    expect(markup).not.toContain('<summary aria-label="Actions for Partner note');
   });
 
   it('renders visible custom date labels and rejects reversed dates inline', () => {
@@ -90,9 +124,14 @@ describe('PartnerCustomerEvaluationsSection', () => {
       summary: summary({ totalCount: 0 }),
     });
     const rendered = normalizedText(section);
+    const markup = renderToStaticMarkup(section);
 
     expect(rendered).toContain('From');
     expect(rendered).toContain('To');
+    expect(markup).toContain('<span class="admin-form-label">From</span>');
+    expect(markup).toContain('<span class="admin-form-label">To</span>');
+    expect(markup).not.toContain('<span class="sr-only">From</span>');
+    expect(markup).not.toContain('<span class="sr-only">To</span>');
     expect(rendered).toContain('Apply dates');
     expect(rendered).toContain('Submitted date is invalid');
     expect(rendered).toContain('From date must be on or before To date.');
@@ -160,6 +199,39 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(tableCss).toContain('height: auto');
     expect(tableCss).toContain('width: auto !important');
     expect(tableCss).not.toContain('min-width: 1320px');
+    expect(css).toMatch(
+      /@media \(min-width: 1025px\)\s*{\s*\.admin-page-header:has\(\+ \.partner-notes-page\)\s*{[^}]*margin-bottom:\s*12px;[^}]*padding:\s*10px 20px;/s,
+    );
+    expect(css).toMatch(
+      /\.admin-page-header:has\(\+ \.partner-notes-page\) \.admin-page-header-copy > p\s*{[^}]*margin-bottom:\s*0;/s,
+    );
+  });
+
+  it('keeps Partner note moderation menu items at least 44px tall without changing global actions', () => {
+    const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+
+    expect(css).toMatch(
+      /\.partner-note-action-menu \.admin-action-item\s*{[^}]*min-height:\s*44px;/s,
+    );
+    expect(css).toContain('.admin-action-menu.partner-note-action-menu');
+    expect(css).toContain('min-width: 220px');
+  });
+
+  it('keeps the desktop Partner note command bar scoped, single-line, and 44px tall', () => {
+    const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+
+    expect(css).toMatch(
+      /\.partner-notes-page \.partner-note-date-group,\s*\.partner-notes-page \.partner-note-sort-group\s*{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\);/s,
+    );
+    expect(css).toMatch(
+      /\.partner-notes-page\s*:is\(\.vuexy-review-date-buttons, \.vuexy-review-sort-buttons\)\s*{[^}]*flex-wrap:\s*nowrap;/s,
+    );
+    expect(css).toMatch(
+      /\.partner-notes-page[\s\S]*?:is\(\.vuexy-review-date-buttons, \.vuexy-review-sort-buttons\)[\s\S]*?\.booking-date-filter-button\s*{[^}]*min-height:\s*44px;[^}]*white-space:\s*nowrap;/,
+    );
+    expect(css).toMatch(
+      /\.partner-note-custom-dates\[open\]\s*{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\);/s,
+    );
   });
 });
 
@@ -279,6 +351,7 @@ function classNamesIn(value: unknown): string[] {
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
+  if (record?.type === ClientActionDropdownSurface) return [props?.title, props?.children];
   return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 

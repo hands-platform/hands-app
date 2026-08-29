@@ -15,6 +15,15 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/bookings/post-match-cancellations')).toBe('BOOKINGS_CANCELLATIONS');
     expect(adminOperatorCategoryForPath('/customers/customer-1')).toBe('CUSTOMERS_DETAIL');
     expect(adminOperatorCategoryForPath('/partners/overview')).toBe('PARTNERS_DIRECTORY');
+    expect(adminOperatorCategoryForPath('/partners')).toBe('PARTNERS_DIRECTORY');
+    expect(adminOperatorCategoryForPath('/partners?review=approval-pending&sort=oldest')).toBe(
+      'PARTNERS_UNAPPROVED',
+    );
+    expect(adminOperatorCategoryForPath('/partners?review=unapproved')).toBe('PARTNERS_UNAPPROVED');
+    expect(adminOperatorCategoryForPath('/partner-controls')).toBe('PARTNERS_DETAIL');
+    expect(adminOperatorCategoryForPath('/partner-controls?details=controls')).toBe('PARTNERS_DETAIL');
+    expect(adminOperatorCategoryForPath('/partner-controls?details=reports')).toBe('PARTNERS_DETAIL');
+    expect(adminOperatorCategoryForPath('/partner-controls?details=sanctions')).toBe('PARTNERS_DETAIL');
     expect(adminOperatorCategoryForPath('/partners/provider-1')).toBe('PARTNERS_DETAIL');
     expect(adminOperatorCategoryForPath('/finance-tax/payment-clearing')).toBe('FINANCE_PAYMENT_CLEARING');
     expect(adminOperatorCategoryForPath('/finance-overview')).toBe('FINANCE');
@@ -23,8 +32,16 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/finance-tax/partner-bank-deposits/deposit-1')).toBe(
       'FINANCE_WALLET_ADJUSTMENTS',
     );
-    expect(adminOperatorCategoryForPath('/finance-tax/company-bank-accounts')).toBe('FINANCE_BANK_RECONCILIATION');
+    expect(adminOperatorCategoryForPath('/finance-tax/company-bank-accounts')).toBe(
+      'FINANCE_BANK_RECONCILIATION',
+    );
     expect(adminOperatorCategoryForPath('/finance-tax/coupon-finance')).toBe('FINANCE_TAX');
+    expect(adminOperatorCategoryForPath('/finance-tax/booking-settlement-audit/settlement-1')).toBe(
+      'FINANCE_SETTLEMENTS',
+    );
+    expect(adminOperatorCategoryForPath('/finance-tax/settlement-reversals/reversal-1')).toBe(
+      'FINANCE_SETTLEMENTS',
+    );
     expect(adminOperatorCategoryForPath('/finance-tax/finance-approvers')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForPath('/referrals/customers')).toBe('CUSTOMERS');
     expect(adminOperatorCategoryForPath('/referrals/customers?settings=policy')).toBe('SYSTEM_POLICY');
@@ -49,9 +66,9 @@ describe('admin operator access model', () => {
   });
 
   it('maps write API calls to operator permission categories', () => {
-    expect(
-      adminOperatorCategoryForAdminApiPath('POST', '/admin/finance-approver-governance/requests'),
-    ).toBe('SYSTEM_ADMIN_OPERATORS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/finance-approver-governance/requests')).toBe(
+      'SYSTEM_ADMIN_OPERATORS',
+    );
     expect(
       adminOperatorCategoryForAdminApiPath(
         'POST',
@@ -59,68 +76,119 @@ describe('admin operator access model', () => {
       ),
     ).toBe('SYSTEM_POLICY');
     expect(
-      adminOperatorCategoryForAdminApiPath(
-        'PATCH',
-        '/admin/partner-customer-reviews/note-1/moderate',
-      ),
+      adminOperatorCategoryForAdminApiPath('PATCH', '/admin/partner-customer-reviews/note-1/moderate'),
     ).toBe('CUSTOMERS_REVIEWS');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/bookings/booking-1/ops-note')).toBe('BOOKINGS_DETAIL');
-    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/users/user-1/admin-operator-access')).toBe('SYSTEM_ADMIN_OPERATORS');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/manual-wallet-adjustments')).toBe('FINANCE_WALLET_ADJUSTMENTS');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/wallet-adjustments')).toBe('FINANCE_WALLET_ADJUSTMENTS');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/wallet-adjustment-requests/request-1/approve')).toBe(
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/bookings/booking-1/ops-note')).toBe(
+      'BOOKINGS_DETAIL',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/users/user-1/admin-operator-access')).toBe(
+      'SYSTEM_ADMIN_OPERATORS',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/manual-wallet-adjustments')).toBe(
       'FINANCE_WALLET_ADJUSTMENTS',
     );
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/payment-fee-policies/policy-1/activate')).toBe(
-      'SYSTEM_POLICY',
-    );
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/provider-wallet/deposits')).toBe('FINANCE_WALLET_ADJUSTMENTS');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/provider-wallet/deposit-requests/request-1/approve')).toBe(
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/wallet-adjustments')).toBe(
       'FINANCE_WALLET_ADJUSTMENTS',
     );
+    expect(
+      adminOperatorCategoryForAdminApiPath('POST', '/admin/wallet-adjustment-requests/request-1/approve'),
+    ).toBe('FINANCE_WALLET_ADJUSTMENTS');
+    expect(
+      adminOperatorCategoryForAdminApiPath('POST', '/admin/payment-fee-policies/policy-1/activate'),
+    ).toBe('SYSTEM_POLICY');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/provider-wallet/deposits')).toBe(
+      'FINANCE_WALLET_ADJUSTMENTS',
+    );
+    expect(
+      adminOperatorCategoryForAdminApiPath(
+        'POST',
+        '/admin/provider-wallet/deposit-requests/request-1/approve',
+      ),
+    ).toBe('FINANCE_WALLET_ADJUSTMENTS');
     expect(
       adminOperatorCategoryForAdminApiPath(
         'POST',
         '/admin/provider-wallet/deposit-requests/request-1/reconciliation-assignment',
       ),
     ).toBe('FINANCE_WALLET_ADJUSTMENTS');
-    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/provider-wallet/withdrawal-requests/request-1')).toBe('FINANCE_SETTLEMENTS');
+    expect(
+      adminOperatorCategoryForAdminApiPath('PATCH', '/admin/provider-wallet/withdrawal-requests/request-1'),
+    ).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/payout-batches')).toBe('FINANCE_SETTLEMENTS');
+    expect(
+      adminOperatorCategoryForAdminApiPath('POST', '/admin/cash-settlement-earnings/earning-1/allocations'),
+    ).toBe('FINANCE_SETTLEMENTS');
+    expect(
+      adminOperatorCategoryForAdminApiPath('POST', '/admin/booking-settlement-gaps/booking-1/repair'),
+    ).toBe('FINANCE_SETTLEMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/referrals/rewards/reward-1/credit')).toBe(
+      'FINANCE_SETTLEMENTS',
+    );
     expect(
       adminOperatorCategoryForAdminApiPath(
         'POST',
-        '/admin/cash-settlement-earnings/earning-1/allocations',
+        '/admin/referrals/rewards/reward-1/tax-review-approve',
       ),
-    ).toBe('FINANCE_SETTLEMENTS');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/booking-settlement-gaps/booking-1/repair')).toBe(
-      'FINANCE_SETTLEMENTS',
+    ).toBe('FINANCE_TAX');
+    expect(
+      adminOperatorCategoryForAdminApiPath(
+        'POST',
+        '/admin/referrals/rewards/reward-1/tax-review-hold',
+      ),
+    ).toBe('FINANCE_TAX');
+    expect(
+      adminOperatorCategoryForAdminApiPath(
+        'POST',
+        '/admin/referrals/rewards/reward-1/tax-review-reject',
+      ),
+    ).toBe('FINANCE_TAX');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/company-bank-accounts')).toBe(
+      'SYSTEM_POLICY',
     );
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/referrals/rewards/reward-1/credit')).toBe('FINANCE_SETTLEMENTS');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/company-bank-accounts')).toBe('SYSTEM_POLICY');
-    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/company-bank-accounts/bank-account-1')).toBe('SYSTEM_POLICY');
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/company-bank-accounts/bank-account-1')).toBe(
+      'SYSTEM_POLICY',
+    );
     expect(
       adminOperatorCategoryForAdminApiPath(
         'POST',
         '/admin/company-bank-accounts/bank-account-1/approval-decision',
       ),
     ).toBe('FINANCE_BANK_RECONCILIATION');
-    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/referrals/policies/customer')).toBe('SYSTEM_POLICY');
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/referrals/policies/customer')).toBe(
+      'SYSTEM_POLICY',
+    );
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/site-pages')).toBe('CONTENT_EDIT');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/site-pages/page-1')).toBe('CONTENT_EDIT');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/site-pages/page-1/publish')).toBe('CONTENT_PUBLISH');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/site-pages/page-1/rollback')).toBe('CONTENT_PUBLISH');
-    expect(adminOperatorCategoryForAdminApiPath('DELETE', '/admin/site-pages/page-1')).toBe('CONTENT_DELETE');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partners/provider-1/approve')).toBe('PARTNERS_DETAIL');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-documents/document-1/approve')).toBe('PARTNERS_KYC');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-bank-accounts/bank-1/reject')).toBe('PARTNERS_KYC');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/tax-policy-versions')).toBe('FINANCE_TAX');
-    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/service-payout-rules/rule-1')).toBe('SYSTEM_SERVICES');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe('GROWTH_MARKETING_SPEND');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/calendar-events')).toBe('BOOKINGS_REALTIME');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/notifications/push-campaigns')).toBe('NOTIFICATIONS_PUSH');
-    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/notifications/templates/booking.matched')).toBe(
-      'NOTIFICATIONS_TEMPLATES',
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/site-pages/page-1/publish')).toBe(
+      'CONTENT_PUBLISH',
     );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/site-pages/page-1/rollback')).toBe(
+      'CONTENT_PUBLISH',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('DELETE', '/admin/site-pages/page-1')).toBe('CONTENT_DELETE');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partners/provider-1/approve')).toBe(
+      'PARTNERS_DETAIL',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-documents/document-1/approve')).toBe(
+      'PARTNERS_KYC',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-bank-accounts/bank-1/reject')).toBe(
+      'PARTNERS_KYC',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/tax-policy-versions')).toBe('FINANCE_TAX');
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/service-payout-rules/rule-1')).toBe(
+      'SYSTEM_SERVICES',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe(
+      'GROWTH_MARKETING_SPEND',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/calendar-events')).toBe('BOOKINGS_REALTIME');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/notifications/push-campaigns')).toBe(
+      'NOTIFICATIONS_PUSH',
+    );
+    expect(
+      adminOperatorCategoryForAdminApiPath('PATCH', '/admin/notifications/templates/booking.matched'),
+    ).toBe('NOTIFICATIONS_TEMPLATES');
     expect(
       adminOperatorCategoryForAdminApiPath(
         'POST',
@@ -154,15 +222,25 @@ describe('admin operator access model', () => {
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS'] }, 'BOOKINGS_DETAIL')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS_DETAIL'] }, 'BOOKINGS_DETAIL')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS'] }, 'FINANCE')).toBe(false);
-    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'DEVELOPER_SETUP')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'DEVELOPER_SETUP')).toBe(
+      true,
+    );
     expect(hasAdminOperatorCategory({ categories: ['DEVELOPER_SYSTEM'] }, 'DEVELOPER_SETUP')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['GROWTH'] }, 'GROWTH_MARKETING')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['GROWTH'] }, 'GROWTH_MARKETING_SPEND')).toBe(false);
-    expect(hasAdminOperatorCategory({ categories: ['GROWTH_MARKETING'] }, 'GROWTH_MARKETING_SPEND')).toBe(false);
-    expect(hasAdminOperatorCategory({ categories: ['GROWTH_MARKETING_SPEND'] }, 'GROWTH_MARKETING_SPEND')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: ['GROWTH_MARKETING'] }, 'GROWTH_MARKETING_SPEND')).toBe(
+      false,
+    );
+    expect(
+      hasAdminOperatorCategory({ categories: ['GROWTH_MARKETING_SPEND'] }, 'GROWTH_MARKETING_SPEND'),
+    ).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['NOTIFICATIONS'] }, 'NOTIFICATIONS_PUSH')).toBe(false);
     expect(hasAdminOperatorCategory({ categories: ['NOTIFICATIONS_PUSH'] }, 'NOTIFICATIONS_PUSH')).toBe(true);
-    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'BOOKINGS_REALTIME')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: ['NOTIFICATIONS'] }, 'NOTIFICATIONS_INCIDENTS')).toBe(false);
+    expect(hasAdminOperatorCategory({ categories: ['NOTIFICATIONS_INCIDENTS'] }, 'NOTIFICATIONS_INCIDENTS')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'BOOKINGS_REALTIME')).toBe(
+      true,
+    );
   });
 });
 
@@ -173,7 +251,9 @@ type AdminWebWriteApiCall = {
 };
 
 function collectAdminWebWriteApiCalls() {
-  const sourceDirectories = ['app', 'components', 'lib'].map((directory) => path.join(process.cwd(), directory));
+  const sourceDirectories = ['app', 'components', 'lib'].map((directory) =>
+    path.join(process.cwd(), directory),
+  );
 
   return sourceDirectories
     .flatMap((directory) => collectSourceFiles(directory))

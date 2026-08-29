@@ -20,6 +20,7 @@ import jwt from 'jsonwebtoken';
 
 import { runAdminWebDirectSmoke } from './lib/admin-web-direct-smoke.mjs';
 import { loadMergedEnv } from './lib/env-file.mjs';
+import { financeApproverSmokeAttestationEvents } from './lib/finance-approver-smoke-attestation.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
@@ -253,12 +254,17 @@ async function seed() {
         userId: ids.actor,
         categories: [
           AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
           AdminOperatorPermissionCategory.FINANCE_TAX,
         ],
       },
       {
         userId: ids.approver,
-        categories: [AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING],
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+          AdminOperatorPermissionCategory.FINANCE_TAX,
+        ],
       },
     ],
   });
@@ -304,24 +310,30 @@ async function seed() {
   });
   await prisma.adminAuditLog.createMany({
     data: [
-      {
-        actorId: ids.approver,
-        action: 'admin_user.finance_approver.legacy_attestation.approved',
-        target: `finance_approver_attestation:${ids.actor}:${runId}`,
-        metadata: {
-          attestorId: ids.actor,
-          sourceReference: `disposable-payment-lifecycle:${runId}`,
-        },
-      },
-      {
-        actorId: ids.actor,
-        action: 'admin_user.finance_approver.legacy_attestation.approved',
-        target: `finance_approver_attestation:${ids.approver}:${runId}`,
-        metadata: {
-          attestorId: ids.approver,
-          sourceReference: `disposable-payment-lifecycle:${runId}`,
-        },
-      },
+      ...financeApproverSmokeAttestationEvents({
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+          AdminOperatorPermissionCategory.FINANCE_TAX,
+        ],
+        checkerId: ids.approver,
+        effectiveAt: now,
+        runId: `${runId}_actor`,
+        sourceReference: `disposable-payment-lifecycle:${runId}`,
+        targetUserId: ids.actor,
+      }),
+      ...financeApproverSmokeAttestationEvents({
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+          AdminOperatorPermissionCategory.FINANCE_TAX,
+        ],
+        checkerId: ids.actor,
+        effectiveAt: now,
+        runId: `${runId}_approver`,
+        sourceReference: `disposable-payment-lifecycle:${runId}`,
+        targetUserId: ids.approver,
+      }),
     ],
   });
   await prisma.customerProfile.create({
@@ -717,11 +729,11 @@ async function verifyAdminWebEvidence(evidence) {
       path: `/finance-tax/booking-settlement-audit/${evidence.settlementSnapshotId}`,
       markers: [
         'Booking Settlement Audit Detail',
-        'Settlement record overview',
-        'Settlement evidence hub',
-        'Accounting amount breakdown',
+        'Identity',
+        'Canonical evidence',
+        'Allocation equation',
         'CARD',
-        'REVERSED',
+        'Reversal evidence incomplete',
         evidence.bookingId,
         evidence.clearingEntryId,
         evidence.reversalEntryId,
@@ -731,7 +743,7 @@ async function verifyAdminWebEvidence(evidence) {
       path: `/finance-tax/settlement-reversals/${evidence.reversalEntryId}`,
       markers: [
         'Settlement Reversal Detail',
-        'Refund after payout evidence',
+        'Paid payout refund',
         'Original settlement lock',
         'Reversal accounting impact',
         'CARD',
@@ -743,7 +755,12 @@ async function verifyAdminWebEvidence(evidence) {
     },
   ];
 
-  await runAdminWebDirectSmoke({ env, pages: directPages, repoRoot });
+  await runAdminWebDirectSmoke({
+    env,
+    pages: directPages,
+    repoRoot,
+    session: { sessionId: ids.actorSession, userId: ids.actor },
+  });
   return {
     checkedPages: directPages.length,
     paymentClearingLinked: true,

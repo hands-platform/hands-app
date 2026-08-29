@@ -1,16 +1,16 @@
 import { BadgePercent, Banknote, CreditCard, RotateCcw } from 'lucide-react';
 
 import type {
-  AdminAccountingJournalBatch,
   AdminBookingSettlementReversalEntry,
   AdminBookingSettlementReversalSummary,
 } from '../../../lib/admin-api';
-import { adminGet } from '../../../lib/admin-api';
+import { adminGetResult } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTableSubstack } from '../../../components/admin-data-table';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { AdminErrorState } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadgeFromPillClass } from '../../../components/status-badge';
@@ -39,7 +39,6 @@ import {
   buildBookingSettlementReversalApiHref,
   buildBookingSettlementReversalEvidenceState,
   buildBookingSettlementReversalSummaryApiHref,
-  buildBookingSettlementReversalTraceLinks,
   buildTaxFinanceWorkflowLinks,
   buildTaxSettlementServerPagination,
   emptyBookingSettlementReversalSummary,
@@ -57,47 +56,51 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
   const filters = readBookingSettlementFilters(params);
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
-  const [summary, reversals, reversalJournals] = await Promise.all([
-    adminGet<AdminBookingSettlementReversalSummary>(
+  const [summaryResult, reversalsResult] = await Promise.all([
+    adminGetResult<AdminBookingSettlementReversalSummary>(
       buildBookingSettlementReversalSummaryApiHref(filters),
       emptyBookingSettlementReversalSummary(),
     ),
-    adminGet<AdminBookingSettlementReversalEntry[]>(buildBookingSettlementReversalApiHref(filters), []),
-    adminGet<AdminAccountingJournalBatch[]>(
-      `/admin/accounting-journal-batches?${new URLSearchParams({
-        q: 'reversal',
-        range: filters.range,
-        take: '20',
-      }).toString()}`,
-      [],
-    ),
+    adminGetResult<AdminBookingSettlementReversalEntry[]>(buildBookingSettlementReversalApiHref(filters), []),
   ]);
-  const disbursementReversalJournals = reversalJournals
-    .filter(
-      (journal) =>
-        journal.sourceKey.endsWith(':reversal') &&
-        (journal.sourceType === 'PROVIDER_PAYOUT_BATCH' || journal.sourceType === 'PROVIDER_WITHDRAWAL'),
-    )
-    .sort((left, right) => Date.parse(right.postedAt) - Date.parse(left.postedAt))
-    .slice(0, 10);
+  const currentHref = bookingSettlementReversalHref(filters);
+  const workflowLinks = buildTaxFinanceWorkflowLinks({
+    current: 'settlement-reversals',
+    monthlyFilters,
+    settlementFilters: filters,
+    withholdingFilters,
+  });
+  if (!summaryResult.ok || !reversalsResult.ok) {
+    const failedStatus = !summaryResult.ok ? summaryResult.status : reversalsResult.status;
+    return (
+      <AdminPageTemplate
+        actions={<TaxFinanceWorkflowActions links={workflowLinks} />}
+        description="Closed-period reversal data could not be loaded. No zero-count or closeout conclusion has been inferred."
+        title="Settlement Reversals"
+      >
+        <AdminErrorState
+          action={<AdminFormControlLink href={currentHref}>Retry reversal records</AdminFormControlLink>}
+          message={
+            failedStatus === 401 || failedStatus === 403
+              ? 'Finance access was rejected. Sign in again or request the required permission.'
+              : 'Retry before using reversal counts or evidence for a closeout decision.'
+          }
+          title="Settlement reversal data unavailable"
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const summary = summaryResult.data;
+  const reversals = reversalsResult.data;
   const pagination = buildTaxSettlementServerPagination(reversals, filters, summary.count);
   const taxReversalImpact = summary.partnerWithholdingTotal + summary.companyOutputVat;
   const rangeScope = dateRangeLabel(filters.range);
 
   return (
     <AdminPageTemplate
-      actions={
-        <TaxFinanceWorkflowActions
-          links={buildTaxFinanceWorkflowLinks({
-            current: 'settlement-reversals',
-            monthlyFilters,
-            settlementFilters: filters,
-            withholdingFilters,
-          })}
-        />
-      }
+      actions={<TaxFinanceWorkflowActions links={workflowLinks} />}
       description="Closed-period refund and settlement reversal records. These rows preserve the original monthly close and point finance to reversal journal and clearing evidence."
-      title="Settlement Reversals"
+      title="Closed-period Settlement Reversals"
     >
       <FinanceListCommandBoard ariaLabel="Reversal command board">
         <FinanceListCommandCard
@@ -107,7 +110,12 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           label="Closed-period reversals"
           scope={rangeScope}
           tone={summary.count > 0 ? 'info' : 'success'}
-          value={<MoneyText amount={summary.customerPaymentAmount} currency={summary.currency} />}
+          value={
+            <>
+              <MoneyText amount={Math.abs(summary.customerPaymentAmount)} currency={summary.currency} />{' '}
+              reversed
+            </>
+          }
         />
         <FinanceListCommandCard
           detail={`${summary.cashCount} cash reversal row(s) may affect partner wallet receivable and manual settlement follow-up.`}
@@ -128,13 +136,17 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           value={formatFinancePercent(summary.nonCashCount, summary.count)}
         />
         <FinanceListCommandCard
-          detail="Partner withholding and company output VAT corrections recorded through reversal entries in this selected scope."
+          detail="Partner withholding and company output VAT amounts offset by immutable reversal entries in this selected scope."
           href="/finance-tax/platform-vat"
           icon={BadgePercent}
           label="Tax correction recorded"
           scope={rangeScope}
           tone={taxReversalImpact > 0 ? 'info' : 'success'}
-          value={<MoneyText amount={taxReversalImpact} currency={summary.currency} />}
+          value={
+            <>
+              <MoneyText amount={Math.abs(taxReversalImpact)} currency={summary.currency} /> corrected
+            </>
+          }
         />
       </FinanceListCommandBoard>
 
@@ -184,7 +196,15 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
 
       <FinanceTablePanel
         grouped
-        description="The original settlement remains immutable; this list shows the reversal row and its accounting impact."
+        description={
+          <>
+            Immutable closed-period corrections only. For open- and closed-period reversal signals, open{' '}
+            <AdminTextLink href="/finance-tax/booking-settlement-audit?range=all&review=reversals&sort=oldest&take=25">
+              Booking Audit · All reversal signals
+            </AdminTextLink>
+            .
+          </>
+        }
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
         title="Settlement reversal rows"
@@ -192,17 +212,15 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
         <FinanceDataTable
           emptyMessage="No settlement reversal rows match the current filters."
           headers={[
-            'Booking',
-            'Original close',
-            'Customer',
-            'Partner',
-            'Payment',
-            'Reversal amounts',
-            'Tax and fee',
-            'Evidence',
-            'Status',
+            'Decision / next action',
+            'Booking / parties',
+            'Original / payment',
+            'Reversed amount',
+            'Tax correction',
+            'Record status',
           ]}
           rowCount={pagination.rows.length}
+          tableClassName="settlement-reversal-decision-table"
         >
           {pagination.rows.map((reversal) => {
             const evidenceState = buildBookingSettlementReversalEvidenceState(reversal);
@@ -210,37 +228,37 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
             return (
               <tr key={reversal.id}>
                 <td>
+                  <AdminTableSubstack>
+                    <StatusBadgeFromPillClass pillClass={financeEvidenceTonePill(evidenceState.tone)}>
+                      {evidenceState.label}
+                    </StatusBadgeFromPillClass>
+                    <strong>
+                      <MoneyText
+                        amount={Math.abs(reversal.customerPaymentAmount)}
+                        currency={reversal.currency}
+                      />{' '}
+                      reversed
+                    </strong>
+                    <div className="muted">{reversalNextAction(evidenceState.tone)}</div>
+                    <AdminTextLink href={bookingSettlementReversalDetailHref(reversal.id, currentHref)}>
+                      Open closed-period reversal {shortId(reversal.id)}
+                    </AdminTextLink>
+                  </AdminTableSubstack>
+                </td>
+                <td>
                   <AdminTextLink href={`/bookings/${reversal.bookingId}`}>
-                    {shortId(reversal.bookingId)}
+                    Booking {shortId(reversal.bookingId)}
                   </AdminTextLink>
                   <div className="muted">
                     <DateTimeText value={reversal.occurredAt} />
                   </div>
-                  <div className="muted">{shortId(reversal.sourceKey)}</div>
-                </td>
-                <td>
-                  <strong>{reversal.originalMonthlyPeriod}</strong>
-                  <div className="muted">Closing {shortId(reversal.originalMonthlyClosingId)}</div>
-                  <div className="muted">
-                    Original record {shortId(reversal.originalSettlementSnapshotId)}
-                  </div>
-                </td>
-                <td>
                   <strong>
                     {financePersonName(
                       reversal.originalSettlementSnapshot?.customerProfile?.user,
                       'Unknown customer',
                     )}
                   </strong>
-                  {reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ? (
-                    <div className="muted">
-                      {reversal.originalSettlementSnapshot.customerProfile.user.phone}
-                    </div>
-                  ) : (
-                    <AdminInlineFallback className="admin-mt-6">No customer phone</AdminInlineFallback>
-                  )}
-                </td>
-                <td>
+                  <span className="muted admin-block">to</span>
                   <AdminTextLink href={`/partners/${reversal.providerProfileId}?section=full`}>
                     {reversal.originalSettlementSnapshot?.providerProfile?.displayName ??
                       financePersonName(
@@ -248,16 +266,14 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                         'Unknown partner',
                       )}
                   </AdminTextLink>
-                  {reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ? (
-                    <div className="muted">
-                      {reversal.originalSettlementSnapshot.providerProfile.user.phone}
-                    </div>
-                  ) : (
-                    <AdminInlineFallback className="admin-mt-6">No partner phone</AdminInlineFallback>
-                  )}
                 </td>
                 <td>
-                  <strong>{reversal.paymentMethod}</strong>
+                  <strong>Original close {reversal.originalMonthlyPeriod}</strong>
+                  <div className="muted">Record {shortId(reversal.originalSettlementSnapshotId)}</div>
+                  <div className="muted">Closing {shortId(reversal.originalMonthlyClosingId)}</div>
+                  <div className="admin-mt-8">
+                    <strong>{reversal.paymentMethod}</strong>
+                  </div>
                   <div className="muted">
                     Payment {reversal.paymentId ? shortId(reversal.paymentId) : '-'}
                   </div>
@@ -265,42 +281,40 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                 </td>
                 <td>
                   <strong>
-                    <MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />
+                    Customer{' '}
+                    <MoneyText
+                      amount={Math.abs(reversal.customerPaymentAmount)}
+                      currency={reversal.currency}
+                    />
                   </strong>
                   <div className="muted">
-                    Partner <MoneyText amount={reversal.partnerPayoutAmount} currency={reversal.currency} />
+                    Partner payout offset{' '}
+                    <MoneyText amount={Math.abs(reversal.partnerPayoutAmount)} currency={reversal.currency} />
                   </div>
                   <div className="muted">
-                    Fee <MoneyText amount={reversal.platformFeeGross} currency={reversal.currency} />
+                    Platform fee offset{' '}
+                    <MoneyText amount={Math.abs(reversal.platformFeeGross)} currency={reversal.currency} />
                   </div>
                 </td>
                 <td>
                   <strong>
-                    <MoneyText amount={reversal.partnerWithholdingTotal} currency={reversal.currency} />
+                    Withholding{' '}
+                    <MoneyText
+                      amount={Math.abs(reversal.partnerWithholdingTotal)}
+                      currency={reversal.currency}
+                    />
                   </strong>
                   <div className="muted">
-                    VAT <MoneyText amount={reversal.companyOutputVat} currency={reversal.currency} />
+                    Output VAT{' '}
+                    <MoneyText amount={Math.abs(reversal.companyOutputVat)} currency={reversal.currency} />
                   </div>
                   <div className="muted">
-                    Processing{' '}
-                    <MoneyText amount={reversal.paymentProcessingFee} currency={reversal.currency} />
+                    Processing fee{' '}
+                    <MoneyText
+                      amount={Math.abs(reversal.paymentProcessingFee)}
+                      currency={reversal.currency}
+                    />
                   </div>
-                </td>
-                <td>
-                  <AdminTableSubstack>
-                    <StatusBadgeFromPillClass pillClass={financeEvidenceTonePill(evidenceState.tone)}>
-                      {evidenceState.label}
-                    </StatusBadgeFromPillClass>
-                    <div className="muted">{evidenceState.detail}</div>
-                    <AdminTextLink href={bookingSettlementReversalDetailHref(reversal.id)}>
-                      Open reversal <span className="muted">{shortId(reversal.id)}</span>
-                    </AdminTextLink>
-                    {buildBookingSettlementReversalTraceLinks(reversal).map((link) => (
-                      <AdminTextLink href={link.href} key={`${reversal.id}:${link.label}`}>
-                        {link.label} <span className="muted">{link.value}</span>
-                      </AdminTextLink>
-                    ))}
-                  </AdminTableSubstack>
                 </td>
                 <td>
                   <StatusBadgeFromPillClass
@@ -323,61 +337,20 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Returned or rejected Partner disbursements. Each row restores the Partner wallet in the current open period while preserving the original paid record."
-        resultLabel={`${disbursementReversalJournals.length} recent row(s)`}
-        resultTone={disbursementReversalJournals.length > 0 ? 'warning' : 'success'}
-        title="Payout and withdrawal reversal journals"
+        description="Payout and withdrawal returns belong to Partner Money. Use its authoritative reconciliation queue or the server-filtered General Ledger instead of a partial client-side slice here."
+        resultLabel="Separate responsibility"
+        resultTone="info"
+        title="Related Partner Money reversals"
       >
-        <FinanceDataTable
-          emptyMessage="No payout or withdrawal reversal journal is visible in the selected range."
-          headers={['Source', 'Partner', 'Posted', 'Debit', 'Credit', 'Evidence']}
-          rowCount={disbursementReversalJournals.length}
-        >
-          {disbursementReversalJournals.map((journal) => (
-            <tr key={journal.id}>
-              <td>
-                <strong>{disbursementReversalSourceLabel(journal)}</strong>
-                <div className="muted">{shortId(journal.sourceId)}</div>
-              </td>
-              <td>
-                {journal.providerProfileId ? (
-                  <AdminTextLink href={`/partners/${journal.providerProfileId}?section=full#finance`}>
-                    {journal.providerProfile?.displayName ??
-                      financePersonName(journal.providerProfile?.user, 'Unknown partner')}
-                  </AdminTextLink>
-                ) : (
-                  <AdminInlineFallback>No Partner link</AdminInlineFallback>
-                )}
-              </td>
-              <td>
-                <DateTimeText value={journal.postedAt} />
-                <div className="muted">{journal.monthlyPeriod ?? 'Open period'}</div>
-              </td>
-              <td>
-                <MoneyText amount={journal.totalDebit} currency={journal.currency} />
-              </td>
-              <td>
-                <MoneyText amount={journal.totalCredit} currency={journal.currency} />
-              </td>
-              <td>
-                <StatusBadgeFromPillClass
-                  pillClass={journal.totalDebit === journal.totalCredit ? 'pill-success' : 'pill-danger'}
-                >
-                  {journal.totalDebit === journal.totalCredit ? 'Balanced' : 'Unbalanced'}
-                </StatusBadgeFromPillClass>
-                <div className="muted admin-mt-8">Bank return evidence recorded</div>
-                <AdminTextLink href={`/finance-tax/general-ledger/${journal.id}`}>
-                  Open reversal journal
-                </AdminTextLink>
-              </td>
-            </tr>
-          ))}
-        </FinanceDataTable>
-        <div className="admin-mt-12">
-          <AdminTextLink href="/finance-tax/general-ledger?q=reversal">
-            Open all reversal journals
+        <AdminTableSubstack>
+          <AdminTextLink href="/payouts?view=reconciliation">Open Partner Money reconciliation</AdminTextLink>
+          <AdminTextLink href="/finance-tax/general-ledger?range=all&review=all&source=PROVIDER_PAYOUT_BATCH&page=1&take=25">
+            Open payout batch journals
           </AdminTextLink>
-        </div>
+          <AdminTextLink href="/finance-tax/general-ledger?range=all&review=all&source=PROVIDER_WITHDRAWAL&page=1&take=25">
+            Open withdrawal journals
+          </AdminTextLink>
+        </AdminTableSubstack>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
@@ -387,8 +360,8 @@ function reversalReviewLabel(review: string) {
   return SETTLEMENT_REVERSAL_REVIEW_LINKS.find((item) => item.review === review)?.label ?? 'All';
 }
 
-function disbursementReversalSourceLabel(journal: AdminAccountingJournalBatch) {
-  return journal.sourceType === 'PROVIDER_PAYOUT_BATCH'
-    ? 'Payout batch reversal'
-    : 'Partner withdrawal reversal';
+function reversalNextAction(tone: ReturnType<typeof buildBookingSettlementReversalEvidenceState>['tone']) {
+  return tone === 'success'
+    ? 'Review the immutable correction and continue closeout.'
+    : 'Open the reversal and resolve the authoritative evidence blocker.';
 }

@@ -75,6 +75,128 @@ describe('AdminBackgroundJobsService', () => {
     expect(JSON.stringify(result)).not.toContain('opts');
   });
 
+  it('keeps healthy queues and DB audit evidence when one queue snapshot is unavailable', async () => {
+    const unavailableQueue = queueFixture('booking-timeouts');
+    vi.mocked(unavailableQueue.getJobCounts).mockRejectedValue(
+      new Error('Redis redis://user:password@localhost:6379 unavailable'),
+    );
+    const fixture = prismaFixture({
+      queueHealthLogs: [{
+        action: 'admin.background_jobs.queue_stale_alerted',
+        actor: null,
+        actorKey: 'background-job-monitor',
+        actorLabelSnapshot: 'HANDS background monitor',
+        actorType: 'SYSTEM',
+        createdAt: new Date('2026-07-14T04:00:00.000Z'),
+        id: 'health-event-system',
+        metadata: { queueName: 'notification-retry' },
+        target: 'background_job_queue_health:notification-retry',
+      }],
+    });
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      unavailableQueue,
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check'),
+      fixture.prisma,
+    );
+
+    const result = await service.health();
+
+    expect(result.availability.queues).toBe('PARTIAL');
+    expect(result.queues).toHaveLength(4);
+    expect(result.queues.find((queue) => queue.name === 'booking-timeouts')).toMatchObject({
+      availability: 'UNAVAILABLE',
+      failureReviewCoverage: 'UNAVAILABLE',
+    });
+    expect(result.queues.find((queue) => queue.name === 'notification-retry')).toMatchObject({
+      availability: 'AVAILABLE',
+    });
+    expect(result.healthEvents).toEqual([expect.objectContaining({
+      actor: null,
+      actorLabelSnapshot: 'HANDS background monitor',
+      actorType: 'SYSTEM',
+      id: 'health-event-system',
+    })]);
+    expect(JSON.stringify(result)).not.toContain('redis://');
+    expect(JSON.stringify(result)).not.toContain('password');
+  });
+
+  it('preserves queue health when only retained failure reads are unavailable', async () => {
+    const paymentQueue = queueFixture('payment-status-check', {
+      counts: { failed: 2 },
+      rejectFailedReads: true,
+    });
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      paymentQueue,
+      prismaFixture().prisma,
+    );
+
+    const result = await service.health();
+    expect(result.queues.find((queue) => queue.name === 'payment-status-check')).toMatchObject({
+      availability: 'AVAILABLE',
+      failureReviewCoverage: 'UNAVAILABLE',
+      status: 'HEALTHY',
+      unresolvedFailureCount: 0,
+    });
+    expect(result.failurePage.complete).toBe(false);
+    expect(result.failurePage.unavailableQueueNames).toContain('payment-status-check');
+    expect(result.ok).toBe(false);
+  });
+
+  it('keeps queue snapshots when DB audit evidence is unavailable', async () => {
+    const fixture = prismaFixture();
+    vi.mocked(fixture.prisma.adminAuditLog.findMany).mockRejectedValue(
+      new Error('Postgres postgresql://user:secret@localhost/internal'),
+    );
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check'),
+      fixture.prisma,
+    );
+
+    const result = await service.health();
+    expect(result.queues).toHaveLength(4);
+    expect(result.availability).toMatchObject({
+      failureReviews: 'AVAILABLE',
+      healthEvents: 'UNAVAILABLE',
+      recurringIncidents: 'UNAVAILABLE',
+    });
+    expect(result.healthEvents).toEqual([]);
+    expect(JSON.stringify(result)).not.toContain('postgresql://');
+    expect(JSON.stringify(result)).not.toContain('secret');
+  });
+
+  it('reports total queue unavailability without dropping queue identities', async () => {
+    const queues = [
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check'),
+    ];
+    for (const queue of queues) {
+      vi.mocked(queue.getJobCounts).mockRejectedValue(new Error('queue unavailable'));
+    }
+    const service = new AdminBackgroundJobsService(
+      queues[0],
+      queues[1],
+      queues[2],
+      queues[3],
+      prismaFixture().prisma,
+    );
+
+    const result = await service.health();
+    expect(result.availability.queues).toBe('UNAVAILABLE');
+    expect(result.queues).toHaveLength(4);
+    expect(result.queues.every((queue) => queue.availability === 'UNAVAILABLE')).toBe(true);
+    expect(result.ok).toBe(false);
+  });
+
   it('keeps the first meaningful failure line when BullMQ retains leading blank lines', async () => {
     const service = new AdminBackgroundJobsService(
       queueFixture('bank-statement-escalation', {
@@ -232,7 +354,10 @@ describe('AdminBackgroundJobsService', () => {
     const incidentTarget =
       'background_job_recurring_incident:bank-statement-escalation:background-job-failure-monitor';
     const opened = {
-      actor: { email: 'master@hands.vn', fullName: 'Master Admin', id: 'master-1' },
+      actor: null,
+      actorKey: 'background-job-monitor',
+      actorLabelSnapshot: 'HANDS background monitor',
+      actorType: 'SYSTEM' as const,
       createdAt: new Date('2026-07-14T04:00:00.000+07:00'),
       id: 'incident-open-1',
       metadata: {
@@ -257,6 +382,9 @@ describe('AdminBackgroundJobsService', () => {
     const origin = {
       action: 'admin.background_jobs.failure_alerted',
       actor: opened.actor,
+      actorKey: opened.actorKey,
+      actorLabelSnapshot: opened.actorLabelSnapshot,
+      actorType: opened.actorType,
       createdAt: new Date('2026-07-14T04:00:01.000+07:00'),
       id: 'failure-origin-1',
       metadata: { incidentTarget, jobId: 'repeat:monitor:1' },
@@ -265,6 +393,9 @@ describe('AdminBackgroundJobsService', () => {
     const review = {
       action: 'admin.background_jobs.failure_resolved',
       actor: opened.actor,
+      actorKey: opened.actorKey,
+      actorLabelSnapshot: opened.actorLabelSnapshot,
+      actorType: opened.actorType,
       createdAt: new Date('2026-07-14T04:05:00.000+07:00'),
       metadata: { reason: 'Recurring scheduler recovered.' },
       target: origin.target,
@@ -290,6 +421,9 @@ describe('AdminBackgroundJobsService', () => {
     const result = await service.recurringIncidentDetail('incident-open-1', { page: 1, pageSize: 5 });
 
     expect(result.incident).toMatchObject({
+      actor: null,
+      actorLabelSnapshot: 'HANDS background monitor',
+      actorType: 'SYSTEM',
       id: 'incident-open-1',
       status: 'RECOVERED',
     });
@@ -301,7 +435,10 @@ describe('AdminBackgroundJobsService', () => {
       totalCount: 1,
     });
     expect(result.failures).toEqual([{
-      actor: opened.actor,
+      actor: null,
+      actorKey: 'background-job-monitor',
+      actorLabelSnapshot: 'HANDS background monitor',
+      actorType: 'SYSTEM',
       firstSeenAt: origin.createdAt.toISOString(),
       jobId: 'repeat:monitor:1',
       reason: 'Recurring scheduler recovered.',
@@ -499,6 +636,7 @@ describe('AdminBackgroundJobsService', () => {
       pageSize: 5,
       scannedCount: 10,
       totalCount: 8,
+      unavailableQueueNames: [],
     });
     expect(secondPage.failedJobs).toHaveLength(3);
     expect(secondPage.failurePage).toMatchObject({
@@ -645,6 +783,60 @@ describe('AdminBackgroundJobsService', () => {
     });
     expect(result.failedJobs[0]).toMatchObject({
       review: { reason: 'Gateway recovered', status: 'RESOLVED' },
+    });
+  });
+
+  it('keeps a queue non-attention but marks review coverage incomplete beyond the bounded scan', async () => {
+    const failed = Array.from({ length: 6 }, (_, index) => jobFixture({
+      id: `resolved-bounded-${index + 1}`,
+    }));
+    const reviewLogs = failed.map((job) => ({
+      action: 'admin.background_jobs.failure_resolved',
+      createdAt: new Date('2026-07-14T03:02:00.000Z'),
+      metadata: { reason: 'Source issue resolved' },
+      target: `background_job_failure:payment-status-check:${job.id}`,
+    }));
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation', { schedulers: backgroundMonitorSchedulers() }),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check', { counts: { failed: 6 }, failed }),
+      prismaFixture({ reviewLogs }).prisma,
+    );
+
+    const result = await service.health();
+    expect(result.queues.find((queue) => queue.name === 'payment-status-check')).toMatchObject({
+      counts: { failed: 6 },
+      failureReviewCoverage: 'INCOMPLETE',
+      status: 'HEALTHY',
+      unresolvedFailureCount: 0,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('keeps attention when a bounded retained failure is unresolved', async () => {
+    const failed = Array.from({ length: 6 }, (_, index) => jobFixture({
+      id: `mixed-bounded-${index + 1}`,
+    }));
+    const reviewLogs = failed.slice(0, 4).map((job) => ({
+      action: 'admin.background_jobs.failure_resolved',
+      createdAt: new Date('2026-07-14T03:02:00.000Z'),
+      metadata: { reason: 'Source issue resolved' },
+      target: `background_job_failure:payment-status-check:${job.id}`,
+    }));
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation', { schedulers: backgroundMonitorSchedulers() }),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check', { counts: { failed: 6 }, failed }),
+      prismaFixture({ reviewLogs }).prisma,
+    );
+
+    const result = await service.health();
+    expect(result.queues.find((queue) => queue.name === 'payment-status-check')).toMatchObject({
+      failureReviewCoverage: 'INCOMPLETE',
+      status: 'ATTENTION',
+      unresolvedFailureCount: 1,
     });
   });
 
@@ -1683,6 +1875,7 @@ function queueFixture(
     waiting?: Job[];
     workers?: number;
     jobState?: string | null;
+    rejectFailedReads?: boolean;
   } = {},
 ) {
   return {
@@ -1698,6 +1891,9 @@ function queueFixture(
       input.schedulers ?? (name === 'bank-statement-escalation' ? backgroundMonitorSchedulers() : []),
     ),
     getJobs: vi.fn((type: string, start = 0, end = -1) => {
+      if (type === 'failed' && input.rejectFailedReads) {
+        return Promise.reject(new Error('Retained failure scan unavailable'));
+      }
       const jobs = {
         active: input.active ?? [],
         completed: input.completed ?? [],
@@ -1799,7 +1995,10 @@ function prismaFixture(input: {
   recipients?: string[];
   queueHealthLogs?: Array<{
     action: string;
-    actor: { email: string | null; fullName: string | null; id: string };
+    actor: { email: string | null; fullName: string | null; id: string } | null;
+    actorKey?: string | null;
+    actorLabelSnapshot?: string | null;
+    actorType?: 'HUMAN' | 'SERVICE' | 'SYSTEM' | 'UNKNOWN' | null;
     createdAt: Date;
     id: string;
     metadata: Record<string, unknown>;

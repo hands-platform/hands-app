@@ -11,7 +11,7 @@ describe('tax policy page load plan', () => {
       page: 1,
       issuePage: 1,
       currentPolicyHref: '/admin/tax-policy-versions?view=current&take=2',
-      workspacePoliciesHref: '/admin/tax-policy-versions?view=drafts&take=25&skip=0',
+      workspacePoliciesHref: '/admin/tax-policy-versions?view=drafts&take=25&skip=0&source=production',
       selectedPolicyHref: undefined,
       approvalRequestsHref: undefined,
       auditEventHref: undefined,
@@ -26,9 +26,16 @@ describe('tax policy page load plan', () => {
 
   it('loads approval requests only in the draft workspace', () => {
     const plan = buildTaxPolicyLoadPlan({ view: 'drafts', page: '2' });
-    expect(plan.workspacePoliciesHref).toBe('/admin/tax-policy-versions?view=drafts&take=25&skip=25');
+    expect(plan.workspacePoliciesHref).toBe('/admin/tax-policy-versions?view=drafts&take=25&skip=25&source=production');
     expect(plan.approvalRequestsHref).toBeUndefined();
     expect(plan.auditLogsHref).toBeUndefined();
+  });
+
+  it('preserves explicit test and legacy draft source in the server query', () => {
+    const plan = buildTaxPolicyLoadPlan({ view: 'drafts', source: 'test-legacy', page: '2' });
+    expect(plan.workspacePoliciesHref).toBe(
+      '/admin/tax-policy-versions?view=drafts&take=25&skip=25&source=test-legacy',
+    );
   });
 
   it('loads the approval receipt and capabilities for the exact selected policy', () => {
@@ -43,7 +50,7 @@ describe('tax policy page load plan', () => {
     const plan = buildTaxPolicyLoadPlan({ view: 'integrity' });
     expect(plan.workspacePoliciesHref).toBeUndefined();
     expect(plan.auditLogsHref).toBe('/admin/tax-policy-audit-logs?source=production&take=25&skip=0');
-    expect(plan.integritySummaryHref).toBe('/admin/tax-policy-integrity-summary');
+    expect(plan.integritySummaryHref).toBe('/admin/tax-policy-integrity-summary?source=production');
     expect(plan.recentEarningsHref).toBe('/admin/earnings?range=30d&take=25');
   });
 
@@ -54,7 +61,7 @@ describe('tax policy page load plan', () => {
     expect(plan.page).toBe(2);
     expect(plan.issuePage).toBe(3);
     expect(plan.integrityRecordsHref).toBe(
-      '/admin/tax-policy-integrity-records?issue=missing-tax-log&source=all&sort=oldest&take=25&skip=50',
+      '/admin/tax-policy-integrity-records?issue=missing-tax-log&source=production&sort=oldest&take=25&skip=50',
     );
     expect(plan.auditLogsHref).toContain('skip=25');
   });
@@ -84,7 +91,7 @@ describe('tax policy page load plan', () => {
     const plan = buildTaxPolicyLoadPlan({ view: 'drafts', policyId: 'policy id/1' });
     expect(plan.selectedPolicyHref).toBe('/admin/tax-policy-versions?id=policy%20id%2F1&take=1');
     expect(buildTaxPolicyEditorHref('policy id/1')).toBe(
-      '/tax-policy?view=drafts&policyId=policy%20id%2F1#tax-policy-policy%20id%2F1',
+      '/tax-policy?view=drafts&source=production&policyId=policy%20id%2F1#tax-policy-policy%20id%2F1',
     );
   });
 

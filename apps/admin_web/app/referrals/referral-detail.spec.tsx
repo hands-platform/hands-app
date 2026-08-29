@@ -172,6 +172,16 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('Reverse reward');
   });
 
+  it('keeps reward ledger cells as table cells and places grid layout on an inner wrapper', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralParentDetailPage audience="customer" row={customerReferralParent} />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('<td class="referral-reward-ledger-evidence-cell"><div class="referral-reward-cell-content">');
+    expect(markup).toContain('<td class="referral-reward-ledger-value-cell"><div class="referral-reward-cell-content">');
+    expect(markup).toContain('<td class="referral-reward-ledger-decision-cell"><div class="referral-reward-cell-content">');
+  });
+
   it('renders customer reward calculation snapshots for accounting review', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
@@ -476,7 +486,7 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('Credit ready referral reward to wallet after detail review.');
   });
 
-  it('renders cashout approval and tax review actions for cashout-requested wallet rewards', () => {
+  it('renders legacy Customer cashout requests as read-only without mutation actions', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
       referrals: [
@@ -497,15 +507,17 @@ describe('Referral detail presentation', () => {
       ' ',
     );
 
-    expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
-    expect(markup).toContain('Approve cashout');
-    expect(markup).toContain('Require tax review');
+    expect(markup).toContain('Unavailable in wallet-only MVP');
+    expect(markup).toContain('Legacy cashout row · read-only investigation');
+    expect(markup).not.toContain('admin-action-dropdown referral-reward-action-dropdown');
+    expect(markup).not.toContain('Approve cashout');
+    expect(markup).not.toContain('Require tax review');
     expect(markup).toContain('Cashout requested');
     expect(markup).toContain('customer-wallet-ledger-1');
     expect(markup).not.toContain('<td><span class="muted">Ledger posted</span></td>');
   });
 
-  it('renders a paid closeout action with transfer reference for approved cashouts', () => {
+  it('keeps approved legacy Customer cashouts read-only without paid closeout controls', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
       referrals: [
@@ -528,18 +540,46 @@ describe('Referral detail presentation', () => {
       />,
     ).replace(/\s+/g, ' ');
 
-    expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
-    expect(markup).toContain('Mark paid');
-    expect(markup).toContain('Require tax review');
-    expect(markup).toContain('Transfer reference');
-    expect(markup).toContain('name="transferRef"');
-    expect(markup).toContain('The signed-in Finance operator is recorded as the paid closeout approver.');
+    expect(markup).toContain('Unavailable in wallet-only MVP');
+    expect(markup).toContain('Legacy cashout row · read-only investigation');
+    expect(markup).not.toContain('admin-action-dropdown referral-reward-action-dropdown');
+    expect(markup).not.toContain('Mark paid');
+    expect(markup).not.toContain('Require tax review');
+    expect(markup).not.toContain('name="transferRef"');
     expect(markup).not.toContain('name="approvalAdminId"');
     expect(markup).not.toContain('Different admin user id');
     expect(markup).toContain('Cashout approved');
   });
 
-  it('does not trust a browser-selected approver when the paid closeout action is rendered', () => {
+  it('lets FINANCE_TAX decide a legacy Customer tax-review row while keeping paid closeout disabled', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'TAX_REVIEW_REQUIRED',
+              walletLedgerReference: 'customer-earned-ledger-1',
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(
+      <ReferralParentDetailPage audience="customer" canReviewTax row={row} />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Approve tax review');
+    expect(markup).toContain('Keep in tax review');
+    expect(markup).toContain('Reject cashout; retain wallet reward');
+    expect(markup).toContain('Customer cash payout remains unavailable after tax approval');
+    expect(markup).not.toContain('Mark paid');
+    expect(markup).not.toContain('name="transferRef"');
+  });
+
+  it('does not render any approver input or paid mutation form for Customer cashouts', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
       referrals: [
@@ -560,10 +600,11 @@ describe('Referral detail presentation', () => {
       ' ',
     );
 
-    expect(markup).toContain('The signed-in Finance operator is recorded as the paid closeout approver.');
+    expect(markup).toContain('Unavailable in wallet-only MVP');
     expect(markup).not.toContain('name="approvalAdminId"');
-    expect(markup).toMatch(/<button[^>]*><span>Mark paid<\/span><\/button>/);
-    expect(markup).toMatch(/<button[^>]*formNoValidate=""[^>]*><span>Require tax review<\/span><\/button>/);
+    expect(markup).not.toContain('<form');
+    expect(markup).not.toContain('Mark paid');
+    expect(markup).not.toContain('Require tax review');
   });
 
   it('does not request a browser-selectable Finance approver directory', () => {

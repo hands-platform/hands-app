@@ -4,12 +4,15 @@ import { redirect } from 'next/navigation';
 import { AdminApiRequestError, adminPatchOrThrow, adminPostOrThrow } from '../../lib/admin-api';
 import {
   approveReferralRewardCashout,
+  approveReferralRewardTaxReview,
   creditReferralReward,
   holdReferralReward,
+  holdReferralRewardTaxReview,
   markReferralRewardCashoutPaid,
   releaseHeldReferralReward,
   requestReferralCashoutBankCorrection,
   requireReferralRewardTaxReview,
+  rejectReferralRewardTaxReview,
   reverseReferralReward,
   updateReferralPolicy,
 } from './actions';
@@ -186,6 +189,57 @@ describe('referral server actions', () => {
     ]);
   });
 
+  it('preserves the internal cashout queue filters and page after a successful decision', async () => {
+    mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'CASHOUT_APPROVED' });
+    const formData = referralDecisionForm('partner', 'parent-partner', 'CASHOUT_REQUESTED');
+    formData.set('reason', 'approved payout evidence');
+    formData.set('returnTo', '/referrals/cashouts?audience=partner&status=requested&q=parent&page=2');
+
+    await expect(approveReferralRewardCashout(formData)).rejects.toThrow('NEXT_REDIRECT:');
+
+    const redirectHref = String(mockedRedirect.mock.calls.at(-1)?.[0]);
+    expect(redirectHref).toContain('/referrals/cashouts?');
+    expect(redirectHref).toContain('audience=partner');
+    expect(redirectHref).toContain('status=requested');
+    expect(redirectHref).toContain('q=parent');
+    expect(redirectHref).toContain('page=2');
+    expect(redirectHref).toContain('actionStatus=saved');
+    expect(redirectHref).toContain('actionCode=cashout-approve');
+    expect(redirectHref).not.toContain('/referrals/partners/parent-partner');
+  });
+
+  it('preserves the cashout queue context and reason after a stale decision', async () => {
+    mockedAdminPost.mockRejectedValue(
+      new AdminApiRequestError('POST', '/admin/referrals/rewards/reward-1/cashout-approve', 409),
+    );
+    const formData = referralDecisionForm('partner', 'parent-partner', 'CASHOUT_REQUESTED');
+    formData.set('reason', 'stale payout evidence');
+    formData.set('returnTo', '/referrals/cashouts?audience=partner&status=requested&q=parent&page=2');
+
+    await expect(approveReferralRewardCashout(formData)).rejects.toThrow('NEXT_REDIRECT:');
+
+    const redirectHref = String(mockedRedirect.mock.calls.at(-1)?.[0]);
+    expect(redirectHref).toContain('/referrals/cashouts?');
+    expect(redirectHref).toContain('audience=partner');
+    expect(redirectHref).toContain('status=requested');
+    expect(redirectHref).toContain('q=parent');
+    expect(redirectHref).toContain('page=2');
+    expect(redirectHref).toContain('actionStatus=blocked');
+    expect(redirectHref).toContain('actionCode=conflict');
+    expect(redirectHref).toContain('actionReason=stale+payout+evidence');
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('rejects an external cashout return target and falls back to the owned detail route', async () => {
+    mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'CASHOUT_APPROVED' });
+    const formData = referralDecisionForm('partner', 'parent-partner', 'CASHOUT_REQUESTED');
+    formData.set('returnTo', 'https://example.invalid/referrals/cashouts?status=requested');
+
+    await expect(approveReferralRewardCashout(formData)).rejects.toThrow('NEXT_REDIRECT:');
+
+    expect(String(mockedRedirect.mock.calls.at(-1)?.[0])).toContain('/referrals/partners/parent-partner?');
+  });
+
   it('marks a referral reward cashout for tax review and refreshes referral detail views', async () => {
     mockedAdminPost.mockResolvedValue({
       id: 'reward-1',
@@ -211,6 +265,28 @@ describe('referral server actions', () => {
       '/referrals/partners/parent-partner',
       '/audit-log',
     ]);
+  });
+
+  it.each([
+    [approveReferralRewardTaxReview, 'tax-review-approve'],
+    [holdReferralRewardTaxReview, 'tax-review-hold'],
+    [rejectReferralRewardTaxReview, 'tax-review-reject'],
+  ] as const)('submits a confirmed tax decision to %s', async (action, path) => {
+    mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'TAX_REVIEW_REQUIRED' });
+    const formData = referralDecisionForm('customer', 'parent-customer', 'TAX_REVIEW_REQUIRED');
+    formData.set('reason', 'reviewed authoritative tax evidence');
+
+    await expect(action(formData)).rejects.toThrow('NEXT_REDIRECT:');
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      `/admin/referrals/rewards/reward-1/${path}`,
+      {
+        confirmation: 'confirmed',
+        expectedStatus: 'TAX_REVIEW_REQUIRED',
+        expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+        reason: 'reviewed authoritative tax evidence',
+      },
+    );
   });
 
   it('marks an approved referral reward cashout as paid and refreshes referral detail views', async () => {

@@ -7,6 +7,7 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTraceSummary');
+    expect(source).toContain('inferScope={false}');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
   });
 
@@ -122,7 +123,7 @@ describe('PartnerDetailCashDebtOriginSection', () => {
   it('renders an empty cash debt table state', () => {
     const section = PartnerDetailCashDebtOriginSection({
       hasCashFeeDebt: false,
-      hasSettlementRef: true,
+      hasSettlementRef: false,
       openDebtLabel: '0 VND',
       openRowCount: 0,
       rows: [],
@@ -132,6 +133,11 @@ describe('PartnerDetailCashDebtOriginSection', () => {
 
     expect(rendered).toContain('Cash debt origin and settlement');
     expect(rendered).toContain('No open cash debt');
+    expect(rendered).toContain('Not required');
+    expect(rendered).toContain('No cash-debt block');
+    expect(rendered).not.toContain('Needs action');
+    expect(rendered).not.toContain('Needs ref');
+    expect(rendered).not.toContain('Available');
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No open cash-service fee debt is visible for this partner.');
     expect(classNamesIn(section)).toEqual(
@@ -143,6 +149,22 @@ describe('PartnerDetailCashDebtOriginSection', () => {
       ]),
     );
     expect(rendered).toContain('Showing 0 entries');
+  });
+
+  it('keeps settlement evidence and payout blocking explicit when debt has a reference', () => {
+    const section = PartnerDetailCashDebtOriginSection({
+      hasCashFeeDebt: true,
+      hasSettlementRef: true,
+      openDebtLabel: '-120,000 VND',
+      openRowCount: 1,
+      rows: [],
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Some refs');
+    expect(rendered).toContain('Blocked by cash debt');
+    expect(rendered).not.toContain('No cash-debt block');
   });
 });
 

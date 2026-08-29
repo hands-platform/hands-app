@@ -1,7 +1,17 @@
 'use client';
 
 import 'react-datepicker/dist/react-datepicker.css';
-import { forwardRef, memo, useEffect, useState, type ChangeEventHandler, type MouseEventHandler } from 'react';
+import {
+  forwardRef,
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEventHandler,
+  type FocusEventHandler,
+  type KeyboardEvent,
+  type KeyboardEventHandler,
+} from 'react';
 import DatePicker from 'react-datepicker';
 
 type AdminFormDatePickerMode = 'date' | 'datetime-local' | 'month' | 'time';
@@ -27,11 +37,15 @@ type AdminDatePickerTextInputProps = {
   readonly ariaDescribedBy?: string;
   readonly ariaInvalid?: boolean;
   readonly autoFocus?: boolean;
+  readonly calendarOpen?: boolean;
   readonly disabled?: boolean;
   readonly label: string;
   readonly labelVisibility?: 'hidden' | 'visible';
+  readonly onBlur?: FocusEventHandler<HTMLInputElement>;
   readonly onChange?: ChangeEventHandler<HTMLInputElement>;
-  readonly onClick?: MouseEventHandler<HTMLInputElement>;
+  readonly onClick?: () => void;
+  readonly onFocus?: FocusEventHandler<HTMLInputElement>;
+  readonly onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   readonly required?: boolean;
   readonly value?: string;
 };
@@ -51,6 +65,9 @@ export const AdminFormDatePickerField = memo(function AdminFormDatePickerField({
   value,
 }: AdminFormDatePickerFieldProps) {
   const rawValue = stringValue(value ?? defaultValue);
+  const datePickerRef = useRef<InstanceType<typeof DatePicker>>(null);
+  const restoreFocusOnCloseRef = useRef(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => parseDatePickerValue(rawValue, mode));
 
   useEffect(() => {
@@ -68,6 +85,7 @@ export const AdminFormDatePickerField = memo(function AdminFormDatePickerField({
             ariaDescribedBy={ariaDescribedBy}
             ariaInvalid={ariaInvalid}
             autoFocus={autoFocus}
+            calendarOpen={calendarOpen}
             disabled={disabled}
             label={label}
             labelVisibility={labelVisibility}
@@ -76,12 +94,24 @@ export const AdminFormDatePickerField = memo(function AdminFormDatePickerField({
         )}
         dateFormat={datePickerDisplayFormat(mode)}
         disabled={disabled}
+        onCalendarClose={() => {
+          setCalendarOpen(false);
+          if (!restoreFocusOnCloseRef.current) return;
+          restoreFocusOnCloseRef.current = false;
+          requestAnimationFrame(() => requestAnimationFrame(() => datePickerRef.current?.setFocus()));
+        }}
+        onCalendarOpen={() => setCalendarOpen(true)}
         onChange={(date: Date | null) => setSelectedDate(date instanceof Date && Number.isFinite(date.getTime()) ? date : null)}
+        onKeyDown={(event) => {
+          restoreFocusOnCloseRef.current = event.key === 'Escape';
+        }}
         popperClassName="calendar-vuexy-datepicker-popper"
         popperPlacement="bottom-end"
         popperProps={ADMIN_DATEPICKER_POPPER_PROPS}
         portalId="admin-datepicker-portal"
+        preventOpenOnFocus
         required={required}
+        ref={datePickerRef}
         selected={selectedDate}
         showMonthYearPicker={mode === 'month'}
         showTimeSelect={mode === 'datetime-local'}
@@ -107,11 +137,15 @@ const AdminDatePickerTextInput = forwardRef<HTMLInputElement, AdminDatePickerTex
       ariaDescribedBy,
       ariaInvalid,
       autoFocus,
+      calendarOpen,
       disabled,
       label,
       labelVisibility = 'hidden',
+      onBlur,
       onChange,
       onClick,
+      onFocus,
+      onKeyDown,
       required,
       value,
     },
@@ -127,9 +161,13 @@ const AdminDatePickerTextInput = forwardRef<HTMLInputElement, AdminDatePickerTex
           autoFocus={autoFocus}
           className="admin-form-date-input"
           disabled={disabled}
+          onBlur={onBlur}
           onChange={onChange}
           onClick={onClick}
-          onMouseDown={preventDatePickerTextInputFocus}
+          onFocus={onFocus}
+          onKeyDown={(event) =>
+            handleAdminDatePickerInputKeyDown(event, onClick, onKeyDown, calendarOpen)
+          }
           readOnly
           ref={ref}
           required={required}
@@ -140,9 +178,29 @@ const AdminDatePickerTextInput = forwardRef<HTMLInputElement, AdminDatePickerTex
   },
 );
 
-const preventDatePickerTextInputFocus: MouseEventHandler<HTMLInputElement> = (event) => {
-  event.preventDefault();
-};
+export function handleAdminDatePickerInputKeyDown(
+  event: KeyboardEvent<HTMLInputElement>,
+  openCalendar?: () => void,
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>,
+  calendarOpen?: boolean,
+) {
+  if (event.key === ' ') {
+    event.preventDefault();
+    if (!calendarOpen) openCalendar?.();
+    return;
+  }
+
+  if (
+    calendarOpen === false &&
+    (event.key === 'Enter' || event.key === 'ArrowDown' || event.key === 'ArrowUp')
+  ) {
+    event.preventDefault();
+    openCalendar?.();
+    return;
+  }
+
+  onKeyDown?.(event);
+}
 
 function stringValue(value: string | number | readonly string[] | undefined) {
   if (Array.isArray(value)) {

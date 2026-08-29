@@ -9,8 +9,8 @@ describe('ServiceActionNoticeSection', () => {
   it('renders service action results through the shared Vuexy notice card tone', () => {
     const section = ServiceActionNoticeSection({
       notice: {
-        actionHref: '/audit-log?target=service_group%3Afoot',
-        actionLabel: 'Open audit change set',
+        actionHref: '/services?evidence=foot',
+        actionLabel: 'Open service change evidence',
         detail: 'The service menu was saved.',
         title: 'Service saved',
         tone: 'success',
@@ -21,7 +21,7 @@ describe('ServiceActionNoticeSection', () => {
     expect(markup).toContain('card admin-card admin-notice-card admin-notice-success admin-mb-16');
     expect(markup).toContain('Service saved');
     expect(markup).toContain('The service menu was saved.');
-    expect(markup).toContain('Open audit change set');
+    expect(markup).toContain('Open service change evidence');
     expect(sectionSource).toContain('AdminNoticeCard');
     expect(sectionSource).toContain("tone={notice.tone === 'success' ? 'success' : 'danger'}");
     expect(sectionSource).not.toContain('admin-notice-card ${noticeClassName}');

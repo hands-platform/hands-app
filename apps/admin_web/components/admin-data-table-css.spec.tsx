@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
 describe('Admin data table CSS', () => {
   it('anchors the shared table shell on the Admin data table atom class', () => {

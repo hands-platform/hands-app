@@ -110,7 +110,7 @@ const ADMIN_ROUTE_DOMAIN_RULES: ReadonlyArray<{
   },
   {
     domain: 'NOTIFICATION',
-    matches: prefixMatcher('notifications'),
+    matches: prefixMatcher('notifications', 'notification-delivery-incidents'),
   },
 ];
 

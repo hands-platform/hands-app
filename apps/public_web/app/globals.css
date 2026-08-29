@@ -5122,6 +5122,46 @@ textarea {
   line-height: 1.45;
 }
 
+.cms-preview-status {
+  align-items: center;
+  background: #fff7d6;
+  border-bottom: 1px solid #d69e2e;
+  color: #3d2b00;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  padding: 12px 32px;
+  position: relative;
+  z-index: 50;
+}
+
+.cms-preview-status > div {
+  display: grid;
+  gap: 2px;
+}
+
+.cms-preview-status.is-invalid {
+  background: #fff0f0;
+  border-bottom-color: #c53b3b;
+  color: #561919;
+}
+
+.cms-preview-status button {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 14px;
+}
+
+.cms-preview-status button:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
 @media (max-width: 809px) {
   .recruitment-page .halsa-features-section {
     padding-block: var(--recruitment-section-space);

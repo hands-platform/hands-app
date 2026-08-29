@@ -1,4 +1,4 @@
-const COUPON_RETURN_KEYS = ['couponPage', 'q', 'view'] as const;
+const COUPON_RETURN_KEYS = ['couponPage', 'q', 'sort', 'view'] as const;
 
 export function couponReturnTo(params: Record<string, string | string[] | undefined>) {
   const query = new URLSearchParams();
@@ -26,7 +26,8 @@ export function sanitizeCouponReturnTo(value?: string | null) {
     if (!value) continue;
     if (key === 'couponPage' && (!/^\d+$/.test(value) || Number(value) < 2)) continue;
     if (key === 'q') query.set(key, value.slice(0, 80));
-    else if (key === 'view' && ['all', 'live', 'records', 'scheduled'].includes(value)) query.set(key, value);
+    else if (key === 'sort' && ['code', 'ending-soon'].includes(value)) query.set(key, value);
+    else if (key === 'view' && ['all', 'expired', 'live', 'paused', 'records', 'scheduled'].includes(value)) query.set(key, value);
     else if (key === 'couponPage') query.set(key, value);
   }
 

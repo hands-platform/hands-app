@@ -6,6 +6,7 @@ import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { type AdminCustomerReferralParent, adminGetResult } from '../../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../../../lib/admin-operator-access-model';
 import { readSearchParam } from '../../../../lib/date-range';
 import { ReferralParentDetailPage } from '../../referral-detail';
 
@@ -51,6 +52,7 @@ export default async function CustomerReferralDetailPage({ params, searchParams 
       actionNotice={actionNotice}
       actionReason={readSearchParam(resolvedSearchParams.actionReason)}
       audience="customer"
+      canReviewTax={hasAdminOperatorCategory(operatorAccess, 'FINANCE_TAX')}
       canViewDeveloperSetup={canViewAdminDeveloperSystem(operatorAccess)}
       highlightRewardId={readSearchParam(resolvedSearchParams.rewardId)}
       row={row}

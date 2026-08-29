@@ -18,6 +18,7 @@ describe('partner detail review control panel model', () => {
       cashDebtAmount: 0,
       dossier: readyDossier,
       provider: {
+        id: 'partner-1',
         kyc: { submittedAt: '2026-06-13T03:15:00.000Z' },
         user: { createdAt: '2026-06-12T03:15:00.000Z' },
       },
@@ -75,6 +76,7 @@ describe('partner detail review control panel model', () => {
       provider: {
         blockedAt: '2026-06-13T03:15:00.000Z',
         blockedReason: 'Needs corrected documents.',
+        id: 'partner-1',
         user: { createdAt: '2026-06-12T03:15:00.000Z' },
       },
       resubmissionPlan: {

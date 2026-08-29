@@ -15,7 +15,9 @@ describe('Tax Policy client interaction contracts', () => {
 
     expect(source).toContain('usePathname()');
     expect(source).toContain('useSearchParams()?.toString()');
-    expect(source).toContain("window.addEventListener('hashchange', focusTarget)");
+    expect(source).toContain('new MutationObserver');
+    expect(source).toContain('window.setTimeout(stopWaiting, 5_000)');
+    expect(source).toContain("window.addEventListener('hashchange', handleHashChange)");
     expect(source).toContain('target.scrollIntoView');
     expect(source).toContain('target.focus({ preventScroll: true })');
   });

@@ -33,10 +33,12 @@ export type VietnamOverviewLiveMapProps = {
   readonly sampleCopy: string;
   readonly signalFilters: readonly VietnamOverviewSignalFilter[];
   readonly totalPointCount: number;
+  readonly visibleCopy: string;
 };
 
 type MarkerHandle = {
   readonly element: HTMLButtonElement;
+  readonly groupId: string;
   readonly marker: Marker;
   readonly popup: Popup;
 };
@@ -64,6 +66,9 @@ const vietnamBounds: LngLatBoundsLike = [
 ];
 
 const vietnamDefaultCenter: [number, number] = [106.25, 15.9];
+const vietnamClusterMaxDisplayZoom = 10;
+const vietnamLiveMapSourceId = 'vietnam-live-signals';
+const vietnamLiveMapLayerIds = ['vietnam-live-clusters', 'vietnam-live-unclustered'] as const;
 
 const vietnamRegionCenters: Record<string, { readonly center: [number, number]; readonly zoom: number }> = {
   hanoi: { center: [105.8542, 21.0285], zoom: 11 },
@@ -85,6 +90,7 @@ export function VietnamOverviewLiveMap({
   sampleCopy,
   signalFilters,
   totalPointCount,
+  visibleCopy,
 }: VietnamOverviewLiveMapProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -168,53 +174,54 @@ export function VietnamOverviewLiveMap({
       popup.remove();
       marker.remove();
     });
-    const sourceId = 'vietnam-live-signals';
-    const clusterLayerId = 'vietnam-live-clusters';
-    const unclusteredLayerId = 'vietnam-live-unclustered';
-    [clusterLayerId, unclusteredLayerId].forEach((layerId) => {
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
-    });
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    const sourceId = vietnamLiveMapSourceId;
+    const [clusterLayerId, unclusteredLayerId] = vietnamLiveMapLayerIds;
+    removeVietnamOverviewMapDataLayers(map, mapRef.current);
+    const usesGeoJsonClusters = shouldUseVietnamOverviewGeoJsonClusters(coordinateGroups.length);
 
-    map.addSource(sourceId, {
-      cluster: true,
-      clusterMaxZoom: 9,
-      clusterRadius: 48,
-      data: {
-        features: coordinateGroups.map((group) => ({
-          geometry: { coordinates: [group.longitude, group.latitude], type: 'Point' as const },
-          properties: { groupId: group.id, recordCount: group.points.length },
-          type: 'Feature' as const,
-        })),
-        type: 'FeatureCollection' as const,
-      },
-      type: 'geojson',
-    });
-    map.addLayer({
-      filter: ['has', 'point_count'],
-      id: clusterLayerId,
-      paint: {
-        'circle-color': '#16243a',
-        'circle-radius': ['step', ['get', 'point_count'], 20, 20, 24, 50, 28],
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 2,
-      },
-      source: sourceId,
-      type: 'circle',
-    });
-    map.addLayer({
-      filter: ['!', ['has', 'point_count']],
-      id: unclusteredLayerId,
-      paint: {
-        'circle-color': '#2563eb',
-        'circle-opacity': 0.82,
-        'circle-radius': 7,
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 2,
-      },
-      source: sourceId,
-      type: 'circle',
-    });
+    if (usesGeoJsonClusters) {
+      map.addSource(sourceId, {
+        cluster: true,
+        clusterMaxZoom: vietnamClusterMaxDisplayZoom - 1,
+        clusterRadius: 48,
+        data: {
+          features: coordinateGroups.map((group) => ({
+            geometry: { coordinates: [group.longitude, group.latitude], type: 'Point' as const },
+            properties: { groupId: group.id, recordCount: group.points.length },
+            type: 'Feature' as const,
+          })),
+          type: 'FeatureCollection' as const,
+        },
+        type: 'geojson',
+      });
+      map.addLayer({
+        filter: ['has', 'point_count'],
+        id: clusterLayerId,
+        maxzoom: vietnamClusterMaxDisplayZoom,
+        paint: {
+          'circle-color': '#16243a',
+          'circle-radius': ['step', ['get', 'point_count'], 20, 20, 24, 50, 28],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+        },
+        source: sourceId,
+        type: 'circle',
+      });
+      map.addLayer({
+        filter: ['!', ['has', 'point_count']],
+        id: unclusteredLayerId,
+        maxzoom: vietnamClusterMaxDisplayZoom,
+        paint: {
+          'circle-color': '#2563eb',
+          'circle-opacity': 0.82,
+          'circle-radius': 8,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+        },
+        source: sourceId,
+        type: 'circle',
+      });
+    }
 
     const onClusterClick = async (event: MapLayerMouseEvent) => {
       const feature = map.queryRenderedFeatures(event.point, { layers: [clusterLayerId] })[0];
@@ -224,7 +231,7 @@ export function VietnamOverviewLiveMap({
       const zoom = await (map.getSource(sourceId) as GeoJSONSource).getClusterExpansionZoom(clusterId);
       map.easeTo({ center: [Number(coordinates[0]), Number(coordinates[1])], zoom });
     };
-    map.on('click', clusterLayerId, onClusterClick);
+    if (usesGeoJsonClusters) map.on('click', clusterLayerId, onClusterClick);
 
     markerRefs.current = coordinateGroups.map((group, index) => {
       const element = document.createElement('button');
@@ -232,9 +239,13 @@ export function VietnamOverviewLiveMap({
       const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 18 })
         .setDOMContent(popupContent)
         .setLngLat([group.longitude, group.latitude]);
+      const onPopupKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') popup.remove();
+      };
 
       element.type = 'button';
       element.className = `vietnam-maplibre-marker is-${group.points[0].kind}${group.points.length > 1 ? ' is-aggregate' : ''}`;
+      element.style.zIndex = String(group.points.length);
       element.setAttribute('aria-label', groupAriaLabel(group));
       element.title = groupAriaLabel(group);
       if (group.points.length > 1) element.textContent = String(group.points.length);
@@ -243,11 +254,6 @@ export function VietnamOverviewLiveMap({
       element.addEventListener('click', (event) => {
         event.stopPropagation();
         popup.addTo(map);
-        const popupElement = popup.getElement();
-        popupElement.addEventListener('keydown', (keyEvent) => {
-          if (keyEvent.key === 'Escape') popup.remove();
-        });
-        popupElement.querySelector<HTMLElement>('a, button')?.focus();
       });
       element.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -263,17 +269,33 @@ export function VietnamOverviewLiveMap({
         });
         markerRefs.current[nextIndex]?.element.focus();
       });
-      popup.on('close', () => element.focus());
+      popup.on('open', () => {
+        const popupElement = popup.getElement();
+        popupElement.addEventListener('keydown', onPopupKeyDown);
+        popupElement.querySelector<HTMLElement>('button, a')?.focus();
+      });
+      popup.on('close', () => {
+        popup.getElement()?.removeEventListener('keydown', onPopupKeyDown);
+        if (!element.hidden) element.focus();
+        else map.getCanvas().focus();
+      });
 
       const marker = new maplibregl.Marker({ element })
         .setLngLat([group.longitude, group.latitude])
         .addTo(map);
 
-      return { element, marker, popup };
+      return { element, groupId: group.id, marker, popup };
     });
 
+    const onUnclusteredClick = (event: MapLayerMouseEvent) => {
+      const feature = map.queryRenderedFeatures(event.point, { layers: [unclusteredLayerId] })[0];
+      const groupId = String(feature?.properties?.groupId ?? '');
+      markerRefs.current.find((handle) => handle.groupId === groupId)?.popup.addTo(map);
+    };
+    if (usesGeoJsonClusters) map.on('click', unclusteredLayerId, onUnclusteredClick);
+
     const updateMarkerVisibility = () => {
-      const clustersVisible = coordinateGroups.length > 20 && map.getZoom() <= 9;
+      const clustersVisible = usesGeoJsonClusters && map.getZoom() < vietnamClusterMaxDisplayZoom;
       markerRefs.current.forEach(({ element }) => {
         element.hidden = clustersVisible;
       });
@@ -286,7 +308,7 @@ export function VietnamOverviewLiveMap({
       coordinateGroups.forEach((group) => bounds.extend([group.longitude, group.latitude]));
       map.fitBounds(bounds, {
         maxZoom: 13,
-        padding: { bottom: 90, left: 70, right: 330, top: 80 },
+        padding: { bottom: 90, left: 70, right: 70, top: 80 },
       });
     } else {
       const focus = focusRegionCode ? vietnamRegionCenters[focusRegionCode] : null;
@@ -294,17 +316,18 @@ export function VietnamOverviewLiveMap({
     }
 
     return () => {
-      map.off('click', clusterLayerId, onClusterClick);
+      if (mapRef.current !== map) return;
+      if (usesGeoJsonClusters) {
+        map.off('click', clusterLayerId, onClusterClick);
+        map.off('click', unclusteredLayerId, onUnclusteredClick);
+      }
       map.off('zoomend', updateMarkerVisibility);
       markerRefs.current.forEach(({ marker, popup }) => {
         popup.remove();
         marker.remove();
       });
       markerRefs.current = [];
-      [clusterLayerId, unclusteredLayerId].forEach((layerId) => {
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-      });
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
+      removeVietnamOverviewMapDataLayers(map, mapRef.current);
     };
   }, [coordinateGroups, focusRegionCode, mapStatus, returnHref]);
 
@@ -314,7 +337,7 @@ export function VietnamOverviewLiveMap({
   return (
     <div className="vietnam-maplibre-layout">
       <div className="vietnam-map-toolbar">
-        <span>{sampleCopy}</span>
+        <span>{sampleCopy} <strong>{visibleCopy}</strong></span>
         <details className="vietnam-map-layer-menu">
           <summary>Layers ({formatNumber(activeLayerCount)} on)</summary>
           <div className="vietnam-map-dot-legend" aria-label="Vietnam map layers">
@@ -423,6 +446,17 @@ export function VietnamOverviewLiveMap({
   );
 }
 
+export function removeVietnamOverviewMapDataLayers(
+  map: Pick<MapLibreMap, 'getLayer' | 'getSource' | 'removeLayer' | 'removeSource'>,
+  currentMap: MapLibreMap | null,
+) {
+  if (currentMap !== map) return;
+  vietnamLiveMapLayerIds.forEach((layerId) => {
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+  });
+  if (map.getSource(vietnamLiveMapSourceId)) map.removeSource(vietnamLiveMapSourceId);
+}
+
 function buildPopupContent(points: readonly VietnamOverviewMapPoint[], returnHref: string) {
   const content = document.createElement('div');
   content.className = 'vietnam-maplibre-popup';
@@ -465,10 +499,10 @@ function groupAriaLabel(group: CoordinateGroup) {
     : markerAriaLabel(group.points[0]);
 }
 
-function groupPointsByCoordinate(points: readonly VietnamOverviewMapPoint[]) {
+export function groupPointsByCoordinate(points: readonly VietnamOverviewMapPoint[]) {
   const groups = new Map<string, VietnamOverviewMapPoint[]>();
   points.forEach((point) => {
-    const key = `${point.latitude.toFixed(2)}:${point.longitude.toFixed(2)}`;
+    const key = `${point.latitude.toFixed(5)}:${point.longitude.toFixed(5)}`;
     groups.set(key, [...(groups.get(key) ?? []), point]);
   });
   return Array.from(groups, ([id, groupedPoints]): CoordinateGroup => ({
@@ -477,6 +511,10 @@ function groupPointsByCoordinate(points: readonly VietnamOverviewMapPoint[]) {
     longitude: groupedPoints[0].longitude,
     points: groupedPoints,
   }));
+}
+
+export function shouldUseVietnamOverviewGeoJsonClusters(groupCount: number) {
+  return groupCount > 20;
 }
 
 function safePointName(point: VietnamOverviewMapPoint) {

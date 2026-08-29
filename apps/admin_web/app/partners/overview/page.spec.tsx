@@ -1,9 +1,14 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
+import type { ComponentProps } from 'react';
 import { vi } from 'vitest';
 
 import { adminGet, type AdminPartnerOverview } from '../../../lib/admin-api';
 import PartnerOverviewPage from './page';
+
+vi.mock('next/link', () => ({
+  default: ({ children, ...props }: ComponentProps<'a'>) => <a {...props}>{children}</a>,
+}));
 
 vi.mock('../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
@@ -41,7 +46,12 @@ describe('PartnerOverviewPage', () => {
       null,
     );
     expect(markup).toContain('Detailed action queues');
+    expect(markup).toContain('<h1>Overview</h1>');
     expect(markup).toContain('Risk analysis: latest 500');
+    expect(markup).toContain('Data stale · as of');
+    expect(markup).toContain(
+      'href="/partners/overview?range=7d&amp;riskStatus=high&amp;walletStatus=negative&amp;selectionIssue=availability&amp;selectionSort=response">Refresh now</a>',
+    );
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('class="partner-overview-page"');
     expect(markup).not.toContain('usage-overview-page');
@@ -69,7 +79,9 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-section-body partner-overview-operating-grid');
     expect(markup).toContain('card admin-card partner-overview-command-card partner-overview-operating-card');
     expect(pageSource).not.toContain('className={`card admin-card partner-overview-operating-card');
-    expect(pageSource).toContain('baseClassName="partner-overview-command-card partner-overview-operating-card"');
+    expect(pageSource).toContain(
+      'baseClassName="partner-overview-command-card partner-overview-operating-card"',
+    );
     expect(pageSource).not.toContain('AdminLinkCard');
     expect(markup).toContain(
       'card admin-section partner-overview-section-card partner-overview-priority-board',
@@ -150,7 +162,9 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Response');
     expect(markup).toContain('1m 35s');
     expect(markup).toContain('Ho Chi Minh City');
-    expect(markup).toContain('Completed share');
+    expect(markup).toContain('Completion rate');
+    expect(markup).toContain('Non-completed rate');
+    expect(markup).toContain('<th scope="col">Service</th><th scope="col">Status</th>');
     expect(markup).toContain('Lifetime Partner rating');
     expect(markup).toContain('87%');
     expect(markup).toContain('4.70');
@@ -161,7 +175,7 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Open Partners');
     expect(markup).toContain('Open full queue');
     expect(markup).toContain('Current supply');
-    expect(markup).toContain('Location &lt;= 90m');
+    expect(markup).toContain('Fresh location · last 90 min');
     expect(markup).toContain('Bookable now');
     expect(markup).toContain('Approved, online, fresh location, active services, and wallet eligible');
     expect(markup).toContain(
@@ -182,20 +196,25 @@ describe('PartnerOverviewPage', () => {
       'href="/partners?review=customer-visibility-documents&amp;walletStatus=negative"',
     );
     expect(markup).toContain('No active service');
-    expect(markup).toContain(
-      'href="/partners?review=customer-visibility-service&amp;walletStatus=negative"',
-    );
+    expect(markup).toContain('href="/partners?review=customer-visibility-service&amp;walletStatus=negative"');
     expect(markup).toContain('Negative wallet');
-    expect(markup).toContain(
-      'href="/partners?review=available-blocked-wallet&amp;walletStatus=negative"',
-    );
+    expect(markup).toContain('href="/partners?review=available-blocked-wallet&amp;walletStatus=negative"');
     expect(markup).toContain('Account blocked');
-    expect(markup).toContain(
-      'href="/partners?review=available-blocked-account&amp;walletStatus=negative"',
-    );
+    expect(markup).toContain('href="/partners?review=available-blocked-account&amp;walletStatus=negative"');
     expect(markup).toContain('Available soon');
     expect(markup).toContain('Auto-offline follow-up queue for approved partners');
     expect(markup).toContain('Action required');
+    expect(markup).toContain('Top 1 of 1 active queue');
+    expect(markup).toContain('Ordered by operating risk, affected Partners, then stable queue key');
+    expect(markup).toContain('Partners may appear in more than one queue');
+    expect(markup).toContain('current snapshot, not cohort conversion');
+    expect(markup).toContain('Telemetry covers 1% of approved Partners');
+    expect(markup).toContain(
+      'Period usage includes tracked activity only and is not a complete Partner total',
+    );
+    expect(markup).toContain('Approved / registered: 76%');
+    expect(markup).toContain('Bookable / approved: 50%');
+    expect(markup).toContain('bounded Risk filter is not applied to these counts');
     expect(markup).not.toContain('Ready supply');
     expect(markup).toContain('card admin-card partner-overview-funnel-step');
     expect(markup).not.toContain('partner-overview-funnel-bar');
@@ -203,22 +222,14 @@ describe('PartnerOverviewPage', () => {
     expect(markup).not.toContain('usage-overview-funnel-bar');
     expect(pageSource).not.toContain('usage-overview-funnel-step');
     expect(pageSource).not.toContain('usage-overview-funnel-bar');
-    expect(markup).toContain('Online but not bookable');
     expect(markup).toContain('Pending verification');
     expect(markup).not.toContain('Wallet risk');
-    expect(markup).toContain('Quality risk');
     expect(markup).toContain('1 partner');
     expect(markup).toContain(
-      'aria-label="Online but not bookable, 2 partners. Open full queue; bounded Risk filter is not applied"',
+      'aria-label="Pending verification, 1 partner. Open full queue; bounded Risk filter is not applied"',
     );
     expect(markup).not.toContain('Review wallet');
-    expect(markup).toContain(
-      'aria-label="Quality risk, 1 partner. Open full queue; bounded Risk filter is not applied"',
-    );
     expect(markup).not.toContain('href="/partners?review=unsettled"');
-    expect(markup).toContain(
-      'href="/partners?review=quality-all&amp;walletStatus=negative&amp;qualityRange=7d"',
-    );
     expect(markup).toContain('Selection friction');
     expect(markup).toContain('Selection issue');
     expect(markup).toContain('Availability (1)');
@@ -335,6 +346,85 @@ describe('PartnerOverviewPage', () => {
     expect(markup).not.toContain('No Partners need this action right now.');
   });
 
+  it('derives stable Top N of M priority cards from 0, 1, 2, and 8 active action queues', async () => {
+    const baseList = partnerOverviewFixture.actionLists[0]!;
+    const queueDefinitions = [
+      {
+        key: 'pending-verification',
+        title: 'Pending Verification',
+        totalCount: 185,
+        viewAllHref: '/partners?review=unapproved',
+      },
+      {
+        key: 'negative-wallet',
+        title: 'Negative Wallet',
+        totalCount: 124,
+        viewAllHref: '/partners?review=unsettled',
+      },
+      {
+        key: 'payout-blocked',
+        title: 'Payout Blocked',
+        totalCount: 124,
+        viewAllHref: '/partners?review=payout-blocked',
+      },
+      {
+        key: 'tax-info-missing',
+        title: 'Tax Info Missing',
+        totalCount: 999,
+        viewAllHref: '/partners?review=tax-info-missing',
+      },
+      {
+        key: 'inactive-7d',
+        title: 'Inactive 7D',
+        totalCount: 500,
+        viewAllHref: '/partners?review=inactive-7d',
+      },
+      {
+        key: 'approved-never-online',
+        title: 'Approved Never Online',
+        totalCount: 400,
+        viewAllHref: '/partners?review=approved-never-online',
+      },
+      {
+        key: 'no-show-risk',
+        title: 'No-show Risk',
+        totalCount: 5,
+        viewAllHref: '/partners?review=no-show-risk',
+      },
+      { key: 'low-rating', title: 'Low Rating', totalCount: 4, viewAllHref: '/partners?review=low-rating' },
+    ];
+
+    for (const activeCount of [0, 1, 2, 8]) {
+      mockedAdminGet.mockResolvedValueOnce({
+        ...partnerOverviewFixture,
+        actionLists:
+          activeCount === 0
+            ? [{ ...baseList, rows: [], totalCount: 0 }]
+            : queueDefinitions.slice(0, activeCount).map((definition) => ({
+                ...baseList,
+                ...definition,
+                rows: [],
+              })),
+      });
+      const page = await PartnerOverviewPage({ searchParams: Promise.resolve({ range: '7d' }) });
+      const markup = renderToStaticMarkup(page);
+
+      if (activeCount === 0) {
+        expect(markup).toContain('No action');
+      } else {
+        expect(markup).toContain(
+          `Top ${Math.min(2, activeCount)} of ${activeCount} active ${activeCount === 1 ? 'queue' : 'queues'}`,
+        );
+      }
+      if (activeCount === 8) {
+        expect(markup.indexOf('Wallet risk')).toBeLessThan(markup.indexOf('Pending verification'));
+        expect(markup).toContain('Wallet risk, 124 partners');
+        expect(markup).toContain('Pending verification, 185 partners');
+        expect(markup).toContain('Partners may appear in more than one queue');
+      }
+    }
+  });
+
   it('uses the shared money atom for partner overview money values', () => {
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).not.toContain("if (kpi.unit === 'money') return formatMoney(kpi.value);");
@@ -384,6 +474,77 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('href="/partners?activity=app-inactive-7d"');
     expect(markup).toContain('href="/partners?activity=app-not-tracked"');
     expect(markup).toContain('App telemetry inactive 7D+');
+    expect(markup).toContain(
+      'Period usage includes tracked activity only and is not a complete Partner total',
+    );
+  });
+
+  it('labels the negative wallet preview ordering and full unique queue count', async () => {
+    const previewRow = partnerOverviewFixture.bookingQuality.riskPartners[0];
+    mockedAdminGet.mockResolvedValue({
+      ...partnerOverviewFixture,
+      financeWalletRisk: {
+        kpis: [
+          {
+            deltaPercent: null,
+            detail: 'Receivable partners',
+            key: 'partnersWithNegativeWallet',
+            label: 'Partners With Negative Wallet',
+            unit: 'count',
+            value: 124,
+          },
+          {
+            deltaPercent: null,
+            detail: 'Unique Partner count; wallet, bank, and tax block reasons can overlap',
+            key: 'payoutBlockedPartners',
+            label: 'Payout Blocked Partners',
+            unit: 'count',
+            value: 20,
+          },
+        ],
+        negativeWalletPartners: Array.from({ length: 5 }, (_, index) => ({
+          ...previewRow,
+          partnerId: `wallet-${index}`,
+          partnerName: `Wallet Partner ${index}`,
+          walletBalance: -500_000 + index * 10_000,
+        })),
+        policyNote:
+          'Payout outstanding, receivable, and wallet scopes can overlap and must not be added together.',
+      },
+    });
+
+    const page = await PartnerOverviewPage({ searchParams: Promise.resolve({ range: '7d' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Largest 5 receivables · sorted by balance (most negative first)');
+    expect(markup).toContain('View all 124');
+    expect(markup).toContain('Unique Partner count; wallet, bank, and tax block reasons can overlap');
+    expect(markup).toContain('scopes can overlap and must not be added together');
+  });
+
+  it('labels offline supply as a current state instead of a queue', async () => {
+    mockedAdminGet.mockResolvedValue({
+      ...partnerOverviewFixture,
+      operatingStatus: {
+        ...partnerOverviewFixture.operatingStatus,
+        cards: [
+          ...partnerOverviewFixture.operatingStatus.cards,
+          {
+            key: 'offline',
+            label: 'Offline',
+            count: 5,
+            detail: 'Approved Partners currently offline',
+            href: '/partners?providerStatus=OFFLINE',
+            tone: 'neutral',
+          },
+        ],
+      },
+    });
+
+    const page = await PartnerOverviewPage({ searchParams: Promise.resolve({ range: '7d' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toMatch(/metric-card-scope is-record">Current status[\s\S]*Offline/);
   });
 
   it('labels partner operating and priority cards by operating scope', async () => {
@@ -404,10 +565,7 @@ describe('PartnerOverviewPage', () => {
       /partner-overview-operating-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Available but blocked/,
     );
     expect(markup).toMatch(
-      /partner-overview-priority-card[\s\S]*metric-card-scope is-action">Pending[\s\S]*Online but not bookable/,
-    );
-    expect(markup).toMatch(
-      /partner-overview-priority-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Quality risk/,
+      /partner-overview-priority-card[\s\S]*metric-card-scope is-action">Pending[\s\S]*Pending verification/,
     );
   });
 
@@ -453,9 +611,7 @@ describe('PartnerOverviewPage', () => {
     expect(css).toContain('.partner-overview-operating-card > div > small');
     expect(css).toContain('.partner-overview-operating-card > div > em');
     expect(css).toContain('.partner-overview-priority-card > div > em');
-    expect(css).toMatch(
-      /\.partner-overview-priority-card > div > strong\s*\{[\s\S]*?white-space:\s*normal/,
-    );
+    expect(css).toMatch(/\.partner-overview-priority-card > div > strong\s*\{[\s\S]*?white-space:\s*normal/);
     expect(css).toContain('.partner-overview-selection-toolbar > div > strong');
     expect(css).not.toContain('.partner-overview-operating-card span {');
     expect(css).not.toContain('.partner-overview-operating-card strong {');
@@ -482,6 +638,13 @@ describe('PartnerOverviewPage', () => {
       /@media \(max-width: 1180px\)[\s\S]*?\.usage-overview-insight-grid\.partner-overview-app-activity-grid\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\)/,
     );
     expect(css).toContain('.partner-overview-page .partner-overview-table > thead > tr > th:first-child');
+    expect(css).toContain(
+      '.partner-overview-page .partner-overview-table.partner-overview-service-table > thead > tr > th:nth-child(2)',
+    );
+    expect(css).toContain('left: 180px;');
+    expect(css).toMatch(
+      /\.partner-overview-page \.partner-overview-service-table\s*\{[\s\S]*?overflow:\s*visible/,
+    );
     expect(css).toContain('position: sticky;');
   });
 
@@ -545,6 +708,7 @@ const partnerOverviewFixture: AdminPartnerOverview = {
     appActivityCountScope: 'full-population',
     operatingStatusCountScope: 'full-population',
     providerScanLimit: 500,
+    supplyHealthCountScope: 'full-population-excluding-risk-filter',
     walletBalancePartnerCount: 2,
     walletBalanceScopeTruncated: true,
     walletStatusFilterBounded: false,
@@ -763,11 +927,11 @@ const partnerOverviewFixture: AdminPartnerOverview = {
       },
       {
         deltaPercent: null,
-        detail: '12 / 1,235 approved Partners (1%)',
-        key: 'partnerTelemetryCoverage',
+        detail: '12 / 1,235 approved Partners',
+        key: 'partnerAppTelemetryCoverage',
         label: 'Telemetry coverage',
-        unit: 'count',
-        value: 12,
+        unit: 'percent',
+        value: 1,
       },
     ],
     mostActive: [

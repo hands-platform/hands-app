@@ -24,6 +24,8 @@ import {
   expandLegacyAdminOperatorCategories,
 } from '../../lib/admin-operator-permissions';
 import { OperatorAccessDrawer } from './operator-access-drawer';
+import { formatOperatorCount, operatorHistoryActorLabel } from './operator-copy';
+import { OperatorInvitationsDisclosure } from './operator-invitations-disclosure';
 import { AdminMfaEnrollmentForm } from './admin-mfa-enrollment-form';
 import {
   InviteOperatorForm,
@@ -41,6 +43,9 @@ type PageParams = {
   readonly category?: string;
   readonly cursor?: string;
   readonly cursorHistory?: string;
+  readonly historyCursor?: string;
+  readonly historyCursorHistory?: string;
+  readonly existingEmail?: string;
   readonly invite?: string;
   readonly operatorId?: string;
   readonly q?: string;
@@ -159,13 +164,33 @@ type OperatorSession = {
 type OperatorHistory = {
   readonly items: Array<{
     readonly action: string;
-    readonly actor: { readonly email: string | null; readonly fullName: string | null; readonly id: string };
+    readonly actor: null | { readonly email: string | null; readonly fullName: string | null; readonly id: string };
     readonly createdAt: string;
     readonly id: string;
     readonly metadata: unknown;
     readonly target: string;
   }>;
+  readonly page: {
+    readonly hasNextPage: boolean;
+    readonly nextCursor: string | null;
+    readonly returned: number;
+  };
   readonly totalCount: number;
+};
+
+type ExistingUserCandidateResult = {
+  readonly blockers?: ReadonlyArray<{ readonly code: string; readonly message: string }>;
+  readonly candidate: null | {
+    readonly email: string | null;
+    readonly fullName: string | null;
+    readonly id: string;
+    readonly permissionPresent: boolean;
+    readonly provenance: string | null;
+    readonly roles: string[];
+  };
+  readonly matchCount: number;
+  readonly normalizedEmail: string;
+  readonly status: 'AMBIGUOUS' | 'ELIGIBLE' | 'INELIGIBLE' | 'NO_MATCH';
 };
 
 const EMPTY_DIRECTORY: OperatorDirectory = {
@@ -184,6 +209,40 @@ const EMPTY_DIRECTORY: OperatorDirectory = {
   },
 };
 const EMPTY_INVITATIONS: InvitationDirectory = { expiredCount: 0, items: [], pendingCount: 0, totalCount: 0 };
+const EMPTY_HISTORY: OperatorHistory = {
+  items: [],
+  page: { hasNextPage: false, nextCursor: null, returned: 0 },
+  totalCount: 0,
+};
+const EMPTY_EXISTING_USER_CANDIDATE: ExistingUserCandidateResult = {
+  candidate: null,
+  matchCount: 0,
+  normalizedEmail: '',
+  status: 'NO_MATCH',
+};
+const ACCESS_DOMAIN_GROUP_ORDER = [
+  'Bookings',
+  'Users',
+  'Partners',
+  'Finance',
+  'Tax & Accounting',
+  'Growth & Communications',
+  'Policies',
+  'Admin Control',
+  'Website Content',
+  'Developer / System',
+] as const;
+const ACCESS_DOMAIN_OPTIONS = [...adminOperatorPermissionCategoryDefinitions]
+  .sort((left, right) => {
+    const groupDifference =
+      ACCESS_DOMAIN_GROUP_ORDER.indexOf(left.group as (typeof ACCESS_DOMAIN_GROUP_ORDER)[number]) -
+      ACCESS_DOMAIN_GROUP_ORDER.indexOf(right.group as (typeof ACCESS_DOMAIN_GROUP_ORDER)[number]);
+    return groupDifference || left.label.localeCompare(right.label);
+  })
+  .map((definition) => ({
+    label: `${definition.group} — ${definition.label}`,
+    value: definition.key,
+  }));
 
 export default async function AdminOperatorsPage({ searchParams }: { readonly searchParams?: Promise<PageParams> }) {
   const params = searchParams ? await searchParams : {};
@@ -215,23 +274,45 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
     : Promise.resolve({ data: [] as OperatorSession[], ok: true, status: 200 });
   const historyPromise = isMaster && params.operatorId
     ? adminGetResult<OperatorHistory>(
-        `/admin/admin-operator-history?targetUserId=${encodeURIComponent(params.operatorId)}&take=30`,
-        { items: [], totalCount: 0 },
+        `/admin/admin-operator-history?targetUserId=${encodeURIComponent(params.operatorId)}&take=30${params.historyCursor ? `&cursor=${encodeURIComponent(params.historyCursor)}` : ''}`,
+        EMPTY_HISTORY,
       )
-    : Promise.resolve({ data: { items: [] as OperatorHistory['items'], totalCount: 0 }, ok: true, status: 200 });
-  const [currentMfaResult, directoryResult, invitationsResult, selectedResult, sessionsResult, historyResult] = await Promise.all([
+    : Promise.resolve({ data: EMPTY_HISTORY, ok: true, status: 200 });
+  const existingUserCandidatePromise = isMaster && params.invite === 'existing' && params.existingEmail
+    ? adminGetResult<ExistingUserCandidateResult>(
+        `/admin/admin-operator-invitations/existing-user-candidate?email=${encodeURIComponent(params.existingEmail)}`,
+        EMPTY_EXISTING_USER_CANDIDATE,
+      )
+    : Promise.resolve({ data: EMPTY_EXISTING_USER_CANDIDATE, ok: true, status: 200 });
+  const [
+    currentMfaResult,
+    directoryResult,
+    invitationsResult,
+    selectedResult,
+    sessionsResult,
+    historyResult,
+    existingUserCandidateResult,
+  ] = await Promise.all([
     currentMfaPromise,
     directoryPromise,
     invitationsPromise,
     selectedPromise,
     sessionsPromise,
     historyPromise,
+    existingUserCandidatePromise,
   ]);
 
   const directory = directoryResult.data;
   const invitations = invitationsResult.data;
   const selectedOperator = selectedResult.data;
-  const closeHref = operatorAccessHref(params, { invite: undefined, operatorId: undefined, tab: undefined });
+  const closeHref = operatorAccessHref(params, {
+    existingEmail: undefined,
+    historyCursor: undefined,
+    historyCursorHistory: undefined,
+    invite: undefined,
+    operatorId: undefined,
+    tab: undefined,
+  });
   return (
     <AdminPageTemplate
       actions={(
@@ -260,7 +341,7 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
       {directory.summary.missingPermission > 0 ? (
         <AdminNoticeCard className="operator-access-risk-notice" tone="warning">
           <strong>Permission setup required</strong>
-          <p>{directory.summary.missingPermission} Admin operator(s) have no explicit permission record. They remain deny-by-default until migrated.</p>
+          <p>{formatOperatorCount(directory.summary.missingPermission, 'Admin operator')} {directory.summary.missingPermission === 1 ? 'has' : 'have'} no explicit permission record. They remain deny-by-default until migrated.</p>
           <StatusBadge tone="warning">Migration required</StatusBadge>
         </AdminNoticeCard>
       ) : null}
@@ -281,7 +362,7 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
           <CommandLink href="/admin-operators#invitations" label="Pending invitations" tone="warning" value={invitations.pendingCount} />
           <CommandLink href="/admin-operators?status=locked" label="Locked" tone="danger" value={directory.summary.locked} />
           <span className="operator-access-command-breakdown">
-            Permission {directory.summary.missingPermission} · Sign-in {directory.summary.missingCredential} · MFA {directory.summary.mfaNotConfigured}
+            Permission missing {directory.summary.missingPermission} · Sign-in missing {directory.summary.missingCredential} · Operators missing MFA {directory.summary.mfaNotConfigured}
           </span>
         </nav>
       ) : <LoadFailure label="The operator summary could not be loaded." />}
@@ -289,7 +370,7 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
       <AdminSection className="operator-access-directory-section" title="Operator directory">
         <AdminSectionHeader
           description="Active, setup-required, suspended, and locked Admin Web operators from the exact server directory."
-          status={<StatusBadge tone={directoryResult.ok ? 'info' : 'danger'}>{directoryResult.ok ? `${directory.page.filteredTotal} result(s)` : 'Unavailable'}</StatusBadge>}
+          status={<StatusBadge tone={directoryResult.ok ? 'info' : 'danger'}>{directoryResult.ok ? formatOperatorCount(directory.page.filteredTotal, 'result') : 'Unavailable'}</StatusBadge>}
           title="Find an operator"
         />
         <AdminDirectoryFilterForm action="/admin-operators" className="operator-access-filter-bar" method="get">
@@ -325,11 +406,8 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
             label="Access domain"
             name="category"
             options={[
-              { label: 'All access domains', value: '' },
-              ...adminOperatorPermissionCategoryDefinitions.map((definition) => ({
-                label: definition.label,
-                value: definition.key,
-              })),
+              { label: 'All domains', value: '' },
+              ...ACCESS_DOMAIN_OPTIONS,
             ]}
           />
           <AdminFormControlButton className="button-primary" type="submit">Apply filters</AdminFormControlButton>
@@ -387,11 +465,18 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
 
       {isMaster ? (
         <AdminCard className="operator-access-invitations" id="invitations">
-          <details>
-            <summary>Invitations <StatusBadge tone={invitations.pendingCount ? 'warning' : 'neutral'}>{invitations.pendingCount} pending</StatusBadge></summary>
+          <OperatorInvitationsDisclosure pendingCount={invitations.pendingCount}>
             {!invitationsResult.ok ? <LoadFailure label="Invitation records could not be loaded." /> : (
               <div className="operator-access-invitation-list">
                 <ReauthenticateOperatorForm />
+                {invitations.pendingCount === 0 ? (
+                  <AdminInlineNotice role="status" tone="info">
+                    <span><strong>No pending invitations.</strong> Create a one-time invitation when another operator needs Admin Web access.</span>
+                    <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { invite: '1', operatorId: undefined, tab: undefined })}>
+                      Invite operator
+                    </AdminFormControlLink>
+                  </AdminInlineNotice>
+                ) : null}
                 {invitations.items.length ? invitations.items.map((invitation) => (
                   <div key={invitation.id}>
                     <span><strong>{invitation.fullName ?? invitation.normalizedEmail}</strong><small>{invitation.normalizedEmail}</small></span>
@@ -406,18 +491,71 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
                       </div>
                     ) : null}
                   </div>
-                )) : <p className="muted">No operator invitations have been created.</p>}
+                )) : null}
               </div>
             )}
-          </details>
+          </OperatorInvitationsDisclosure>
         </AdminCard>
       ) : null}
 
       {params.invite === '1' && isMaster ? (
         <OperatorAccessDrawer returnHref={closeHref} title="Invite operator">
+          <InviteModeNavigation params={params} selected="new" />
           <p className="muted">Create a short-lived, one-time setup link. No temporary password is stored or sent.</p>
           <ReauthenticateOperatorForm />
           <InviteOperatorForm />
+        </OperatorAccessDrawer>
+      ) : null}
+
+      {params.invite === 'existing' && isMaster ? (
+        <OperatorAccessDrawer returnHref={closeHref} title="Grant Admin access to existing user">
+          <InviteModeNavigation params={params} selected="existing" />
+          <p className="muted">Find one exact existing User by email, verify the identity, then create a linked one-time setup invitation.</p>
+          <form action="/admin-operators" className="operator-access-existing-user-search" method="get">
+            <input name="invite" type="hidden" value="existing" />
+            <AdminFormSearch
+              defaultValue={params.existingEmail}
+              label="Exact existing user email"
+              labelVisibility="visible"
+              maxLength={160}
+              name="existingEmail"
+              placeholder="person@example.com"
+            />
+            <AdminFormControlButton className="button-secondary" type="submit">Find exact user</AdminFormControlButton>
+          </form>
+          {!params.existingEmail ? (
+            <AdminInlineNotice role="note" tone="info">
+              Enter the exact email. Partial or broad directory search is intentionally unavailable.
+            </AdminInlineNotice>
+          ) : !existingUserCandidateResult.ok ? (
+            <LoadFailure label="The existing-user identity check could not be completed." />
+          ) : existingUserCandidateResult.data.status === 'NO_MATCH' ? (
+            <AdminInlineNotice role="status" tone="info">
+              <span>No existing User has the exact email <strong>{existingUserCandidateResult.data.normalizedEmail}</strong>.</span>
+              <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { existingEmail: undefined, invite: '1' })}>
+                Invite a new operator
+              </AdminFormControlLink>
+            </AdminInlineNotice>
+          ) : existingUserCandidateResult.data.status === 'AMBIGUOUS' ? (
+            <AdminInlineNotice role="alert" tone="danger">
+              <span><strong>Identity is ambiguous.</strong> {formatOperatorCount(existingUserCandidateResult.data.matchCount, 'User')} share this exact email. Resolve the duplicate identities before granting Admin access.</span>
+            </AdminInlineNotice>
+          ) : existingUserCandidateResult.data.status === 'INELIGIBLE' ? (
+            <AdminInlineNotice role="alert" tone="warning">
+              <span><strong>This User is not eligible.</strong> {existingUserCandidateResult.data.blockers?.map((blocker) => blocker.message).join(' ')}</span>
+            </AdminInlineNotice>
+          ) : existingUserCandidateResult.data.candidate ? (
+            <>
+              <AdminCard className="operator-access-existing-user-candidate">
+                <span><strong>{existingUserCandidateResult.data.candidate.fullName ?? existingUserCandidateResult.data.candidate.email ?? existingUserCandidateResult.data.candidate.id}</strong><small>{existingUserCandidateResult.data.candidate.email}</small></span>
+                <span><small>Exact User ID</small><code>{existingUserCandidateResult.data.candidate.id}</code></span>
+                <RoleBadges roles={existingUserCandidateResult.data.candidate.roles} />
+                <StatusBadge tone="success">Verified exact match</StatusBadge>
+              </AdminCard>
+              <ReauthenticateOperatorForm />
+              <InviteOperatorForm targetUser={existingUserCandidateResult.data.candidate} />
+            </>
+          ) : null}
         </OperatorAccessDrawer>
       ) : null}
 
@@ -445,6 +583,35 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
   );
 }
 
+function InviteModeNavigation({
+  params,
+  selected,
+}: {
+  readonly params: PageParams;
+  readonly selected: 'existing' | 'new';
+}) {
+  return (
+    <nav aria-label="Operator invitation type" className="operator-access-tabs">
+      <Link
+        aria-current={selected === 'new' ? 'page' : undefined}
+        href={operatorAccessHref(params, { existingEmail: undefined, invite: '1' })}
+        prefetch={false}
+        scroll={false}
+      >
+        Invite new operator
+      </Link>
+      <Link
+        aria-current={selected === 'existing' ? 'page' : undefined}
+        href={operatorAccessHref(params, { existingEmail: undefined, invite: 'existing' })}
+        prefetch={false}
+        scroll={false}
+      >
+        Grant existing user Admin access
+      </Link>
+    </nav>
+  );
+}
+
 function OperatorRow({ currentUserId, operator, params }: { readonly currentUserId?: string; readonly operator: OperatorDirectoryItem; readonly params: PageParams }) {
   const accessGroups = operatorAccessGroups(operator);
   return (
@@ -458,12 +625,12 @@ function OperatorRow({ currentUserId, operator, params }: { readonly currentUser
       <td>
         <strong>{operator.roles.includes(MASTER_ADMIN_ROLE) ? 'All access' : accessGroups.length ? accessGroups.join(', ') : 'No direct access'}</strong>
         <div className="muted">{operator.permission
-          ? `${formatCount(operator.permission.effectiveLeafPermissionCount, 'permission')} effective · ${operator.permission.storedPermissionCount} stored entries`
+          ? `${formatOperatorCount(operator.permission.effectiveLeafPermissionCount, 'permission')} effective · ${operator.permission.storedPermissionCount} stored entries`
           : 'No permission policy saved — access is blocked'}</div>
       </td>
       <td>
         <strong>{operator.credential?.mfaState === 'VERIFIED' ? 'MFA verified' : 'MFA required'}</strong>
-        <div className="muted">{operator.activeSessionCount} active session(s)</div>
+        <div className="muted">{formatOperatorCount(operator.activeSessionCount, 'active session')}</div>
       </td>
       <td>
         {operator.credential?.lastLoginAt ? <DateTimeText value={operator.credential.lastLoginAt} /> : <span>Never signed in</span>}
@@ -473,7 +640,13 @@ function OperatorRow({ currentUserId, operator, params }: { readonly currentUser
         <AdminFormControlLink
           aria-label={`View access for ${operatorIdentity(operator)}`}
           className="button-secondary"
-          href={operatorAccessHref(params, { invite: undefined, operatorId: operator.id, tab: 'overview' })}
+          href={operatorAccessHref(params, {
+            historyCursor: undefined,
+            historyCursorHistory: undefined,
+            invite: undefined,
+            operatorId: operator.id,
+            tab: 'overview',
+          })}
         >
           View access
         </AdminFormControlLink>
@@ -539,7 +712,7 @@ function OperatorDetail({
       {tab === 'overview' ? (
         <div className="operator-access-overview-grid">
           <AdminCard><span className="muted">Roles</span><RoleBadges roles={operator.roles} /></AdminCard>
-          <AdminCard><span className="muted">Effective access</span><strong>{formatCount(effectiveCategories.length, 'permission')}</strong></AdminCard>
+          <AdminCard><span className="muted">Effective access</span><strong>{formatOperatorCount(effectiveCategories.length, 'permission')}</strong></AdminCard>
           <AdminCard><span className="muted">Authentication</span><strong>{operator.credential ? 'Setup complete' : 'Setup required'}</strong></AdminCard>
           <AdminCard><span className="muted">MFA</span><strong>{operator.credential?.mfaState === 'VERIFIED' ? 'Verified' : 'Required'}</strong></AdminCard>
           <AdminCard><span className="muted">Active sessions</span><strong>{operator.activeSessionCount}</strong></AdminCard>
@@ -577,7 +750,7 @@ function OperatorDetail({
           {operator.permission ? (
             <>
               <div className="operator-access-effective-summary">
-                <strong>{operator.roles.includes(MASTER_ADMIN_ROLE) ? 'All access through Master Admin role' : `${formatCount(effectiveCategories.length, 'effective permission')}`}</strong>
+                <strong>{operator.roles.includes(MASTER_ADMIN_ROLE) ? 'All access through Master Admin role' : `${formatOperatorCount(effectiveCategories.length, 'effective permission')}`}</strong>
                 <span className="muted">Stored entries {operator.permission.storedPermissionCount}. Finance Approver is managed separately.</span>
               </div>
               {isMaster && currentUserId !== operator.id && operator.allowedActions.updateAccess.allowed ? (
@@ -641,14 +814,38 @@ function OperatorDetail({
       {tab === 'history' ? (
         !isMaster ? <ReadOnlyMessage /> : !historyOk ? <LoadFailure label="Access change history could not be loaded." /> : (
           <div className="operator-access-history-list">
-            <p className="muted">{history.totalCount} exact lifecycle event(s). Page views are excluded.</p>
+            <p className="muted">{formatOperatorCount(history.totalCount, 'exact lifecycle event')}. Page views are excluded.</p>
             {history.items.length ? history.items.map((event) => (
               <div className="operator-access-history-row" key={event.id}>
-                <div><History aria-hidden="true" size={16} /><span><strong>{historyActionLabel(event.action)}</strong><small>{event.actor.fullName ?? event.actor.email ?? event.actor.id}</small></span></div>
+                <div><History aria-hidden="true" size={16} /><span><strong>{historyActionLabel(event.action)}</strong><small>{operatorHistoryActorLabel(event.actor)}</small></span></div>
                 <p>{historyReason(event.metadata)}</p>
                 <span><DateTimeText value={event.createdAt} /><small>Audit ID: {event.id}</small></span>
               </div>
             )) : <p className="muted">No operator lifecycle changes have been recorded.</p>}
+            {history.page.hasNextPage && history.page.nextCursor ? (
+              <div className="operator-access-pagination">
+                <span className="muted">{history.page.returned} shown · {history.totalCount} total</span>
+                {params.historyCursor ? (
+                  <>
+                    <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { historyCursor: undefined, historyCursorHistory: undefined })}>
+                      First
+                    </AdminFormControlLink>
+                    <AdminFormControlLink className="button-secondary" href={previousHistoryPageHref(params)}>
+                      Previous
+                    </AdminFormControlLink>
+                  </>
+                ) : null}
+                <AdminFormControlLink className="button-secondary" href={nextHistoryPageHref(params, history.page.nextCursor)}>
+                  Next
+                </AdminFormControlLink>
+              </div>
+            ) : params.historyCursor ? (
+              <div className="operator-access-pagination">
+                <span className="muted">Oldest page · {history.totalCount} total</span>
+                <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { historyCursor: undefined, historyCursorHistory: undefined })}>First</AdminFormControlLink>
+                <AdminFormControlLink className="button-secondary" href={previousHistoryPageHref(params)}>Previous</AdminFormControlLink>
+              </div>
+            ) : null}
           </div>
         )
       ) : null}
@@ -719,10 +916,6 @@ function operatorAccessGroups(operator: OperatorDirectoryItem) {
   return [...new Set(adminOperatorPermissionCategoryDefinitions.filter((definition) => categories.has(definition.key)).map((definition) => definition.group))];
 }
 
-function formatCount(value: number, singular: string) {
-  return `${value} ${singular}${value === 1 ? '' : 's'}`;
-}
-
 function operatorIdentity(operator: Pick<OperatorDirectoryItem, 'email' | 'fullName' | 'id'>) {
   return operator.fullName || operator.email || operator.id;
 }
@@ -746,7 +939,18 @@ function operatorAccessHref(params: PageParams, changes: Partial<Record<keyof Pa
     : ('cursor' in changes && changes.cursor && changes.cursor !== params.cursor)
       ? encodeCursorHistory([...decodeCursorHistory(params.cursorHistory), params.cursor ?? null])
       : params.cursorHistory;
-  for (const key of ['q', 'status', 'role', 'category', 'invite', 'operatorId', 'tab'] as const) {
+  for (const key of [
+    'q',
+    'status',
+    'role',
+    'category',
+    'invite',
+    'existingEmail',
+    'operatorId',
+    'tab',
+    'historyCursor',
+    'historyCursorHistory',
+  ] as const) {
     const value = key in changes ? changes[key] : params[key];
     if (value) query.set(key, value);
   }
@@ -754,6 +958,26 @@ function operatorAccessHref(params: PageParams, changes: Partial<Record<keyof Pa
   if (cursorHistory) query.set('cursorHistory', cursorHistory);
   const suffix = query.toString();
   return suffix ? `/admin-operators?${suffix}` : '/admin-operators';
+}
+
+function nextHistoryPageHref(params: PageParams, nextCursor: string) {
+  return operatorAccessHref(params, {
+    historyCursor: nextCursor,
+    historyCursorHistory: encodeCursorHistory([
+      ...decodeCursorHistory(params.historyCursorHistory),
+      params.historyCursor ?? null,
+    ]),
+  });
+}
+
+function previousHistoryPageHref(params: PageParams) {
+  const history = decodeCursorHistory(params.historyCursorHistory);
+  const previousCursor = history.at(-1) ?? null;
+  const nextHistory = history.slice(0, -1);
+  return operatorAccessHref(params, {
+    historyCursor: previousCursor ?? undefined,
+    historyCursorHistory: nextHistory.length ? encodeCursorHistory(nextHistory) : undefined,
+  });
 }
 
 function previousPageHref(params: PageParams) {

@@ -3,6 +3,7 @@ import {
   buildPaymentOperationsApiHref,
   buildPaymentPageHref,
   buildPaymentPageModel,
+  buildPaymentResetHref,
   buildPaymentSummaryApiHref,
 } from './payment-page-model';
 
@@ -130,6 +131,37 @@ describe('payment page model', () => {
     expect(buildPaymentOperationsApiHref(model.filters)).toBe('/admin/payments?take=10&range=all');
     expect(buildPaymentSummaryApiHref(model.filters)).toBe('/admin/payments/summary?range=all');
   });
+
+  it.each(['release-recommended', 'terminal-cash-cleanup', 'authorized'])(
+    'resets directory filters without leaving the %s queue or customer scope',
+    (review) => {
+      const model = buildPaymentPageModel({
+        params: {
+          age: 'over-24h',
+          bookingStatus: 'expired',
+          customerProfileId: 'customer-1',
+          evidence: 'missing',
+          page: '3',
+          paymentMethod: 'momo',
+          paymentStatus: 'authorized',
+          q: 'booking-1',
+          range: '30d',
+          review,
+          sla: 'critical',
+          sort: 'oldest',
+        },
+        payments: [],
+      });
+      const url = new URL(buildPaymentResetHref(model.filters), 'http://admin.local');
+
+      expect(url.searchParams.get('review')).toBe(review);
+      expect(url.searchParams.get('customerProfileId')).toBe('customer-1');
+      expect(url.searchParams.get('sort')).toBe('oldest');
+      for (const key of ['age', 'bookingStatus', 'evidence', 'page', 'paymentMethod', 'paymentStatus', 'q', 'range', 'sla']) {
+        expect(url.searchParams.has(key)).toBe(false);
+      }
+    },
+  );
 });
 
 function payment(input: Partial<AdminPayment> = {}): AdminPayment {

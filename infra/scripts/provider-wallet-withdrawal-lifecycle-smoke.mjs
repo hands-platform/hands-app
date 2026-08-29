@@ -22,6 +22,7 @@ import IORedis from 'ioredis';
 
 import { runAdminWebDirectSmoke } from './lib/admin-web-direct-smoke.mjs';
 import { loadMergedEnv } from './lib/env-file.mjs';
+import { financeApproverSmokeAttestationEvents } from './lib/finance-approver-smoke-attestation.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
@@ -585,27 +586,28 @@ async function seed() {
       },
     ],
   });
-  await prisma.adminAuditLog.create({
-    data: {
-      actorId: ids.actor,
-      action: 'admin_user.finance_approver.legacy_attestation.approved',
-      target: `finance_approver_attestation:${ids.approver}:${runId}`,
-      metadata: {
-        attestorId: ids.approver,
+  await prisma.adminAuditLog.createMany({
+    data: [
+      ...financeApproverSmokeAttestationEvents({
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+        ],
+        checkerId: ids.actor,
+        effectiveAt: now,
+        runId: `${runId}_approver`,
         sourceReference: `disposable-lifecycle:${runId}`,
-      },
-    },
-  });
-  await prisma.adminAuditLog.create({
-    data: {
-      actorId: ids.actor,
-      action: 'admin_user.finance_approver.legacy_attestation.approved',
-      target: `finance_approver_attestation:${ids.reversalApprover}:${runId}`,
-      metadata: {
-        attestorId: ids.reversalApprover,
+        targetUserId: ids.approver,
+      }),
+      ...financeApproverSmokeAttestationEvents({
+        categories: [AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS],
+        checkerId: ids.actor,
+        effectiveAt: now,
+        runId: `${runId}_reversal_approver`,
         sourceReference: `disposable-lifecycle:${runId}`,
-      },
-    },
+        targetUserId: ids.reversalApprover,
+      }),
+    ],
   });
   await prisma.providerProfile.create({
     data: {
@@ -768,7 +770,7 @@ async function verifyAdminWebEvidence(evidence) {
       markers: [
         'Journal Batch Detail',
         'Journal batch overview',
-        'Balanced',
+        'Entry debit = credit · Pass',
         evidence.withdrawalRequestId,
         evidence.reversalReference,
       ],
@@ -776,14 +778,18 @@ async function verifyAdminWebEvidence(evidence) {
     {
       path: '/finance-tax/settlement-reversals',
       markers: [
-        'Settlement Reversals',
-        'Payout and withdrawal reversal journals',
-        'Withdrawal Smoke Partner',
-        'Partner withdrawal reversal',
+        'Closed-period Settlement Reversals',
+        'Related Partner Money reversals',
+        'Open withdrawal journals',
       ],
     },
   ];
-  await runAdminWebDirectSmoke({ env, pages: directPages, repoRoot });
+  await runAdminWebDirectSmoke({
+    env,
+    pages: directPages,
+    repoRoot,
+    session: { sessionId: ids.actorSession, userId: ids.actor },
+  });
   return {
     checkedPages: directPages.length,
     payoutLinked: true,

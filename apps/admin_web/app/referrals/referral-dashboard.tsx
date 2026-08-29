@@ -654,14 +654,17 @@ function CustomerReferralRewardQueueTable({
           {rows.map((row) => (
             <tr key={row.id}>
               <td className="referral-reward-relationship-cell">
+                <div className="referral-reward-cell-content">
                 {row.isFixture ? <StatusBadge tone="danger">TEST FIXTURE</StatusBadge> : null}
                 <strong>{row.parent.label}</strong>
                 <span className="muted">{row.parent.phone ?? shortId(row.parent.id)}</span>
                 <span className="referral-relationship-arrow" aria-hidden="true">→</span>
                 {row.referred.href ? <AdminTextLink href={row.referred.href}>{row.referred.label}</AdminTextLink> : <span>{row.referred.label}</span>}
                 <span className="muted">{row.referred.phone ?? shortId(row.referred.id)}</span>
+                </div>
               </td>
               <td className="referral-reward-evidence-cell">
+                <div className="referral-reward-cell-content">
                 {row.qualifyingBookingId ? (
                   <AdminTextLink href={`/bookings/${encodeURIComponent(row.qualifyingBookingId)}`}>
                     Booking {shortId(row.qualifyingBookingId)} linked
@@ -670,16 +673,21 @@ function CustomerReferralRewardQueueTable({
                 <span>{referralStatusLabel(row.attribution.status)}</span>
                 <span>{fraudReviewStatusLabel(row.attribution.fraudReviewStatus)}</span>
                 {row.evidence?.blocker ? <span className="text-danger">Blocked: {row.evidence.blocker.message}</span> : null}
+                </div>
               </td>
               <td className="referral-reward-value-cell">
+                <div className="referral-reward-cell-content">
                 <strong><MoneyText amount={row.amount} currency={row.currency} fallback="0 VND" /></strong>
                 <StatusBadge tone={referralRewardStatusTone(row.status)}>{referralRewardStatusLabel(row.status)}</StatusBadge>
+                </div>
               </td>
               <td className="referral-reward-decision-cell">
+                <div className="referral-reward-cell-content">
                 <strong>{row.latestDecision ? referralRewardDecisionLabel(row.latestDecision.action) : 'Awaiting decision'}</strong>
                 <span className="muted">
                   {row.latestDecision ? <>By {row.latestDecision.actor?.fullName ?? row.latestDecision.actor?.email ?? 'admin'} · <DateTimeText value={row.latestDecision.createdAt} /></> : row.availableAt ? <>Eligible since <DateTimeText value={row.availableAt} /></> : <>Updated <DateTimeText value={row.updatedAt} /></>}
                 </span>
+                </div>
               </td>
               <td className="referral-reward-action-cell">
                 {row.isFixture ? (

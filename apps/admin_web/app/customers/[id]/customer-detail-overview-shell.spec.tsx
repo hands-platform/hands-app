@@ -30,7 +30,7 @@ describe('CustomerDetailOverviewShell', () => {
   it('scopes customer overview typography CSS to local content blocks', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
-    expect(css).toContain('.customer-detail-identity-copy h2');
+    expect(css).toContain('.customer-detail-identity-copy h3');
     expect(css).toContain('.customer-detail-identity-copy p');
     expect(css).toContain('.customer-detail-fact-list span');
     expect(css).not.toContain('.customer-detail-overview-card h2');

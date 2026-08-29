@@ -1,4 +1,7 @@
-import { buildChatArchiveLoadPlan } from './chat-archive-page-model';
+import {
+  buildChatArchiveLoadPlan,
+  CHAT_ARCHIVE_QUERY_MAX_LENGTH,
+} from './chat-archive-page-model';
 
 describe('chat archive page model', () => {
   it('defaults to all dates and newest messages', () => {
@@ -29,6 +32,26 @@ describe('chat archive page model', () => {
     expect(plan.archiveSummaryHref).toBe(
       '/admin/chat-archive/summary?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&status=completed&sender=partner&q=late&sort=oldest',
     );
+  });
+
+  it.each([119, 120, 121])('keeps one bounded query contract for %i characters', (length) => {
+    const rawQuery = `  ${'\uBCA0\uD2B8\uB0A8\uD638\uCE58\uBBFC'.repeat(24).slice(0, length)}  `;
+    const normalizedQuery = rawQuery.trim().slice(0, CHAT_ARCHIVE_QUERY_MAX_LENGTH);
+    const plan = buildChatArchiveLoadPlan({ q: rawQuery });
+
+    expect(plan.filters.q).toBe(normalizedQuery);
+    expect(new URL(plan.archiveHref!, 'http://admin.local').searchParams.get('q')).toBe(normalizedQuery);
+    expect(new URL(plan.archiveSummaryHref!, 'http://admin.local').searchParams.get('q')).toBe(normalizedQuery);
+    expect(new URL(plan.currentHref, 'http://admin.local').searchParams.get('q')).toBe(normalizedQuery);
+    expect(plan.needsCanonicalFilterRedirect).toBe(length > CHAT_ARCHIVE_QUERY_MAX_LENGTH);
+  });
+
+  it('preserves a canonical 120-character Vietnamese and Korean query without redirecting', () => {
+    const query = 'ĐánhGiáKháchHàng\uACE0\uAC1D\uD655\uC778'.repeat(12).slice(0, CHAT_ARCHIVE_QUERY_MAX_LENGTH);
+    const plan = buildChatArchiveLoadPlan({ q: query });
+
+    expect(plan.filters.q).toBe(query);
+    expect(plan.needsCanonicalFilterRedirect).toBe(false);
   });
 
   it.each([

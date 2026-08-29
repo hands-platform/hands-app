@@ -15,6 +15,11 @@ export const FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION =
   'admin_user.finance_approver.legacy_attestation.requested';
 export const FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION =
   'admin_user.finance_approver.legacy_attestation.rejected';
+export const FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION =
+  'admin_user.finance_approver.legacy_attestation.revoked';
+export const FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION =
+  'admin_user.finance_approver.legacy_attestation.superseded';
+export const FINANCE_APPROVER_LEGACY_ATTESTATION_VALIDITY_DAYS = 90;
 
 export const FINANCE_APPROVER_KNOWN_TEST_RUN_IDS = [
   'finance-governance-1786644908414',
@@ -91,11 +96,20 @@ export type FinanceApproverPolicySnapshot = {
   blockers: Array<{ code: FinanceApproverPolicyBlockerCode; message: string }>;
   credentialState: 'ACTIVE' | 'DISABLED' | 'LOCKED' | 'MISSING' | 'SETUP_INCOMPLETE';
   mfaVerified: boolean;
+  legacyAttestationLifecycle: FinanceApproverLegacyAttestationLifecycle;
   permissionVersion: number | null;
   ready: boolean;
   source: 'FIXTURE' | 'LEGACY' | 'PRODUCTION' | 'TEST_RUN' | 'UNKNOWN';
   user: FinanceApproverPolicyUser;
 };
+
+export type FinanceApproverLegacyAttestationLifecycle =
+  | 'CURRENT'
+  | 'EXPIRED'
+  | 'MISSING'
+  | 'NOT_REQUIRED'
+  | 'REVOKED'
+  | 'SUPERSEDED';
 
 type FinanceApproverPolicyDb = Pick<Prisma.TransactionClient, 'adminAuditLog' | 'user'> &
   Partial<Pick<Prisma.TransactionClient, 'adminWebSession'>>;
@@ -111,6 +125,7 @@ type FinanceApproverPolicyOptions = {
   requireSessionMfa?: boolean;
   sessionId?: string | null;
   sessionMfaVerifiedAt?: Date | null;
+  legacyAttestationLifecycle?: FinanceApproverLegacyAttestationLifecycle;
 };
 
 export async function financeApproverPolicySnapshot(
@@ -130,10 +145,15 @@ export async function financeApproverPolicySnapshot(
   }
   const roles = user.roles ?? [];
   const governedGrant = user.financeApproverRequestsTargeted?.[0]?.requestedEnabled === true;
-  const legacyAttested = roles.includes(Role.FINANCE_APPROVER) && !governedGrant
-    ? await hasIndependentLegacyAttestation(db, user.id)
-    : false;
-  const snapshot = evaluateFinanceApproverPolicy(user, { ...options, legacyAttested });
+  const legacyAttestation =
+    roles.includes(Role.FINANCE_APPROVER) && !governedGrant
+      ? await financeApproverLegacyAttestationStateForUser(db, user.id, options.now)
+      : { approvalEventId: null, lifecycle: 'NOT_REQUIRED' as const };
+  const snapshot = evaluateFinanceApproverPolicy(user, {
+    ...options,
+    legacyAttestationLifecycle: legacyAttestation.lifecycle,
+    legacyAttested: legacyAttestation.lifecycle === 'CURRENT',
+  });
   if (options.requireRecentReauthentication || options.requireSessionMfa) {
     const session = options.sessionId && db.adminWebSession
       ? await db.adminWebSession.findUnique({
@@ -231,26 +251,30 @@ export async function listFinanceApproverPolicySnapshots(
   const attestations = legacyUsers.length
     ? await db.adminAuditLog.findMany({
         where: {
-          action: FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+          action: {
+            in: [
+              FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+            ],
+          },
           OR: legacyUsers.map((user) => ({
             target: { startsWith: `finance_approver_attestation:${user.id}:` },
           })),
         },
         orderBy: { createdAt: 'desc' },
-        select: { actorId: true, metadata: true, target: true },
+        select: { action: true, actorId: true, createdAt: true, id: true, metadata: true, target: true },
       })
     : [];
-  const attestedIds = new Set(
-    attestations
-      .filter(independentLegacyAttestation)
-      .map((event) => event.target.split(':')[1])
-      .filter(Boolean),
-  );
   return users.map((user) =>
-    evaluateFinanceApproverPolicy(user, {
-      ...options,
-      legacyAttested: attestedIds.has(user.id),
-    }),
+    {
+      const lifecycle = financeApproverLegacyAttestationState(attestations, user.id, options.now).lifecycle;
+      return evaluateFinanceApproverPolicy(user, {
+        ...options,
+        legacyAttestationLifecycle: lifecycle,
+        legacyAttested: lifecycle === 'CURRENT',
+      });
+    },
   );
 }
 
@@ -341,6 +365,9 @@ export function evaluateFinanceApproverPolicy(
           : 'UNATTESTED',
     blockers,
     credentialState,
+    legacyAttestationLifecycle: governedGrant
+      ? 'NOT_REQUIRED'
+      : options.legacyAttestationLifecycle ?? (options.legacyAttested ? 'CURRENT' : 'MISSING'),
     mfaVerified: credential?.mfaState === 'VERIFIED',
     permissionVersion: permission?.version ?? null,
     ready: blockers.length === 0,
@@ -356,35 +383,162 @@ export function financeApproverKnownTestRunId(
   return FINANCE_APPROVER_KNOWN_TEST_RUN_IDS.find((runId) => user.id.startsWith(`${runId}:`)) ?? null;
 }
 
-async function hasIndependentLegacyAttestation(db: FinanceApproverPolicyDb, userId: string) {
+async function financeApproverLegacyAttestationStateForUser(
+  db: FinanceApproverPolicyDb,
+  userId: string,
+  now = new Date(),
+) {
   const events = await db.adminAuditLog.findMany({
     where: {
-      action: FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+      action: {
+        in: [
+          FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+          FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+          FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+        ],
+      },
       target: { startsWith: `finance_approver_attestation:${userId}:` },
     },
     orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: { actorId: true, metadata: true, target: true },
+    select: { action: true, actorId: true, createdAt: true, id: true, metadata: true, target: true },
   });
-  return events.some(independentLegacyAttestation);
+  return financeApproverLegacyAttestationState(events, userId, now);
 }
 
-function independentLegacyAttestation(event: {
+type FinanceApproverLegacyAttestationEvent = {
+  action: string;
   actorId: string | null;
+  createdAt: Date;
+  id: string;
   metadata: Prisma.JsonValue | null;
-}) {
+  target: string;
+};
+
+export function financeApproverLegacyAttestationState(
+  events: FinanceApproverLegacyAttestationEvent[],
+  userId: string,
+  now = new Date(),
+): { approvalEventId: string | null; lifecycle: FinanceApproverLegacyAttestationLifecycle } {
+  const revoked = legacyAttestationClosedEventIds(
+    events,
+    FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+  );
+  const superseded = legacyAttestationClosedEventIds(
+    events,
+    FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+  );
+  const approvals = events
+    .filter((event) => event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION)
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+
+  for (const event of approvals) {
+    if (!independentLegacyAttestation(event, userId)) continue;
+    if (superseded.has(event.id) || revoked.has(event.id)) continue;
+    const expiresAt = legacyAttestationDate(event.metadata, 'expiresAt');
+    if (expiresAt && expiresAt.getTime() > now.getTime()) {
+      return { approvalEventId: event.id, lifecycle: 'CURRENT' };
+    }
+  }
+
+  const latest = approvals[0];
+  if (!latest) return { approvalEventId: null, lifecycle: 'MISSING' };
+  if (superseded.has(latest.id)) return { approvalEventId: latest.id, lifecycle: 'SUPERSEDED' };
+  if (revoked.has(latest.id)) return { approvalEventId: latest.id, lifecycle: 'REVOKED' };
+  return { approvalEventId: latest.id, lifecycle: 'EXPIRED' };
+}
+
+export function financeApproverLegacyAttestationEventLifecycle(
+  events: FinanceApproverLegacyAttestationEvent[],
+  attestationEventId: string,
+  now = new Date(),
+): FinanceApproverLegacyAttestationLifecycle {
+  const approval = events.find(
+    (event) =>
+      event.id === attestationEventId &&
+      event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+  );
+  if (!approval) return 'MISSING';
+  const userId = approval.target.split(':')[1] ?? '';
+  if (
+    legacyAttestationClosedEventIds(
+      events,
+      FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+    ).has(approval.id)
+  ) {
+    return 'SUPERSEDED';
+  }
+  if (
+    legacyAttestationClosedEventIds(events, FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION).has(
+      approval.id,
+    )
+  ) {
+    return 'REVOKED';
+  }
+  const expiresAt = legacyAttestationDate(approval.metadata, 'expiresAt');
+  return userId && independentLegacyAttestation(approval, userId) && expiresAt && expiresAt > now
+    ? 'CURRENT'
+    : 'EXPIRED';
+}
+
+function independentLegacyAttestation(event: FinanceApproverLegacyAttestationEvent, userId: string) {
   if (!event.actorId || !event.metadata || Array.isArray(event.metadata) || typeof event.metadata !== 'object') {
     return false;
   }
   const attestorId = event.metadata.attestorId;
+  const independentCheckerId = event.metadata.independentCheckerId;
   const sourceReference = event.metadata.sourceReference;
+  const targetUserId = event.metadata.targetUserId;
+  const permissionVersion = event.metadata.permissionVersion;
+  const requestEventId = event.metadata.attestationRequestEventId;
+  const targetSnapshot = event.metadata.targetSnapshot;
+  const effectiveAt = legacyAttestationDate(event.metadata, 'effectiveAt');
+  const expiresAt = legacyAttestationDate(event.metadata, 'expiresAt');
   return (
     typeof attestorId === 'string' &&
     attestorId.length > 0 &&
     attestorId !== event.actorId &&
+    independentCheckerId === event.actorId &&
+    event.actorId !== userId &&
+    targetUserId === userId &&
+    typeof permissionVersion === 'number' &&
+    Number.isInteger(permissionVersion) &&
+    permissionVersion > 0 &&
+    typeof requestEventId === 'string' &&
+    requestEventId.length > 0 &&
+    Boolean(targetSnapshot) &&
+    !Array.isArray(targetSnapshot) &&
+    typeof targetSnapshot === 'object' &&
+    Boolean(effectiveAt) &&
+    Boolean(expiresAt) &&
+    expiresAt!.getTime() > effectiveAt!.getTime() &&
     typeof sourceReference === 'string' &&
     sourceReference.trim().length > 0
   );
+}
+
+function legacyAttestationClosedEventIds(
+  events: FinanceApproverLegacyAttestationEvent[],
+  action: string,
+) {
+  return new Set(
+    events
+      .filter((event) => event.action === action && event.actorId)
+      .map((event) => {
+        const metadata = event.metadata;
+        return metadata && !Array.isArray(metadata) && typeof metadata === 'object'
+          ? metadata.attestationEventId
+          : null;
+      })
+      .filter((eventId): eventId is string => typeof eventId === 'string' && eventId.length > 0),
+  );
+}
+
+function legacyAttestationDate(metadata: Prisma.JsonValue | null, key: string) {
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return null;
+  const value = metadata[key];
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function addBlocker(

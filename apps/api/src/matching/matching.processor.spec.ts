@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { BookingStatus, CouponRedemptionState, PaymentStatus, Prisma } from '@prisma/client';
 import { BookingTimeoutProcessor } from './matching.processor';
 
 describe('BookingTimeoutProcessor', () => {
@@ -7,7 +7,7 @@ describe('BookingTimeoutProcessor', () => {
       code: 'P2025',
       clientVersion: 'test',
     });
-    const prisma = {
+    const prisma = attachTimeoutTransaction({
       booking: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
@@ -18,7 +18,7 @@ describe('BookingTimeoutProcessor', () => {
         }),
         update: vi.fn().mockRejectedValue(raceError),
       },
-    };
+    });
     const redisState = { closeMatching: vi.fn() };
     const gateway = { emitBookingExpired: vi.fn() };
     const payments = { closeUnmatchedBookingPayment: vi.fn() };
@@ -51,6 +51,7 @@ describe('BookingTimeoutProcessor', () => {
       },
       adminAuditLog: { upsert: vi.fn() },
     };
+    attachTimeoutTransaction(prisma);
     const redisState = { closeMatching: vi.fn() };
     const gateway = { emitBookingExpired: vi.fn() };
     const payments = {
@@ -100,6 +101,7 @@ describe('BookingTimeoutProcessor', () => {
       bookingOpsTask: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       adminAuditLog: { upsert: vi.fn() },
     };
+    attachTimeoutTransaction(prisma);
     const redisState = { closeMatching: vi.fn() };
     const gateway = { emitBookingExpired: vi.fn() };
     const payments = {
@@ -155,6 +157,7 @@ describe('BookingTimeoutProcessor', () => {
       bookingOpsTask: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       adminAuditLog: { upsert: vi.fn() },
     };
+    attachTimeoutTransaction(prisma);
     const redisState = { closeMatching: vi.fn() };
     const gateway = { emitBookingExpired: vi.fn() };
     const payments = {
@@ -200,6 +203,7 @@ describe('BookingTimeoutProcessor', () => {
       bookingOpsTask: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       adminAuditLog: { upsert: vi.fn() },
     };
+    attachTimeoutTransaction(prisma);
     const redisState = { closeMatching: vi.fn() };
     const gateway = {
       emitBookingExpired: vi
@@ -241,6 +245,7 @@ describe('BookingTimeoutProcessor', () => {
       booking: { findUnique: vi.fn().mockResolvedValue(booking), update: vi.fn() },
       adminAuditLog: { upsert: vi.fn() },
     };
+    attachTimeoutTransaction(prisma);
     const redisState = { closeMatching: vi.fn() };
     const gateway = {
       emitBookingExpired: vi
@@ -269,7 +274,7 @@ describe('BookingTimeoutProcessor', () => {
 
   it('queues refund review instead of releasing a captured gateway payment', async () => {
     const responseDeadline = new Date('2026-06-11T01:10:00.000Z');
-    const prisma = {
+    const prisma = attachTimeoutTransaction({
       booking: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
@@ -288,7 +293,7 @@ describe('BookingTimeoutProcessor', () => {
           .mockResolvedValueOnce({ id: 'booking-1' }),
       },
       adminAuditLog: { upsert: vi.fn() },
-    };
+    });
     const redisState = { closeMatching: vi.fn() };
     const gateway = { emitBookingExpired: vi.fn() };
     const payments = { closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({ refundRequested: true }) };
@@ -345,7 +350,7 @@ describe('BookingTimeoutProcessor', () => {
   });
 
   it('records a generic expiry when an open marketplace booking has no preferred partner', async () => {
-    const prisma = {
+    const prisma = attachTimeoutTransaction({
       booking: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
@@ -365,7 +370,7 @@ describe('BookingTimeoutProcessor', () => {
           .mockResolvedValueOnce({ id: 'booking-1' }),
       },
       adminAuditLog: { upsert: vi.fn() },
-    };
+    });
     const processor = new BookingTimeoutProcessor(
       prisma as never,
       { closeMatching: vi.fn() } as never,
@@ -383,5 +388,23 @@ describe('BookingTimeoutProcessor', () => {
         data: expect.objectContaining({ closedReason: 'matching_request_expired' }),
       }),
     );
+    expect(prisma.couponRedemption.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1', state: CouponRedemptionState.RESERVED },
+      data: expect.objectContaining({
+        state: CouponRedemptionState.RELEASED,
+        releaseReason: 'BOOKING_MATCHING_EXPIRED',
+      }),
+    });
   });
 });
+
+function attachTimeoutTransaction<T extends Record<string, unknown>>(client: T) {
+  Object.assign(client, {
+    couponRedemption: {
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
+    $transaction: vi.fn(async (callback: (tx: T) => Promise<unknown>) => callback(client)),
+  });
+  return client;
+}

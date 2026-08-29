@@ -2,10 +2,11 @@ import {
   forwardRef,
   type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
+  type FocusEventHandler,
   type FormHTMLAttributes,
   type HTMLAttributes,
   type InputHTMLAttributes,
-  type MouseEventHandler,
+  type KeyboardEventHandler,
   type ReactNode,
   type Ref,
   type SelectHTMLAttributes,
@@ -16,7 +17,10 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 
 import { AdminDirectoryFilterForm } from './admin-directory-filter-form';
-import { AdminFormDatePickerField } from './admin-form-date-picker-field';
+import {
+  AdminFormDatePickerField,
+  handleAdminDatePickerInputKeyDown,
+} from './admin-form-date-picker-field';
 
 type AdminFormSelectOption = {
   readonly label: string;
@@ -44,7 +48,7 @@ type AdminFormSearchProps = {
   readonly label: string;
   readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name?: string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'defaultValue' | 'onChange' | 'placeholder' | 'value'>;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'defaultValue' | 'maxLength' | 'onChange' | 'placeholder' | 'value'>;
 
 type AdminFormDateProps = {
   readonly ariaDescribedBy?: string;
@@ -68,7 +72,10 @@ type AdminFormDatePickerInputProps = {
   readonly className?: string;
   readonly disabled?: boolean;
   readonly label: string;
-  readonly onClick?: MouseEventHandler<HTMLInputElement>;
+  readonly onBlur?: FocusEventHandler<HTMLInputElement>;
+  readonly onClick?: () => void;
+  readonly onFocus?: FocusEventHandler<HTMLInputElement>;
+  readonly onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   readonly value?: string;
 };
 
@@ -86,6 +93,7 @@ type AdminFormInputProps = {
   | 'autoComplete'
   | 'disabled'
   | 'inputMode'
+  | 'list'
   | 'max'
   | 'maxLength'
   | 'min'
@@ -176,6 +184,7 @@ type AdminDrawerActionFooterProps = {
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
 
 type AdminFormGridProps = {
+  readonly canonicalDefaults?: Readonly<Record<string, string>>;
   readonly children: ReactNode;
   readonly className?: string;
 } & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
@@ -216,11 +225,24 @@ export function AdminFormShell({ action, children, className, method, ...formPro
   );
 }
 
-export function AdminFormGrid({ action, children, className, method, ...formProps }: AdminFormGridProps) {
+export function AdminFormGrid({
+  action,
+  canonicalDefaults,
+  children,
+  className,
+  method,
+  ...formProps
+}: AdminFormGridProps) {
   const mergedClassName = joinClassNames('admin-form-grid form-grid', className);
   if ((method ?? 'get').toLowerCase() === 'get' && (typeof action === 'string' || action === undefined)) {
     return (
-      <AdminDirectoryFilterForm {...formProps} action={action} className={mergedClassName} method="get">
+      <AdminDirectoryFilterForm
+        {...formProps}
+        action={action}
+        canonicalDefaults={canonicalDefaults}
+        className={mergedClassName}
+        method="get"
+      >
         {children}
       </AdminDirectoryFilterForm>
     );
@@ -329,6 +351,7 @@ export function AdminFormSearch({
   inputRef,
   label,
   labelVisibility = 'hidden',
+  maxLength,
   name,
   onChange,
   placeholder = 'Search',
@@ -341,6 +364,7 @@ export function AdminFormSearch({
       <input
         autoFocus={autoFocus}
         defaultValue={defaultValue}
+        maxLength={maxLength}
         ref={inputRef}
         name={name}
         onChange={onChange}
@@ -433,7 +457,10 @@ export function AdminFormDateTime({
 }
 
 export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDatePickerInputProps>(
-  function AdminFormDatePickerInput({ className, disabled, label, onClick, value }, ref) {
+  function AdminFormDatePickerInput(
+    { className, disabled, label, onBlur, onClick, onFocus, onKeyDown, value },
+    ref,
+  ) {
     return (
       <label
         className={joinClassNames(
@@ -450,8 +477,10 @@ export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDa
           aria-label={label}
           className="admin-form-date-input"
           disabled={disabled}
+          onBlur={onBlur}
           onClick={onClick}
-          onMouseDown={preventDatePickerTextInputFocus}
+          onFocus={onFocus}
+          onKeyDown={(event) => handleAdminDatePickerInputKeyDown(event, onClick, onKeyDown)}
           readOnly
           ref={ref}
           value={value ?? ''}
@@ -460,10 +489,6 @@ export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDa
     );
   },
 );
-
-const preventDatePickerTextInputFocus: MouseEventHandler<HTMLInputElement> = (event) => {
-  event.preventDefault();
-};
 
 export function AdminFormInput({
   accept,
@@ -476,6 +501,7 @@ export function AdminFormInput({
   inputMode,
   label,
   labelVisibility = 'hidden',
+  list,
   max,
   maxLength,
   min,
@@ -525,6 +551,7 @@ export function AdminFormInput({
         defaultValue={defaultValue}
         disabled={disabled}
         inputMode={inputMode}
+        list={list}
         max={max}
         maxLength={maxLength}
         min={min}

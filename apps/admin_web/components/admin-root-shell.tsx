@@ -17,6 +17,16 @@ type AdminRootShellProps = {
 };
 
 const confirmationReturnFocusKey = 'hands-admin-confirmation-return-focus';
+type ConfirmationReturnFocusTarget = {
+  readonly href?: string;
+  readonly index?: number;
+  readonly pathname?: string;
+  readonly triggerIndex?: number;
+  readonly triggerLabel?: string;
+};
+
+type ConfirmationFocusDocument = Pick<Document, 'getElementById' | 'querySelectorAll'>;
+
 const confirmationSearchKeys = [
   'confirm',
   'confirmPublish',
@@ -51,12 +61,23 @@ export function AdminRootShell({ children, sections }: AdminRootShellProps) {
       const matchingLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]')).filter(
         (candidate) => candidate.getAttribute('href') === href,
       );
+      const trigger = link
+        .closest('.admin-action-dropdown')
+        ?.querySelector<HTMLButtonElement>(':scope > button[aria-label]');
+      const triggerLabel = trigger?.getAttribute('aria-label') ?? '';
+      const matchingTriggers = triggerLabel
+        ? Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-label]')).filter(
+            (candidate) => candidate.getAttribute('aria-label') === triggerLabel,
+          )
+        : [];
       sessionStorage.setItem(
         confirmationReturnFocusKey,
         JSON.stringify({
           href,
           index: matchingLinks.indexOf(link),
           pathname: window.location.pathname,
+          triggerIndex: trigger ? matchingTriggers.indexOf(trigger) : -1,
+          triggerLabel,
         }),
       );
     }
@@ -73,17 +94,15 @@ export function AdminRootShell({ children, sections }: AdminRootShellProps) {
     if (!stored) return;
 
     try {
-      const target = JSON.parse(stored) as { href?: string; index?: number; pathname?: string };
-      if (target.pathname !== window.location.pathname || !target.href) return;
-
-      const matchingLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]')).filter(
-        (link) => link.getAttribute('href') === target.href,
-      );
-      const link = matchingLinks[target.index ?? 0];
-      (link?.closest('details')?.querySelector<HTMLElement>(':scope > summary') ?? link)?.focus();
+      const target = JSON.parse(stored) as ConfirmationReturnFocusTarget;
+      if (!restoreConfirmationFocus(target, window.location.pathname, document)) {
+        sessionStorage.removeItem(confirmationReturnFocusKey);
+        return;
+      }
       sessionStorage.removeItem(confirmationReturnFocusKey);
     } catch {
       sessionStorage.removeItem(confirmationReturnFocusKey);
+      document.getElementById('admin-main-content')?.focus();
     }
   });
 
@@ -140,4 +159,28 @@ export function AdminRootShell({ children, sections }: AdminRootShellProps) {
       </main>
     </div>
   );
+}
+
+export function restoreConfirmationFocus(
+  target: ConfirmationReturnFocusTarget,
+  currentPathname: string,
+  focusDocument: ConfirmationFocusDocument,
+) {
+  if (target.pathname !== currentPathname) return false;
+
+  const matchingTriggers = target.triggerLabel
+    ? Array.from(focusDocument.querySelectorAll<HTMLButtonElement>('button[aria-label]')).filter(
+        (button) => button.getAttribute('aria-label') === target.triggerLabel,
+      )
+    : [];
+  const trigger = matchingTriggers[target.triggerIndex ?? 0];
+  const matchingLinks = target.href
+    ? Array.from(focusDocument.querySelectorAll<HTMLAnchorElement>('a[href]')).filter(
+        (link) => link.getAttribute('href') === target.href,
+      )
+    : [];
+  const link = matchingLinks[target.index ?? 0];
+  const legacyTarget = link?.closest('details')?.querySelector<HTMLElement>(':scope > summary') ?? link;
+  (trigger ?? legacyTarget ?? focusDocument.getElementById('admin-main-content'))?.focus();
+  return true;
 }

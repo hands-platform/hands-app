@@ -12,17 +12,35 @@ import type { AdminMatchingPreview } from '../../lib/admin-api';
 import { formatDistance } from './policy-distance-format';
 
 type OperationsPolicyLiveSimulatorSectionProps = {
+  readonly canOpenBookingEvidence?: boolean;
+  readonly canOpenPartnerEvidence?: boolean;
+  readonly compact?: boolean;
   readonly preview: AdminMatchingPreview | null;
   readonly refreshHref: string;
   readonly unavailable?: boolean;
+  readonly variant?: 'dispatch' | 'supply';
 };
 
 export function OperationsPolicyLiveSimulatorSection({
+  canOpenBookingEvidence = true,
+  canOpenPartnerEvidence = true,
+  compact = false,
   preview,
   refreshHref,
   unavailable = false,
+  variant = 'dispatch',
 }: OperationsPolicyLiveSimulatorSectionProps) {
-  const presentation = matchingPreviewPresentation(preview, unavailable);
+  const presentation = matchingPreviewPresentation(preview, unavailable, variant);
+  const primaryActionAllowed = preview?.primaryBlocker
+    ? previewActionAllowed(
+        preview.primaryBlocker.actionHref,
+        canOpenBookingEvidence,
+        canOpenPartnerEvidence,
+      )
+    : false;
+  const topBlockingStages = preview?.reference.kind === 'BOOKING'
+    ? preview.stages.slice(1).filter((stage) => stage.excludedCount > 0).slice(0, 3)
+    : [];
   const completeProductionEvidence = Boolean(
     preview &&
     preview.reference.kind === 'BOOKING' &&
@@ -42,14 +60,16 @@ export function OperationsPolicyLiveSimulatorSection({
       actions={(
         <AdminFormControlLink className="button-secondary" href={refreshHref}>
           <RefreshCw aria-hidden="true" size={16} />
-          Re-run preview
+          {variant === 'supply' ? 'Refresh evidence' : 'Re-run preview'}
         </AdminFormControlLink>
       )}
       className="operations-policy-matching-preview admin-mb-16"
-      description="Read-only, no-write preview using the current live matching policy and the same production Partner candidate gates used for dispatch."
+      description={variant === 'supply'
+        ? 'Authoritative current status for the active production matching booking, using the same Partner candidate gates as dispatch.'
+        : 'Read-only, no-write preview using the current live matching policy and the same production Partner candidate gates used for dispatch.'}
       statusLabel={presentation.label}
       statusTone={presentation.tone}
-      title="Current dispatch preview"
+      title={variant === 'supply' ? 'Supply evidence' : 'Current dispatch preview'}
     >
       {!preview || unavailable ? (
         <AdminEmptyState
@@ -141,7 +161,7 @@ export function OperationsPolicyLiveSimulatorSection({
           {presentation.notice ? (
             <AdminNoticeCard role={presentation.role} tone={presentation.noticeTone}>
               <AdminSectionHeader
-                actions={preview.primaryBlocker?.actionHref && preview.primaryBlocker.actionLabel ? (
+                actions={primaryActionAllowed && preview.primaryBlocker?.actionHref && preview.primaryBlocker.actionLabel ? (
                   <AdminFormControlLink className="button-secondary" href={preview.primaryBlocker.actionHref}>
                     {preview.primaryBlocker.actionLabel}
                   </AdminFormControlLink>
@@ -156,7 +176,7 @@ export function OperationsPolicyLiveSimulatorSection({
           {preview.primaryBlocker && !presentation.notice ? (
             <AdminNoticeCard className="operations-policy-primary-blocker" role="alert" tone="danger">
               <AdminSectionHeader
-                actions={preview.primaryBlocker.actionHref && preview.primaryBlocker.actionLabel ? (
+                actions={primaryActionAllowed && preview.primaryBlocker.actionHref && preview.primaryBlocker.actionLabel ? (
                   <AdminFormControlLink className="button-secondary" href={preview.primaryBlocker.actionHref}>
                     {preview.primaryBlocker.actionLabel}
                   </AdminFormControlLink>
@@ -168,7 +188,26 @@ export function OperationsPolicyLiveSimulatorSection({
             </AdminNoticeCard>
           ) : null}
 
-          {preview.reference.kind === 'BOOKING' && preview.stages.length > 0 ? (
+          {compact && variant === 'supply' && topBlockingStages.length > 0 ? (
+            <section aria-label="Top non-zero matching blockers" className="admin-mt-14">
+              <AdminSectionHeader
+                description="Stage losses are shown independently; do not combine them into a total supply count."
+                status={<StatusBadge tone="warning">Top {topBlockingStages.length}</StatusBadge>}
+                title="Top matching blockers"
+              />
+              <div className="operations-policy-preview-funnel admin-mt-10">
+                {topBlockingStages.map((stage) => (
+                  <div key={stage.code}>
+                    <span>{stage.label}</span>
+                    <strong>{stage.excludedCount}</strong>
+                    <small>excluded at this stage</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {!compact && preview.reference.kind === 'BOOKING' && preview.stages.length > 0 ? (
             <div aria-label="Production matching blocker funnel" className="operations-policy-preview-funnel admin-mt-14">
               {preview.stages.map((stage) => (
                 <div className={stage.passedCount === 0 ? 'is-blocked' : undefined} key={stage.code}>
@@ -180,7 +219,7 @@ export function OperationsPolicyLiveSimulatorSection({
             </div>
           ) : null}
 
-          {preview.reference.kind === 'BOOKING' && preview.candidates.length > 0 ? (
+          {!compact && preview.reference.kind === 'BOOKING' && preview.candidates.length > 0 ? (
             <section aria-label="Matching preview candidates" className="operations-policy-preview-candidates admin-mt-16">
               <AdminSectionHeader
                 description="Nearest Partners remaining after the production status, identity, service, location, radius, alert, wallet, and invitation-limit gates."
@@ -191,13 +230,15 @@ export function OperationsPolicyLiveSimulatorSection({
                 {preview.candidates.map((candidate) => (
                   <div className="ops-row" key={candidate.partnerId}>
                     <div>
-                      <AdminFormControlLink
-                        className="button-secondary policy-inline-action"
-                        href={`/partners/${candidate.partnerId}`}
-                      >
-                        <ExternalLink aria-hidden="true" size={14} />
-                        {candidate.name}
-                      </AdminFormControlLink>
+                      {canOpenPartnerEvidence ? (
+                        <AdminFormControlLink
+                          className="button-secondary policy-inline-action"
+                          href={`/partners/${candidate.partnerId}`}
+                        >
+                          <ExternalLink aria-hidden="true" size={14} />
+                          {candidate.name}
+                        </AdminFormControlLink>
+                      ) : <strong>{candidate.name}</strong>}
                       <p className="muted">
                         {formatDistance(candidate.distanceMeters)} · location <DateTimeText value={candidate.locationUpdatedAt} />
                       </p>
@@ -218,9 +259,21 @@ export function OperationsPolicyLiveSimulatorSection({
   );
 }
 
+function previewActionAllowed(
+  href: string | null,
+  canOpenBookingEvidence: boolean,
+  canOpenPartnerEvidence: boolean,
+) {
+  if (!href) return false;
+  if (href.startsWith('/bookings')) return canOpenBookingEvidence;
+  if (href.startsWith('/partners') || href.startsWith('/partner-controls')) return canOpenPartnerEvidence;
+  return true;
+}
+
 function matchingPreviewPresentation(
   preview: AdminMatchingPreview | null,
   unavailable: boolean,
+  variant: 'dispatch' | 'supply',
 ): {
   label: string;
   notice: { title: string; detail: string } | null;
@@ -242,7 +295,7 @@ function matchingPreviewPresentation(
   }
   if (preview.status === 'DEMO_PREVIEW_ONLY') {
     return {
-      label: 'Demo preview only',
+      label: variant === 'supply' ? 'Inconclusive · demo reference' : 'Demo preview only',
       notice: {
         detail: 'No actionable booking coordinate is available. Results use the Ho Chi Minh City demo reference and cannot approve a live policy decision.',
         title: 'Demo evidence cannot authorize dispatch',
@@ -254,7 +307,7 @@ function matchingPreviewPresentation(
   }
   if (preview.status === 'INCOMPLETE_EVIDENCE') {
     return {
-      label: 'Evidence incomplete',
+      label: variant === 'supply' ? 'Inconclusive · incomplete evidence' : 'Evidence incomplete',
       notice: {
         detail: 'The server could not prove complete candidate coverage. No global supply conclusion is shown.',
         title: 'Cannot complete a production dispatch preview',

@@ -176,6 +176,15 @@ export function referralRewardDecisionLabel(action: string) {
   if (action === 'referral_reward.tax_review_required') {
     return 'Require tax review';
   }
+  if (action === 'referral_reward.tax_review_approve') {
+    return 'Tax review approved';
+  }
+  if (action === 'referral_reward.tax_review_hold') {
+    return 'Tax review held';
+  }
+  if (action === 'referral_reward.tax_review_reject') {
+    return 'Cashout rejected; wallet reward retained';
+  }
   if (action === 'referral_reward.release_hold') {
     return 'Hold released';
   }

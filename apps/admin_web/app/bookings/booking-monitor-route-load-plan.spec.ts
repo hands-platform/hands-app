@@ -2,6 +2,10 @@ import {
   bookingListDefaultSort,
   buildBookingMonitorRouteLoadPlan,
 } from './booking-monitor-route-load-plan';
+import {
+  COMPLETED_BOOKING_DEFAULT_VIEW,
+  completedBookingViewOptions,
+} from './booking-monitor-options';
 
 describe('booking monitor route load plan', () => {
   beforeEach(() => {
@@ -56,7 +60,7 @@ describe('booking monitor route load plan', () => {
       'completed',
     );
     expect(completedPlan.bookingsHref).toBe(
-      '/admin/bookings/page?dateRange=custom&statusGroup=completed-closeout&page=1&pageSize=25&sort=oldest&dateFrom=2026-06-01&dateTo=2026-06-02',
+      '/admin/bookings/page?dateRange=custom&statusGroup=completed-payment&page=1&pageSize=25&sort=oldest&dateFrom=2026-06-01&dateTo=2026-06-02',
     );
     expect(completedPlan.summaryHref).toBe(
       '/admin/bookings/completed-operations-summary?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02',
@@ -68,6 +72,66 @@ describe('booking monitor route load plan', () => {
     );
     expect(cancellationPlan.summaryHref).toBe(
       '/admin/bookings/post-match-cancellations-summary?dateRange=7d',
+    );
+  });
+
+  it('keeps the completed route default view and list cohort aligned', () => {
+    const defaultPlan = buildBookingMonitorRouteLoadPlan(undefined, 'completed');
+    const lastMonthPlan = buildBookingMonitorRouteLoadPlan({ dateRange: '30d' }, 'completed');
+    const customPlan = buildBookingMonitorRouteLoadPlan(
+      { dateFrom: '2026-06-01', dateRange: 'custom', dateTo: '2026-06-02' },
+      'completed',
+    );
+
+    expect(completedBookingViewOptions[0]?.view).toBe(COMPLETED_BOOKING_DEFAULT_VIEW);
+    expect(defaultPlan.bookingsHref).toBe(
+      '/admin/bookings/page?dateRange=today&statusGroup=completed-payment&page=1&pageSize=25&sort=oldest',
+    );
+    expect(lastMonthPlan.bookingsHref).toContain('dateRange=30d&statusGroup=completed-payment');
+    expect(customPlan.bookingsHref).toContain('statusGroup=completed-payment');
+    expect(customPlan.bookingsHref).toContain('dateFrom=2026-06-01&dateTo=2026-06-02');
+  });
+
+  it('normalizes an invalid completed date range to today for list and summary queries', () => {
+    const plan = buildBookingMonitorRouteLoadPlan({ dateRange: 'not-a-range' }, 'completed');
+
+    expect(plan.bookingsHref).toBe(
+      '/admin/bookings/page?dateRange=today&statusGroup=completed-payment&page=1&pageSize=25&sort=oldest',
+    );
+    expect(plan.summaryHref).toBe(
+      '/admin/bookings/completed-operations-summary?dateRange=today',
+    );
+  });
+
+  it.each(['yesterday', '7d', '30d'] as const)(
+    'preserves the valid completed %s date range for list and summary queries',
+    (dateRange) => {
+      const plan = buildBookingMonitorRouteLoadPlan({ dateRange }, 'completed');
+
+      expect(new URL(plan.bookingsHref, 'http://admin.local').searchParams.get('dateRange')).toBe(
+        dateRange,
+      );
+      expect(new URL(plan.summaryHref, 'http://admin.local').searchParams.get('dateRange')).toBe(
+        dateRange,
+      );
+    },
+  );
+
+  it('keeps explicit completed closeout on the closeout cohort', () => {
+    const plan = buildBookingMonitorRouteLoadPlan({ view: 'closeout' }, 'completed');
+
+    expect(plan.bookingsHref).toContain('statusGroup=completed-closeout');
+    expect(plan.bookingsHref).toContain('sort=oldest');
+  });
+
+  it('normalizes an invalid completed view to the payment cohort', () => {
+    const plan = buildBookingMonitorRouteLoadPlan(
+      { dateRange: '30d', view: 'not-a-real-view' },
+      'completed',
+    );
+
+    expect(plan.bookingsHref).toBe(
+      '/admin/bookings/page?dateRange=30d&statusGroup=completed-payment&page=1&pageSize=25&sort=oldest',
     );
   });
 
@@ -230,6 +294,73 @@ describe('booking monitor route load plan', () => {
     expect(noShow.bookingsHref).toContain('sort=oldest');
     expect(records.bookingsHref).toContain('dateRange=30d');
     expect(records.bookingsHref).not.toContain('sort=oldest');
+  });
+
+  it.each([undefined, '', 'not-a-range'])(
+    'normalizes post-match records dateRange %s to 30d for list and summary',
+    (dateRange) => {
+      const plan = buildBookingMonitorRouteLoadPlan(
+        { dateRange, view: 'post-match-cancellations' },
+        'postMatchCancellations',
+      );
+      const listUrl = new URL(plan.bookingsHref, 'http://admin.local');
+      const summaryUrl = new URL(plan.summaryHref, 'http://admin.local');
+
+      expect(listUrl.searchParams.get('dateRange')).toBe('30d');
+      expect(summaryUrl.searchParams.get('dateRange')).toBe('30d');
+      expect(plan.bookingsHref).not.toContain('not-a-range');
+      expect(plan.summaryHref).not.toContain('not-a-range');
+    },
+  );
+
+  it.each(['today', 'yesterday', '7d', '30d'] as const)(
+    'preserves valid post-match records dateRange %s for list and summary',
+    (dateRange) => {
+      const plan = buildBookingMonitorRouteLoadPlan(
+        { dateRange, view: 'post-match-cancellations' },
+        'postMatchCancellations',
+      );
+      expect(new URL(plan.bookingsHref, 'http://admin.local').searchParams.get('dateRange')).toBe(
+        dateRange,
+      );
+      expect(new URL(plan.summaryHref, 'http://admin.local').searchParams.get('dateRange')).toBe(
+        dateRange,
+      );
+    },
+  );
+
+  it('preserves custom post-match dates for list and summary', () => {
+    const plan = buildBookingMonitorRouteLoadPlan(
+      {
+        dateFrom: '2026-06-01',
+        dateRange: 'custom',
+        dateTo: '2026-06-02',
+        view: 'post-match-cancellations',
+      },
+      'postMatchCancellations',
+    );
+
+    expect(plan.bookingsHref).toContain('dateRange=custom');
+    expect(plan.bookingsHref).toContain('dateFrom=2026-06-01&dateTo=2026-06-02');
+    expect(plan.summaryHref).toBe(
+      '/admin/bookings/post-match-cancellations-summary?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02',
+    );
+  });
+
+  it.each([
+    [{ view: 'not-a-real-view' }, 'post-match-cancellations-review', null],
+    [{ view: '' }, 'post-match-cancellations-review', null],
+    [
+      { view: ['post-match-cancellations', 'manual-decision'] as string[] },
+      'post-match-cancellations',
+      '30d',
+    ],
+  ] as const)('keeps invalid, empty, and array post-match views on the matching safe cohort', (params, statusGroup, dateRange) => {
+    const plan = buildBookingMonitorRouteLoadPlan(params, 'postMatchCancellations');
+    const listUrl = new URL(plan.bookingsHref, 'http://admin.local');
+
+    expect(listUrl.searchParams.get('statusGroup')).toBe(statusGroup);
+    expect(listUrl.searchParams.get('dateRange')).toBe(dateRange);
   });
 
   it('does not apply post-match cancellation reasons to the no-show queue', () => {

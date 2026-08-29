@@ -96,21 +96,13 @@ export function SetupOverviewSection({
 
       {mode === 'runtime' ? (
         <section aria-label="Runtime service status summary" className="setup-status-strip">
-          <SetupStatusItem href={setupHref('runtime', 'needs-action')} label="Needs action" stateLabel={counts.needsAction ? 'Review' : 'No action'} tone={counts.needsAction ? 'danger' : 'neutral'} value={counts.needsAction} />
           <SetupStatusItem label="Degraded" stateLabel={counts.degraded ? 'Review' : 'No action'} tone={counts.degraded ? 'warning' : 'neutral'} value={counts.degraded} />
           <SetupStatusItem href={setupHref('runtime', 'evidence-gaps')} label="Unknown" stateLabel={counts.unknown ? 'Check state' : 'None'} tone={counts.unknown ? 'warning' : 'neutral'} value={counts.unknown} />
           <SetupStatusItem href={setupHref('runtime', 'evidence-gaps')} label="Not monitored" stateLabel={counts.notMonitored ? 'Evidence gap' : 'None'} tone={counts.notMonitored ? 'info' : 'neutral'} value={counts.notMonitored} />
-          <SetupStatusItem href={setupHref('runtime', 'evidence-gaps')} label="Evidence gaps" stateLabel={counts.evidenceGaps ? 'Review coverage' : 'Covered'} tone={counts.evidenceGaps ? 'info' : 'neutral'} value={counts.evidenceGaps} />
         </section>
       ) : view === 'deferred' ? (
-        <DeferredLaunchSummary count={rows.length} />
-      ) : (
-        <section aria-label="Launch readiness summary" className="setup-status-strip">
-          <SetupStatusItem href={setupHref('readiness', 'needs-action')} label="Launch blockers" stateLabel={counts.launchBlockers ? 'Review' : 'Clear'} tone={counts.launchBlockers ? 'danger' : 'success'} value={counts.launchBlockers} />
-          <SetupStatusItem href={setupHref('readiness', 'active')} label="Required capabilities" stateLabel={`${counts.configurationReady} configured`} tone="info" value={counts.required} />
-          <SetupStatusItem href={setupHref('readiness', 'deferred')} label="Deferred" stateLabel="Future scope" tone="neutral" value={counts.deferred} />
-        </section>
-      )}
+        <DeferredLaunchSummary />
+      ) : null}
 
       {mode === 'runtime' ? (
         <RuntimeHealthSection generatedAt={generatedAt} rows={rows} />
@@ -157,7 +149,7 @@ function RuntimeHealthRow({ service }: { readonly service: AdminExternalServiceS
         <span className="setup-evidence-copy">
           <strong>{evidenceLevelLabel(service)}</strong>
           <small>{service.evidenceSummary}</small>
-          {(service.lastVerifiedAt ?? service.lastProbeAt) ? <small>Last verified <DateTimeText value={service.lastVerifiedAt ?? service.lastProbeAt ?? ''} /></small> : <small>No runtime verification recorded</small>}
+          <SetupEvidenceTimestamp service={service} />
         </span>
         <SetupServiceDetails service={service} />
       </td>
@@ -167,7 +159,24 @@ function RuntimeHealthRow({ service }: { readonly service: AdminExternalServiceS
   );
 }
 
-function DeferredLaunchSummary({ count }: { readonly count: number }) {
+function SetupEvidenceTimestamp({ service }: { readonly service: AdminExternalServiceStatus }) {
+  if (service.evidenceLevel === 'CONFIGURATION_ONLY') {
+    return service.configurationCheckedAt
+      ? <small>Configuration checked <DateTimeText value={service.configurationCheckedAt} /></small>
+      : <small>No configuration check recorded</small>;
+  }
+
+  const runtimeVerifiedAt = service.lastVerifiedAt ?? service.lastProbeAt;
+  if (runtimeVerifiedAt) {
+    return <small>Last runtime verification <DateTimeText value={runtimeVerifiedAt} /></small>;
+  }
+  if (service.configurationCheckedAt) {
+    return <small>Configuration checked <DateTimeText value={service.configurationCheckedAt} /></small>;
+  }
+  return <small>No verification recorded</small>;
+}
+
+function DeferredLaunchSummary() {
   return (
     <section aria-labelledby="deferred-launch-summary-title" className="setup-deferred-summary">
       <div>
@@ -175,7 +184,6 @@ function DeferredLaunchSummary({ count }: { readonly count: number }) {
         <h2 id="deferred-launch-summary-title">Deferred for cash-only launch</h2>
         <p>These capabilities do not block the current launch. Review them only when the listed trigger is reached.</p>
       </div>
-      <strong aria-label={`${count} deferred capabilities`}>{count}</strong>
     </section>
   );
 }
@@ -222,7 +230,7 @@ function LaunchReadinessSection({
         <AdminDataTable
           className="setup-health-table setup-readiness-table"
           emptyMessage="No capabilities match this view."
-          headers={['Capability', 'Launch requirement', 'Configuration', 'Evidence / last verified', 'Next step']}
+          headers={['Capability', 'Launch requirement', 'Configuration', 'Evidence timestamp', 'Next step']}
           rowCount={rows.length}
         >
           {rows.map((service) => (
@@ -233,7 +241,7 @@ function LaunchReadinessSection({
               <td>
                 <span className="setup-evidence-copy">
                   <strong>{evidenceLevelLabel(service)}</strong>
-                  {(service.lastVerifiedAt ?? service.configurationCheckedAt) ? <small>Last verified <DateTimeText value={service.lastVerifiedAt ?? service.configurationCheckedAt ?? ''} /></small> : <small>No verification recorded</small>}
+                  <SetupEvidenceTimestamp service={service} />
                 </span>
                 <SetupServiceDetails service={service} />
               </td>

@@ -29,6 +29,7 @@ import {
   type PartnerDetailBooking,
 } from './partner-detail-record-helpers';
 import type { ProviderBankAccount, ProviderDetail } from './partner-detail-types';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 type PartnerPayoutStatus = {
   readonly status: string;
@@ -88,7 +89,7 @@ export function buildPartnerActivityCommandSnapshot(
       label: 'Applied filter',
       value: `${records.length} event(s)`,
       helper: `${dateLabel} / ${activityTypeLabel}`,
-      href: '#app-activity',
+      href: buildPartnerDetailTargetHref(provider.id, 'app-activity'),
     },
     {
       label: 'Latest event',
@@ -101,7 +102,9 @@ export function buildPartnerActivityCommandSnapshot(
           {latestEvent.type} / <DateTimeText fallback="Missing" value={latestEvent.at} />
         </>
       ) : undefined,
-      href: latestEvent ? partnerActivityRecordHref(latestEvent) : '#app-activity',
+      href: latestEvent
+        ? partnerActivityRecordHref(provider.id, latestEvent, true)
+        : buildPartnerDetailTargetHref(provider.id, 'app-activity'),
     },
     {
       label: 'Completed work',
@@ -117,25 +120,27 @@ export function buildPartnerActivityCommandSnapshot(
           <DateTimeText fallback="Missing" value={bookingLatestActivityAt(latestCompletedBooking)} />
         </>
       ) : undefined,
-      href: latestCompletedBooking ? `/bookings/${latestCompletedBooking.id}` : '#partner-booking-journey',
+      href: latestCompletedBooking
+        ? `/bookings/${latestCompletedBooking.id}`
+        : buildPartnerDetailTargetHref(provider.id, 'booking-journey'),
     },
     {
       label: 'Retained chat',
       value: `${retainedMessageCount} message(s)`,
       helper: `${retainedChatRooms.length} room(s) retained for admin review.`,
-      href: '#partner-chat-retention-ledger',
+      href: buildPartnerDetailTargetHref(provider.id, 'booking-evidence'),
     },
     {
       label: 'Marketplace records',
       value: `${joinedBookings} participation record(s)`,
       helper: `${preferredBookings} preferred / ${selectedBookings} selected booking relation(s).`,
-      href: '#partner-booking-journey',
+      href: buildPartnerDetailTargetHref(provider.id, 'booking-journey'),
     },
     {
       label: 'Finance rows',
       value: `${earningCount + payoutCount} row(s)`,
       helper: `${earningCount} earning / ${payoutCount} payout / ${payoutOps.status}.`,
-      href: '#payout',
+      href: buildPartnerDetailTargetHref(provider.id, 'payout'),
     },
     {
       label: 'Location and app',
@@ -148,7 +153,7 @@ export function buildPartnerActivityCommandSnapshot(
           Recent app access <DateTimeText fallback="Missing" value={latestAccessAt} />
         </>
       ) : undefined,
-      href: '#location',
+      href: buildPartnerDetailTargetHref(provider.id, 'location'),
     },
     {
       label: 'Staff records',
@@ -161,7 +166,7 @@ export function buildPartnerActivityCommandSnapshot(
           {latestStaffRecord.title} / <DateTimeText fallback="Missing" value={latestStaffRecord.at} />
         </>
       ) : undefined,
-      href: '#partner-operator-notes',
+      href: buildPartnerDetailTargetHref(provider.id, 'operator-notes'),
     },
   ];
 }

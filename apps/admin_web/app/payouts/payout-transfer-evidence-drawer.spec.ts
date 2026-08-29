@@ -10,14 +10,21 @@ describe('payout transfer evidence drawer', () => {
     join(process.cwd(), 'app/payouts/payout-batch-list-section.tsx'),
     'utf8',
   );
-  const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+  const tableSource = readFileSync(
+    join(process.cwd(), 'app/payouts/payout-batch-table.tsx'),
+    'utf8',
+  );
+  const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8').replace(/\r\n?/g, '\n');
 
   it('uses the shared accessible drawer contract and preserves scroll on close', () => {
     expect(drawerSource).toContain("'use client'");
     expect(drawerSource).toContain('AdminDrawerBackdropButton');
     expect(drawerSource).toContain('AdminDrawerSurface');
-    expect(drawerSource).toContain('useAdminModalFocus(drawerRef, onClose)');
+    expect(drawerSource).toContain('useAdminModalFocus(drawerRef, onClose, returnFocusRef)');
     expect(drawerSource).toContain("router.replace(closeHref, { scroll: false })");
+    expect(drawerSource).toContain('window.history.replaceState(');
+    expect(drawerSource).toContain('payout-transfer-trigger-${detail.id}');
+    expect(tableSource).toContain('payout-transfer-trigger-${row.id}');
     expect(drawerSource).toContain('ariaModal');
   });
 
@@ -35,7 +42,10 @@ describe('payout transfer evidence drawer', () => {
     expect(listSource).toContain('PayoutTransferEvidenceDrawer');
     expect(listSource).not.toContain('Selected payout transfer');
     expect(listSource).not.toContain('AdminTraceSummary');
-    expect(css).toContain('min-width: 980px;');
+    expect(css).toContain('.payout-batch-list-card .admin-table-scroll {');
+    expect(css).toContain('max-height: none;');
+    expect(css).toContain('.payout-batch-list-card .admin-table-scroll .table {\n  min-width: 0;');
+    expect(css).toContain('table-layout: fixed;');
     expect(css).toContain('min-width: 940px;');
     expect(css).not.toContain('.payout-batch-list-card .admin-table-scroll .table {\n  min-width: 1380px;');
   });

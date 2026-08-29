@@ -3,8 +3,10 @@ import type {
   PartnerReviewHistoryRow,
 } from './partner-detail-review-progress-section';
 import { formatCurrency, formatDate } from './partner-detail-format';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 type PartnerReviewControlProvider = {
+  readonly id: string;
   readonly blockedAt?: string | null;
   readonly blockedReason?: string | null;
   readonly kyc?: { readonly submittedAt?: string | null } | null;
@@ -105,7 +107,7 @@ export function buildPartnerReviewControlPanel({
           : 'Basic identity, service profile, public media, KYC, required documents, and account checks are complete.',
         status: dossier.ready ? 'READY' : `${dossier.blockers} GAP(S)`,
         tone: dossier.ready ? 'pill-success' : 'pill-warn',
-        href: '#partner-connected-operations-records',
+        href: buildPartnerDetailTargetHref(provider.id, 'connected-records'),
       },
       {
         id: 'approval-decision',
@@ -120,7 +122,7 @@ export function buildPartnerReviewControlPanel({
               : 'Profile, service profile, KYC, required documents, public media, and account checks are clear for approval.',
         status: hasHold ? 'HOLD' : approvalReady ? 'READY' : 'REVIEW',
         tone: hasHold ? 'pill-danger' : approvalReady ? 'pill-success' : 'pill-warn',
-        href: '#partner-operator-command-queue',
+        href: buildPartnerDetailTargetHref(provider.id, 'control-queue'),
       },
       {
         id: 'booking-access-state',
@@ -135,7 +137,7 @@ export function buildPartnerReviewControlPanel({
             : 'Dossier gaps keep booking access under review until identity, service profile, public media, and account readiness are clear.',
         status: hasHold ? 'BLOCKED' : hasCashDebt ? 'WARNING' : dossier.ready ? 'CLEAR' : 'REVIEW',
         tone: hasHold ? 'pill-danger' : hasCashDebt || !dossier.ready ? 'pill-warn' : 'pill-success',
-        href: '#partner-booking-gate-decision',
+        href: buildPartnerDetailTargetHref(provider.id, 'booking-gate'),
       },
       {
         id: 'settlement-warning',
@@ -146,7 +148,7 @@ export function buildPartnerReviewControlPanel({
           : 'No company fee debt is loaded. Settlement does not add a warning for this Partner.',
         status: hasCashDebt ? 'WARNING' : 'CLEAR',
         tone: hasCashDebt ? 'pill-warn' : 'pill-success',
-        href: '#cash-debt-origin',
+        href: buildPartnerDetailTargetHref(provider.id, 'cash-debt'),
       },
       {
         id: 'account-hold-state',
@@ -157,7 +159,7 @@ export function buildPartnerReviewControlPanel({
           : 'Partner is not on account hold. Use Hold Partner only when correction is required.',
         status: hasHold ? 'ON HOLD' : 'CLEAR',
         tone: hasHold ? 'pill-danger' : 'pill-success',
-        href: '#partner-operator-command-queue',
+        href: buildPartnerDetailTargetHref(provider.id, 'control-queue'),
       },
       {
         id: 'resubmission-needs',
@@ -168,7 +170,7 @@ export function buildPartnerReviewControlPanel({
           : 'No rejected KYC, document, service profile, or public media item is waiting for correction.',
         status: resubmissionCount ? `${resubmissionCount} ITEM(S)` : 'CLEAR',
         tone: resubmissionCount ? 'pill-warn' : 'pill-success',
-        href: '#partner-review-history',
+        href: buildPartnerDetailTargetHref(provider.id, 'review-history'),
       },
       {
         id: 'latest-review-event',
@@ -179,7 +181,7 @@ export function buildPartnerReviewControlPanel({
           : 'Approval, rejection, hold, release, and resubmission decisions will appear in review history.',
         status: latestReview ? latestReview.action : 'NO LOG',
         tone: latestReview ? 'pill-info' : 'pill-neutral',
-        href: '#partner-review-history',
+        href: buildPartnerDetailTargetHref(provider.id, 'review-history'),
       },
     ],
   };

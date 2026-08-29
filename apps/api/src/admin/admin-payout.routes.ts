@@ -22,9 +22,11 @@ export class AdminPayoutRoutes extends AdminWalletRoutes {
     @Query('skip') skip?: string,
     @Query('q') q?: string,
     @Query('sort') sort?: string,
+    @Query('id') id?: string,
   ) {
     return this.admin.listProviderWalletWithdrawalRequests(
       {
+        id,
         providerProfileId,
         range,
         reconciliation,

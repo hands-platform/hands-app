@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 
@@ -51,8 +51,29 @@ export function PayoutTransferEvidenceDrawer({
 }: PayoutTransferEvidenceDrawerProps) {
   const router = useRouter();
   const drawerRef = useRef<HTMLElement>(null);
-  const onClose = useCallback(() => router.replace(closeHref, { scroll: false }), [closeHref, router]);
-  useAdminModalFocus(drawerRef, onClose);
+  const returnFocusRef = useRef<HTMLElement>(null);
+  const closeRequestedRef = useRef(false);
+  const onClose = useCallback(() => {
+    if (closeRequestedRef.current) return;
+    closeRequestedRef.current = true;
+    router.replace(closeHref, { scroll: false });
+    const closeUrl = new URL(closeHref, window.location.href);
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${closeUrl.pathname}${closeUrl.search}${closeUrl.hash}`,
+    );
+  }, [closeHref, router]);
+
+  useEffect(() => {
+    returnFocusRef.current = detail
+      ? document
+          .getElementById(`payout-transfer-trigger-${detail.id}`)
+          ?.querySelector<HTMLElement>('a, button') ?? null
+      : null;
+  }, [detail]);
+
+  useAdminModalFocus(drawerRef, onClose, returnFocusRef);
 
   const titleId = 'payout-transfer-evidence-drawer-title';
 
@@ -67,6 +88,7 @@ export function PayoutTransferEvidenceDrawer({
         surfaceRef={drawerRef}
         tabIndex={-1}
       >
+        <div className="service-menu-dialog-shell">
         <div className="calendar-drawer-header">
           <div>
             <span className="calendar-drawer-eyebrow">Bank transfer evidence</span>
@@ -177,6 +199,7 @@ export function PayoutTransferEvidenceDrawer({
               </AdminDrawerFormGrid>
             </>
           )}
+        </div>
         </div>
       </AdminDrawerSurface>
     </>

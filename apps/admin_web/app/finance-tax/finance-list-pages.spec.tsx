@@ -43,6 +43,33 @@ describe('finance list pages', () => {
   });
 
   it.each([
+    ['settlement reversal', SettlementReversalsPage, '/admin/booking-settlement-reversals?'],
+    ['coupon finance', CouponFinancePage, '/admin/booking-settlement-snapshots/coupon-finance?'],
+  ] as const)(
+    'does not render %s upstream failures as a zero-row success',
+    async (_label, Page, failingHref) => {
+      mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+        data: fallback,
+        ok: !String(href).includes(failingHref),
+        status: String(href).includes(failingHref) ? 500 : 200,
+      }));
+
+      const page = await Page({ searchParams: Promise.resolve({ range: 'all', review: 'all' }) });
+      const markup = renderToStaticMarkup(page);
+
+      expect(markup).toContain(
+        _label === 'coupon finance'
+          ? 'Coupon finance data unavailable'
+          : 'Settlement reversal data unavailable',
+      );
+      expect(markup).toContain('Retry');
+      expect(markup).not.toContain('0 row(s)');
+      expect(markup).not.toContain('No coupon settlement rows match');
+      expect(markup).not.toContain('No settlement reversal rows match');
+    },
+  );
+
+  it.each([
     ['booking settlement audit', BookingSettlementAuditPage, 'Audit records', 'Integrity exceptions'],
     ['coupon finance', CouponFinancePage, 'Coupon finance filters', 'Coupon settlement rows'],
     [
@@ -68,11 +95,12 @@ describe('finance list pages', () => {
 
       if (_name === 'coupon finance') {
         expect(markup).toContain('Coupon finance command board');
-        expect(markup).toContain('Coupon review flags');
+        expect(markup).toContain('Needs review');
         expect(markup).toContain('Company coupon expense');
         expect(markup).toContain('Platform fee discount');
-        expect(markup).toContain('Coupon records');
-        expect(markup).toContain('Current filtered totals');
+        expect(markup).toContain('All coupon records');
+        expect(markup).toContain('No coupon activity in this scope');
+        expect(markup).not.toContain('Current filtered totals');
         expect(markup).toContain('10 rows');
         expect(markup).toContain('/finance-tax/coupon-finance?range=today&amp;review=coupon-review');
       }
@@ -329,12 +357,30 @@ describe('finance list pages', () => {
     [
       'settlement reversals',
       SettlementReversalsPage,
-      '/finance-tax/general-ledger/reversal-journal-1',
+      '/finance-tax/settlement-reversals/reversal-1',
       [
         {
           accountingJournalBatches: [
             {
               id: 'reversal-journal-1',
+              integrity: {
+                blockerCodes: [],
+                checkedAt: '2026-08-26T00:00:00.000Z',
+                checks: {
+                  entriesBalanced: 'PASS',
+                  formula: 'PASS',
+                  headerBalanced: 'PASS',
+                  headerMatchesEntries: 'PASS',
+                  monthlyPeriod: 'PASS',
+                  postedEntries: 'PASS',
+                },
+                discrepancyAmount: 0,
+                entryCount: 2,
+                entryCredit: 500000,
+                entryDebit: 500000,
+                formulaDelta: 0,
+                state: 'CLEAR',
+              },
               postedAt: '2026-06-20T11:00:00.000Z',
               sourceKey: 'journal:reversal:1',
               status: 'POSTED',
@@ -382,6 +428,17 @@ describe('finance list pages', () => {
           providerProfileId: 'provider-1',
           providerEarningId: 'earning-1',
           reason: 'Refund after payout',
+          reversalEvidence: {
+            bankMatchState: 'FAIL',
+            blockerCodes: ['REVERSAL_STATUS_MISMATCH', 'BANK_MATCH_INCOMPLETE'],
+            clearingState: 'FAIL',
+            journalState: 'PASS',
+            ledgerState: 'NOT_APPLICABLE',
+            matchedAmount: 0,
+            policy: { externalClearingRequired: true, ledgerType: 'EXTERNAL_CLEARING' },
+            state: 'FAIL',
+            unmatchedAmount: 500000,
+          },
           settlementStatus: 'REVERSED',
           sourceKey: 'seed-finance-smoke-reversal',
           taxStatus: 'REVERSED',
@@ -458,6 +515,13 @@ describe('finance list pages', () => {
         expect(markup).not.toContain('usage-overview-command-card finance-list-command-card');
         expect(markup).not.toContain('usage-overview-command-icon');
       }
+
+      if (_name === 'settlement reversals') {
+        expect(markup).toContain('Decision / next action');
+        expect(markup).toContain('Immutable closed-period corrections only');
+        expect(markup).toContain('Related Partner Money reversals');
+        expect(markup).not.toContain('/finance-tax/general-ledger/reversal-journal-1');
+      }
       expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
       expect(markup).toContain('vuexy-booking-table-footer');
 
@@ -476,7 +540,7 @@ describe('finance list pages', () => {
         expect(markup).toContain('Integrity exceptions');
         expect(markup).toContain('Payment evidence');
         expect(markup).toContain('Tax workflow');
-        expect(markup).toContain('Reversals');
+        expect(markup).toContain('All reversal signals');
         expect(markup).toContain('Evidence &amp; blockers');
         expect(markup).toContain('Owner / next action');
         expect(markup).toContain(
@@ -510,11 +574,17 @@ describe('finance list pages', () => {
         expect(markup).toContain('10 rows');
         expect(markup).toContain('/finance-tax/settlement-reversals?range=today&amp;take=10');
         expect(markup).toContain('Refund after payout');
-        expect(markup).toContain('Clearing open');
-        expect(markup).toContain('Journal POSTED · Clearing OPEN');
+        expect(markup).toContain('Clearing mismatch');
+        expect(markup).toContain('Decision / next action');
+        expect(markup).toContain('Open the reversal and resolve the authoritative evidence blocker.');
         expect(markup).toContain('/finance-tax/settlement-reversals/reversal-1');
-        expect(markup).toContain('/finance-tax/booking-settlement-audit/snapshot-1');
+        expect(markup).toContain('Booking Audit · All reversal signals');
+        expect(markup).not.toContain('/finance-tax/booking-settlement-audit/snapshot-1');
         expect(markup).toContain('money-text money-text-positive');
+        expect(markup).not.toContain('+84900000001');
+        expect(markup).not.toContain('+84900000002');
+        expect(markup).not.toContain('No customer phone');
+        expect(markup).not.toContain('No partner phone');
       }
     },
   );
@@ -776,33 +846,16 @@ describe('finance list pages', () => {
   });
 
   it.each([
-    [
-      'coupon finance',
-      'app/finance-tax/coupon-finance/page.tsx',
-      [
-        '<div className="muted">{snapshot.customerProfile?.user?.phone ?? \'-\'}</div>',
-        '<div className="muted">{snapshot.providerProfile?.user?.phone ?? \'-\'}</div>',
-      ],
-    ],
-    [
-      'settlement reversals',
-      'app/finance-tax/settlement-reversals/page.tsx',
-      [
-        '<div className="muted">{reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ?? \'-\'}</div>',
-        '<div className="muted">{reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ?? \'-\'}</div>',
-      ],
-    ],
-  ] as const)(
-    'uses shared inline fallback atoms for %s participant phone cells',
-    (_name, sourcePath, rawFallbacks) => {
-      const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+    ['coupon finance', 'app/finance-tax/coupon-finance/page.tsx'],
+    ['settlement reversals', 'app/finance-tax/settlement-reversals/page.tsx'],
+  ] as const)('keeps participant phone data out of the %s list', (_name, sourcePath) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 
-      expect(source).toContain('AdminInlineFallback');
-      for (const rawFallback of rawFallbacks) {
-        expect(source).not.toContain(rawFallback);
-      }
-    },
-  );
+    expect(source).not.toContain('customerProfile?.user?.phone');
+    expect(source).not.toContain('providerProfile?.user?.phone');
+    expect(source).not.toContain('No customer phone');
+    expect(source).not.toContain('No partner phone');
+  });
 
   it('keeps participant phone fields out of the compact booking settlement audit list', () => {
     const source = readFileSync(

@@ -34,7 +34,7 @@ describe('partner detail control action confirmation', () => {
 
     expect(confirmation).toEqual({
       action: 'lift-control',
-      cancelHref: '/partners/partner-detail-123456?section=control&control=records#reports',
+      cancelHref: '/partners/partner-detail-123456?section=access&access=controls#partner-reports-controls',
       confirmLabel: 'Lift control',
       description:
         'Lift PAYOUT_HOLD control sanction for Partner Linh Wellness after the report or control issue is resolved.',
@@ -67,7 +67,7 @@ describe('partner detail control action confirmation', () => {
     expect(readPartnerControlConfirmationAction('lift-control')).toBe('lift-control');
     expect(readPartnerControlConfirmationAction('delete-control')).toBeNull();
     expect(partnerControlActionConfirmHref('partner 1', 'sanction 1')).toBe(
-      '/partners/partner%201?controlAction=lift-control&sanctionId=sanction+1&control=records&section=control#reports',
+      '/partners/partner%201?controlAction=lift-control&sanctionId=sanction+1&access=controls&section=access#partner-reports-controls',
     );
   });
 });

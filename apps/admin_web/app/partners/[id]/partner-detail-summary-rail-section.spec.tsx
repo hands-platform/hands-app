@@ -1,6 +1,4 @@
-import {
-  PartnerDetailSummaryRailSection,
-} from './partner-detail-summary-rail-section';
+import { PartnerDetailSummaryRailSection } from './partner-detail-summary-rail-section';
 import { readFileSync } from 'fs';
 import type {
   PartnerDetailSummaryRailItem,
@@ -10,10 +8,7 @@ import type {
 const modelSource = readFileSync('app/partners/[id]/partner-detail-summary-rail-model.ts', 'utf8');
 const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 const overviewSource = readFileSync('app/partners/[id]/partner-detail-fast-overview.tsx', 'utf8');
-const payoutModelSource = readFileSync(
-  'app/partners/[id]/partner-detail-payout-security-model.tsx',
-  'utf8',
-);
+const payoutModelSource = readFileSync('app/partners/[id]/partner-detail-payout-security-model.tsx', 'utf8');
 
 describe('PartnerDetailSummaryRailSection', () => {
   it('uses the shared Vuexy trace summary atom for summary rail links', () => {
@@ -62,15 +57,17 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(rendered).toContain('Primary booking region');
     expect(rendered).toContain('District 1, Ho Chi Minh City');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#partner-master-facts', '#payout']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining([
-      'card admin-section partner-detail-section-band admin-mb-16',
-      'ops-section-header admin-section-header partner-detail-section-band-header',
-      'admin-section-body partner-detail-section-band-body',
-      'card admin-card partner-detail-usage-summary admin-mt-12',
-      'admin-summary-card-grid partner-detail-usage-summary-grid',
-      'card admin-card admin-summary-card',
-      'partner-detail-usage-region-list',
-    ]));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section partner-detail-section-band admin-mb-16',
+        'ops-section-header admin-section-header partner-detail-section-band-header',
+        'admin-section-body partner-detail-section-band-body',
+        'card admin-card partner-detail-usage-summary admin-mt-12',
+        'admin-summary-card-grid partner-detail-usage-summary-grid',
+        'card admin-card admin-summary-card',
+        'partner-detail-usage-region-list',
+      ]),
+    );
   });
 
   it('uses a shared badge atom for the summary rail status label', () => {
@@ -99,16 +96,21 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(modelSource).toContain('readonly joinedAtLabel: ReactNode;');
     expect(modelSource).toContain('readonly latestStaffNoteDetail?: ReactNode;');
     expect(modelSource).toContain('readonly locationRecordedAtLabel?: ReactNode;');
+    expect(overviewSource).toContain('at: latestBooking ? (');
     expect(overviewSource).toContain(
-      'latestBooking ? <DateTimeText fallback="Missing" value={latestBooking.updatedAt ?? latestBooking.createdAt} /> : undefined',
+      '<DateTimeText fallback="Missing" value={latestBooking.updatedAt ?? latestBooking.createdAt} />',
     );
     expect(pageSource).toContain('Last Partner app activity');
     expect(pageSource).toContain(
       '<DateTimeText fallback="Missing" value={provider.appActivitySummary.lastActiveAt} />.',
     );
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />');
+    expect(pageSource).toContain(
+      '<DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />',
+    );
     expect(pageSource).not.toContain('joinedAtLabel: formatDate(provider.user?.createdAt)');
-    expect(pageSource).not.toContain('locationRecordedAtLabel: provider.currentLocationUpdatedAt\\n      ? formatDate(provider.currentLocationUpdatedAt)');
+    expect(pageSource).not.toContain(
+      'locationRecordedAtLabel: provider.currentLocationUpdatedAt\\n      ? formatDate(provider.currentLocationUpdatedAt)',
+    );
   });
 
   it('passes usage summary timestamps into shared DateTimeText atoms', () => {
@@ -139,7 +141,8 @@ function buildItems(): PartnerDetailSummaryRailItem[] {
 
 function buildUsageSummary(): PartnerDetailUsageRegionSummary {
   return {
-    helper: 'Built from saved app activity, booking service addresses, and Partner location timestamps. No live GPS polling.',
+    helper:
+      'Built from saved app activity, booking service addresses, and Partner location timestamps. No live GPS polling.',
     items: [
       {
         detailDateTimePrefix: 'Latest ',

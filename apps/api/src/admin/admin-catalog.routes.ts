@@ -2,6 +2,7 @@ import { Body, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { assertCmsDestructiveLifecycleEnabled } from '../common/launch-features';
 import {
   AdminPublicSitePageListQueryDto,
   CreatePublicSiteNewsDraftDto,
@@ -85,6 +86,7 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') pageId: string,
   ) {
+    assertCmsDestructiveLifecycleEnabled();
     return this.admin.discardPublicSiteDraft(user.id, pageId);
   }
 
@@ -94,6 +96,7 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
     @Param('id') pageId: string,
     @Body() body: PublishPublicSiteDraftDto,
   ) {
+    assertCmsDestructiveLifecycleEnabled();
     return this.admin.publishPublicSiteDraft(user.id, pageId, body);
   }
 
@@ -103,6 +106,7 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
     @Param('id') pageId: string,
     @Body() body: RollbackPublicSiteRevisionDto,
   ) {
+    assertCmsDestructiveLifecycleEnabled();
     return this.admin.rollbackPublicSiteRevision(user.id, pageId, body);
   }
 
@@ -112,7 +116,16 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
     @Param('id') pageId: string,
     @Body() body: TakePublicSitePageOfflineDto,
   ) {
+    assertCmsDestructiveLifecycleEnabled();
     return this.admin.takePublicSitePageOffline(user.id, pageId, body);
+  }
+
+  @Post('site-pages/:id/cache-invalidation')
+  retryPublicSiteCacheInvalidation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') pageId: string,
+  ) {
+    return this.admin.retryPublicSiteCacheInvalidation(user.id, pageId);
   }
 
   @Patch('site-pages/:id')
@@ -130,6 +143,7 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
     @Param('id') pageId: string,
     @Body() body: DeletePublicSitePageDto,
   ) {
+    assertCmsDestructiveLifecycleEnabled();
     return this.admin.deletePublicSitePage(user.id, pageId, body);
   }
 
@@ -156,6 +170,7 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
     @CurrentUser() user: AuthenticatedUser,
     @Param('sectionId') sectionId: string,
   ) {
+    assertCmsDestructiveLifecycleEnabled();
     return this.admin.deletePublicSiteSection(user.id, sectionId);
   }
 
@@ -177,6 +192,11 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
   @Get('services/groups/:groupKey/impact')
   serviceCatalogGroupImpact(@Param('groupKey') groupKey: string) {
     return this.admin.serviceCatalogGroupImpact(groupKey);
+  }
+
+  @Get('services/groups/:groupKey/audit-evidence')
+  serviceCatalogAuditEvidence(@Param('groupKey') groupKey: string) {
+    return this.admin.serviceCatalogAuditEvidence(groupKey);
   }
 
   @Patch('services/groups/:groupKey')

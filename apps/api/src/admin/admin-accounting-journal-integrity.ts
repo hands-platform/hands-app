@@ -48,6 +48,21 @@ export type AccountingJournalIntegrity = {
 
 const SETTLEMENT_SOURCE_TYPES = new Set(['BOOKING_SETTLEMENT', 'BOOKING_SETTLEMENT_REVERSAL']);
 
+export const ACCOUNTING_JOURNAL_MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES = [
+  'BOOKING_SETTLEMENT',
+  'BOOKING_SETTLEMENT_REVERSAL',
+  'MANUAL_WALLET_ADJUSTMENT',
+  'PROVIDER_WITHDRAWAL',
+  'PROVIDER_PAYOUT_BATCH',
+  'PROVIDER_BANK_DEPOSIT',
+  'REFERRAL_REWARD',
+  'WITHHOLDING_REMITTANCE',
+] as const;
+
+const MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES = new Set<string>(
+  ACCOUNTING_JOURNAL_MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES,
+);
+
 export function buildAccountingJournalIntegrity(
   input: AccountingJournalIntegrityInput,
 ): AccountingJournalIntegrity {
@@ -58,6 +73,9 @@ export function buildAccountingJournalIntegrity(
     Math.abs(input.headerCredit - input.entryCredit),
   );
   const formulaRequired = SETTLEMENT_SOURCE_TYPES.has(input.sourceType);
+  const monthlyPeriodRequired =
+    formulaRequired ||
+    (input.status === 'POSTED' && MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES.has(input.sourceType));
   const formulaDelta = input.formulaDelta === null ? null : Math.abs(input.formulaDelta);
   const blockerCodes: AccountingJournalIntegrityBlockerCode[] = [];
 
@@ -70,7 +88,10 @@ export function buildAccountingJournalIntegrity(
   } else if (formulaRequired && (formulaDelta ?? 0) > 0) {
     blockerCodes.push('FORMULA_DELTA');
   }
-  if (formulaRequired && (input.monthlyPeriod === null || input.linkedMonthlyPeriod === null)) {
+  if (
+    (monthlyPeriodRequired && input.monthlyPeriod === null) ||
+    (formulaRequired && input.linkedMonthlyPeriod === null)
+  ) {
     blockerCodes.push('PERIOD_EVIDENCE_MISSING');
   } else if (
     formulaRequired &&
@@ -101,11 +122,11 @@ export function buildAccountingJournalIntegrity(
             : 'FAIL',
       headerBalanced: headerDelta === 0 ? 'PASS' : 'FAIL',
       headerMatchesEntries: headerEntryDelta === 0 ? 'PASS' : 'FAIL',
-      monthlyPeriod: !formulaRequired
+      monthlyPeriod: !monthlyPeriodRequired
         ? 'NOT_APPLICABLE'
-        : input.monthlyPeriod === null || input.linkedMonthlyPeriod === null
+        : input.monthlyPeriod === null || (formulaRequired && input.linkedMonthlyPeriod === null)
           ? 'UNKNOWN'
-          : input.monthlyPeriod === null || input.linkedMonthlyPeriod === input.monthlyPeriod
+          : !formulaRequired || input.linkedMonthlyPeriod === input.monthlyPeriod
             ? 'PASS'
             : 'FAIL',
       postedEntries:

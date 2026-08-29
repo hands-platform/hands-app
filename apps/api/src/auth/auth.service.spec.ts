@@ -1,7 +1,11 @@
 import { HttpStatus, Logger } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
-import { hashAdminOperatorPassword } from './admin-operator-credential';
+import {
+  ADMIN_OPERATOR_LOCK_MS,
+  ADMIN_OPERATOR_MAX_FAILED_LOGINS,
+  hashAdminOperatorPassword,
+} from './admin-operator-credential';
 import { encryptAdminMfaSecret } from './admin-mfa';
 
 describe('AuthService OTP production guard', () => {
@@ -661,6 +665,23 @@ describe('AuthService Admin operator login', () => {
     expect(prisma.adminOperatorCredential.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { email: 'operator@hands.vn' } }),
     );
+    expect(prisma.adminOperatorCredential.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ failedLoginCount: 0, lockedUntil: null }),
+      }),
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'admin_operator.login.success',
+        actorId: 'operator-1',
+        actorType: 'HUMAN',
+        area: 'SECURITY',
+        outcome: 'SUCCEEDED',
+        severity: 'INFO',
+        source: 'admin_auth',
+        target: 'user:operator-1',
+      }),
+    });
   });
 
   it('rejects invalid stored Admin credentials', async () => {
@@ -673,7 +694,13 @@ describe('AuthService Admin operator login', () => {
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorId: null,
+        actorKey: 'admin_auth',
+        actorType: 'SERVICE',
         action: 'admin_operator.login.failed_unknown_identity',
+        area: 'SECURITY',
+        outcome: 'FAILED',
+        severity: 'REVIEW',
+        source: 'admin_auth',
         target: expect.stringMatching(/^admin_login_identity:[a-f0-9]{64}$/),
         metadata: expect.objectContaining({
           identityHash: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -681,6 +708,72 @@ describe('AuthService Admin operator login', () => {
       }),
     });
     expect(JSON.stringify(prisma.adminAuditLog.create.mock.calls)).not.toContain('operator@hands.vn');
+  });
+
+  it('records a disabled Admin login as a denied service event', async () => {
+    const { passwordHash, passwordSalt } = hashAdminOperatorPassword('operator-password');
+    const { prisma, service } = createOtpService({});
+    prisma.adminOperatorCredential.findUnique.mockResolvedValue({
+      id: 'credential-disabled',
+      disabledAt: new Date('2026-08-28T00:00:00.000Z'),
+      failedLoginCount: 0,
+      lockedUntil: null,
+      passwordHash,
+      passwordSalt,
+      user: {
+        id: 'operator-disabled',
+        email: 'disabled@hands.vn',
+        fullName: 'Disabled Operator',
+        roles: [Role.ADMIN],
+        adminOperatorPermission: { id: 'permission-disabled' },
+      },
+    });
+
+    await expect(
+      service.verifyAdminOperatorLogin({ email: 'disabled@hands.vn', password: 'operator-password' }),
+    ).rejects.toThrow('Invalid admin operator credentials');
+
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'admin_operator.login.blocked',
+        actorId: null,
+        actorKey: 'admin_auth',
+        actorType: 'SERVICE',
+        area: 'SECURITY',
+        outcome: 'DENIED',
+        severity: 'REVIEW',
+        source: 'admin_auth',
+        target: 'user:operator-disabled',
+      }),
+    });
+  });
+
+  it('fails closed when successful Admin login evidence cannot be persisted', async () => {
+    const { passwordHash, passwordSalt } = hashAdminOperatorPassword('operator-password');
+    const { prisma, service } = createOtpService({});
+    prisma.adminOperatorCredential.findUnique.mockResolvedValue({
+      id: 'credential-audit-failure',
+      disabledAt: null,
+      failedLoginCount: 0,
+      lockedUntil: null,
+      passwordHash,
+      passwordSalt,
+      user: {
+        id: 'operator-audit-failure',
+        email: 'audit-failure@hands.vn',
+        fullName: 'Audit Failure Operator',
+        roles: [Role.ADMIN],
+        adminOperatorPermission: { id: 'permission-audit-failure' },
+      },
+    });
+    prisma.adminAuditLog.create.mockRejectedValueOnce(new Error('audit persistence unavailable'));
+
+    await expect(
+      service.verifyAdminOperatorLogin({
+        email: 'audit-failure@hands.vn',
+        password: 'operator-password',
+      }),
+    ).rejects.toThrow('audit persistence unavailable');
   });
 
   it('requires the enrolled Admin MFA code after the password is verified', async () => {
@@ -757,7 +850,10 @@ describe('AuthService Admin operator login', () => {
         56_666_666,
       );
       expect(prisma.adminWebSession.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ mfaVerifiedAt: new Date(1_700_000_000_000) }),
+        data: expect.objectContaining({
+          expiresAt: new Date(1_700_007_200_000),
+          mfaVerifiedAt: new Date(1_700_000_000_000),
+        }),
       });
     } finally {
       vi.useRealTimers();
@@ -816,7 +912,10 @@ describe('AuthService Admin operator login', () => {
     }
   });
 
-  it('records failed public logins without allowing an unauthenticated caller to lock the operator', async () => {
+  it('locks the operator exactly on the fifth failed public login and revokes active sessions', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-29T00:00:00.000Z'));
+    try {
     const { passwordHash, passwordSalt } = hashAdminOperatorPassword('expected-password');
     const { prisma, service, socketAuth } = createOtpService({});
     prisma.adminOperatorCredential.findUnique.mockResolvedValue({
@@ -835,6 +934,8 @@ describe('AuthService Admin operator login', () => {
       },
     });
     prisma.adminOperatorCredential.update.mockResolvedValueOnce({ failedLoginCount: 5 });
+    prisma.adminOperatorCredential.updateMany.mockResolvedValueOnce({ count: 1 });
+    prisma.adminWebSession.updateMany.mockResolvedValueOnce({ count: 2 });
     prisma.$transaction.mockImplementationOnce((async (input: unknown) =>
       typeof input === 'function'
         ? (input as (tx: typeof prisma) => Promise<unknown>)(prisma)
@@ -848,22 +949,105 @@ describe('AuthService Admin operator login', () => {
     ).rejects.toThrow('Invalid admin operator credentials');
 
     expect(prisma.adminOperatorCredential.update).toHaveBeenCalledTimes(1);
-    expect(prisma.adminOperatorCredential.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ lockedUntil: expect.any(Date) }) }),
-    );
+    expect(prisma.adminOperatorCredential.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'credential-locked',
+        OR: [{ lockedUntil: null }, { lockedUntil: { lte: new Date() } }],
+      },
+      data: { lockedUntil: new Date(Date.now() + ADMIN_OPERATOR_LOCK_MS) },
+    });
+    expect(prisma.adminWebSession.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'operator-locked', revokedAt: null },
+      data: expect.objectContaining({
+        revokedAt: new Date(),
+        revocationReason: 'Admin login locked after repeated failures',
+      }),
+    });
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorId: null,
-        action: 'admin_operator.login.failed',
+        actorKey: 'admin_auth',
+        actorType: 'SERVICE',
+        action: 'admin_operator.login.lock',
+        area: 'SECURITY',
+        outcome: 'DENIED',
+        severity: 'REVIEW',
+        source: 'admin_auth',
         target: 'user:operator-locked',
         metadata: expect.objectContaining({
-          locked: false,
+          failedLoginCount: ADMIN_OPERATOR_MAX_FAILED_LOGINS,
+          locked: true,
           sourceIp: '203.0.113.10',
           userAgent: 'Admin browser',
         }),
       }),
     });
-    expect(socketAuth.disconnectAdminUser).not.toHaveBeenCalled();
+    expect(socketAuth.disconnectAdminUser).toHaveBeenCalledWith('operator-locked');
+    expect(JSON.stringify(prisma.adminAuditLog.create.mock.calls)).not.toContain('wrong-password');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('applies one lock transition after five parallel login failures', async () => {
+    const { passwordHash, passwordSalt } = hashAdminOperatorPassword('expected-password');
+    const { prisma, service, socketAuth } = createOtpService({});
+    const credential = {
+      id: 'credential-parallel-lock',
+      disabledAt: null,
+      failedLoginCount: 0,
+      lockedUntil: null,
+      passwordHash,
+      passwordSalt,
+      user: {
+        id: 'operator-parallel-lock',
+        email: 'parallel-lock@hands.vn',
+        fullName: 'Parallel Lock Operator',
+        roles: [Role.ADMIN],
+        adminOperatorPermission: { id: 'permission-parallel-lock' },
+      },
+    };
+    let failedLoginCount = 0;
+    prisma.adminOperatorCredential.findUnique.mockResolvedValue(credential);
+    prisma.adminOperatorCredential.update.mockImplementation(async (args: {
+      data: { failedLoginCount?: { increment: number } };
+    }) => {
+      if (args.data.failedLoginCount) failedLoginCount += args.data.failedLoginCount.increment;
+      return { failedLoginCount };
+    });
+    prisma.adminOperatorCredential.updateMany.mockImplementation(async () => ({
+      count: failedLoginCount === ADMIN_OPERATOR_MAX_FAILED_LOGINS ? 1 : 0,
+    }));
+    prisma.adminWebSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.$transaction.mockImplementation((async (input: unknown) =>
+      typeof input === 'function'
+        ? (input as (tx: typeof prisma) => Promise<unknown>)(prisma)
+        : Promise.all(input as Array<Promise<unknown>>)) as never);
+
+    const outcomes = await Promise.allSettled(
+      Array.from({ length: ADMIN_OPERATOR_MAX_FAILED_LOGINS }, () =>
+        service.verifyAdminOperatorLogin({
+          email: 'parallel-lock@hands.vn',
+          password: 'wrong-password',
+        }),
+      ),
+    );
+
+    expect(outcomes).toHaveLength(ADMIN_OPERATOR_MAX_FAILED_LOGINS);
+    expect(outcomes.every((outcome) => outcome.status === 'rejected')).toBe(true);
+    expect(failedLoginCount).toBe(ADMIN_OPERATOR_MAX_FAILED_LOGINS);
+    expect(
+      prisma.adminOperatorCredential.updateMany.mock.results.filter(
+        (result) => result.type === 'return',
+      ),
+    ).toHaveLength(1);
+    expect(prisma.adminWebSession.updateMany).toHaveBeenCalledOnce();
+    expect(socketAuth.disconnectAdminUser).toHaveBeenCalledTimes(1);
+    expect(
+      prisma.adminAuditLog.create.mock.calls.filter(
+        ([args]) => args.data.action === 'admin_operator.login.lock',
+      ),
+    ).toHaveLength(1);
   });
 
   it('rate limits distributed login failures by a hashed account identity', async () => {
@@ -988,9 +1172,11 @@ function createOtpService({
     adminOperatorCredential: {
       findUnique: vi.fn(),
       update: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     adminWebSession: {
       create: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     adminAuditLog: {
       create: vi.fn().mockResolvedValue({}),

@@ -140,6 +140,15 @@ export class AdminPartnerRoutes extends AdminCustomerRoutes {
     });
   }
 
+  @Get('partners/wallet-debt-page')
+  partnerWalletDebtCursorPage(
+    @Query('cursor') cursor?: string,
+    @Query('q') q?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.admin.partnerWalletDebtCursorPage({ cursor, q, take });
+  }
+
   @Get(['providers/:id/overview', 'partners/:id/overview'])
   providerOverview(@Param('id') providerProfileId: string) {
     return this.admin.getProviderOverview(providerProfileId);
@@ -200,8 +209,12 @@ export class AdminPartnerRoutes extends AdminCustomerRoutes {
   }
 
   @Post(['providers/:id/unblock', 'partners/:id/unblock'])
-  unblockProviderAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
-    return this.admin.unblockProviderAccount(user.id, providerProfileId);
+  unblockProviderAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: LiftPartnerSanctionDto,
+  ) {
+    return this.admin.unblockProviderAccount(user.id, providerProfileId, body);
   }
 
   @Get(['provider-reports', 'partner-reports'])
@@ -226,6 +239,11 @@ export class AdminPartnerRoutes extends AdminCustomerRoutes {
   @Get(['provider-reports/:id', 'partner-reports/:id'])
   providerReport(@Param('id') reportId: string) {
     return this.admin.getProviderReport(reportId);
+  }
+
+  @Get(['provider-reports/:id/audit-history', 'partner-reports/:id/audit-history'])
+  providerReportAuditHistory(@Param('id') reportId: string) {
+    return this.admin.getProviderReportAuditHistory(reportId);
   }
 
   @Patch(['provider-reports/:id', 'partner-reports/:id'])

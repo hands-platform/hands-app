@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { bestMatchingNavHref, hrefMatchesPath } from '../lib/admin-nav-match';
@@ -18,6 +19,10 @@ const globalsCss = readFileSync('app/globals.css', 'utf8');
 vi.mock('next/navigation', () => ({
   usePathname: () => navigationState.pathname,
   useSearchParams: () => new URLSearchParams(navigationState.search),
+}));
+
+vi.mock('next/link', () => ({
+  default: ({ children, ...props }: ComponentProps<'a'>) => <a {...props}>{children}</a>,
 }));
 
 describe('admin shell navigation', () => {
@@ -54,8 +59,20 @@ describe('admin shell navigation', () => {
     expect(html.match(/>Shift Command</g)).toHaveLength(1);
     expect(html).toContain('class="nav-section-summary nav-direct-link"');
     expect(html.match(/<details/g)).toHaveLength(7);
-    expect(html.match(/>Partner Operations</g)).toHaveLength(2);
-    expect(html).not.toContain('Partner Directory');
+    expect(html.match(/>Partner Operations</g)).toHaveLength(1);
+    expect(html).not.toContain('>Partner workspace</');
+    const partnerLinkIndexes = [
+      'Overview',
+      'Action Queue',
+      'Approvals',
+      'Onboarding Blockers',
+      'Partner Blockers',
+      'Reports',
+      'Account Controls',
+      'Directory',
+    ].map((label) => html.indexOf(`>${label}</`));
+    expect(partnerLinkIndexes.every((index) => index >= 0)).toBe(true);
+    expect(partnerLinkIndexes).toEqual([...partnerLinkIndexes].sort((left, right) => left - right));
     expect(html).not.toContain('Partner Referrals');
     expect(html.match(/>System Health</g)).toHaveLength(1);
     expect(html).toContain('class="nav-link nav-local-group-link"');
@@ -75,6 +92,30 @@ describe('admin shell navigation', () => {
     expect(html).toContain('class="nav-section" data-active="true" open=""');
     expect(html).toContain('aria-current="page" class="nav-link" data-active="true"');
     expect(html).toContain('href="/partners/overview"');
+  });
+
+  it.each([
+    ['/partners/overview', 'range=7d', '/partners/overview'],
+    ['/partner-controls', '', '/partner-controls'],
+    ['/partner-controls', 'details=summary', '/partner-controls'],
+    [
+      '/partners',
+      'review=approval-pending&sort=oldest&q=linh',
+      '/partners?review=approval-pending&amp;sort=oldest',
+    ],
+    ['/partners', 'review=unapproved&q=linh', '/partners?review=unapproved'],
+    ['/partner-controls', 'details=controls&review=location', '/partner-controls?details=controls'],
+    ['/partner-controls', 'details=reports&status=RESOLVED', '/partner-controls?details=reports'],
+    ['/partner-controls', 'details=sanctions&sanction=HISTORY', '/partner-controls?details=sanctions'],
+    ['/partners', 'q=linh', '/partners'],
+    ['/partners/partner-1', '', '/partners'],
+  ])('marks one Partner Operations link current for %s?%s', (pathname, search, href) => {
+    navigationState.pathname = pathname;
+    navigationState.search = search;
+    const html = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
+
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+    expect(html).toMatch(new RegExp(`aria-current="page"[^>]*href="${href.replace(/[?]/gu, '\\?')}"`));
   });
 
   it('visually activates representative items for saved views without claiming the current page', () => {
@@ -196,10 +237,9 @@ describe('admin shell navigation', () => {
     expect(payoutHtml).toContain('Finance Records &amp; Close');
     expect(payoutHtml).toContain('href="/payouts">Partner Money</a>');
     expect(payoutHtml).toContain('aria-current="page">Payout / Withdrawal Risk</span>');
-    expect(partnerHtml).toContain('aria-current="page">Partner Approvals</span>');
-    expect(partnerHtml).not.toContain('href="/partners">Partner Directory</a>');
-    expect(partnerHtml).toContain('aria-current="page">Partner Approvals</span>');
-    expect(partnerHtml).not.toContain('Partner directory');
+    expect(partnerHtml).toContain('aria-current="page">Approvals</span>');
+    expect(partnerHtml).not.toContain('href="/partners">Directory</a>');
+    expect(partnerHtml).not.toContain('Partner workspace');
   });
 
   it('renders authorized local workspace navigation for existing URLs', () => {
@@ -218,6 +258,16 @@ describe('admin shell navigation', () => {
     expect(referralHtml).toContain('href="/referrals/customers"');
     expect(referralHtml).toContain('href="/referrals/partners"');
     expect(referralHtml).toContain('href="/referrals/cashouts"');
+  });
+
+  it('does not repeat Partner Operations in local workspace navigation', () => {
+    navigationState.pathname = '/partners/overview';
+    const overviewHtml = renderToStaticMarkup(<AdminWorkspaceLocalNav sections={adminNavSections} />);
+    navigationState.pathname = '/partner-controls';
+    const controlsHtml = renderToStaticMarkup(<AdminWorkspaceLocalNav sections={adminNavSections} />);
+
+    expect(overviewHtml).toBe('');
+    expect(controlsHtml).toBe('');
   });
 
   it.each([

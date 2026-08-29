@@ -51,6 +51,59 @@ describe('ChatService access control', () => {
     ).resolves.toBe(true);
   });
 
+  it('keeps the REST/UI Master Admin bypass for chat read and write', async () => {
+    const room = {
+      id: 'chat-room-1',
+      booking: {
+        customerProfileId: 'customer-1',
+        selectedProviderId: 'partner-1',
+      },
+    };
+    const prisma = {
+      chatRoom: { findUnique: vi.fn().mockResolvedValue(room) },
+      chatMessage: {
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockResolvedValue({ id: 'message-1', body: 'Operator note' }),
+      },
+    };
+    const service = new ChatService(prisma as never);
+    const master = {
+      id: 'master-admin-user',
+      roles: [Role.ADMIN, Role.MASTER_ADMIN],
+      adminPermissionCategories: [],
+    };
+
+    await expect(service.listMessages('chat-room-1', master)).resolves.toEqual([]);
+    await expect(
+      service.createMessage('chat-room-1', master, { text: 'Operator note' }),
+    ).resolves.toMatchObject({ id: 'message-1' });
+    expect(prisma.chatMessage.create).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['Finance-only', [AdminOperatorPermissionCategory.FINANCE], false],
+    ['Booking-only', [AdminOperatorPermissionCategory.BOOKINGS], true],
+    ['read-only realtime', [AdminOperatorPermissionCategory.BOOKINGS_REALTIME], false],
+  ])('enforces the %s chat-room matrix', async (_, categories, allowed) => {
+    const prisma = {
+      chatRoom: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: { customerProfileId: 'customer-1', selectedProviderId: 'partner-1' },
+        }),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.canAccessChatRoom('chat-room-1', {
+        id: 'matrix-admin',
+        roles: [Role.ADMIN],
+        adminPermissionCategories: categories,
+      }),
+    ).resolves.toBe(allowed);
+  });
+
   it('denies an Admin operator without booking-detail permission', async () => {
     const prisma = {
       chatRoom: {

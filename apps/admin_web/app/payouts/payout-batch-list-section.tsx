@@ -9,6 +9,7 @@ import {
   type PayoutTransferEvidenceDrawerModel,
 } from './payout-transfer-evidence-drawer';
 import type { PayoutServerPagination } from './payouts-page-model';
+import { formatMoney } from '../../lib/admin-format';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -37,7 +38,7 @@ export function PayoutBatchListSection({
 }: PayoutBatchListSectionProps) {
   const drawerDetail: PayoutTransferEvidenceDrawerModel | null = selectedRow
     ? {
-        amountLabel: `${selectedRow.totalAmount.toLocaleString('en-US')} ${selectedRow.currency}`,
+        amountLabel: formatMoney(selectedRow.totalAmount, selectedRow.currency),
         bankAccountDetail: selectedRow.bankAccountDetail ?? 'No approved payout account is available.',
         bankAccountLabel: selectedRow.bankAccountLabel ?? 'Missing',
         expectedStatus: selectedRow.rawStatus ?? selectedRow.statusLabel,

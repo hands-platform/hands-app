@@ -2,6 +2,23 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AdminQueueAgeSortControls } from './admin-queue-age-sort-controls';
 
 describe('AdminQueueAgeSortControls', () => {
+  it('uses the compact desktop layout only when the caller requests it', () => {
+    const html = renderToStaticMarkup(
+      <AdminQueueAgeSortControls
+        age="all"
+        ageCounts={{ all: 0, 'under-1h': 0, '1-4h': 0, '4-24h': 0, 'over-24h': 0 }}
+        ageHref={(age) => `/queue?age=${age}`}
+        compact
+        sort="oldest"
+        sortHref={(sort) => `/queue?sort=${sort}`}
+      />,
+    );
+
+    expect(html).toContain('admin-queue-age-sort-controls is-compact');
+    expect(html).toContain('All ages (0)');
+    expect(html).toContain('Oldest first');
+  });
+
   it('renders the shared ageing buckets and oldest-first operation order', () => {
     const html = renderToStaticMarkup(
       <AdminQueueAgeSortControls

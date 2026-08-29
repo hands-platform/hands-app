@@ -84,6 +84,25 @@ const row: AdminReferralCashoutQueueRow = {
   walletLedgerReference: 'wallet-credit-ledger-1',
 };
 
+const customerRow: AdminReferralCashoutQueueRow = {
+  ...row,
+  audience: 'CUSTOMER',
+  detailHref: '/referrals/customers/parent-customer',
+  parent: {
+    href: '/customers/parent-customer',
+    id: 'parent-customer',
+    label: 'Parent Customer',
+    phone: '+84000000003',
+  },
+  payoutProfile: {
+    account: null,
+    helper: 'Customer rewards remain wallet-only in the current MVP.',
+    label: 'Wallet only',
+    status: 'WALLET_ONLY',
+    type: 'CUSTOMER_WALLET',
+  },
+};
+
 const cashoutQueueSource = readFileSync('app/referrals/referral-cashout-queue.tsx', 'utf8');
 
 describe('Referral cashout queue', () => {
@@ -132,6 +151,21 @@ describe('Referral cashout queue', () => {
     expect(markup).toContain('href="/referrals/cashouts?status=all"');
   });
 
+  it('keeps status facets scoped to audience and search instead of the selected status', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'partner', q: 'parent', status: 'approved' }}
+        rows={[row]}
+        summary={{ ...summary, totalAmount: 25000, totalCount: 1 }}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('1 cashout(s)');
+    expect(markup).toContain('All cashouts</span><strong>4 · <span class="money-text money-text-positive">105.000 VND</span>');
+    expect(markup).toContain('Needs action</span><strong>4 · <span class="money-text money-text-positive">105.000 VND</span>');
+  });
+
   it('keeps cashout exposure scoped to the active filter instead of vague current-copy', () => {
     expect(cashoutQueueSource).toContain('Total amount in the active cashout filter.');
     expect(cashoutQueueSource).not.toContain('current cashout filter');
@@ -174,6 +208,129 @@ describe('Referral cashout queue', () => {
     expect(markup).not.toContain('name="approvalAdminId"');
     expect(cashoutQueueSource).not.toContain('financeApproverOptions');
     expect(cashoutQueueSource).not.toContain('requiresApproval');
+  });
+
+  it('renders queue cashout forms with state evidence, confirmation, and safe queue return context', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={2}
+        filters={{ audience: 'partner', q: 'parent', status: 'approved' }}
+        rows={[row]}
+        summary={{ ...summary, totalCount: 12 }}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('type="hidden" name="expectedStatus" value="CASHOUT_APPROVED"');
+    expect(markup).toContain(`type="hidden" name="expectedUpdatedAt" value="${row.updatedAt}"`);
+    expect(markup).toContain('name="returnTo" value="/referrals/cashouts?audience=partner&amp;status=approved&amp;q=parent&amp;page=2"');
+    expect(markup).toContain('name="confirmation" value="confirmed"');
+    expect(markup).toContain('I reviewed the current state, payout destination, reason, and wallet impact.');
+    expect(markup).toContain('minLength="12"');
+    expect(markup).toContain('maxLength="500"');
+    expect(markup).toContain('required=""');
+    expect(markup).toContain('Payout destination: VCB · •••• 1234 · Parent Partner');
+    expect(markup).toContain('The API revalidates this exact account before wallet debit.');
+  });
+
+  it('renders legacy Customer cashout rows as read-only without mutation forms', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'customer', q: '', status: 'approved' }}
+        rows={[customerRow]}
+        summary={summary}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Unavailable in wallet-only MVP');
+    expect(markup).toContain('Legacy cashout row · read-only investigation');
+    expect(markup).not.toContain(`Referral cashout actions for ${customerRow.id}`);
+    expect(markup).not.toContain('Mark paid');
+    expect(markup).not.toContain('Approve cashout');
+    expect(markup).not.toContain('Require tax review');
+  });
+
+  it('lets FINANCE_TAX decide a legacy Customer tax-review row without exposing payment', () => {
+    const taxReviewRow: AdminReferralCashoutQueueRow = {
+      ...customerRow,
+      status: 'TAX_REVIEW_REQUIRED',
+    };
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        canReviewTax
+        currentPage={1}
+        filters={{ audience: 'customer', q: '', status: 'tax-review' }}
+        rows={[taxReviewRow]}
+        summary={summary}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain(`Referral cashout actions for ${taxReviewRow.id}`);
+    expect(markup).toContain('Approve tax review');
+    expect(markup).toContain('Keep in tax review');
+    expect(markup).toContain('Reject cashout; retain wallet reward');
+    expect(markup).toContain('Customer cash payout remains unavailable after tax approval');
+    expect(markup).not.toContain('Mark paid');
+    expect(markup).not.toContain('Approve cashout');
+    expect(markup).not.toContain('name="transferRef"');
+  });
+
+  it('keeps a tax-review row read-only when the operator lacks FINANCE_TAX', () => {
+    const taxReviewRow: AdminReferralCashoutQueueRow = {
+      ...row,
+      status: 'TAX_REVIEW_REQUIRED',
+    };
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        canReviewTax={false}
+        currentPage={1}
+        filters={{ audience: 'partner', q: '', status: 'tax-review' }}
+        rows={[taxReviewRow]}
+        summary={summary}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('FINANCE_TAX access required');
+    expect(markup).not.toContain(`Referral cashout actions for ${taxReviewRow.id}`);
+  });
+
+  it('keeps loaded rows read-only when the summary request is unavailable', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'partner', q: '', status: 'approved' }}
+        mutationsEnabled={false}
+        partialReadError="Cashout summary could not be loaded. Loaded rows are read-only until the summary is available."
+        rows={[row]}
+        summary={{ ...summary, totalAmount: 0, totalCount: 0 }}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('Cashout summary could not be loaded');
+    expect(markup).toContain('1 cashout row loaded · summary unavailable');
+    expect(markup).toContain('Actions unavailable until the list and summary reload successfully.');
+    expect(markup).not.toContain(`aria-label="Referral cashout actions for ${row.id}"`);
+    expect(markup).not.toContain('aria-label="Referral cashout queue summary"');
+  });
+
+  it('shows a read failure instead of zero metrics or an empty cashout table', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'all', q: '', status: 'needs-action' }}
+        readError="Referral cashout rows could not be loaded. Retry before making a payout decision."
+        rows={[]}
+        summary={summary}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('Referral cashout data unavailable');
+    expect(markup).toContain('Retry before making a payout decision.');
+    expect(markup).toContain('>Retry</a>');
+    expect(markup).not.toContain('Cashout rows');
+    expect(markup).not.toContain('No referral cashouts match the current filters.');
   });
 
   it('uses the shared Vuexy button atom for cashout decision submit actions', () => {

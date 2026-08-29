@@ -1,6 +1,6 @@
 # Operations Policy / Matching Supply 개선 후 심층 재감사 보고서
 
-- 감사 일시: 2026-08-13 (Asia/Bangkok)
+- 감사 일시: 2026-08-13 (Asia/Ho_Chi_Minh)
 - 대상: `/operations-policy?details=matching&matching=supply`
 - 연계 검증: Policies, Simulation, Audit, 단일 정책 편집 화면
 - 화면 기준: 1440×1000, 1600×1000 데스크톱만 검수

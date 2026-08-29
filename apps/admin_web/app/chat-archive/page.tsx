@@ -26,6 +26,7 @@ import { shortId, shortRecordId } from '../../lib/admin-format';
 import { ChatArchiveDateRangeFields } from './chat-archive-date-range-fields';
 import {
   buildChatArchiveLoadPlan,
+  CHAT_ARCHIVE_QUERY_MAX_LENGTH,
   type ChatArchiveDateFilters,
   type ChatArchiveFilters,
 } from './chat-archive-page-model';
@@ -82,7 +83,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       actions={
         <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Booking">
           <MessageSquare aria-hidden="true" size={16} />
-          Audit log
+          Booking audit log
         </AdminFormControlLink>
       }
       contentClassName="chat-archive-page"
@@ -103,12 +104,13 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         resultTone="danger"
         title="Search retained messages"
       >
-        <AdminFormGrid action="/chat-archive" className="chat-evidence-filter-grid">
+        <AdminFormGrid action="/chat-archive" className="chat-evidence-filter-grid" key={plan.currentHref}>
           <AdminFormSearch
             className="admin-directory-filter-search"
             defaultValue={plan.filters.q}
             label="Search messages and records"
             labelVisibility="visible"
+            maxLength={CHAT_ARCHIVE_QUERY_MAX_LENGTH}
             name="q"
             placeholder="Message, booking, room, customer, Partner"
           />

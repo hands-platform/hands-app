@@ -49,6 +49,24 @@ describe('MatchingGateway admin booking realtime', () => {
     expect(client.join).not.toHaveBeenCalledWith(SOCKET_ROOMS.adminBookings());
   });
 
+  it('keeps the REST/UI Master Admin bypass for the global booking room', async () => {
+    const gateway = new MatchingGateway(
+      {
+        authenticate: vi.fn().mockResolvedValue({
+          id: 'master-admin-user',
+          roles: [Role.ADMIN, Role.MASTER_ADMIN],
+          adminPermissionCategories: [],
+        }),
+      } as never,
+      {} as never,
+    );
+    const client = { join: vi.fn() };
+
+    await gateway.handleConnection(client as never);
+
+    expect(client.join).toHaveBeenCalledWith(SOCKET_ROOMS.adminBookings());
+  });
+
   it('joins only marketplace-visible Partners to the global provider signal room', async () => {
     const join = vi.fn();
     const gateway = new MatchingGateway(
@@ -130,6 +148,50 @@ describe('MatchingGateway admin booking realtime', () => {
       'booking:booking-sensitive-1',
       'BOOKING_ROOM_FORBIDDEN',
     );
+  });
+
+  it('keeps the REST/UI Master Admin bypass for an individual booking room', async () => {
+    const gateway = new MatchingGateway(
+      {
+        requireCurrentUser: vi.fn().mockResolvedValue({
+          id: 'master-admin-user',
+          roles: [Role.ADMIN, Role.MASTER_ADMIN],
+          adminPermissionCategories: [],
+        }),
+      } as never,
+      {} as never,
+    );
+    const client = { join: vi.fn().mockResolvedValue(undefined) };
+
+    await expect(
+      gateway.joinBookingRoom(client as never, { bookingId: 'booking-sensitive-1' }),
+    ).resolves.toEqual({ ok: true });
+    expect(client.join).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-sensitive-1'));
+  });
+
+  it.each([
+    ['Finance-only', [AdminOperatorPermissionCategory.FINANCE], false, false],
+    ['Booking-only', [AdminOperatorPermissionCategory.BOOKINGS], true, true],
+    ['read-only realtime', [AdminOperatorPermissionCategory.BOOKINGS_REALTIME], true, false],
+  ])('enforces the %s global and booking-room matrix', async (_, categories, globalAllowed, detailAllowed) => {
+    const user = { id: 'matrix-admin', roles: [Role.ADMIN], adminPermissionCategories: categories };
+    const gateway = new MatchingGateway(
+      {
+        authenticate: vi.fn().mockResolvedValue(user),
+        recordAdminAuthorizationDenial: vi.fn(),
+        requireCurrentUser: vi.fn().mockResolvedValue(user),
+      } as never,
+      {} as never,
+    );
+    const client = { join: vi.fn().mockResolvedValue(undefined) };
+
+    await gateway.handleConnection(client as never);
+    await expect(
+      gateway.joinBookingRoom(client as never, { bookingId: 'booking-sensitive-1' }),
+    ).resolves.toEqual(detailAllowed ? { ok: true } : { ok: false, error: 'BOOKING_ROOM_FORBIDDEN' });
+
+    expect(client.join.mock.calls.some(([room]) => room === SOCKET_ROOMS.adminBookings())).toBe(globalAllowed);
+    expect(client.join.mock.calls.some(([room]) => room === SOCKET_ROOMS.booking('booking-sensitive-1'))).toBe(detailAllowed);
   });
 
   it('mirrors booking lifecycle events to the admin booking monitor room', async () => {

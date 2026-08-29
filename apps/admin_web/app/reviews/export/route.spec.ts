@@ -40,6 +40,31 @@ describe('Admin review export route', () => {
     expect(mockedAdminGetResult).not.toHaveBeenCalled();
   });
 
+  it('rejects a reversed custom range before calling the Admin API', async () => {
+    const { GET } = await import('./route');
+    const response = await GET(authenticatedRequest(
+      'http://localhost/reviews/export?dateRange=custom&dateFrom=2026-08-20&dateTo=2026-08-01',
+    ));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'From date must be on or before To date.' });
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(mockedAdminGetResult).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'dateRange=custom&dateFrom=2026-08-01&dateTo=2026-08-20',
+    'dateRange=custom&dateFrom=2026-08-01',
+    'dateRange=custom&dateTo=2026-08-20',
+  ])('keeps valid and open-ended custom ranges exportable: %s', async (query) => {
+    mockedAdminGetResult.mockResolvedValue({ data: { totalCount: 0 }, ok: true, status: 200 });
+    const { GET } = await import('./route');
+    const response = await GET(authenticatedRequest(`http://localhost/reviews/export?${query}`));
+
+    expect(response.status).toBe(200);
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
+  });
+
   it.each([0, 1, 100, 101, 172])('exports all %s filtered reviews in pages of at most 100', async (count) => {
     mockedAdminGetResult.mockImplementation(async (href) => {
       const url = new URL(String(href), 'http://admin.local');

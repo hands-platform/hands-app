@@ -11,6 +11,7 @@ export function buildPartnerControlPageMetrics(
     kind: value !== '0' && value !== 'Unavailable' ? 'risk' : value === 'Unavailable' ? 'record' : 'live',
     label,
     scope: 'All partners',
+    scopeKind: 'record',
     value,
   }));
 }

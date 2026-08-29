@@ -8,7 +8,8 @@ import { adminGetResult } from '../../../../lib/admin-api';
 import BookingSettlementAuditDetailPage from './page';
 
 vi.mock('../../../../lib/admin-api', async () => {
-  const actual = await vi.importActual<typeof import('../../../../lib/admin-api')>('../../../../lib/admin-api');
+  const actual =
+    await vi.importActual<typeof import('../../../../lib/admin-api')>('../../../../lib/admin-api');
   return { ...actual, adminGetResult: vi.fn() };
 });
 
@@ -41,7 +42,9 @@ describe('BookingSettlementAuditDetailPage Vuexy links', () => {
 
     const page = await BookingSettlementAuditDetailPage({
       params: Promise.resolve({ id: 'snapshot-detail' }),
-      searchParams: Promise.resolve({ returnTo: '/finance-tax/booking-settlement-audit?review=integrity-exceptions' }),
+      searchParams: Promise.resolve({
+        returnTo: '/finance-tax/booking-settlement-audit?review=integrity-exceptions',
+      }),
     });
     const markup = renderToStaticMarkup(page);
 
@@ -57,6 +60,33 @@ describe('BookingSettlementAuditDetailPage Vuexy links', () => {
     expect(markup).toContain('Technical evidence');
     expect(markup).not.toContain('Journal PASS');
   });
+
+  it('renders a reversal status-only mismatch as non-amount evidence', async () => {
+    const fixture = detailFixture();
+    fixture.settlementAuditHealth.blockers = [
+      {
+        blockingCloseout: true,
+        code: 'REVERSAL_STATUS_MISMATCH',
+        dueAt: null,
+        nextAction: 'Update or verify the external refund clearing status; the amount already matches.',
+        owner: 'finance-operations',
+        ownerTeam: 'Finance operations',
+        priority: 20,
+        remediationHref: '/finance-tax/settlement-reversals/reversal-detail',
+        severity: 'BLOCKER',
+      },
+    ];
+    mockedAdminGetResult.mockResolvedValue({ data: fixture, ok: true, status: 200 });
+
+    const page = await BookingSettlementAuditDetailPage({
+      params: Promise.resolve({ id: 'snapshot-detail' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Reversal Status Mismatch');
+    expect(markup).toContain('Not amount-based');
+    expect(markup).toContain('the amount already matches');
+  });
 });
 
 function detailFixture() {
@@ -69,7 +99,10 @@ function detailFixture() {
     companyOutputVat: 10_000,
     currency: 'VND',
     customerPaymentAmount: 500_000,
-    customerProfile: { id: 'customer-detail', user: { fullName: 'Demo Customer', id: 'customer-user-detail' } },
+    customerProfile: {
+      id: 'customer-detail',
+      user: { fullName: 'Demo Customer', id: 'customer-user-detail' },
+    },
     customerProfileId: 'customer-detail',
     id: 'snapshot-detail',
     metadata: null,
@@ -85,7 +118,11 @@ function detailFixture() {
     platformFeeGross: 100_000,
     platformFeeNetRevenue: 90_000,
     postedAt: '2026-07-20T02:00:00.000Z',
-    providerProfile: { displayName: 'Partner Detail', id: 'partner-detail', user: { id: 'partner-user-detail' } },
+    providerProfile: {
+      displayName: 'Partner Detail',
+      id: 'partner-detail',
+      user: { id: 'partner-user-detail' },
+    },
     providerProfileId: 'partner-detail',
     reversalEntries: [],
     settlementAuditHealth: {
@@ -135,9 +172,23 @@ function detailFixture() {
         taxPeriod: 'PASS',
       },
       evidence: {
-        canonicalClearing: { count: 0, ids: [], matchedAmount: 0, required: true, state: 'FAIL', unmatchedAmount: 500_000 },
+        canonicalClearing: {
+          count: 0,
+          ids: [],
+          matchedAmount: 0,
+          required: true,
+          state: 'FAIL',
+          unmatchedAmount: 500_000,
+        },
         canonicalJournal: { count: 0, ids: [], state: 'FAIL' },
-        reversal: { clearingCount: 0, count: 0, ids: [], journalCount: 0, lifecycle: 'NONE', state: 'NOT_APPLICABLE' },
+        reversal: {
+          clearingCount: 0,
+          count: 0,
+          ids: [],
+          journalCount: 0,
+          lifecycle: 'NONE',
+          state: 'NOT_APPLICABLE',
+        },
       },
       formulaVersion: 'CUSTOMER_PLUS_COMPANY_COUPON_V1',
       state: 'ACTION_REQUIRED',

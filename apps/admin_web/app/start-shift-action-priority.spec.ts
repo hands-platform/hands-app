@@ -169,6 +169,50 @@ describe('Start Shift action priority', () => {
     expect(result.map((item) => item.lane)).toEqual(['Older smaller queue', 'Newer larger queue']);
   });
 
+  it('places a live matching block ahead of an older Finance SLA breach', () => {
+    const result = prioritizeStartShiftCommandItems([
+      {
+        isLiveBlock: true,
+        lane: 'Matching delays',
+        oldestAt: '2026-07-19T04:44:00.000Z',
+        overdueCount: 1,
+        status: 'SLA overdue',
+        tone: 'warn' as const,
+      },
+      {
+        lane: 'Payment clearing',
+        oldestAt: '2026-05-12T05:00:00.000Z',
+        overdueCount: 1,
+        status: 'SLA overdue',
+        tone: 'warn' as const,
+      },
+    ]);
+
+    expect(result.map((item) => item.lane)).toEqual(['Matching delays', 'Payment clearing']);
+  });
+
+  it('places service-blocking payment risk ahead of other overdue work', () => {
+    const result = prioritizeStartShiftCommandItems([
+      {
+        lane: 'Bank reconciliation',
+        oldestAt: '2026-05-12T05:00:00.000Z',
+        overdueCount: 1,
+        status: 'SLA overdue',
+        tone: 'warn' as const,
+      },
+      {
+        isServiceBlock: true,
+        lane: 'Payment holds',
+        oldestAt: '2026-07-19T04:30:00.000Z',
+        overdueCount: 1,
+        status: 'SLA overdue',
+        tone: 'warn' as const,
+      },
+    ]);
+
+    expect(result.map((item) => item.lane)).toEqual(['Payment holds', 'Bank reconciliation']);
+  });
+
   it('falls back to counts and stable input order when oldest timestamps are invalid', () => {
     const result = prioritizeStartShiftCommandItems([
       { lane: 'First', oldestAt: 'invalid', overdueCount: 1, status: 'SLA overdue', tone: 'warn' as const },

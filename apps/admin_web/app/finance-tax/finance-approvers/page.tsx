@@ -23,6 +23,7 @@ import {
   type AdminFinanceApproverGovernancePage,
   type AdminFinanceApproverGovernanceRequest,
   type AdminFinanceApproverGovernanceSummary,
+  type AdminFinanceApproverLegacyAttestationHistoryEvent,
   type AdminGetResult,
 } from '../../../lib/admin-api';
 import { FinanceTablePanel } from '../finance-table-panel';
@@ -107,37 +108,32 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
             <ShieldCheck aria-hidden="true" size={16} />
             View finance approvals
           </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href={`${FINANCE_APPROVERS_PATH}?view=history`}>
-            <History aria-hidden="true" size={16} />
-            View role history
-          </AdminFormControlLink>
-          <AdminFormControlLink
-            className={summary?.currentActor.canRequest && summary.eligibleCandidateCount > 0 ? 'button-primary' : 'button-secondary'}
-            href={`${FINANCE_APPROVERS_PATH}?view=eligible`}
-          >
-            <UserRoundPlus aria-hidden="true" size={16} />
-            {!summaryResult.ok || !summary
-              ? 'View governance requirements'
-              : !summary.currentActor.canRequest
-                ? 'View governance requirements'
-                : summary.eligibleCandidateCount > 0
-                  ? 'Request access change'
-                  : 'Resolve candidate blockers'}
-          </AdminFormControlLink>
+          {view !== 'history' ? (
+            <AdminFormControlLink className="button-secondary" href={`${FINANCE_APPROVERS_PATH}?view=history`}>
+              <History aria-hidden="true" size={16} />
+              View role history
+            </AdminFormControlLink>
+          ) : null}
+          {view !== 'eligible' ? (
+            <AdminFormControlLink
+              className={summary?.currentActor.canRequest && summary.eligibleCandidateCount > 0 ? 'button-primary' : 'button-secondary'}
+              href={`${FINANCE_APPROVERS_PATH}?view=eligible`}
+            >
+              <UserRoundPlus aria-hidden="true" size={16} />
+              {summary?.eligibleCandidateCount ? 'Request access change' : 'Review candidate blockers'}
+            </AdminFormControlLink>
+          ) : (
+            <AdminFormControlLink className="button-secondary" href="/admin-operators?status=needs-action">
+              <UserRoundPlus aria-hidden="true" size={16} />
+              Open Admin Operators
+            </AdminFormControlLink>
+          )}
         </div>
       }
       description="Manage who may provide the independent second approval for money movement. Access changes require a different role governor."
       title="Finance approval access"
     >
-      <FinanceApproverReadiness result={summaryResult} summary={summary} />
-
-      <AdminDisclosure className="finance-approver-help admin-mb-16">
-        <summary>How dual control works</summary>
-        <p>
-          A verified Master Admin submits an access request. A different verified Finance approver who is also a
-          Master Admin reviews it. Only an approved request executes the role change, and every step shares one request ID.
-        </p>
-      </AdminDisclosure>
+      <FinanceApproverReadiness result={summaryResult} summary={summary} view={view} />
 
       <section aria-labelledby="finance-approver-workspace-title" className="finance-approver-workspace">
         <div className="finance-approver-workspace-heading">
@@ -210,9 +206,11 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
 function FinanceApproverReadiness({
   result,
   summary,
+  view,
 }: {
   readonly result: AdminGetResult<AdminFinanceApproverGovernanceSummary | null>;
   readonly summary: AdminFinanceApproverGovernanceSummary | null;
+  readonly view: FinanceApproverView;
 }) {
   if (!result.ok || !summary) {
     return (
@@ -231,12 +229,32 @@ function FinanceApproverReadiness({
   }
 
   const readinessTone = summary.readiness === 'READY' ? 'success' : summary.readiness === 'BLOCKED' ? 'danger' : 'warning';
+  const compactReadiness = (
+    <section aria-label="Independent approval readiness" className="finance-approver-readiness finance-approver-readiness-compact admin-mb-16">
+      <div>
+        <StatusBadge tone={readinessTone}>{humanizeState(summary.readiness)}</StatusBadge>
+        <strong>{summary.verifiedRealApproverCount} / {summary.requiredApproverCount} production approvers</strong>
+        <span>Release blockers {summary.releaseBlockingAccountCount} · Unknown high privilege {summary.unknownHighPrivilegeCount}</span>
+      </div>
+      <AdminFormControlLink className="button-secondary" href={financeApproverRemediationHref(summary)}>
+        {summary.unknownHighPrivilegeCount > 0 ? 'Resolve account provenance' : 'Open next governance action'}
+      </AdminFormControlLink>
+    </section>
+  );
+  if (view !== 'active') {
+    return compactReadiness;
+  }
   return (
-    <section aria-labelledby="finance-approver-readiness-title" className="finance-approver-readiness admin-mb-16">
+    <>
+      {compactReadiness}
+      <AdminDisclosure className="finance-approver-readiness-details admin-mb-16">
+        <summary>View readiness details and recovery order</summary>
+        <section aria-labelledby="finance-approver-readiness-title" className="finance-approver-readiness">
       <div className="finance-approver-readiness-title">
         <div>
           <h2 id="finance-approver-readiness-title">Independent approval readiness</h2>
           <p className="muted">Only verified production operators with independent decision authority count.</p>
+          <p className="muted">Dual control requires a verified Master Admin maker and a different verified Finance approver checker. Only an approved request changes the role.</p>
         </div>
         <StatusBadge tone={readinessTone}>{humanizeState(summary.readiness)}</StatusBadge>
       </div>
@@ -246,24 +264,54 @@ function FinanceApproverReadiness({
           value={`${summary.verifiedRealApproverCount} / ${summary.requiredApproverCount} required`}
         />
         <ReadinessFact label="Independent backup available" value={coverageLabel(summary.backupReady)} />
-        <ReadinessFact label="Pending access requests" value={String(summary.pendingRequestCount)} />
-        <ReadinessFact label="Ready for request" value={String(summary.eligibleCandidateCount)} />
+        <ReadinessFact label="Production pending requests" value={String(summary.pendingRequestCount)} />
+        <ReadinessFact label="Production ready candidates" value={String(summary.eligibleCandidateCount)} />
         <ReadinessFact label="Unattested legacy access" value={String(summary.unattestedLegacyCount)} />
         <ReadinessFact label="Test fixtures excluded" value={String(summary.fixtureExcludedCount)} />
+        <ReadinessFact label="Unknown high-privilege accounts" value={String(summary.unknownHighPrivilegeCount)} />
+        <ReadinessFact label="Release-blocking accounts" value={String(summary.releaseBlockingAccountCount)} />
       </dl>
+      <AdminDisclosure className="finance-approver-category-coverage">
+        <summary>Finance category checker coverage</summary>
+        <ul>
+          {summary.categoryCoverage.map((coverage) => (
+            <li key={coverage.category}>
+              <span>{financeCategoryLabel(coverage.category)}</span>
+              <StatusBadge tone={coverage.ready ? 'success' : 'danger'}>
+                {coverage.checkerCount} / {coverage.requiredCheckerCount}
+              </StatusBadge>
+            </li>
+          ))}
+        </ul>
+      </AdminDisclosure>
       {summary.blockers.length > 0 ? (
         <div className="finance-approver-readiness-blockers" role="status">
           <strong>Independent approval is blocked</strong>
           <ul>
             {summary.blockers.map((blocker) => <li key={blocker.code}>{blocker.message}</li>)}
           </ul>
-          <p>Verify a separate backup role governor or document a break-glass runbook outside this normal access flow.</p>
+          <strong>Recovery order</strong>
+          <ol>
+            <li>Resolve unknown high-privilege account provenance.</li>
+            <li>Invite and verify real production Admin operators.</li>
+            <li>Complete credential setup and MFA.</li>
+            <li>Confirm every Finance permission category above.</li>
+            <li>Complete the independent bootstrap runbook.</li>
+            <li>Use the normal maker/checker access request.</li>
+          </ol>
+          <div className="finance-approver-remediation-actions">
+            <AdminFormControlLink className="button-secondary" href={`${FINANCE_APPROVERS_PATH}?view=active&accountStatus=unknown`}>Review unknown accounts</AdminFormControlLink>
+            <AdminFormControlLink className="button-secondary" href="/admin-operators?status=needs-action">Open Admin Operators</AdminFormControlLink>
+          </div>
+          <p className="muted">Controlled runbook: <code>docs/runbooks/finance-approver-bootstrap-and-recovery.md</code></p>
         </div>
       ) : null}
       <p className="finance-approver-evaluated muted">
         Policy evaluated by server at <time dateTime={summary.lastEvaluatedAt}>{formatVietnamDateTime(summary.lastEvaluatedAt)}</time>
       </p>
-    </section>
+        </section>
+      </AdminDisclosure>
+    </>
   );
 }
 
@@ -351,54 +399,102 @@ function FinanceApproverViewContent({
     if (!viewData.needsResult.ok || !viewData.needsResult.data) {
       return <FinanceApproverLoadError accountStatus={accountStatus} page={page} query={query} result={viewData.needsResult} view={view} />;
     }
+    const readyResult = viewData.readyResult.data;
+    const needsResult = viewData.needsResult.data;
+    const combinedCount = readyResult.totalCount + needsResult.totalCount;
+    if (combinedCount === 0) {
+      return (
+        <>
+          <FinanceApproverWorkspaceScope count={0} scope={operatorScopeLabel(accountStatus)} />
+          <FinanceTablePanel
+            grouped
+            description="No candidate is hidden or promoted. Resolve the upstream account blockers, then re-run server policy."
+            resultLabel="0 candidates"
+            resultTone="warning"
+            title="Eligible operators"
+          >
+            <AdminNoticeCard tone="warning">
+              <strong>No operators are available in this scope</strong>
+              <ol>
+                <li>Review unknown high-privilege account provenance.</li>
+                <li>Invite or select a real production Admin operator.</li>
+                <li>Complete credential setup, MFA, and Finance category access.</li>
+              </ol>
+              <AdminFormControlLink className="button-secondary" href="/admin-operators?status=needs-action">Open Admin Operators</AdminFormControlLink>
+            </AdminNoticeCard>
+          </FinanceTablePanel>
+        </>
+      );
+    }
     return (
-      <div className="finance-approver-eligible-groups">
-        <FinanceApproverOperatorTable
-          accountStatus={accountStatus}
-          page={page}
-          query={query}
-          result={viewData.readyResult.data}
-          summary={summary}
-          view="eligible-ready"
-        />
-        <FinanceApproverOperatorTable
-          accountStatus={accountStatus}
-          page={page}
-          query={query}
-          result={viewData.needsResult.data}
-          summary={summary}
-          view="eligible-needs"
-        />
-      </div>
+      <>
+        <FinanceApproverWorkspaceScope count={combinedCount} scope={operatorScopeLabel(accountStatus)} />
+        <div className="finance-approver-eligible-groups">
+          {readyResult.totalCount > 0 ? (
+            <FinanceApproverOperatorTable
+              accountStatus={accountStatus}
+              page={page}
+              query={query}
+              result={readyResult}
+              summary={summary}
+              view="eligible-ready"
+            />
+          ) : null}
+          {needsResult.totalCount > 0 ? (
+            <FinanceApproverOperatorTable
+              accountStatus={accountStatus}
+              page={page}
+              query={query}
+              result={needsResult}
+              summary={summary}
+              view="eligible-needs"
+            />
+          ) : null}
+        </div>
+      </>
     );
   }
   if (viewData.kind === 'operators') {
     if (!viewData.result.ok || !viewData.result.data) {
       return <FinanceApproverLoadError accountStatus={accountStatus} page={page} query={query} result={viewData.result} view={view} />;
     }
-    return (
+    return <>
+      <FinanceApproverWorkspaceScope count={viewData.result.data.totalCount} scope={operatorScopeLabel(accountStatus)} />
       <FinanceApproverOperatorTable
-        accountStatus={accountStatus}
-        page={page}
-        query={query}
-        result={viewData.result.data}
-        summary={summary}
-        view="active"
-      />
-    );
+          accountStatus={accountStatus}
+          page={page}
+          query={query}
+          result={viewData.result.data}
+          summary={summary}
+          view="active"
+        />
+    </>;
   }
   if (viewData.kind === 'requests') {
     if (!viewData.result.ok || !viewData.result.data) {
       return <FinanceApproverLoadError accountStatus={accountStatus} page={page} query={query} result={viewData.result} view={view} />;
     }
-    return (
+    return <>
+      <FinanceApproverWorkspaceScope count={viewData.result.data.totalCount} scope={requestSourceLabel(source)} />
       <FinanceApproverPendingTable page={page} query={query} result={viewData.result.data} source={source} summary={summary} />
-    );
+    </>;
   }
   if (!viewData.result.ok || !viewData.result.data) {
     return <FinanceApproverLoadError accountStatus={accountStatus} page={page} query={query} result={viewData.result} view={view} />;
   }
-  return <FinanceApproverHistoryTable page={page} query={query} result={viewData.result.data} source={source} summary={summary} />;
+  return <>
+    <FinanceApproverWorkspaceScope count={viewData.result.data.totalCount} scope={requestSourceLabel(source)} />
+    <FinanceApproverHistoryTable page={page} query={query} result={viewData.result.data} source={source} summary={summary} />
+  </>;
+}
+
+function FinanceApproverWorkspaceScope({ count, scope }: { readonly count: number; readonly scope: string }) {
+  return (
+    <div className="finance-approver-workspace-scope" role="status">
+      <span>Selected source: <strong>{scope}</strong></span>
+      <StatusBadge tone="info">{formatCount(count, 'matching record')}</StatusBadge>
+    </div>
+  );
 }
 
 function FinanceApproverLoadError({
@@ -514,6 +610,9 @@ function FinanceApproverOperatorTable({
               }),
               { targetUserId: operator.id },
             );
+            const blockerHref = operator.source === 'UNKNOWN' || operator.source === 'PRODUCTION'
+              ? `/admin-operators?q=${encodeURIComponent(operator.id)}&operatorId=${encodeURIComponent(operator.id)}`
+              : reviewHref;
             return (
               <tr key={operator.id}>
                 <td>
@@ -532,7 +631,7 @@ function FinanceApproverOperatorTable({
                     {operator.policyBlockers.length === 0 ? 'Ready' : 'Blocked'}
                   </StatusBadge>
                   <div className="muted">
-                    {operator.policyBlockers[0]?.message ?? `${financeAccessLabel(operator.financeAccess)} · ${attestationLabel(operator.attestationStatus)}`}
+                    {operator.policyBlockers[0]?.message ?? `${financeAccessLabel(operator.financeAccess)} · ${attestationLifecycleLabel(operator.legacyAttestationLifecycle)}`}
                     {operator.policyBlockers.length > 1 ? ` +${operator.policyBlockers.length - 1}` : ''}
                   </div>
                 </td>
@@ -545,14 +644,20 @@ function FinanceApproverOperatorTable({
                     className="button-secondary button-small"
                     href={operator.pendingRequest
                       ? financeApproverReviewHref(financeApproverHref({ view: 'pending' }), { requestId: operator.pendingRequest.id })
-                      : reviewHref}
+                      : view === 'eligible-needs'
+                        ? blockerHref
+                        : reviewHref}
                   >
                     {operator.pendingRequest
                       ? 'Open pending'
                       : view === 'eligible-ready' && summary?.currentActor.canRequest
                         ? 'Request change'
                         : view === 'eligible-needs'
-                          ? 'Complete verification'
+                          ? operator.source === 'FIXTURE' || operator.source === 'TEST_RUN'
+                            ? 'Review test evidence'
+                            : operator.source === 'UNKNOWN'
+                              ? 'Resolve account provenance'
+                              : 'Complete verification'
                           : 'View details'}
                   </AdminFormControlLink>
                   {!summary?.currentActor.canRequest && !operator.pendingRequest ? <div className="muted">View governance requirements</div> : null}
@@ -605,6 +710,7 @@ function FinanceApproverPendingTable({
             const returnHref = financeApproverHref({ query, source, view: 'pending', page });
             const decisionHref = financeApproverReviewHref(returnHref, { requestId: request.id });
             const isMaker = summary?.currentActor.id === request.requestedByAdminId;
+            const isTarget = summary?.currentActor.id === request.targetUserId;
             return (
               <tr key={request.id}>
                 <td><AdminTableSubstack><strong>{shortId(request.id)}</strong><span>{formatAge(request.requestedAt)}</span><span className="muted">{formatVietnamDateTime(request.requestedAt)}</span></AdminTableSubstack></td>
@@ -617,9 +723,13 @@ function FinanceApproverPendingTable({
                 <td><span>Not recorded</span><div className="muted">A checker is selected at decision time.</div></td>
                 <td>
                   <AdminFormControlLink className="button-secondary button-small" href={decisionHref}>
-                    {summary?.currentActor.canDecide && !isMaker ? 'Decide request' : 'View request details'}
+                    {summary?.currentActor.canDecide && !isMaker && !isTarget
+                      ? request.targetPolicy.ready && request.targetPolicy.permissionVersionMatches
+                        ? 'Decide request'
+                        : 'Review and close request'
+                      : 'View request details'}
                   </AdminFormControlLink>
-                  {!summary?.currentActor.canDecide ? <div className="muted">Verified checker access required</div> : null}
+                  {!summary?.currentActor.canDecide ? <div className="muted">Verified checker access required</div> : isMaker || isTarget ? <div className="muted">Independent checker required</div> : null}
                 </td>
               </tr>
             );
@@ -697,7 +807,63 @@ function FinanceApproverHistoryTable({
           ))}
       </FinanceDataTable>
       <FinanceApproverPagination page={page} query={query} result={result} source={source} view="history" />
+      <section aria-labelledby="legacy-attestation-history-heading" className="finance-approver-legacy-history">
+        <div className="finance-approver-legacy-history-heading">
+          <div>
+            <h3 id="legacy-attestation-history-heading">Legacy attestation lifecycle</h3>
+            <p>Append-only owner evidence, including expiry, revocation, and supersession.</p>
+          </div>
+          <StatusBadge tone={result.legacyAttestations?.length ? 'info' : 'neutral'}>
+            {formatCount(result.legacyAttestations?.length ?? 0, 'attestation event')}
+          </StatusBadge>
+        </div>
+        {result.legacyAttestationHistoryTruncated ? (
+          <AdminNoticeCard tone="warning">
+            <strong>Showing the latest 200 attestation events</strong>
+            <p>Use the exact audit link for the complete append-only history of a target.</p>
+          </AdminNoticeCard>
+        ) : null}
+        <FinanceDataTable
+          ariaLabel="Legacy finance approver attestation lifecycle table"
+          emptyMessage="No legacy attestation lifecycle events match this source filter."
+          headers={['Time', 'Target', 'Lifecycle', 'Owner', 'Source', 'Evidence']}
+          rowCount={result.legacyAttestations?.length ?? 0}
+          scrollClassName="finance-approver-table-wrap"
+          tableClassName="finance-approver-table finance-approver-attestation-history-table"
+        >
+          {(result.legacyAttestations ?? []).map((event) => (
+            <tr key={event.id}>
+              <td><AdminTableSubstack><strong>{formatVietnamDateTime(event.createdAt)}</strong><span className="muted">{auditActionLabel(event.action)}</span></AdminTableSubstack></td>
+              <td className="finance-approver-identity-cell"><AdminTableSubstack><strong>{identityLabel(event.targetUser)}</strong><span className="muted">{shortId(event.targetUserId)}</span></AdminTableSubstack></td>
+              <td><LegacyAttestationLifecycleBadge event={event} /></td>
+              <td className="finance-approver-identity-cell">{event.actor ? identityLabel(event.actor) : 'Actor unavailable'}</td>
+              <td><span className="finance-approver-source-badge"><SourceBadge runId={null} source={event.source} /></span></td>
+              <td><AdminFormControlLink className="text-link" href={event.auditHref}>View exact audit</AdminFormControlLink></td>
+            </tr>
+          ))}
+        </FinanceDataTable>
+      </section>
     </FinanceTablePanel>
+  );
+}
+
+function LegacyAttestationLifecycleBadge({
+  event,
+}: {
+  readonly event: AdminFinanceApproverLegacyAttestationHistoryEvent;
+}) {
+  const tone = event.lifecycle === 'CURRENT'
+    ? 'success'
+    : event.lifecycle === 'PENDING'
+      ? 'warning'
+      : event.lifecycle === 'SUPERSEDED'
+        ? 'neutral'
+        : 'danger';
+  return (
+    <AdminTableSubstack>
+      <StatusBadge tone={tone}>{humanizeState(event.lifecycle)}</StatusBadge>
+      {event.expiresAt ? <span className="muted">Expires {formatVietnamDateTime(event.expiresAt)}</span> : null}
+    </AdminTableSubstack>
   );
 }
 
@@ -822,7 +988,10 @@ function FinanceApproverDecisionDrawer({
 }) {
   const targetName = identityLabel(request.targetUser);
   const isMaker = summary?.currentActor.id === request.requestedByAdminId;
-  const canDecide = summaryAvailable && Boolean(summary?.currentActor.canDecide) && !isMaker;
+  const isTarget = summary?.currentActor.id === request.targetUserId;
+  const canDecide =
+    summaryAvailable && Boolean(summary?.currentActor.canDecide) && !isMaker && !isTarget;
+  const approveAvailable = request.targetPolicy.ready && request.targetPolicy.permissionVersionMatches;
   return (
     <FinanceApproverDrawerShell returnFocusHref={returnFocusHref} returnHref={returnHref} title={`Decide ${shortId(request.id)}`}>
       <FinanceApproverReviewSummary
@@ -840,8 +1009,10 @@ function FinanceApproverDecisionDrawer({
           <div><dt>Requested</dt><dd>{formatVietnamDateTime(request.requestedAt)}</dd></div>
           <div><dt>Operator reason</dt><dd>{request.operatorReason}</dd></div>
           <div><dt>Source</dt><dd className="finance-approver-source-badge"><SourceBadge runId={request.sourceReference} source={request.source} /></dd></div>
-          <div><dt>Permission version</dt><dd>{request.targetPolicy.permissionVersion ?? 'Missing'}</dd></div>
-          <div><dt>Attestation</dt><dd>{attestationLabel(request.targetPolicy.attestationStatus)}</dd></div>
+          <div><dt>Requested permission version</dt><dd>{request.expectedPermissionVersion ?? 'Legacy request — version not captured'}</dd></div>
+          <div><dt>Current permission version</dt><dd>{request.targetPolicy.permissionVersion ?? 'Missing'}</dd></div>
+          <div><dt>Version state</dt><dd>{request.targetPolicy.permissionVersionMatches ? 'Version match' : 'Permission changed since request'}</dd></div>
+          <div><dt>Attestation</dt><dd>{attestationLifecycleLabel(request.targetPolicy.legacyAttestationLifecycle)}</dd></div>
           <div><dt>Current policy</dt><dd>{request.targetPolicy.ready ? 'Ready for independent review' : request.targetPolicy.blockers[0]?.message ?? 'Blocked'}</dd></div>
         </dl>
       </section>
@@ -850,20 +1021,34 @@ function FinanceApproverDecisionDrawer({
           <strong>Independent decision unavailable</strong>
           <p>{!summaryAvailable
             ? 'Readiness is unknown because the governance summary could not be loaded.'
-            : isMaker
-              ? 'The requester cannot decide this access request. Ask a different verified role governor.'
+            : isMaker || isTarget
+              ? 'The requester or target cannot decide this access request. Ask a different verified role governor.'
               : 'Verified Finance approver and Master Admin decision permission is required.'}</p>
           <p>No role or request state changed.</p>
         </AdminNoticeCard>
       ) : (
-        <FinanceApproverActionForm
-          action={decideFinanceApproverAccessRequest}
-          cancelHref={returnHref}
-          mode="decision"
-          operatorName={targetName}
-        >
-          <input name="requestId" type="hidden" value={request.id} />
-        </FinanceApproverActionForm>
+        <>
+          {!approveAvailable ? (
+            <AdminNoticeCard tone="warning">
+              <strong>Approve unavailable</strong>
+              <p>
+                {request.targetPolicy.permissionVersionMatches
+                  ? request.targetPolicy.blockers[0]?.message ?? 'The target no longer satisfies approval policy.'
+                  : 'Permission changed since request.'}
+              </p>
+              <p>Reject and close request remains available to an independent checker.</p>
+            </AdminNoticeCard>
+          ) : null}
+          <FinanceApproverActionForm
+            action={decideFinanceApproverAccessRequest}
+            approveDisabled={!approveAvailable}
+            cancelHref={returnHref}
+            mode="decision"
+            operatorName={targetName}
+          >
+            <input name="requestId" type="hidden" value={request.id} />
+          </FinanceApproverActionForm>
+        </>
       )}
     </FinanceApproverDrawerShell>
   );
@@ -1096,11 +1281,15 @@ function SourceBadge({
   return <StatusBadge tone={tone}>{label}</StatusBadge>;
 }
 
-function attestationLabel(status: AdminFinanceApproverGovernanceOperator['attestationStatus']) {
-  if (status === 'GOVERNED_WORKFLOW') return 'Governed access evidence';
-  if (status === 'ATTESTED') return 'Legacy owner attested';
-  if (status === 'UNATTESTED') return 'Legacy owner unattested';
-  return 'Attestation not required';
+function attestationLifecycleLabel(
+  lifecycle: AdminFinanceApproverGovernanceOperator['legacyAttestationLifecycle'],
+) {
+  if (lifecycle === 'CURRENT') return 'Current until independent review deadline';
+  if (lifecycle === 'EXPIRED') return 'Attestation expired — independent review required';
+  if (lifecycle === 'REVOKED') return 'Attestation revoked';
+  if (lifecycle === 'SUPERSEDED') return 'Attestation superseded';
+  if (lifecycle === 'NOT_REQUIRED') return 'Governed access evidence';
+  return 'Independent attestation missing';
 }
 
 function formatAge(value: string) {
@@ -1119,6 +1308,32 @@ function financeAccessLabel(access: AdminFinanceApproverGovernanceOperator['fina
 
 function coverageLabel(value: boolean | null) {
   return value === null ? 'Unknown' : value ? 'Ready' : 'Missing';
+}
+
+function financeApproverRemediationHref(summary: AdminFinanceApproverGovernanceSummary) {
+  if (summary.unknownHighPrivilegeCount > 0) {
+    return `${FINANCE_APPROVERS_PATH}?view=active&accountStatus=unknown`;
+  }
+  if (summary.eligibleCandidateCount > 0) return `${FINANCE_APPROVERS_PATH}?view=eligible`;
+  return '/admin-operators?status=needs-action';
+}
+
+function financeCategoryLabel(category: string) {
+  return humanizeState(category.replace(/^FINANCE_/u, ''));
+}
+
+function operatorScopeLabel(accountStatus: string) {
+  if (accountStatus === 'fixture') return 'Fixture and test operators';
+  if (accountStatus === 'unknown') return 'Unknown provenance operators';
+  if (accountStatus === 'all') return 'All operator sources';
+  return 'Production and governed legacy operators';
+}
+
+function requestSourceLabel(source: FinanceApproverSource) {
+  if (source === 'test') return 'Test-run evidence';
+  if (source === 'unknown') return 'Unknown-provenance evidence';
+  if (source === 'all') return 'All evidence sources';
+  return 'Production evidence';
 }
 
 function humanizeState(value: string) {

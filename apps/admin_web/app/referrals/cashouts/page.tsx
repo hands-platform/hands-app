@@ -1,5 +1,7 @@
 import type { AdminReferralCashoutQueueRow, AdminReferralCashoutQueueSummary } from '../../../lib/admin-api';
-import { adminGet } from '../../../lib/admin-api';
+import { adminGetResult } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../../lib/admin-operator-access-model';
 import {
   ReferralCashoutQueuePage,
   buildReferralCashoutApiHref,
@@ -19,19 +21,32 @@ export default async function ReferralCashoutsPage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const filters = buildReferralCashoutFilters(resolvedSearchParams);
   const currentPage = buildReferralCashoutPage(resolvedSearchParams);
-  const [rows, summary] = await Promise.all([
-    adminGet<AdminReferralCashoutQueueRow[]>(buildReferralCashoutApiHref(filters, currentPage), []),
-    adminGet<AdminReferralCashoutQueueSummary>(
+  const [operatorAccess, rowsResult, summaryResult] = await Promise.all([
+    getCurrentAdminOperatorAccess(),
+    adminGetResult<AdminReferralCashoutQueueRow[]>(buildReferralCashoutApiHref(filters, currentPage), []),
+    adminGetResult<AdminReferralCashoutQueueSummary>(
       buildReferralCashoutSummaryApiHref(filters),
       referralCashoutSummaryFallback(),
     ),
   ]);
   return (
     <ReferralCashoutQueuePage
+      canReviewTax={hasAdminOperatorCategory(operatorAccess, 'FINANCE_TAX')}
       currentPage={currentPage}
       filters={filters}
-      rows={rows}
-      summary={summary}
+      mutationsEnabled={rowsResult.ok && summaryResult.ok}
+      partialReadError={
+        rowsResult.ok && !summaryResult.ok
+          ? 'Cashout summary could not be loaded. Loaded rows are read-only until the summary is available.'
+          : undefined
+      }
+      readError={
+        !rowsResult.ok
+          ? 'Referral cashout rows could not be loaded. Retry before making a payout decision.'
+          : undefined
+      }
+      rows={rowsResult.data}
+      summary={summaryResult.data}
     />
   );
 }

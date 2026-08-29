@@ -266,6 +266,7 @@ describe('PayoutBatchTable', () => {
     expect(source).not.toContain('<form');
     expect(source).not.toContain('AdminActionsForm');
     expect(source).toContain('Review transfer');
+    expect(source).toContain("'Repair transfer evidence' : 'Review transfer'} for ${row.partnerLabel} (${row.shortId})`");
   });
 
   it('uses the shared money atom for payout batch amounts', () => {

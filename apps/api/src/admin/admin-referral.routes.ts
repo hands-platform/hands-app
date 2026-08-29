@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import {
   ReferralRewardCashoutPaidDto,
   ReferralRewardDecisionDto,
+  ReferralRewardTaxDecisionDto,
   UpdateReferralPolicyDto,
 } from './admin.dto';
 import { AdminAnalyticsRoutes } from './admin-analytics.routes';
@@ -72,6 +73,33 @@ export class AdminReferralRoutes extends AdminAnalyticsRoutes {
     @Body() body: ReferralRewardDecisionDto,
   ) {
     return this.admin.requireReferralRewardTaxReview(user.id, rewardId, body);
+  }
+
+  @Post('referrals/rewards/:id/tax-review-approve')
+  approveReferralRewardTaxReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardTaxDecisionDto,
+  ) {
+    return this.admin.approveReferralRewardTaxReview(user.id, rewardId, body);
+  }
+
+  @Post('referrals/rewards/:id/tax-review-hold')
+  holdReferralRewardTaxReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardTaxDecisionDto,
+  ) {
+    return this.admin.holdReferralRewardTaxReview(user.id, rewardId, body);
+  }
+
+  @Post('referrals/rewards/:id/tax-review-reject')
+  rejectReferralRewardTaxReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardTaxDecisionDto,
+  ) {
+    return this.admin.rejectReferralRewardTaxReview(user.id, rewardId, body);
   }
 
   @Post('referrals/rewards/:id/cashout-paid')

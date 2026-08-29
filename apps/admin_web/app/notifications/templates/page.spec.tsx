@@ -175,6 +175,13 @@ describe('NotificationTemplatesPage', () => {
     expect(globalCss).toContain('color: #fff');
   });
 
+  it('keeps the 1440px catalog filters inside the fixed desktop column', () => {
+    expect(globalCss).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+    expect(globalCss).toContain('.notification-template-catalog-filters > *');
+    expect(globalCss).toMatch(/\.notification-template-catalog\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;/s);
+    expect(globalCss).toMatch(/\.notification-template-search\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;/s);
+  });
+
   it('gates browser-only error and conflict fixtures outside production', () => {
     expect(fixtureSource).toContain("process.env.NODE_ENV === 'production'");
     expect(fixtureSource).toContain("process.env.NOTIFICATION_TEMPLATE_BROWSER_FIXTURES_ENABLED !== '1'");

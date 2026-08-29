@@ -5,7 +5,8 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminErrorState, AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
@@ -45,13 +46,17 @@ export type PartnerDetailFastOverviewLink = {
 
 type PartnerDetailFastOverviewSectionProps = {
   readonly accountControlsHref: string;
+  readonly actionIssueCount: number;
   readonly actionItems: readonly PartnerDetailFastActionItem[];
   readonly activityItems: readonly PartnerDetailFastActivityItem[];
   readonly chatHref: string;
   readonly currentStatus: string;
   readonly fullHref: string;
+  readonly operationalPolicyAvailable?: boolean;
+  readonly operationalPolicyFailureStatus?: number | null;
   readonly partnerName: string;
   readonly phone?: string | null;
+  readonly policyRetryHref?: string;
   readonly subtitle: string;
   readonly workItems: readonly PartnerDetailFastWorkItem[];
   readonly workspaceLinks: readonly PartnerDetailFastOverviewLink[];
@@ -59,17 +64,23 @@ type PartnerDetailFastOverviewSectionProps = {
 
 export function PartnerDetailFastOverviewSection({
   accountControlsHref,
+  actionIssueCount,
   actionItems,
   activityItems,
   chatHref,
   currentStatus,
   fullHref,
+  operationalPolicyAvailable = true,
+  operationalPolicyFailureStatus,
   partnerName,
   phone,
+  policyRetryHref,
   subtitle,
   workItems,
   workspaceLinks,
 }: PartnerDetailFastOverviewSectionProps) {
+  const hiddenActionIssueCount = Math.max(0, actionIssueCount - actionItems.length);
+
   return (
     <AdminPageTemplate
       actions={
@@ -101,12 +112,20 @@ export function PartnerDetailFastOverviewSection({
     >
       <AdminSection
         actions={
-          <StatusBadgeFromPillClass pillClass={actionItems.some((item) => item.tone === 'pill-danger') ? 'pill-danger' : actionItems.length ? 'pill-warn' : 'pill-success'}>
-            {actionItems.length ? `${actionItems.length} open` : 'No action'}
+          <StatusBadgeFromPillClass
+            pillClass={
+              actionItems.some((item) => item.tone === 'pill-danger')
+                ? 'pill-danger'
+                : actionItems.length
+                  ? 'pill-warn'
+                  : 'pill-success'
+            }
+          >
+            {actionIssueCount ? `${actionIssueCount} open` : 'No action'}
           </StatusBadgeFromPillClass>
         }
         className="partner-fast-command-section"
-        description="Only unresolved issues that have an operator path are shown. The list is capped at five items without an internal vertical scroll."
+        description="Only unresolved root issues that have an operator path are counted. The top five are shown without an internal vertical scroll."
         id="partner-action-required"
         title="Action required"
       >
@@ -129,10 +148,22 @@ export function PartnerDetailFastOverviewSection({
                 </div>
                 <div className="partner-fast-action-next">
                   <span>Next action</span>
-                  {item.href ? <AdminFormControlLink href={item.href}>{item.nextAction}</AdminFormControlLink> : <strong>{item.nextAction}</strong>}
+                  {item.href ? (
+                    <AdminFormControlLink href={item.href}>{item.nextAction}</AdminFormControlLink>
+                  ) : (
+                    <strong>{item.nextAction}</strong>
+                  )}
                 </div>
               </div>
             ))}
+            {hiddenActionIssueCount ? (
+              <div className="button-row admin-mt-12">
+                <span>
+                  {`+${hiddenActionIssueCount} more ${hiddenActionIssueCount === 1 ? 'issue' : 'issues'}`}
+                </span>
+                <AdminFormControlLink href={fullHref}>Review all issues</AdminFormControlLink>
+              </div>
+            ) : null}
           </div>
         ) : (
           <AdminEmptyState framed message="No Partner issue needs operator action." title={null} />
@@ -145,15 +176,37 @@ export function PartnerDetailFastOverviewSection({
         id="partner-can-work-now"
         title="Can work now?"
       >
-        <div className="partner-fast-work-grid">
-          {workItems.map((item) => (
-            <a className="partner-fast-work-card" href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <StatusBadgeFromPillClass pillClass={item.tone}>{item.status}</StatusBadgeFromPillClass>
-              <p>{item.detail}</p>
-            </a>
-          ))}
-        </div>
+        {operationalPolicyAvailable ? (
+          <div className="partner-fast-work-grid">
+            {workItems.map((item) => (
+              <a className="partner-fast-work-card" href={item.href} key={item.label}>
+                <span>{item.label}</span>
+                <StatusBadgeFromPillClass pillClass={item.tone}>{item.status}</StatusBadgeFromPillClass>
+                <p>{item.detail}</p>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <AdminErrorState
+            action={
+              operationalPolicyFailureStatus === 401 ||
+              operationalPolicyFailureStatus === 403 ||
+              !policyRetryHref ? null : (
+                <AdminTextLink href={policyRetryHref}>Retry policy data</AdminTextLink>
+              )
+            }
+            message={
+              operationalPolicyFailureStatus === 401 || operationalPolicyFailureStatus === 403
+                ? 'You do not have permission to load the operational policy used for matching and readiness decisions. Pause matching and readiness decisions.'
+                : 'Operational policy data could not be loaded. Pause matching and readiness decisions, then retry.'
+            }
+            title={
+              operationalPolicyFailureStatus === 401 || operationalPolicyFailureStatus === 403
+                ? 'Operational policy restricted'
+                : 'Operational policy unavailable'
+            }
+          />
+        )}
       </AdminSection>
 
       <div className="partner-fast-secondary-grid">

@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGetResult } from '../../../lib/admin-api';
-import GeneralLedgerPage from './page';
+import GeneralLedgerPage, { metadata } from './page';
 
 vi.mock('../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
@@ -63,12 +63,59 @@ describe('GeneralLedgerPage', () => {
     expect(source).not.toContain('metrics={[');
   });
 
+  it('keeps primary filters first and secondary controls in a closed advanced disclosure', async () => {
+    const page = await GeneralLedgerPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+    const searchIndex = source.indexOf('label="Search journal batches"');
+    const queueIndex = source.indexOf('label="Integrity queue"');
+    const rangeIndex = source.indexOf('label="Posted range"');
+    const applyIndex = source.indexOf('>Apply</AdminFormControlButton>');
+    const advancedIndex = source.indexOf('ariaLabel="Advanced journal filters"');
+
+    expect(searchIndex).toBeGreaterThan(-1);
+    expect(searchIndex).toBeLessThan(queueIndex);
+    expect(queueIndex).toBeLessThan(rangeIndex);
+    expect(rangeIndex).toBeLessThan(applyIndex);
+    expect(applyIndex).toBeLessThan(advancedIndex);
+    expect(markup).toContain('class="admin-disclosure general-ledger-advanced-filters"');
+    expect(markup).not.toMatch(/<details[^>]*general-ledger-advanced-filters[^>]*open=""/);
+  });
+
+  it('summarizes active advanced filters while their controls remain collapsed', async () => {
+    const page = await GeneralLedgerPage({
+      searchParams: Promise.resolve({
+        period: '2026-07',
+        range: 'all',
+        review: 'all',
+        sort: 'largest-discrepancy',
+        source: 'BOOKING_SETTLEMENT_REVERSAL',
+        take: '25',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Source: Settlement reversal');
+    expect(markup).toContain('Period: 2026-07');
+    expect(markup).toContain('Sort: Largest discrepancy');
+    expect(markup).toContain('Rows: 25');
+  });
+
+  it('sets the root-templated browser title without duplicating the Admin suffix', () => {
+    expect(metadata).toEqual({ title: 'Journal Batches' });
+  });
+
   it('defaults to a bounded needs-action queue while keeping period overview metrics stable', async () => {
     const requests: string[] = [];
     mockedAdminGetResult.mockImplementation(async (href, fallback) => {
       requests.push(href);
       if (href === '/admin/accounting-journal-batches/summary?range=today&review=all') {
         return { data: summary, ok: true, status: 200 };
+      }
+      if (
+        href ===
+        '/admin/accounting-journal-batches/summary?range=today&review=all&source=BOOKING_SETTLEMENT_REVERSAL'
+      ) {
+        return { data: { ...summary, count: 41 }, ok: true, status: 200 };
       }
       if (href.includes('/summary?')) {
         return { data: { ...summary, count: 3 }, ok: true, status: 200 };
@@ -81,11 +128,16 @@ describe('GeneralLedgerPage', () => {
 
     expect(requests).toContain('/admin/accounting-journal-batches/summary?range=today&review=needs-action');
     expect(requests).toContain('/admin/accounting-journal-batches/summary?range=today&review=all');
+    expect(requests).toContain(
+      '/admin/accounting-journal-batches/summary?range=today&review=all&source=BOOKING_SETTLEMENT_REVERSAL',
+    );
     expect(requests).toContain('/admin/accounting-journal-batches?range=today&take=10&review=needs-action');
     expect(markup).toContain('Needs action');
     expect(markup).toContain('Blocked integrity');
     expect(markup).toContain('110.000 VND');
     expect(markup).toContain('Draft batches');
+    expect(markup).toContain('Settlement reversals (41)');
+    expect(markup).toContain('href="/finance-tax/general-ledger?range=today&amp;review=unknown"');
     expect(markup).toContain('2 batch(es) are not posted');
     expect(markup).toContain('<option value="all">All records</option>');
     expect(markup).toContain('href="/finance-tax/general-ledger?range=today&amp;review=needs-action">Reset</a>');
@@ -94,6 +146,37 @@ describe('GeneralLedgerPage', () => {
     expect(source).toContain("'payment-clearing'");
     expect(source).toContain("'bank-reconciliation'");
     expect(source).toContain("'monthly-tax-closing'");
+  });
+
+  it('describes reversed review as batch lifecycle status rather than settlement reversal activity', () => {
+    expect(source).toContain('batch lifecycle status');
+    expect(source).not.toContain('Historical reversal journals');
+  });
+
+  it('keeps posted lifecycle results informational and states filtered integrity warnings', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/accounting-journal-batches/summary?range=all&review=posted') {
+        return {
+          data: { ...summary, blockedCount: 1, count: 10, unknownCount: 2 },
+          ok: true,
+          status: 200,
+        };
+      }
+      if (href.includes('/summary?')) {
+        return { data: summary, ok: true, status: 200 };
+      }
+      return { data: fallback, ok: true, status: 200 };
+    });
+
+    const page = await GeneralLedgerPage({
+      searchParams: Promise.resolve({ range: 'all', review: 'posted' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Posted records');
+    expect(markup).toContain('10 batch(es) · 3 integrity warning(s)');
+    expect(markup).toContain('pill pill-info');
+    expect(source).not.toContain("if (review === 'posted') return 'success' as const;");
   });
 
   it('applies search only to the paginated queue and keeps compact integrity rows', async () => {
@@ -180,6 +263,12 @@ describe('GeneralLedgerPage', () => {
     expect(markup).toContain('Formula <span class="money-text money-text-positive">12.000 VND</span>');
     expect(markup).toContain('/finance-tax/general-ledger/journal-42?returnTo=');
     expect(markup).toContain('Clear search');
+    expect(markup).toContain(
+      'href="/finance-tax/general-ledger?range=30d&amp;review=unbalanced&amp;take=25">Clear search</a>',
+    );
+    expect(markup).toContain(
+      'href="/finance-tax/general-ledger?range=today&amp;review=needs-action">Reset</a>',
+    );
     expect(markup).not.toContain('Customer phone');
     expect(markup).not.toContain('Partner phone');
   });

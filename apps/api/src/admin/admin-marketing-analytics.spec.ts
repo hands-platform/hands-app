@@ -14,6 +14,7 @@ import {
   buildMarketingSpendCoverage,
   canonicalMarketingCampaignKey,
   emptyMarketingStats,
+  marketingPaidScopeExpected,
   normalizeAdminMarketingRange,
   normalizeMarketingFunnelCohort,
   normalizeMarketingPlatform,
@@ -334,6 +335,118 @@ describe('admin marketing analytics helpers', () => {
       },
     ]);
   });
+
+  it.each([
+    ['no attribution, spend, or filter', null, null, [], 0, false],
+    ['organic-only attribution', null, null, [{ source: 'organic' }], 0, false],
+    ['referral-only attribution', null, null, [{ source: 'referral' }], 0, false],
+    ['unknown-only attribution', null, null, [{ source: 'unknown' }], 0, false],
+    ['an explicit paid source filter', 'meta', null, [], 0, true],
+    ['an explicit campaign filter', null, 'launch-hcm', [], 0, true],
+    ['paid attribution evidence', null, null, [{ source: 'google' }], 0, true],
+    ['campaign attribution evidence', null, null, [{ campaignId: 'launch-hcm', source: 'organic' }], 0, true],
+    ['a spend ledger row', null, null, [], 1, true],
+  ] as const)(
+    'sets paid tracking expected=%s for %s',
+    (_label, sourceFilter, campaignIdFilter, attributionRows, spendRowCount, expected) => {
+      expect(
+        marketingPaidScopeExpected({
+          attributionRows,
+          campaignIdFilter,
+          sourceFilter,
+          spendRowCount,
+        }),
+      ).toBe(expected);
+    },
+  );
+
+  it('does not create spend actions when paid tracking is not expected', () => {
+    const totals = withMarketingRates(emptyMarketingStats());
+    const attributionQuality = buildMarketingAttributionQuality([]);
+    const spendCoverage = buildMarketingSpendCoverage({
+      window: adminMarketingRangeWindow('7d', now),
+      recordedDates: [],
+      totalSpendAmount: null,
+      now,
+      paidScopeExpected: false,
+    });
+    const readiness = buildMarketingDecisionReadiness({ attributionQuality, spendCoverage, totals });
+    const actions = buildMarketingActionSummary({
+      attributionQuality,
+      campaignEfficiency: [],
+      comparison: buildMarketingComparison(totals, totals, 'Previous 7 days'),
+      readiness,
+      spendCoverage,
+      totals,
+      generatedAt: now,
+    });
+
+    expect(spendCoverage).toMatchObject({
+      expectedDayCount: 0,
+      status: 'COMPLETE',
+      trackingExpected: false,
+    });
+    expect(readiness.reasons).not.toEqual(
+      expect.arrayContaining(['NO_SPEND_EVIDENCE', 'INCOMPLETE_SPEND_DAYS']),
+    );
+    expect(actions.items.some((action) => action.key === 'spend-coverage-gap')).toBe(false);
+  });
+
+  it.each([
+    [0, 0, false],
+    [1, 1, false],
+    [2, 1, false],
+    [3, 1, true],
+    [4, 1, true],
+    [4, 0, false],
+  ])(
+    'evaluates cancellation action for %i created and %i cancelled bookings',
+    (bookingCreated, bookingCancelled, expectedAction) => {
+      const totals = withMarketingRates({
+        ...emptyMarketingStats(),
+        firstOpens: bookingCreated,
+        signups: bookingCreated,
+        addressSaves: bookingCreated,
+        bookingCreated,
+        bookingCancelled,
+      });
+      const attributionQuality = buildMarketingAttributionQuality([
+        { source: 'organic', stats: { firstOpens: bookingCreated, signups: bookingCreated } },
+      ]);
+      const spendCoverage = buildMarketingSpendCoverage({
+        window: adminMarketingRangeWindow('7d', now),
+        recordedDates: [],
+        totalSpendAmount: null,
+        now,
+        paidScopeExpected: false,
+      });
+      const readiness = buildMarketingDecisionReadiness({ attributionQuality, spendCoverage, totals });
+      const actions = buildMarketingActionSummary({
+        attributionQuality,
+        campaignEfficiency: [],
+        comparison: buildMarketingComparison(totals, totals, 'Previous 7 days'),
+        readiness,
+        spendCoverage,
+        totals,
+        generatedAt: now,
+      });
+      const cancellationAction = actions.items.find((action) => action.key === 'cohort-cancellation-rate');
+
+      expect(Boolean(cancellationAction)).toBe(expectedAction);
+      expect(actions.thresholdVersion).toBe('marketing-risk-v2');
+      if (bookingCreated === 4 && bookingCancelled === 1) {
+        expect(cancellationAction).toMatchObject({
+          detail: '1 cancelled of 4 created bookings · Cancellation rate 25%',
+          observedValue: 25,
+        });
+      }
+      if (bookingCreated === 1) {
+        expect(buildMarketingInsights(totals, [])).toContain(
+          'Insufficient sample: 1 booking. Cancellation evidence is not promoted to an action.',
+        );
+      }
+    },
+  );
 
   it('distinguishes missing spend evidence from an explicit zero ledger row', () => {
     const window = adminMarketingRangeWindow('today', now);

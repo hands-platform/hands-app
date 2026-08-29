@@ -2,6 +2,7 @@ import { Body, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
 
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { assertShiftHandoffLaunchEnabled } from '../common/launch-features';
 import {
   AdminAuditCorrectionDto,
   CreateOperationsShiftHandoffDto,
@@ -128,24 +129,28 @@ export class AdminGovernanceRoutes extends AdminCouponRoutes {
     @Query('targetPrefix') targetPrefix?: string,
     @Query('bucket') bucket?: string,
   ) {
-    return this.admin.exportAuditLogs(user.id, {
-      actorType,
-      area,
-      bucket,
-      correlationId,
-      eventId,
-      from,
-      objectType,
-      outcome,
-      q,
-      range,
-      requestId,
-      severity,
-      sort,
-      targetPrefix,
-      to,
-      view,
-    }, format);
+    return this.admin.exportAuditLogs(
+      user.id,
+      {
+        actorType,
+        area,
+        bucket,
+        correlationId,
+        eventId,
+        from,
+        objectType,
+        outcome,
+        q,
+        range,
+        requestId,
+        severity,
+        sort,
+        targetPrefix,
+        to,
+        view,
+      },
+      format,
+    );
   }
 
   @Get('operations-handoff/activity')
@@ -175,6 +180,7 @@ export class AdminGovernanceRoutes extends AdminCouponRoutes {
 
   @Post('operations-handoff/note')
   addOperationsHandoffNote(@CurrentUser() user: AuthenticatedUser, @Body() body: OperationsHandoffNoteDto) {
+    assertShiftHandoffLaunchEnabled();
     return this.admin.addOperationsHandoffNote(user.id, body);
   }
 
@@ -225,11 +231,13 @@ export class AdminGovernanceRoutes extends AdminCouponRoutes {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: CreateOperationsShiftHandoffDto,
   ) {
+    assertShiftHandoffLaunchEnabled();
     return this.admin.createOperationsShiftHandoff(user.id, body);
   }
 
   @Post('operations-handoff/shift/:id/acknowledge')
   acknowledgeOperationsShiftHandoff(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    assertShiftHandoffLaunchEnabled();
     return this.admin.acknowledgeOperationsShiftHandoff(user.id, id);
   }
 

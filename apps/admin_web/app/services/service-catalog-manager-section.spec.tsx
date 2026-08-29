@@ -5,6 +5,7 @@ import { ServiceCatalogManagerSection } from './service-catalog-manager-section'
 const sectionSource = readFileSync(new URL('./service-catalog-manager-section.tsx', import.meta.url), 'utf8');
 const editorSource = readFileSync(new URL('./service-catalog-editor-form.tsx', import.meta.url), 'utf8');
 const drawerSource = readFileSync(new URL('./service-catalog-drawer-shell.tsx', import.meta.url), 'utf8');
+const refreshSource = readFileSync(new URL('./service-catalog-refresh-button.tsx', import.meta.url), 'utf8');
 
 describe('ServiceCatalogManagerSection', () => {
   it('uses shared Vuexy badge atoms for service catalog labels', () => {
@@ -28,11 +29,38 @@ describe('ServiceCatalogManagerSection', () => {
     expect(css).toContain('.service-catalog-manager-card > .admin-section-header {');
     expect(css).toContain('.service-catalog-manager-card > .admin-section-header .button');
     expect(css).toContain('.service-catalog-health-strip {');
+    expect(sectionSource.indexOf('label="Public anomalies"')).toBeLessThan(
+      sectionSource.indexOf('label="Live service groups"'),
+    );
+    expect(sectionSource).toContain('priority="primary"');
+    expect(sectionSource).toContain('valueKind="evidence"');
+    expect(css).toContain('.service-catalog-health-fact.is-value-evidence dd {');
+    expect(sectionSource).toContain("tone={health.anomalyCount ? 'danger' : 'neutral'}");
     expect(css).toContain('.service-catalog-page .service-catalog-table {');
     expect(css).toMatch(/\.service-catalog-page \.service-catalog-table \{[^}]*table-layout: fixed;/s);
+    expect(css).toMatch(/\.service-catalog-page \.service-catalog-table \{[^}]*min-width: 1080px;/s);
     expect(css).toContain('.service-catalog-identity-cell {');
+    expect(css).toMatch(
+      /\.service-catalog-page \.table\.vuexy-data-table\.service-catalog-table th,[\s\S]*?padding-left: 8px;[\s\S]*?padding-right: 8px;/,
+    );
+    expect(css).toMatch(
+      /\.service-catalog-table th:nth-child\(1\),[\s\S]*?min-width: 175px;[\s\S]*?width: 175px;/,
+    );
+    expect(css).toMatch(
+      /\.service-catalog-table th:nth-child\(5\),[\s\S]*?min-width: 165px;[\s\S]*?width: 165px;/,
+    );
+    expect(css).toMatch(
+      /\.service-catalog-identity-cell strong,[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: normal;/,
+    );
     expect(css).toContain('.service-catalog-cell-stack {');
-    expect(css).toMatch(/\.service-menu-dialog > div \{[^}]*grid-template-rows: auto minmax\(0, 1fr\);/s);
+    expect(css).toMatch(
+      /\.service-menu-dialog > \.service-menu-dialog-shell \{[^}]*grid-template-rows: auto minmax\(0, 1fr\);/s,
+    );
+    expect(drawerSource).toContain('className="service-menu-dialog-shell"');
+    expect(sectionSource).toContain('returnFocusHref="/services?dialog=new"');
+    expect(editorSource).toContain('useAdminModalFocus(dialogRef, onCancel, returnFocusRef)');
+    expect(editorSource).toContain('data-service-catalog-review-intent="PUBLISH"');
+    expect(editorSource).toContain('if (currentTrigger?.isConnected) currentTrigger.focus({ preventScroll: true })');
     expect(sectionSource).toContain('className="service-catalog-cell-stack service-catalog-price-cell-content"');
     expect(css).not.toContain('.service-menu-card h3');
     expect(css).not.toContain('.service-menu-card-grid {');
@@ -43,6 +71,7 @@ describe('ServiceCatalogManagerSection', () => {
   });
 
   it('keeps the manager actions and service editor on shared AdminForm atoms', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
     const section = ServiceCatalogManagerSection({
       dataAvailable: true,
       dialogMode: null,
@@ -88,7 +117,7 @@ describe('ServiceCatalogManagerSection', () => {
     expect(classNames).not.toContain('card admin-filter-panel service-catalog-manager-card');
     expect(classNames).toContain('ops-section-header admin-section-header');
     expect(classNames).toContain('admin-form-control-link button button-primary');
-    expect(classNames).toContain('admin-form-control-link button button-secondary');
+    expect(refreshSource).toContain('className="button-secondary"');
     expect(classNames).toContain('admin-form-control-link button button-secondary service-table-action');
     expect(sectionSource).toContain('ServiceCatalogDrawerShell');
     expect(drawerSource).toContain('AdminDrawerSurface');
@@ -107,6 +136,9 @@ describe('ServiceCatalogManagerSection', () => {
     expect(editorSource).toContain('publishBlockers.length');
     expect(editorSource).toContain('prepareMutation');
     expect(editorSource).toContain('CatalogConfirmationDialog');
+    expect(editorSource).toContain('CatalogPublishChangeSet');
+    expect(editorSource).toContain('Gross HANDS fee');
+    expect(editorSource).toContain('No monetary change');
     expect(editorSource).toContain('Partner payout cannot exceed customer price.');
     expect(editorSource).toContain('disabled={pending || pricingConflict}');
     expect(editorSource).toContain('disabled={pending || publishBlockers.length > 0}');
@@ -127,6 +159,12 @@ describe('ServiceCatalogManagerSection', () => {
     expect(sectionSource).not.toContain('<aside\n        aria-label={title}\n        aria-modal="true"');
     expect(sectionSource).not.toContain('<div className="card admin-card service-menu-duration-panel');
     expect(sectionSource).not.toContain('<div className="service-menu-card-header">');
+    expect(css).toMatch(
+      /\.service-catalog-review-delta dd \{[^}]*overflow-wrap: anywhere;/s,
+    );
+    expect(css).toMatch(/\.service-menu-dialog-footer \{[^}]*position: sticky;/s);
+    expect(css).toMatch(/\.service-menu-dialog-footer \.button \{[^}]*white-space: nowrap;/s);
+    expect(css).toMatch(/\.service-menu-dialog \.calendar-drawer-body \{[^}]*scroll-padding-bottom: 160px;/s);
   });
 
   it('shows a recovery notice instead of an empty drawer for an invalid group deep link', () => {
@@ -157,6 +195,34 @@ describe('ServiceCatalogManagerSection', () => {
     expect(textContent(section)).not.toContain('Customer app projection healthy');
   });
 
+  it('renders exact scoped evidence without exposing a full audit link by default', () => {
+    const section = ServiceCatalogManagerSection({
+      dataAvailable: true,
+      dialogMode: null,
+      editGroup: null,
+      evidence: {
+        groupKey: 'aroma_massage',
+        items: [
+          {
+            action: 'service_catalog.published',
+            actor: { email: 'operator@hands.vn', fullName: 'Service Operator' },
+            createdAt: '2026-08-28T03:00:00.000Z',
+            id: 'audit-service-1',
+            target: 'service_group:aroma_massage',
+          },
+        ],
+        target: 'service_group:aroma_massage',
+      },
+      evidenceGroupKey: 'aroma_massage',
+      groups: [],
+      health: healthFixture(),
+    });
+
+    expect(textContent(section)).toContain('Service change evidence');
+    expect(textContent(section)).toContain('Service Operator');
+    expect(textContent(section)).not.toContain('Open full audit log');
+  });
+
   it('uses the shared empty-state atom when no service menus are registered', () => {
     const section = ServiceCatalogManagerSection({
       dataAvailable: true,
@@ -180,6 +246,8 @@ function healthFixture(overrides: Partial<{
   historicalPayoutRuleCount: number;
   lastPublishedAt: string | null;
   lastPublishedById: string | null;
+  lastPublishedByLabel: string;
+  lastPublishedEvidenceId: string | null;
   liveEnViReadyGroupCount: number;
   liveGroupCount: number;
   liveOptionCount: number;
@@ -194,7 +262,10 @@ function healthFixture(overrides: Partial<{
     historicalPayoutRuleCount: 0,
     lastPublishedAt: null,
     lastPublishedById: null,
+    lastPublishedByLabel: 'No publication recorded',
+    lastPublishedEvidenceId: null,
     lastPublishedGroupKey: null,
+    lastPublishedProvenance: 'NONE' as const,
     liveEnViReadyGroupCount: 0,
     liveGroupCount: 0,
     liveOptionCount: 0,
@@ -239,6 +310,12 @@ function classNamesIn(value: unknown): string[] {
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
+  if (
+    typeof record?.type === 'function' &&
+    record.type.name === 'ServiceCatalogRefreshButton'
+  ) {
+    return value;
+  }
   return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 

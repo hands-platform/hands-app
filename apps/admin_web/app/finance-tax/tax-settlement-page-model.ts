@@ -51,6 +51,7 @@ export type BookingSettlementReview =
   | 'cash'
   | 'non-cash'
   | 'payment-fee-evidence'
+  | 'platform-vat-evidence'
   | 'reversal-incomplete'
   | 'tax-evidence'
   | 'unknown';
@@ -62,6 +63,7 @@ export type BookingSettlementAuditReason =
   | 'clearing'
   | 'bank-match'
   | 'fee-policy'
+  | 'platform-vat'
   | 'coupon'
   | 'tax-period'
   | 'reversal'
@@ -73,6 +75,8 @@ export type FinanceAccountingReview =
   | 'unresolved'
   | 'needs-action'
   | 'unbalanced'
+  | 'unknown'
+  | 'unassigned-period'
   | 'draft'
   | 'posted'
   | 'reversed'
@@ -202,6 +206,12 @@ export type FinancePayoutPriorityLink = {
   readonly helper: string;
   readonly href: string;
   readonly signal: string;
+  readonly stage?:
+    | 'Blocks before REVIEWED'
+    | 'Blocks before DECLARED'
+    | 'Blocks before PAID'
+    | 'Blocks before CLOSED'
+    | 'Review only';
 };
 
 export const TAX_SETTLEMENT_DEFAULT_TAKE = 10;
@@ -229,6 +239,7 @@ const BOOKING_SETTLEMENT_REVIEW_VALUES: readonly BookingSettlementReview[] = [
   'cash',
   'non-cash',
   'payment-fee-evidence',
+  'platform-vat-evidence',
   'reversal-incomplete',
   'tax-evidence',
   'unknown',
@@ -242,6 +253,8 @@ const FINANCE_ACCOUNTING_REVIEW_VALUES: readonly FinanceAccountingReview[] = [
   'unresolved',
   'needs-action',
   'unbalanced',
+  'unknown',
+  'unassigned-period',
   'draft',
   'posted',
   'reversed',
@@ -276,8 +289,9 @@ export const BOOKING_SETTLEMENT_AUDIT_REVIEW_LINKS: readonly {
 }[] = [
   { label: 'Integrity exceptions', review: 'integrity-exceptions' },
   { label: 'Payment evidence', review: 'payment-evidence' },
+  { label: 'Platform VAT evidence', review: 'platform-vat-evidence' },
   { label: 'Tax workflow', review: 'tax-workflow' },
-  { label: 'Reversals', review: 'reversals' },
+  { label: 'All reversal signals', review: 'reversals' },
   { label: 'Resolved', review: 'resolved' },
   { label: 'All records', review: 'all' },
 ];
@@ -286,15 +300,15 @@ export const COUPON_FINANCE_REVIEW_LINKS: readonly {
   readonly label: string;
   readonly review: BookingSettlementReview;
 }[] = [
-  { label: 'Coupon review flags', review: 'coupon-review' },
+  { label: 'Needs review', review: 'coupon-review' },
   { label: 'Tax open', review: 'open' },
   { label: 'Declared', review: 'declared' },
   { label: 'Paid', review: 'paid' },
   { label: 'Posted records', review: 'posted' },
-  { label: 'Reversed records', review: 'reversed' },
+  { label: 'Reversed / corrected', review: 'reversed' },
   { label: 'Cash', review: 'cash' },
   { label: 'Non-cash', review: 'non-cash' },
-  { label: 'All records', review: 'all' },
+  { label: 'All coupon records', review: 'all' },
 ];
 
 export const SETTLEMENT_REVERSAL_REVIEW_LINKS: readonly {
@@ -313,9 +327,11 @@ export const GENERAL_LEDGER_REVIEW_LINKS: readonly {
 }[] = [
   { label: 'Needs action', review: 'needs-action' },
   { label: 'Blocked integrity', review: 'unbalanced' },
+  { label: 'Evidence unknown', review: 'unknown' },
+  { label: 'Unassigned period', review: 'unassigned-period' },
   { label: 'Draft batches', review: 'draft' },
   { label: 'Posted records', review: 'posted' },
-  { label: 'Reversed records', review: 'reversed' },
+  { label: 'Reversed batch status', review: 'reversed' },
   { label: 'All records', review: 'all' },
 ];
 
@@ -393,7 +409,7 @@ export function readCouponFinanceFilters(
     ...filters,
     review: COUPON_FINANCE_REVIEW_VALUES.includes(review as BookingSettlementReview)
       ? (review as BookingSettlementReview)
-      : filters.review,
+      : 'coupon-review',
   };
 }
 
@@ -781,8 +797,24 @@ export function bookingSettlementReversalHref(filters: BookingSettlementFilters)
   return `/finance-tax/settlement-reversals?${params.toString()}`;
 }
 
-export function bookingSettlementReversalDetailHref(id: string) {
-  return `/finance-tax/settlement-reversals/${encodeURIComponent(id)}`;
+export function bookingSettlementReversalDetailHref(id: string, returnTo?: string) {
+  const href = `/finance-tax/settlement-reversals/${encodeURIComponent(id)}`;
+  return returnTo ? `${href}?${new URLSearchParams({ returnTo }).toString()}` : href;
+}
+
+export function safeBookingSettlementReversalReturnTo(value: string | null | undefined) {
+  const fallback = bookingSettlementReversalHref({ page: 1, range: '30d', review: 'all', take: 25 });
+  if (!value || value.startsWith('//') || value.includes('\\')) return fallback;
+  try {
+    if (decodeURIComponent(value).includes('\\')) return fallback;
+    const url = new URL(value, 'http://hands.local');
+    if (url.origin !== 'http://hands.local' || url.pathname !== '/finance-tax/settlement-reversals') {
+      return fallback;
+    }
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
 }
 
 export function buildBookingSettlementReversalTraceLinks(
@@ -852,13 +884,20 @@ export function buildBookingSettlementReversalTraceLinks(
 }
 
 export function buildBookingSettlementReversalEvidenceState(
-  reversal: Pick<AdminBookingSettlementReversalEntry, 'accountingJournalBatches' | 'paymentClearingEntries'>,
+  reversal: Pick<
+    AdminBookingSettlementReversalEntry,
+    'accountingJournalBatches' | 'paymentClearingEntries' | 'reversalEvidence'
+  >,
 ): BookingSettlementReversalEvidenceState {
   const journal = reversal.accountingJournalBatches?.[0] ?? null;
   const clearing = reversal.paymentClearingEntries?.[0] ?? null;
+  const decision = reversal.reversalEvidence;
   const journalStatus = journal?.status ?? 'missing';
-  const clearingStatus = clearing?.status ?? 'missing';
-  const detail = `Journal ${formatEvidenceStatus(journalStatus)} · Clearing ${formatEvidenceStatus(clearingStatus)}`;
+  const integrityStatus = journal?.integrity?.state ?? 'unavailable';
+  const ledgerStatus = decision?.ledgerState ?? 'unavailable';
+  const clearingStatus = decision?.clearingState ?? (clearing ? 'unavailable' : 'missing');
+  const bankStatus = decision?.bankMatchState ?? 'unavailable';
+  const detail = `Journal ${formatEvidenceStatus(journalStatus)} · Integrity ${formatEvidenceStatus(integrityStatus)} · Ledger ${formatEvidenceStatus(ledgerStatus)} · Clearing ${formatEvidenceStatus(clearingStatus)} · Bank ${formatEvidenceStatus(bankStatus)}`;
 
   if (!journal && !clearing) {
     return {
@@ -874,33 +913,64 @@ export function buildBookingSettlementReversalEvidenceState(
       tone: 'danger',
     };
   }
-  if (!clearing) {
+  if (!journal.integrity) {
     return {
       detail,
-      label: 'Missing clearing',
+      label: 'Journal integrity unavailable',
+      tone: 'warning',
+    };
+  }
+  if (journal.integrity.state === 'BLOCKED') {
+    return {
+      detail,
+      label: 'Journal blocked',
       tone: 'danger',
     };
   }
-  if (journal.status !== 'POSTED') {
+  if (journal.integrity.state === 'UNKNOWN') {
     return {
       detail,
-      label: 'Journal pending',
+      label: 'Journal evidence unknown',
       tone: 'warning',
     };
   }
-  if (clearing.status === 'OPEN') {
+  if (!decision) {
     return {
       detail,
-      label: 'Clearing open',
+      label: 'Reversal evidence unavailable',
       tone: 'warning',
     };
   }
-  if (clearing.status === 'PARTIALLY_CLEARED') {
+  if (decision.ledgerState === 'FAIL') {
     return {
       detail,
-      label: 'Clearing partial',
+      label:
+        decision.policy.ledgerType === 'CUSTOMER_WALLET_REFUND'
+          ? 'Missing wallet refund evidence'
+          : 'Missing cash receivable evidence',
+      tone: 'danger',
+    };
+  }
+  if (decision.clearingState === 'FAIL') {
+    const clearingMissing = decision.blockerCodes.includes('REVERSAL_CLEARING_MISSING');
+    return {
+      detail,
+      label: clearingMissing ? 'Missing clearing' : 'Clearing mismatch',
+      tone: 'danger',
+    };
+  }
+  if (decision.bankMatchState === 'FAIL') {
+    return {
+      detail,
+      label: 'Bank match incomplete',
       tone: 'warning',
     };
+  }
+  if (decision.state === 'UNKNOWN') {
+    return { detail, label: 'Reversal evidence unknown', tone: 'warning' };
+  }
+  if (decision.state === 'FAIL' || journal.status !== 'POSTED') {
+    return { detail, label: 'Evidence blocked', tone: 'danger' };
   }
   return {
     detail,
@@ -1074,9 +1144,7 @@ function appendPaymentClearingAge(href: string, filters: FinanceAccountingFilter
 
 export function couponFinanceHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({ range: filters.range });
-  if (filters.review !== 'all') {
-    params.set('review', filters.review);
-  }
+  params.set('review', filters.review);
   appendBookingSettlementPeriod(params, filters);
   appendBookingSettlementQueryAndSort(params, filters);
   if (filters.returnTo) params.set('returnTo', filters.returnTo);
@@ -1154,7 +1222,7 @@ export function buildTaxFinanceWorkflowLinks({
     },
     {
       key: 'settlement-reversals',
-      label: 'Settlement reversals',
+      label: 'Closed-period reversals',
       href: bookingSettlementReversalHref(settlementFilters),
     },
     {
@@ -1581,15 +1649,23 @@ export function emptyCouponFinanceSummary(): AdminCouponFinanceSummary {
   return {
     bookingServiceAmount: 0,
     companyCouponExpense: 0,
+    couponActivityCount: 0,
+    couponCorrectionCount: 0,
     couponDiscountAmount: 0,
     couponReviewFlagCount: 0,
     couponSettlementCount: 0,
     currency: 'VND',
     customerPaidAmount: 0,
+    netCompanyCouponExpense: 0,
+    netCouponDiscountAmount: 0,
+    netPartnerFundedCouponAmount: 0,
+    netPlatformFeeDiscountAmount: 0,
     partnerFundedCouponAmount: 0,
     platformFeeDiscountAmount: 0,
     reversedCompanyCouponExpense: 0,
     reversedCouponDiscountAmount: 0,
+    reversedPartnerFundedCouponAmount: 0,
+    reversedPlatformFeeDiscountAmount: 0,
     settlementBaseAmount: 0,
   };
 }
@@ -1607,6 +1683,7 @@ export function emptyPartnerWithholdingTaxSummary(
     partnerVatWithheldTotal: 0,
     partnerPitWithheldTotal: 0,
     totalPartnerTaxWithheld: 0,
+    evidenceBreakdown: [],
   };
 }
 
@@ -1656,6 +1733,7 @@ export function emptyMonthlyTaxClosingSummary(
     partnerWithholdingTotal: 0,
     paymentProcessingFeeTotal: 0,
     paymentFeeReviewFlagCount: 0,
+    platformVatReviewFlagCount: 0,
     partnerDepositReconciliationOpenCount: 0,
     partnerDepositReconciliationOpenAmount: 0,
     payoutBankOutflowReconciliationOpenCount: 0,
@@ -1760,13 +1838,15 @@ export function buildMonthlyTaxClosingRiskLinks(
       amountSuffix: null,
       count: summary.journalReconciliationIssueCount,
       label: 'Journal reconciliation',
-      helper: 'Posted journal batches with blocked header, entry, formula, or period integrity prevent monthly close advancement.',
+      helper:
+        'Posted journal batches with blocked header, entry, formula, or period integrity prevent monthly close advancement.',
       href: `/finance-tax/general-ledger?${new URLSearchParams({
         q: closingFilters.period,
         range: 'all',
         review: 'unbalanced',
       }).toString()}`,
       signal: 'Journal blocker',
+      stage: 'Blocks before REVIEWED',
     },
     {
       key: 'open-tax-rows',
@@ -1786,6 +1866,7 @@ export function buildMonthlyTaxClosingRiskLinks(
         sort: 'oldest',
       }),
       signal: 'Tax review',
+      stage: 'Review only',
     },
     {
       key: 'coupon-review-flags',
@@ -1804,6 +1885,7 @@ export function buildMonthlyTaxClosingRiskLinks(
         sort: 'oldest',
       }),
       signal: 'Coupon review',
+      stage: 'Review only',
     },
     {
       key: 'payment-fee-review-flags',
@@ -1823,6 +1905,27 @@ export function buildMonthlyTaxClosingRiskLinks(
         sort: 'oldest',
       }),
       signal: 'Fee policy review',
+      stage: 'Blocks before DECLARED',
+    },
+    {
+      key: 'platform-vat-review-flags',
+      amount: null,
+      currency: null,
+      amountSuffix: null,
+      count: summary.platformVatReviewFlagCount,
+      label: 'Platform VAT evidence',
+      helper: `${summary.platformVatReviewFlagCount} settlement row(s) have unexplained zero VAT or unavailable retained VAT evidence and block declaration.`,
+      href: bookingSettlementAuditHref({
+        ...settlementFilters,
+        page: 1,
+        period: closingFilters.period,
+        range: 'all',
+        returnTo,
+        review: 'platform-vat-evidence',
+        sort: 'oldest',
+      }),
+      signal: 'VAT evidence review',
+      stage: 'Blocks before DECLARED',
     },
     {
       key: 'partner-deposit-reconciliation',
@@ -1839,6 +1942,7 @@ export function buildMonthlyTaxClosingRiskLinks(
         sort: 'oldest',
       }).toString()}`,
       signal: 'Bank evidence',
+      stage: 'Blocks before DECLARED',
     },
     {
       key: 'payout-bank-outflow-reconciliation',
@@ -1861,6 +1965,7 @@ export function buildMonthlyTaxClosingRiskLinks(
         workspace: 'operations',
       }),
       signal: 'Payout evidence',
+      stage: 'Blocks before DECLARED',
     },
     {
       key: 'payout-return-inflow-reconciliation',
@@ -1883,6 +1988,7 @@ export function buildMonthlyTaxClosingRiskLinks(
         workspace: 'operations',
       }),
       signal: 'Return evidence',
+      stage: 'Blocks before DECLARED',
     },
     {
       key: 'cash-debt-gate',
@@ -1898,6 +2004,7 @@ export function buildMonthlyTaxClosingRiskLinks(
         returnTo,
       }).toString()}`,
       signal: 'Cash debt',
+      stage: 'Review only',
     },
     {
       key: 'reconciliation-deltas',
@@ -1909,6 +2016,7 @@ export function buildMonthlyTaxClosingRiskLinks(
       helper: 'Formula and net revenue deltas must be 0 before declaration or final closeout.',
       href: monthlyTaxClosingHref({ ...closingFilters, page: 1 }),
       signal: 'Formula check',
+      stage: 'Blocks before REVIEWED',
     },
   ];
 }
@@ -1950,6 +2058,12 @@ export function resolveMonthlyTaxClosingPreflight(
       blockers.push({
         code: 'PAYMENT_FEE_EVIDENCE',
         message: `${summary.paymentFeeReviewFlagCount} settlement(s) still need resolved payment fee policy evidence.`,
+      });
+    }
+    if (summary.platformVatReviewFlagCount > 0) {
+      blockers.push({
+        code: 'PLATFORM_VAT_EVIDENCE',
+        message: `${summary.platformVatReviewFlagCount} settlement(s) have unexplained or unavailable platform VAT evidence.`,
       });
     }
     if (summary.partnerDepositReconciliationOpenCount > 0) {
@@ -2019,6 +2133,7 @@ function monthlyTaxClosingPreflightBaseLink(
     PAYOUT_BANK_OUTFLOW_RECONCILIATION: 'payout-bank-outflow-reconciliation',
     PAYOUT_RETURN_INFLOW_RECONCILIATION: 'payout-return-inflow-reconciliation',
     PAYMENT_FEE_EVIDENCE: 'payment-fee-review-flags',
+    PLATFORM_VAT_EVIDENCE: 'platform-vat-review-flags',
     POSTED_JOURNAL_DELTA: 'journal-reconciliation-issues',
     RECONCILIATION_DELTA: 'reconciliation-deltas',
   };
@@ -2042,6 +2157,7 @@ function monthlyTaxClosingPreflightBaseLink(
       key: 'negative-withholding',
       label: 'Partner withholding balance',
       signal: 'Reversal review',
+      stage: 'Blocks before CLOSED',
     };
   }
   if (code === 'REMITTANCE_EVIDENCE') {
@@ -2055,6 +2171,7 @@ function monthlyTaxClosingPreflightBaseLink(
       key: 'remittance-evidence',
       label: 'Remittance evidence',
       signal: 'Final close evidence',
+      stage: 'Blocks before CLOSED',
     };
   }
 
@@ -2071,6 +2188,7 @@ function monthlyTaxClosingPreflightBaseLink(
     key: 'remittance-journal',
     label: 'Withholding remittance journal',
     signal: code === 'REMITTANCE_AMOUNT_MISMATCH' ? 'Amount mismatch' : 'Journal required',
+    stage: 'Blocks before CLOSED',
   };
 }
 
@@ -2227,6 +2345,7 @@ export function emptyPlatformVatSummary(period = normalizeTaxPeriod('')): AdminP
     platformFeeNetRevenueTotal: 0,
     companyOutputVatTotal: 0,
     netRevenueDelta: 0,
+    evidenceBreakdown: [],
     rateBreakdown: [],
   };
 }
@@ -2238,8 +2357,33 @@ export function buildMonthlyTaxCloseoutCommandState(summary: AdminMonthlyTaxClos
   readonly value: string;
 } {
   const transferRef = summary.remittanceMetadata?.transferRef;
+  const periodState = summary.periodState ?? summary.status;
 
-  if (summary.status === 'CLOSED') {
+  if (periodState === 'FUTURE_PERIOD') {
+    return {
+      detail: 'Future period — monitoring not started. No closeout result is available yet.',
+      scope: 'Monitoring not started',
+      tone: 'neutral',
+      value: 'Future period',
+    };
+  }
+  if (periodState === 'NOT_STARTED' && summary.hasActivity === false) {
+    return {
+      detail: 'No activity — no close record. No settlement, reversal, or reconciliation activity exists.',
+      scope: 'No close record',
+      tone: 'neutral',
+      value: 'No activity',
+    };
+  }
+  if (periodState === 'NOT_STARTED' || periodState === 'DRAFT') {
+    return {
+      detail: 'Period activity exists. Review the tax registers and booking settlement evidence before declaration.',
+      scope: 'Needs review',
+      tone: 'warning',
+      value: 'Review totals',
+    };
+  }
+  if (periodState === 'CLOSED') {
     return {
       detail: transferRef
         ? `Closed with tax payment evidence ${transferRef}.`
@@ -2249,7 +2393,7 @@ export function buildMonthlyTaxCloseoutCommandState(summary: AdminMonthlyTaxClos
       value: 'Closed',
     };
   }
-  if (summary.status === 'PAID') {
+  if (periodState === 'PAID') {
     return {
       detail: transferRef
         ? `Payment evidence ${transferRef} is recorded. Close the monthly period after final review.`
@@ -2259,7 +2403,7 @@ export function buildMonthlyTaxCloseoutCommandState(summary: AdminMonthlyTaxClos
       value: 'Close period',
     };
   }
-  if (summary.status === 'DECLARED') {
+  if (periodState === 'DECLARED') {
     return {
       detail: 'The declaration is submitted. Record remittance and its evidence next.',
       scope: 'Needs action',
@@ -2267,7 +2411,7 @@ export function buildMonthlyTaxCloseoutCommandState(summary: AdminMonthlyTaxClos
       value: 'Record payment',
     };
   }
-  if (summary.status === 'REVIEWED') {
+  if (periodState === 'REVIEWED') {
     return {
       detail: 'The totals are reviewed. Submit the declaration before recording payment.',
       scope: 'Needs action',
@@ -2275,7 +2419,7 @@ export function buildMonthlyTaxCloseoutCommandState(summary: AdminMonthlyTaxClos
       value: 'Declare',
     };
   }
-  if (summary.status === 'REVERSED') {
+  if (periodState === 'REVERSED') {
     return {
       detail: 'The closing was reversed. Review reversal evidence before starting closeout again.',
       scope: 'Needs action',
@@ -2284,11 +2428,10 @@ export function buildMonthlyTaxCloseoutCommandState(summary: AdminMonthlyTaxClos
     };
   }
   return {
-    detail: 'Review the tax registers and booking settlement evidence before declaration.',
+    detail: 'No direct tax closeout action is available for this period state.',
     scope: 'Needs action',
-    tone: summary.companyOutputVatTotal + summary.partnerWithholdingTotal > 0 ? 'warning' : 'neutral',
-    value:
-      summary.companyOutputVatTotal + summary.partnerWithholdingTotal > 0 ? 'Review totals' : 'No tax due',
+    tone: 'neutral',
+    value: String(periodState).replaceAll('_', ' '),
   };
 }
 
@@ -2533,6 +2676,10 @@ function buildPartnerWithholdingTaxRowsCsvRows(rows: readonly AdminPartnerWithho
     partner_vat_withheld_total: row.partnerVatWithheldTotal,
     partner_pit_withheld_total: row.partnerPitWithheldTotal,
     total_partner_tax_withheld: row.totalPartnerTaxWithheld,
+    withholding_evidence_status: row.withholdingEvidenceStatus,
+    complete_evidence_count: row.completeEvidenceCount,
+    explicit_zero_evidence_count: row.explicitZeroEvidenceCount,
+    missing_evidence_count: row.missingEvidenceCount,
   }));
 }
 
@@ -2656,11 +2803,15 @@ function buildBookingSettlementSnapshotRowsCsvRows(
   },
 ) {
   return rows.map((row) => {
-    const health = row.settlementAuditHealth as AdminBookingSettlementSnapshot['settlementAuditHealth'] | undefined;
-    const metadata = row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
-      ? row.metadata as Record<string, unknown>
-      : null;
-    const companyCouponExpense = health?.allocation.companyCouponExpense ?? finiteCsvNumber(metadata?.companyCouponExpense);
+    const health = row.settlementAuditHealth as
+      | AdminBookingSettlementSnapshot['settlementAuditHealth']
+      | undefined;
+    const metadata =
+      row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : null;
+    const companyCouponExpense =
+      health?.allocation.companyCouponExpense ?? finiteCsvNumber(metadata?.companyCouponExpense);
     return {
       generated_at: context?.generatedAt ?? '',
       timezone: context?.timezone ?? '',
@@ -2956,6 +3107,10 @@ const PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS = [
   'partner_vat_withheld_total',
   'partner_pit_withheld_total',
   'total_partner_tax_withheld',
+  'withholding_evidence_status',
+  'complete_evidence_count',
+  'explicit_zero_evidence_count',
+  'missing_evidence_count',
 ];
 
 export const BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS = [
@@ -3125,6 +3280,8 @@ function bookingSettlementAuditLegacyFilters(value: string): {
       return { reason: 'clearing', review: 'payment-evidence' };
     case 'payment-fee-evidence':
       return { reason: 'fee-policy', review: 'payment-evidence' };
+    case 'platform-vat-evidence':
+      return { reason: 'platform-vat', review: 'platform-vat-evidence' };
     case 'tax-evidence':
       return { review: 'tax-workflow' };
     case 'tax-open':
@@ -3161,6 +3318,7 @@ function normalizeBookingSettlementAuditReason(value: string): BookingSettlement
     'clearing',
     'bank-match',
     'fee-policy',
+    'platform-vat',
     'coupon',
     'tax-period',
     'reversal',
@@ -3237,9 +3395,7 @@ function normalizeAccountingJournalSourceType(value: string) {
 }
 
 function normalizeFinanceAccountingWorkspace(value: string) {
-  return value === 'imports' || value === 'manual' || value === 'operations'
-    ? value
-    : undefined;
+  return value === 'imports' || value === 'manual' || value === 'operations' ? value : undefined;
 }
 
 export function safeFinanceTaxOverviewReturnTo(value: string | null | undefined) {

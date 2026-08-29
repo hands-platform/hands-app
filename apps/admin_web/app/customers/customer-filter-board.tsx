@@ -238,7 +238,7 @@ const customerDateFieldOptions = [
 ] as const;
 
 const customerSortOptions = [
-  { label: 'Newest first', value: 'newest' },
+  { label: 'Newest customers', value: 'newest' },
   { label: 'Customer name', value: 'name' },
   { label: 'Most bookings', value: 'booking-count' },
 ] as const;

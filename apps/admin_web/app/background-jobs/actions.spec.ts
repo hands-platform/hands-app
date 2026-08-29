@@ -50,6 +50,30 @@ describe('background job review actions', () => {
     );
     expect(mockedRedirect).toHaveBeenCalledWith('/background-jobs?notice=resolved');
   });
+
+  it('preserves an internal filtered return scope after review', async () => {
+    const formData = form({
+      jobId: 'payment-failure-1',
+      queueName: 'payment-status-check',
+      returnTo: '/background-jobs?queue=payment-status-check&range=7D&review=OPEN&page=2',
+    });
+
+    await acknowledgeBackgroundJobFailure(formData);
+
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/background-jobs?queue=payment-status-check&range=7D&review=OPEN&page=2&notice=acknowledged',
+    );
+  });
+
+  it('rejects external or lookalike return paths', async () => {
+    await acknowledgeBackgroundJobFailure(form({
+      jobId: 'payment-failure-1',
+      queueName: 'payment-status-check',
+      returnTo: '//evil.example/background-jobs?review=OPEN',
+    }));
+
+    expect(mockedRedirect).toHaveBeenCalledWith('/background-jobs?notice=acknowledged');
+  });
 });
 
 function form(values: Record<string, string>) {

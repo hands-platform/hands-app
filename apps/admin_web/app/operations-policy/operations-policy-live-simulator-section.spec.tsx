@@ -129,6 +129,36 @@ describe('OperationsPolicyLiveSimulatorSection', () => {
     expect(rendered).not.toContain('Candidate preview');
   });
 
+  it('labels demo and incomplete Supply evidence as inconclusive', () => {
+    const demo = normalizedTextContent(OperationsPolicyLiveSimulatorSection({
+      compact: true,
+      preview: preview('DEMO_PREVIEW_ONLY', {
+        reference: {
+          bookingId: null,
+          bookingStatus: null,
+          kind: 'DEMO',
+          label: 'Ho Chi Minh City demo reference',
+          lat: 10.7769,
+          lng: 106.7009,
+          observedAt: null,
+          serviceId: null,
+        },
+      }),
+      refreshHref: '/operations-policy?details=matching&matching=supply',
+      variant: 'supply',
+    }));
+    const incomplete = normalizedTextContent(OperationsPolicyLiveSimulatorSection({
+      compact: true,
+      preview: preview('INCOMPLETE_EVIDENCE'),
+      refreshHref: '/operations-policy?details=matching&matching=supply',
+      variant: 'supply',
+    }));
+
+    expect(demo).toContain('Inconclusive · demo reference');
+    expect(demo).not.toContain('Blocked · no eligible Partner supply');
+    expect(incomplete).toContain('Inconclusive · incomplete evidence');
+  });
+
   it('shows the first production blocker and its exact recovery action', () => {
     const section = OperationsPolicyLiveSimulatorSection({
       preview: preview('BLOCKED_NO_ELIGIBLE_SUPPLY', {
@@ -148,6 +178,55 @@ describe('OperationsPolicyLiveSimulatorSection', () => {
     expect(rendered).toContain('Primary blocker');
     expect(rendered).toContain('Fresh dispatch location blocks dispatch');
     expect(hrefsIn(section)).toContain('/partner-controls?details=controls&review=location');
+  });
+
+  it('keeps the blocker conclusion but hides booking and Partner links without detail permissions', () => {
+    const section = OperationsPolicyLiveSimulatorSection({
+      canOpenBookingEvidence: false,
+      canOpenPartnerEvidence: false,
+      preview: preview('BLOCKED_NO_ELIGIBLE_SUPPLY', {
+        primaryBlocker: {
+          actionHref: '/partner-controls?details=controls&review=location',
+          actionLabel: 'Review Partner locations',
+          code: 'fresh-location',
+          detail: '5 Partner records were excluded at this production gate.',
+          title: 'Fresh dispatch location blocks dispatch',
+        },
+      }),
+      refreshHref: '/operations-policy?details=matching&matching=simulation',
+    });
+    const rendered = normalizedTextContent(section);
+
+    expect(rendered).toContain('Fresh dispatch location blocks dispatch');
+    expect(rendered).not.toContain('Review Partner locations');
+    expect(hrefsIn(section)).not.toContain('/partner-controls?details=controls&review=location');
+  });
+
+  it('shows only the top three non-zero stage blockers in compact Supply view', () => {
+    const rendered = normalizedTextContent(OperationsPolicyLiveSimulatorSection({
+      compact: true,
+      preview: preview('BLOCKED_NO_ELIGIBLE_SUPPLY', {
+        stages: [
+          { actionHref: null, actionLabel: null, code: 'evaluated', excludedCount: 0, label: 'Evaluated', passedCount: 50 },
+          { actionHref: null, actionLabel: null, code: 'online', excludedCount: 10, label: 'Online', passedCount: 40 },
+          { actionHref: null, actionLabel: null, code: 'account', excludedCount: 0, label: 'Account', passedCount: 40 },
+          { actionHref: null, actionLabel: null, code: 'identity', excludedCount: 8, label: 'Identity', passedCount: 32 },
+          { actionHref: null, actionLabel: null, code: 'service', excludedCount: 7, label: 'Service', passedCount: 25 },
+          { actionHref: null, actionLabel: null, code: 'location', excludedCount: 6, label: 'Location', passedCount: 19 },
+        ],
+      }),
+      refreshHref: '/operations-policy?details=matching&matching=supply',
+      variant: 'supply',
+    }));
+
+    expect(rendered).toContain('Top matching blockers');
+    expect(rendered).toContain('Top 3');
+    expect(rendered).toContain('Online 10');
+    expect(rendered).toContain('Identity 8');
+    expect(rendered).toContain('Service 7');
+    expect(rendered).not.toContain('Account 0');
+    expect(rendered).not.toContain('Location 6');
+    expect(rendered).toContain('do not combine them into a total supply count');
   });
 
   it('does not claim global no-supply for incomplete evidence', () => {

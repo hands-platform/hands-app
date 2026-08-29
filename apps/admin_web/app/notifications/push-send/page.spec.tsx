@@ -28,6 +28,8 @@ describe('PushSendPage', () => {
     expect(markup).toContain('Write and preview');
     expect(markup).toContain('Confirm and queue');
     expect(markup).toContain('No campaigns in this history range.');
+    expect(markup).toContain('inspect recipient delivery evidence');
+    expect(markup).not.toContain('inspect Partner delivery evidence');
   });
 
   it('does not infer a zero summary when the summary API is unavailable', async () => {
@@ -53,6 +55,8 @@ describe('PushSendPage', () => {
     expect(composerSource).toContain('Type SEND ${preview.eligibleUsers} to confirm');
     expect(composerSource).toContain('Queue push campaign for');
     expect(composerSource).toContain('Delivery has not completed yet');
+    expect(composerSource).toContain('AdminReauthenticateOperatorForm');
+    expect(actionSource).toContain("apiErrorCode(error.payload) === 'RECENT_REAUTH_REQUIRED'");
   });
 
   it('offers only ID-less mobile destinations and locks Partner copy to Vietnamese', () => {
@@ -72,5 +76,15 @@ describe('PushSendPage', () => {
     expect(actionSource).toContain("message.includes('consumed')");
     expect(composerSource).toContain('confirmSuccess || receiptBlocked');
     expect(composerSource).toContain('confirmationPhrase.trim() === `SEND ${preview.eligibleUsers}`');
+  });
+
+  it('canonicalizes Push history beyond the supported offset and explains the boundary', () => {
+    const pageSource = readFileSync('app/notifications/push-send/page.tsx', 'utf8');
+    expect(pageSource).toContain('campaignPage > PUSH_CAMPAIGN_MAX_PAGE');
+    expect(pageSource).toContain('buildPushCampaignPageHref(PUSH_CAMPAIGN_MAX_PAGE, params)');
+    expect(pageSource).toContain('summaryResult.ok && campaignPage > totalPages');
+    expect(pageSource).toContain('buildPushCampaignPageHref(totalPages, params)');
+    expect(pageSource).toContain('Older campaigns are beyond this browsing boundary.');
+    expect(pageSource).toContain('Math.min(PUSH_CAMPAIGN_MAX_PAGE');
   });
 });

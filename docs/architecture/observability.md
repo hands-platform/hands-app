@@ -47,6 +47,27 @@ The API adds or forwards `x-request-id` for every HTTP request.
 
 Nginx forwards its `$request_id` to API and Admin Web upstreams.
 
+## Settlement Repair Dry-Run Fan-Out
+
+`booking_settlement_gap_dry_run_fanout` is emitted for every Historical Settlement Repair dry-run, including failed attempts. It records the track, evaluated count, candidate query count, preview call/batch count, candidate/preview/total duration, truncation, status, and a failure stage without logging booking IDs or financial evidence.
+
+Collect a seven-day production window and build the decision report with the existing Compose diagnostics path:
+
+```powershell
+npm.cmd run logs:collect -- -Since 168h
+node infra/scripts/settlement-dry-run-fanout-report.mjs logs/diagnostics-YYYYMMDD-HHMMSS/api.log
+```
+
+The report groups samples by track and evaluated-count bucket, then returns p50/p95/p99 latency, error and truncation rates, candidate query counts, preview calls, and one decision:
+
+- `INSUFFICIENT_SAMPLES`: fewer than 20 successful samples; keep collecting.
+- `INVESTIGATE_FAILURES`: at least one failed dry-run; resolve the failure before a performance redesign.
+- `INVESTIGATE_QUERY_REGRESSION`: candidate query count is no longer the expected two queries.
+- `REVIEW_BULK_API`: at least 20 successful samples and p95 exceeds 1,000 ms; review a separate bulk preview API contract.
+- `KEEP_CURRENT_FANOUT`: enough successful samples, no failures/query regression, and p95 is within budget.
+
+Use a fresh seven-day window after deploying the event contract. Rolling-deploy legacy success events are accepted by the parser, but older code did not emit failed attempts and therefore cannot provide a trustworthy historical error rate.
+
 ## Security Headers And Rate Limit Signals
 
 The API sets basic security headers:

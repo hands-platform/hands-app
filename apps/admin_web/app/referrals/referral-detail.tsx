@@ -35,11 +35,14 @@ import {
 import { referralShareUrl, referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
 import {
   approveReferralRewardCashout,
+  approveReferralRewardTaxReview,
   creditReferralReward,
   holdReferralReward,
+  holdReferralRewardTaxReview,
   markReferralRewardCashoutPaid,
   releaseHeldReferralReward,
   requireReferralRewardTaxReview,
+  rejectReferralRewardTaxReview,
   reverseReferralReward,
 } from './actions';
 import { ReferralStoreSetupStatus } from './referral-store-setup-status';
@@ -48,6 +51,7 @@ type ReferralParentDetailPageProps =
   | {
       readonly audience: 'customer';
       readonly canViewDeveloperSetup?: boolean;
+      readonly canReviewTax?: boolean;
       readonly actionNotice?: ReferralDetailNotice;
       readonly actionReason?: string;
       readonly highlightRewardId?: string;
@@ -56,6 +60,7 @@ type ReferralParentDetailPageProps =
   | {
       readonly audience: 'partner';
       readonly canViewDeveloperSetup?: boolean;
+      readonly canReviewTax?: boolean;
       readonly actionNotice?: ReferralDetailNotice;
       readonly actionReason?: string;
       readonly highlightRewardId?: string;
@@ -302,6 +307,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   />
                 </td>
                 <td className="referral-reward-ledger-evidence-cell">
+                  <div className="referral-reward-cell-content">
                   <ReferralQualifyingBookingCell bookingId={reward.qualifyingBookingId} />
                   <span className={reward.evidence?.ready || isReferralRewardCredited(reward) ? 'muted' : 'text-danger'}>
                     {referralRewardEvidenceSummary(reward)}
@@ -312,19 +318,25 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                     <span className="muted">Reward {shortId(reward.id)}</span>
                     {reward.walletLedgerReference ? <span className="muted">Ledger {shortId(reward.walletLedgerReference)}</span> : null}
                   </AdminDisclosure>
+                  </div>
                 </td>
                 <td className="referral-reward-ledger-value-cell">
+                  <div className="referral-reward-cell-content">
                   <strong><MoneyText amount={reward.amount} currency={reward.currency} fallback="0 VND" /></strong>
                   <StatusBadge tone={rewardStatusTone(reward.status)}>{rewardStatusLabel(reward.status)}</StatusBadge>
                   <ReferralRewardCalculationSnapshot reward={reward} />
+                  </div>
                 </td>
                 <td className="referral-reward-ledger-decision-cell">
+                  <div className="referral-reward-cell-content">
                   <ReferralCreditStateCell reward={reward} />
+                  </div>
                 </td>
                 <td className="referral-reward-ledger-action-cell">
                   <ReferralRewardActions
                     actionReason={props.highlightRewardId === reward.id ? props.actionReason : undefined}
                     audience={props.audience}
+                    canReviewTax={props.canReviewTax ?? false}
                     parentId={props.row.referrer.id}
                     reward={reward}
                   />
@@ -465,17 +477,39 @@ function ReferralAttributionRewardCell({
 function ReferralRewardActions({
   actionReason,
   audience,
+  canReviewTax,
   parentId,
   reward,
 }: {
   readonly actionReason?: string;
   readonly audience: ReferralAudienceSlug;
+  readonly canReviewTax: boolean;
   readonly parentId: string;
   readonly reward: AdminReferralReward;
 }) {
+  if (
+    audience === 'customer' &&
+    reward.status.startsWith('CASHOUT_')
+  ) {
+    return (
+      <AdminInlineNotice tone="warning">
+        <strong>Unavailable in wallet-only MVP</strong>
+        <span>Legacy cashout row · read-only investigation</span>
+      </AdminInlineNotice>
+    );
+  }
+  if (reward.status === 'TAX_REVIEW_REQUIRED' && !canReviewTax) {
+    return (
+      <AdminInlineNotice tone="warning">
+        <strong>FINANCE_TAX access required</strong>
+        <span>Tax approval, hold, and cashout rejection are read-only for your access.</span>
+      </AdminInlineNotice>
+    );
+  }
   const canApproveCashout = reward.status === 'CASHOUT_REQUESTED';
   const canMarkCashoutPaid = reward.status === 'CASHOUT_APPROVED';
   const canRequireTaxReview = reward.status === 'CASHOUT_REQUESTED' || reward.status === 'CASHOUT_APPROVED';
+  const canDecideTaxReview = reward.status === 'TAX_REVIEW_REQUIRED';
   const evidenceBlocked = reward.evidence?.ready !== true;
   const fixtureBlocked = reward.isFixture === true;
 
@@ -487,13 +521,14 @@ function ReferralRewardActions({
     (hasWalletLedger && reward.status === 'CREDITED') ||
     (!hasWalletLedger &&
       (reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD'));
-  if (!canHold && !canCredit && !canReleaseHold && !canReverse && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
+  if (!canHold && !canCredit && !canReleaseHold && !canReverse && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview && !canDecideTaxReview) {
     return <AdminInlineFallback>No action</AdminInlineFallback>;
   }
 
   const actions = referralRewardActionItems({
     canApproveCashout,
     canCredit,
+    canDecideTaxReview,
     canHold,
     canMarkCashoutPaid,
     canReleaseHold,
@@ -541,6 +576,13 @@ function ReferralRewardActions({
           <span>{reward.qualifyingBookingId ? `Booking: ${reward.qualifyingBookingId}` : 'Booking evidence unavailable'}</span>
           <span>{referralRewardActionImpact(reward)}</span>
         </div>
+        {canDecideTaxReview ? (
+          <AdminInlineNotice tone="info">
+            {audience === 'customer'
+              ? 'Customer cash payout remains unavailable after tax approval. Rejecting cashout returns the reward to CREDITED and keeps the existing wallet ledger.'
+              : 'Tax approval captures the current approved Partner bank destination. Rejecting cashout returns the reward to CREDITED and keeps the existing wallet ledger.'}
+          </AdminInlineNotice>
+        ) : null}
         {fixtureBlocked ? (
           <AdminInlineNotice role="alert" tone="danger">
             TEST FIXTURE · wallet actions disabled. Test fixture rewards cannot change wallet or reward state.
@@ -613,6 +655,7 @@ function referralRewardEvidenceSummary(reward: AdminReferralReward) {
 function referralRewardActionItems({
   canApproveCashout,
   canCredit,
+  canDecideTaxReview,
   canHold,
   canMarkCashoutPaid,
   canReleaseHold,
@@ -623,6 +666,7 @@ function referralRewardActionItems({
 }: {
   readonly canApproveCashout: boolean;
   readonly canCredit: boolean;
+  readonly canDecideTaxReview: boolean;
   readonly canHold: boolean;
   readonly canMarkCashoutPaid: boolean;
   readonly canReleaseHold: boolean;
@@ -632,6 +676,18 @@ function referralRewardActionItems({
   readonly fixtureBlocked: boolean;
 }): ReferralRewardActionForm[] {
   const actions: ReferralRewardActionForm[] = [];
+
+  if (canDecideTaxReview) {
+    actions.push(
+      { action: approveReferralRewardTaxReview, disabled: fixtureBlocked, label: 'Approve tax review' },
+      { action: holdReferralRewardTaxReview, disabled: fixtureBlocked, label: 'Keep in tax review' },
+      {
+        action: rejectReferralRewardTaxReview,
+        disabled: fixtureBlocked,
+        label: 'Reject cashout; retain wallet reward',
+      },
+    );
+  }
 
   if (canApproveCashout) {
     actions.push({

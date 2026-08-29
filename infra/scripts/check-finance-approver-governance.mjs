@@ -1,6 +1,14 @@
-import { AdminUserProvenance, PrismaClient, Role } from '@prisma/client';
+import { AdminUserProvenance, PrismaClient } from '@prisma/client';
+import { readFileSync } from 'node:fs';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
+
+const governanceContract = JSON.parse(
+  readFileSync(
+    new URL('../../apps/api/src/admin/finance-approver-governance-contract.json', import.meta.url),
+    'utf8',
+  ),
+);
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const releaseMode = process.argv.includes('--release');
@@ -26,7 +34,13 @@ if (!process.env.DATABASE_URL) {
 const prisma = new PrismaClient();
 try {
   const highPrivilegeWhere = {
-    roles: { hasSome: [Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
+    roles: { hasSome: governanceContract.highPrivilegeRoles },
+  };
+  const releaseBlockingWhere = {
+    ...highPrivilegeWhere,
+    OR: governanceContract.releaseBlockingProvenances.map((provenance) => ({
+      adminUserProvenance: provenance,
+    })),
   };
   const [
     highPrivilegeTotal,
@@ -56,13 +70,7 @@ try {
           id: true,
           roles: true,
         },
-        where: {
-          ...highPrivilegeWhere,
-          OR: [
-            { adminUserProvenance: AdminUserProvenance.FIXTURE },
-            { adminUserProvenance: null },
-          ],
-        },
+        where: releaseBlockingWhere,
       }),
     ]);
   const productionViolationCount = fixtureCount + unknownCount;

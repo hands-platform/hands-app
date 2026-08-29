@@ -1,4 +1,5 @@
 import { Bell } from 'lucide-react';
+import { redirect } from 'next/navigation';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
@@ -22,6 +23,7 @@ import {
 import { AppSessionsCheckQueueSection, type SessionCheckQueueItem } from './app-sessions-check-queue-section';
 import {
   buildAppSessionApiHref,
+  buildAppSessionCanonicalPageHref,
   buildAppSessionServerPagination,
   buildAppSessionSummaryApiHref,
   buildSessionFilters,
@@ -70,6 +72,10 @@ export default async function AppSessionsPage({
   const sessions = sessionsResult.data;
   const serverSummary = summaryResult.data;
   const dataAvailable = sessionsResult.ok && summaryResult.ok && serverSummary !== null;
+  const canonicalPageHref = dataAvailable
+    ? buildAppSessionCanonicalPageHref(filters, serverSummary.totalCount)
+    : null;
+  if (canonicalPageHref) redirect(canonicalPageHref);
   const hasSessionData = dataAvailable && (serverSummary.totalCount > 0 || sessions.length > 0);
   const summary = buildSessionSummary(sessions, serverSummary);
   const roleRows = buildRoleRows(sessions);
@@ -78,6 +84,8 @@ export default async function AppSessionsPage({
   const checkRows = buildSessionCheckRows(sessions);
   const commandCards = buildSessionCommandCards(sessions, checkRows);
   const sessionRows = buildAppSessionTableRows(sessions);
+  const datasetComplete = dataAvailable && serverSummary.totalCount <= sessions.length;
+  const derivedScopeLabel = datasetComplete ? undefined : 'Current page' as const;
   const sessionPagination = buildAppSessionServerPagination(
     sessionRows,
     filters,
@@ -139,15 +147,25 @@ export default async function AppSessionsPage({
             </AdminNoticeCard>
           ) : (
             <>
-              <AppSessionsCommandBoardSection cards={commandCards} checkCount={checkRows.length} />
+              {datasetComplete ? (
+                <AppSessionsCommandBoardSection cards={commandCards} checkCount={checkRows.length} />
+              ) : (
+                <AdminNoticeCard tone="info">
+                  <AdminSectionHeader
+                    description="Operational conclusions are withheld because command cards would be derived only from the rows loaded on this page. The filtered totals above remain global."
+                    title={`Current page sample — ${sessions.length} of ${serverSummary.totalCount}`}
+                  />
+                </AdminNoticeCard>
+              )}
 
               <AppSessionsBreakdownSection
                 platformRows={platformRows}
                 roleRows={roleRows}
+                scopeLabel={derivedScopeLabel}
                 versionRows={versionRows}
               />
 
-              <AppSessionsCheckQueueSection items={checkRows} />
+              <AppSessionsCheckQueueSection items={checkRows} scopeLabel={derivedScopeLabel} />
 
               <AdminTableSection
                 description="Sorted by last heartbeat. Live means the session expiry is still in the future."
@@ -237,7 +255,7 @@ function buildSessionSummary(
     ['Recent sessions', String(serverSummary?.recent ?? recent), 'Seen in the last 30 minutes but not live now.'],
     ['Stale sessions', String(serverSummary?.stale ?? stale), 'Seen within 24 hours but outside the recent window.'],
     ['Expired sessions', String(serverSummary?.expired ?? expired), 'Older than the operational freshness window.'],
-    ['Loaded sessions', String(loadedTotal), `${loadedLive} live session(s) in this filtered summary.`],
+    ['Filtered records', String(loadedTotal), `${loadedLive} live session(s) in this filtered summary.`],
   ];
 }
 

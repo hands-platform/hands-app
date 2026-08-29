@@ -4,7 +4,7 @@ import { PartnerDetailBookingEvidenceBundlesSection } from './partner-detail-boo
 
 describe('PartnerDetailBookingEvidenceBundlesSection', () => {
   it('fits the five operational columns inside the 1024px Partner workspace', () => {
-    const css = readFileSync('app/globals.css', 'utf8');
+    const css = readFileSync('app/globals.css', 'utf8').replace(/\r\n?/g, '\n');
 
     expect(css).toContain('.partner-detail-page #partner-booking-evidence-bundles .admin-data-table {');
     expect(css).toContain('table-layout: fixed;');

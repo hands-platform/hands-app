@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional, UnauthorizedException } from '@nestjs/com
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
+import { adminAuditCanonicalCreateData } from '../admin/admin-audit-event-registry';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { AuthenticatedUser } from './auth.types';
@@ -61,7 +62,7 @@ const ADMIN_WEB_API_TOKEN_TYPE = 'admin-web-api';
 const ADMIN_WEB_API_TOKEN_AUDIENCE = 'hands-api';
 const ADMIN_WEB_API_TOKEN_SCOPE = 'admin:api';
 const SUPABASE_MOBILE_ROLES = new Set<Role>([Role.CUSTOMER, Role.PROVIDER]);
-const DEFAULT_ADMIN_WEB_SESSION_IDLE_TIMEOUT_SECONDS = 30 * 60;
+const DEFAULT_ADMIN_WEB_SESSION_IDLE_TIMEOUT_SECONDS = 2 * 60 * 60;
 const ADMIN_AUTHENTICATION_DENIAL_AUDIT_WINDOW_MS = 60_000;
 
 @Injectable()
@@ -380,14 +381,16 @@ export class AuthTokenService {
     if (!(await this.shouldRecordAdminAuthenticationDenial(authProvider, sessionId, reason))) return;
     try {
       await this.prisma.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId: null,
+          actorType: 'SERVICE',
           action: authProvider === 'admin-realtime'
             ? 'admin_operator.realtime.authentication_denied'
             : 'admin_operator.rest.authentication_denied',
+          source: 'admin_auth_token',
           target: `admin_web_session:${sessionId}`,
           metadata: { authProvider, reason, sessionId },
-        },
+        }),
       });
     } catch {
       this.logger.warn('Could not record Admin authentication denial');

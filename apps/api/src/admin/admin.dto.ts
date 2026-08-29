@@ -37,6 +37,7 @@ import {
   CompanyBankAccountStatus,
   CompanyBankTransactionType,
   MonthlyTaxClosingStatus,
+  NotificationDeliveryIncidentResolutionCode,
   PayoutBatchStatus,
   PaymentFeePayer,
   PaymentFeeRuleType,
@@ -53,6 +54,7 @@ import {
   Role,
 } from '@prisma/client';
 import { ADMIN_POST_MATCH_CANCELLATION_REASON_CODES } from './admin-booking-list-query';
+import { SERVICE_CATALOG_DISPLAY_ORDER_MAX } from './admin-service-input';
 
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -251,6 +253,8 @@ class ServiceCatalogGroupDurationDto {
 
   @Transform(({ value }) => numberString(value))
   @IsInt()
+  @Min(0)
+  @Max(SERVICE_CATALOG_DISPLAY_ORDER_MAX)
   displayOrder!: number;
 }
 
@@ -268,11 +272,11 @@ export class SaveServiceCatalogGroupDto {
   @IsIn(['SAVE_DRAFT', 'PUBLISH', 'HIDE', 'ARCHIVE'])
   intent!: 'SAVE_DRAFT' | 'PUBLISH' | 'HIDE' | 'ARCHIVE';
 
+  @ValidateIf((body, value) => body.intent !== 'SAVE_DRAFT' || value !== undefined)
   @Transform(({ value }) => trimString(value))
   @IsString()
-  @MinLength(12)
   @MaxLength(500)
-  reason!: string;
+  reason?: string;
 
   @Allow()
   nameTranslations!: unknown;
@@ -290,6 +294,8 @@ export class SaveServiceCatalogGroupDto {
 
   @Transform(({ value }) => numberString(value))
   @IsInt()
+  @Min(0)
+  @Max(SERVICE_CATALOG_DISPLAY_ORDER_MAX)
   displayOrder!: number;
 
   @IsArray()
@@ -584,6 +590,14 @@ export class DecideFinanceApproverLegacyAttestationDto {
   @MinLength(12)
   @MaxLength(500)
   decisionReason!: string;
+}
+
+export class RevokeFinanceApproverLegacyAttestationDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
 }
 
 export class CreateAdminOperatorInvitationDto {
@@ -1055,11 +1069,12 @@ export class CreatePartnerSanctionDto {
   @IsEnum(ProviderSanctionType)
   type?: ProviderSanctionType;
 
-  @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
-  @MaxLength(1000)
-  reason?: string;
+  @IsNotEmpty()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))
@@ -1212,6 +1227,14 @@ export class UpdateCouponDto {
   @IsOptional()
   @IsDateString()
   endsAt?: string | null;
+}
+
+export class CouponStateChangeDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  reason!: string;
 }
 
 export class OperationsHandoffNoteDto {
@@ -1619,6 +1642,13 @@ export class ReferralRewardDecisionDto {
   expectedUpdatedAt!: string;
 }
 
+export class ReferralRewardTaxDecisionDto extends ReferralRewardDecisionDto {
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['confirmed'])
+  confirmation!: 'confirmed';
+}
+
 export class ReferralRewardCashoutPaidDto extends ReferralRewardDecisionDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
@@ -1795,6 +1825,78 @@ export class AssignCompanyBankTransactionImportBatchDto {
 }
 
 export class AssignCompanyBankTransactionReviewDto extends AssignCompanyBankTransactionImportBatchDto {}
+
+export class OpenNotificationDeliveryIncidentDto {
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['production', 'synthetic', 'unknown'])
+  dataScope!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  provider!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  failureCode!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class AssignNotificationDeliveryIncidentDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  assigneeAdminId!: string;
+
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  expectedRevision!: number;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class ResolveNotificationDeliveryIncidentDto {
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  expectedRevision!: number;
+
+  @IsEnum(NotificationDeliveryIncidentResolutionCode)
+  resolutionCode!: NotificationDeliveryIncidentResolutionCode;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class ReopenNotificationDeliveryIncidentDto {
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  expectedRevision!: number;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
+}
 
 export class AssignCompanyBankTransactionReviewsDto extends AssignCompanyBankTransactionReviewDto {
   @Transform(({ value }) => (Array.isArray(value) ? value.map((item) => trimString(item)) : value))
@@ -2195,6 +2297,34 @@ export class DecideCompanyBankAccountChangeDto {
   @IsNotEmpty()
   @MaxLength(128)
   requestId!: string;
+}
+
+export class CreateCompanyBankAccountEvidenceReviewDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @Matches(/^[A-Za-z0-9:_-]{8,128}$/u, { message: 'idempotencyKey must be a stable request key' })
+  idempotencyKey!: string;
+
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(12)
+  @MaxLength(500)
+  operatorReason!: string;
+
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @IsIn(['CLASSIFY_PRODUCTION', 'VERIFY_STATEMENT'])
+  intent!: 'CLASSIFY_PRODUCTION' | 'VERIFY_STATEMENT';
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  fileAssetId!: string;
+
+  @IsDateString()
+  expectedAccountUpdatedAt!: string;
 }
 
 export class CreateCompanyBankTransactionDto {

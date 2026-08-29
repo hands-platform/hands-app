@@ -4,9 +4,11 @@ import {
   buildFinanceOverviewComparisonKpis,
   buildFinanceOverviewControlMetrics,
   buildFinanceOverviewCurrentPositionKpis,
+  buildFinanceOverviewEmptyMovementCopy,
   buildFinanceOverviewFilters,
   buildFinanceOverviewKpis,
   buildFinanceOverviewMonthlyCloseKpis,
+  buildFinanceOverviewPageSections,
   buildFinanceOverviewPrimaryKpis,
   buildFinanceOverviewPriorityItems,
   buildFinanceOverviewRecordsSection,
@@ -41,6 +43,21 @@ describe('finance-overview-model', () => {
     expect(normalizeFinanceOverviewRange('30d')).toBe('30d');
     expect(normalizeFinanceOverviewRange('90d')).toBe('90d');
     expect(normalizeFinanceOverviewRange('bad')).toBe('today');
+  });
+
+  it('uses natural empty movement copy for every Finance range', () => {
+    expect(buildFinanceOverviewEmptyMovementCopy('today')).toBe(
+      'No money movement today (Vietnam time). Current liabilities and open queues remain shown below.',
+    );
+    expect(buildFinanceOverviewEmptyMovementCopy('7d')).toContain(
+      'No money movement during the last 7 days.',
+    );
+    expect(buildFinanceOverviewEmptyMovementCopy('30d')).toContain(
+      'No money movement during the last 30 days.',
+    );
+    expect(buildFinanceOverviewEmptyMovementCopy('90d')).toContain(
+      'No money movement during the last 90 days.',
+    );
   });
 
   it('keeps period summaries bounded while current queues stay unbounded', () => {
@@ -466,6 +483,9 @@ describe('finance-overview-model', () => {
     expect(taxRows.find((row) => row.label === 'Partner withholding')?.href).toBe(
       '/finance-tax/partner-withholding-tax?period=2026-07',
     );
+    expect(taxRows.find((row) => row.label === 'Partner withholding')?.detail).toBe(
+      '0 Partners with revenue in 2026-07.',
+    );
     expect(taxRows.find((row) => row.label === 'Payment fee methods · 2026-07')).toMatchObject({
       href: '/finance-tax/payment-fees?period=2026-07',
       value: '3 configured methods',
@@ -481,6 +501,41 @@ describe('finance-overview-model', () => {
     ]);
     expect(records.rows[0]?.href).toContain('/finance-tax/general-ledger');
     expect(records.rows[1]?.href).toContain('/finance-tax/booking-settlement-audit');
+
+    const visibleSections = buildFinanceOverviewPageSections(input, '30d');
+    expect(
+      visibleSections
+        .find((section) => section.title === 'Revenue & Platform Fee')
+        ?.rows.find((row) => row.label === 'Payment processing fee')?.href,
+    ).toBeUndefined();
+    expect(visibleSections.find((section) => section.title === 'Payment Method Status')?.href).toBe(
+      '/payments?range=30d',
+    );
+  });
+
+  it('keeps Company output VAT on the selected monthly period across range summaries', () => {
+    const summaries = emptyFinanceOverviewSummaries('2026-07');
+    const rangeVatAmounts = [7_037, 19_500, 42_000];
+
+    for (const companyOutputVat of rangeVatAmounts) {
+      const taxRows = buildFinanceOverviewSections({
+        ...summaries,
+        monthlyClosingSummary: {
+          ...summaries.monthlyClosingSummary,
+          companyOutputVatTotal: 0,
+        },
+        settlementSummary: {
+          ...summaries.settlementSummary,
+          companyOutputVat,
+        },
+      }).find((section) => section.title === 'Tax Overview')?.rows;
+
+      expect(taxRows?.find((row) => row.label === 'Company output VAT')).toMatchObject({
+        amount: 0,
+        currency: 'VND',
+        href: '/finance-tax/platform-vat?period=2026-07',
+      });
+    }
   });
 
   it('collapses Today Movement only when every today count and amount is zero', () => {
@@ -1008,6 +1063,62 @@ describe('finance-overview-model', () => {
     expect(items[0]?.oldestAgeMinutes).toBeGreaterThan(items[1]?.oldestAgeMinutes ?? 0);
   });
 
+  it('prioritizes unknown-age queues as data-quality exceptions without outranking breached SLA', () => {
+    const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1_000).toISOString();
+    const summaries = emptyFinanceOverviewSummaries('2026-07');
+    const items = buildFinanceOverviewVisibleActionItems(
+      buildFinanceOverviewActionItems({
+        ...summaries,
+        bankSummary: {
+          ...emptyBankReconciliationSummary(),
+          amount: 9_000_000,
+          oldestUnmatchedAt: daysAgo(90),
+          unmatchedCount: 1,
+        },
+        financeReviewSlaSummary: {
+          ...summaries.financeReviewSlaSummary,
+          oldestOpenAt: daysAgo(2),
+          openOver72Count: 1,
+        },
+        generalLedgerSummary: {
+          ...summaries.generalLedgerSummary,
+          blockedCount: 1,
+          totalCredit: 100_000,
+          totalDebit: 200_000,
+        },
+      }),
+    );
+
+    expect(items.slice(0, 3).map((item) => item.label)).toEqual([
+      'Finance review SLA',
+      'Journal batch integrity',
+      'Bank reconciliation unmatched',
+    ]);
+    expect(items.find((item) => item.label === 'Journal batch integrity')).toMatchObject({
+      oldestAgeKnown: false,
+      oldestAgeMinutes: 0,
+    });
+    expect(items.find((item) => item.label === 'Bank reconciliation unmatched')).toMatchObject({
+      oldestAgeKnown: true,
+    });
+  });
+
+  it('treats invalid timestamps as unknown instead of newly opened', () => {
+    const items = buildFinanceOverviewActionItems({
+      ...emptyFinanceOverviewSummaries('2026-07'),
+      bankSummary: {
+        ...emptyBankReconciliationSummary(),
+        oldestUnmatchedAt: 'not-a-timestamp',
+        unmatchedCount: 1,
+      },
+    });
+
+    expect(items.find((item) => item.label === 'Bank reconciliation unmatched')).toMatchObject({
+      oldestAgeKnown: false,
+      oldestAgeMinutes: 0,
+    });
+  });
+
   it('keeps closeout signals in their exact queues and all-open refunds free of selected-period amounts', () => {
     const summaries = emptyFinanceOverviewSummaries('2026-07');
     const actions = buildFinanceOverviewActionItems({
@@ -1154,6 +1265,12 @@ describe('finance-overview-model', () => {
       tone: 'success',
     });
     expect(kpis.find((kpi) => kpi.label === 'Gross customer payments')?.detail).toContain('+25%');
+    expect(kpis.find((kpi) => kpi.label === 'Gross customer payments')?.detail).toBe(
+      'Current: 1.000.000 VND · Previous: 800.000 VND · Delta: +25%',
+    );
+    expect(kpis.find((kpi) => kpi.label === 'Settlement records')?.detail).toBe(
+      'Current: 8 · Previous: 4 · Delta: +100%',
+    );
     expect(kpis.find((kpi) => kpi.label === 'Partner payout generated')?.detail).toContain(
       'No comparable prior data',
     );

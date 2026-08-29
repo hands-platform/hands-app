@@ -1,4 +1,5 @@
 import { AlertTriangle, FileClock, ReceiptText, ShieldQuestion } from 'lucide-react';
+import type { Metadata } from 'next';
 
 import type {
   AdminAccountingJournalBatch,
@@ -19,7 +20,7 @@ import {
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { AdminErrorState } from '../../../components/admin-surface';
+import { AdminDisclosure, AdminErrorState } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../../components/status-badge';
@@ -53,6 +54,8 @@ import {
 type GeneralLedgerPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = { title: 'Journal Batches' };
 
 const JOURNAL_RANGE_OPTIONS = [
   { label: 'Today', value: 'today' },
@@ -99,13 +102,22 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const overviewFilters = { ...filters, page: 1, q: undefined, review: 'all' as const };
-  const [queueSummaryResult, overviewSummaryResult, batchesResult] = await Promise.all([
+  const settlementReversalFilters = {
+    ...overviewFilters,
+    journalSource: 'BOOKING_SETTLEMENT_REVERSAL' as const,
+  };
+  const [queueSummaryResult, overviewSummaryResult, settlementReversalSummaryResult, batchesResult] =
+    await Promise.all([
     adminGetResult<AdminAccountingJournalBatchSummary>(
       buildAccountingJournalBatchSummaryApiHref(filters),
       emptyAccountingJournalBatchSummary(),
     ),
     adminGetResult<AdminAccountingJournalBatchSummary>(
       buildAccountingJournalBatchSummaryApiHref(overviewFilters),
+      emptyAccountingJournalBatchSummary(),
+    ),
+    adminGetResult<AdminAccountingJournalBatchSummary>(
+      buildAccountingJournalBatchSummaryApiHref(settlementReversalFilters),
       emptyAccountingJournalBatchSummary(),
     ),
     adminGetResult<AdminAccountingJournalBatch[]>(
@@ -115,6 +127,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
   ]);
   const queueSummary = queueSummaryResult.data;
   const overviewSummary = overviewSummaryResult.data;
+  const settlementReversalSummary = settlementReversalSummaryResult.data;
   const batches = batchesResult.data;
   const totalRows = queueSummaryResult.ok ? queueSummary.count : batches.length;
   const pagination = buildTaxSettlementServerPagination(batches, filters, totalRows);
@@ -125,6 +138,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
   const resetHref = generalLedgerHref({ page: 1, range: 'today', review: 'needs-action', take: 10 });
   const detailReturnTo = currentHref;
   const csvHref = buildGeneralLedgerExportHref(filters);
+  const advancedFilterLabels = generalLedgerAdvancedFilterLabels(filters);
   const relatedFinanceLinks = buildTaxFinanceWorkflowLinks({
     accountingFilters: filters,
     current: 'general-ledger',
@@ -179,7 +193,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         />
         <FinanceListCommandCard
           detail="Required settlement formula or linked accounting-period evidence is missing. Do not interpret these records as zero discrepancy."
-          href={queueHref({ ...filters, page: 1, q: undefined, review: 'needs-action' })}
+          href={queueHref({ ...filters, page: 1, q: undefined, review: 'unknown' })}
           icon={ShieldQuestion}
           label="Evidence unknown"
           scope={overviewSummary.unknownCount > 0 ? 'Review required' : rangeScope}
@@ -199,6 +213,22 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
        <p className="muted admin-mb-16">
          Integrity checked <DateTimeText value={overviewSummary.generatedAt} />. Overview totals use the selected range and ignore search text; queue links clear search to preserve the displayed scope.
          {overviewSummary.oldestBlockerAt ? <> Oldest blocker <DateTimeText value={overviewSummary.oldestBlockerAt} />.</> : null}
+         {settlementReversalSummaryResult.ok ? (
+           <>
+             {' '}<AdminFormControlLink
+               href={queueHref({
+                 ...filters,
+                 journalSource: 'BOOKING_SETTLEMENT_REVERSAL',
+                 page: 1,
+                 q: undefined,
+                 review: 'all',
+               })}
+             >
+               Settlement reversals ({settlementReversalSummary.count})
+             </AdminFormControlLink>{' '}
+             are posted business-reversal journals, separate from the batch lifecycle status queue.
+           </>
+         ) : null}
        </p>
        </>
        ) : (
@@ -223,64 +253,95 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         resultTone={queueSummaryResult.ok ? generalLedgerResultTone(filters.review, pagination.totalRows) : 'danger'}
         title="Journal batch scope"
       >
-        <AdminFormShell action="/finance-tax/general-ledger" className="filter-form" method="get">
-          <AdminFormSearch
-            defaultValue={ledgerQuery}
-            label="Search journal batches"
-            name="q"
-            placeholder="Source, booking, payment, period, account"
-          />
-          <AdminFormSelect
-            defaultValue={filters.review}
-            label="Integrity queue"
-            name="review"
-            options={GENERAL_LEDGER_REVIEW_LINKS.map((item) => ({ label: item.label, value: item.review }))}
-          />
-          <AdminFormSelect
-            defaultValue={filters.range}
-            label="Posted range"
-            name="range"
-            options={JOURNAL_RANGE_OPTIONS}
-          />
-          <AdminFormSelect
-            defaultValue={filters.journalSource ?? ''}
-            label="Source type"
-            name="source"
-            options={JOURNAL_SOURCE_OPTIONS}
-          />
-          <AdminFormDate
-            defaultValue={filters.period ?? ''}
-            label="Accounting period"
-            mode="month"
-            name="period"
-          />
-          <AdminFormSelect
-            defaultValue={filters.sort ?? (filters.review === 'needs-action' ? 'oldest' : 'newest')}
-            label="Sort"
-            name="sort"
-            options={JOURNAL_SORT_OPTIONS}
-          />
-          <AdminFormSelect
-            defaultValue={String(filters.take)}
-            label="Rows"
-            name="take"
-            options={FINANCE_ACCOUNTING_PAGE_SIZE_LINKS.map((take) => ({
-              label: String(take),
-              value: String(take),
-            }))}
-          />
-          <AdminFormActionRow wide={false}>
-            <AdminFormControlButton className="button-primary" type="submit">Apply</AdminFormControlButton>
-            {ledgerQuery ? <AdminFormControlLink href={clearSearchHref}>Clear search</AdminFormControlLink> : null}
-            <AdminFormControlLink href={resetHref}>Reset</AdminFormControlLink>
-          </AdminFormActionRow>
+        <AdminFormShell
+          action="/finance-tax/general-ledger"
+          className="filter-form general-ledger-filter-form"
+          method="get"
+        >
+          <div className="general-ledger-primary-filters">
+            <AdminFormSearch
+              defaultValue={ledgerQuery}
+              label="Search journal batches"
+              name="q"
+              placeholder="Source, booking, payment, period, account"
+            />
+            <AdminFormSelect
+              defaultValue={filters.review}
+              label="Integrity queue"
+              name="review"
+              options={GENERAL_LEDGER_REVIEW_LINKS.map((item) => ({ label: item.label, value: item.review }))}
+            />
+            <AdminFormSelect
+              defaultValue={filters.range}
+              label="Posted range"
+              name="range"
+              options={JOURNAL_RANGE_OPTIONS}
+            />
+            <AdminFormActionRow wide={false}>
+              <AdminFormControlButton className="button-primary" type="submit">Apply</AdminFormControlButton>
+              {ledgerQuery ? <AdminFormControlLink href={clearSearchHref}>Clear search</AdminFormControlLink> : null}
+            </AdminFormActionRow>
+          </div>
+          <AdminDisclosure ariaLabel="Advanced journal filters" className="general-ledger-advanced-filters">
+            <summary>
+              <span>Advanced filters</span>
+              {advancedFilterLabels.length > 0 ? (
+                <span className="general-ledger-advanced-filter-summary">
+                  {advancedFilterLabels.map((label) => (
+                    <StatusBadge key={label} tone="info">{label}</StatusBadge>
+                  ))}
+                </span>
+              ) : (
+                <small>Source, accounting period, sort and rows</small>
+              )}
+            </summary>
+            <div className="general-ledger-advanced-filter-grid">
+              <AdminFormSelect
+                defaultValue={filters.journalSource ?? ''}
+                label="Source type"
+                name="source"
+                options={JOURNAL_SOURCE_OPTIONS}
+              />
+              <AdminFormDate
+                defaultValue={filters.period ?? ''}
+                label="Accounting period"
+                mode="month"
+                name="period"
+              />
+              <AdminFormSelect
+                defaultValue={
+                  filters.sort ??
+                  (filters.review === 'needs-action' || filters.review === 'unknown' ? 'oldest' : 'newest')
+                }
+                label="Sort"
+                name="sort"
+                options={JOURNAL_SORT_OPTIONS}
+              />
+              <AdminFormSelect
+                defaultValue={String(filters.take)}
+                label="Rows"
+                name="take"
+                options={FINANCE_ACCOUNTING_PAGE_SIZE_LINKS.map((take) => ({
+                  label: String(take),
+                  value: String(take),
+                }))}
+              />
+              <AdminFormActionRow wide={false}>
+                <AdminFormControlLink href={resetHref}>Reset</AdminFormControlLink>
+              </AdminFormActionRow>
+            </div>
+          </AdminDisclosure>
         </AdminFormShell>
       </AdminFilterPanel>
 
       <FinanceTablePanel
         grouped
         description={generalLedgerTableDescription(filters.review)}
-        resultLabel={queueSummaryResult.ok ? `${pagination.totalRows} batch(es)` : 'Total unavailable'}
+        resultLabel={
+          queueSummaryResult.ok
+            ? generalLedgerResultLabel(filters.review, pagination.totalRows, queueSummary)
+            : 'Total unavailable'
+        }
         resultTone={queueSummaryResult.ok ? generalLedgerResultTone(filters.review, pagination.totalRows) : 'danger'}
         title={financeAccountingReviewLabel(filters.review, GENERAL_LEDGER_REVIEW_LINKS)}
       >
@@ -432,6 +493,21 @@ function generalLedgerFilterDescription(input: {
   return parts.join(' ');
 }
 
+function generalLedgerAdvancedFilterLabels(
+  filters: Parameters<typeof generalLedgerHref>[0],
+) {
+  return [
+    filters.journalSource
+      ? `Source: ${JOURNAL_SOURCE_OPTIONS.find((option) => option.value === filters.journalSource)?.label ?? filters.journalSource}`
+      : null,
+    filters.period ? `Period: ${filters.period}` : null,
+    filters.sort
+      ? `Sort: ${JOURNAL_SORT_OPTIONS.find((option) => option.value === filters.sort)?.label ?? filters.sort}`
+      : null,
+    filters.take !== 10 ? `Rows: ${filters.take}` : null,
+  ].filter((label): label is string => Boolean(label));
+}
+
 function generalLedgerTableDescription(
   review: Parameters<typeof generalLedgerHref>[0]['review'],
 ) {
@@ -441,24 +517,45 @@ function generalLedgerTableDescription(
   if (review === 'unbalanced') {
     return 'Journal batches blocked by header, entry, formula, or accounting-period integrity evidence.';
   }
+  if (review === 'unknown') {
+    return 'Journal batches whose retained evidence is insufficient for a clear or blocked integrity decision.';
+  }
+  if (review === 'unassigned-period') {
+    return 'Posted journal batches whose source policy requires an accounting month but retained no monthly-period evidence.';
+  }
   if (review === 'draft') {
     return 'Draft journal batches awaiting Finance review, ordered from oldest to newest.';
   }
   if (review === 'reversed') {
-    return 'Historical reversal journals. Open detail to inspect the retained original and reversal evidence.';
+    return 'Batches whose lifecycle status is REVERSED. Settlement reversal activity remains a separate source filter.';
+  }
+  if (review === 'posted') {
+    return 'Posted is a lifecycle status, not an integrity result. Review each row’s separate integrity evidence.';
   }
   return 'Journal batches are ordered by the selected accounting sort. Open detail for entry-level and canonical source evidence.';
+}
+
+function generalLedgerResultLabel(
+  review: Parameters<typeof generalLedgerHref>[0]['review'],
+  count: number,
+  summary: AdminAccountingJournalBatchSummary,
+) {
+  const integrityWarningCount = summary.blockedCount + summary.unknownCount;
+  if (review === 'posted' && integrityWarningCount > 0) {
+    return `${count} batch(es) · ${integrityWarningCount} integrity warning(s)`;
+  }
+  return `${count} batch(es)`;
 }
 
 function generalLedgerResultTone(
   review: Parameters<typeof generalLedgerHref>[0]['review'],
   count: number,
 ) {
-  if (review === 'needs-action' || review === 'unbalanced') {
+  if (review === 'needs-action' || review === 'unbalanced' || review === 'unknown') {
     return count > 0 ? 'warning' as const : 'success' as const;
   }
   if (review === 'draft') return count > 0 ? 'warning' as const : 'success' as const;
-  if (review === 'posted') return 'success' as const;
+  if (review === 'posted') return 'info' as const;
   return 'info' as const;
 }
 

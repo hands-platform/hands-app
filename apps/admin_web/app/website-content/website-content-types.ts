@@ -28,6 +28,7 @@ export type PublicSiteRevisionSummary = {
   noIndex: boolean;
   publishedAt?: string | null;
   publishedById?: string | null;
+  publishedByLabel?: string | null;
   updatedAt: string;
 };
 
@@ -109,17 +110,45 @@ export type PublicSiteRouteGroup = {
   translations: PublicSitePageSummary[];
 };
 
+export type PublicSiteManifestQueueRow = {
+  key: string;
+  kind: 'MISSING_ROUTE' | 'MISSING_TRANSLATION';
+  site: PublicSiteKey;
+  path: string;
+  locale: string;
+  label: string;
+  ownership: PublicSiteOwnership;
+  reason: string;
+  recommendedAction: string;
+};
+
 export type PublicSiteListSummary = {
-  routes: number;
-  live: number;
-  draftChanges: number;
-  ready: number;
-  needsAttention: number;
-  missingRoutes: number;
-  missingTranslations: number;
-  staleTranslations: number;
-  recentlyPublished: number;
-  scope: { contentType: 'pages' | 'news'; site: string | null; locale: string | null; q: string | null; status: string };
+  viewScope: {
+    routes: number;
+    live: number;
+    draftChanges: number;
+    ready: number;
+    needsAttention: number;
+    recentlyPublished: number;
+    scope: {
+      contentType: 'pages' | 'news';
+      site: string | null;
+      locale: string | null;
+      q: string | null;
+      status: string;
+      readiness: string | null;
+      ownership: string | null;
+    };
+  };
+  manifestHealth: {
+    scope: 'GLOBAL_CANONICAL';
+    expectedRoutes: number;
+    expectedRows: number;
+    missingRoutes: number;
+    missingTranslations: number;
+    staleTranslations: number | null;
+    staleTranslationsApplicable: boolean;
+  };
   generatedAt: string;
 };
 
@@ -141,6 +170,13 @@ export type PublicSitePreviewLink = {
   path: string;
   revisionId: string;
   version: number;
+};
+
+export type PublicSiteCacheInvalidation = {
+  status: 'FAILED' | 'NOT_CONFIGURED' | 'SUCCEEDED';
+  requestId: string;
+  hostCount: number;
+  succeededHostCount: number;
 };
 
 export const publicSiteOptions = [

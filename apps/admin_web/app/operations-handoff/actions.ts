@@ -4,21 +4,23 @@ import { revalidatePath } from 'next/cache';
 
 import { AdminApiRequestError, adminPostOrThrow } from '../../lib/admin-api';
 import { formatDateTime } from '../../lib/admin-format';
+import { shiftHandoffLaunchEnabled } from '../../lib/launch-features';
 
 export type OperationsHandoffActionState = {
   message: string;
   status: 'error' | 'success';
 };
 
-export async function createOperationsShiftHandoff(formData: FormData): Promise<OperationsHandoffActionState> {
-  const unresolvedCases = [...new Set(formData.getAll('unresolvedCases').map(String).filter(Boolean))].flatMap(
-    (value) => {
-      const separator = value.indexOf(':');
-      return separator > 0
-        ? [{ caseId: value.slice(separator + 1), queueKey: value.slice(0, separator) }]
-        : [];
-    },
-  );
+export async function createOperationsShiftHandoff(
+  formData: FormData,
+): Promise<OperationsHandoffActionState> {
+  if (!shiftHandoffLaunchEnabled()) return shiftHandoffLaunchDisabledState();
+  const unresolvedCases = [
+    ...new Set(formData.getAll('unresolvedCases').map(String).filter(Boolean)),
+  ].flatMap((value) => {
+    const separator = value.indexOf(':');
+    return separator > 0 ? [{ caseId: value.slice(separator + 1), queueKey: value.slice(0, separator) }] : [];
+  });
 
   try {
     await adminPostOrThrow<{ handoffId: string; ok: true }>('/admin/operations-handoff/shift', {
@@ -40,7 +42,10 @@ export async function createOperationsShiftHandoff(formData: FormData): Promise<
   }
 }
 
-export async function acknowledgeOperationsShiftHandoff(formData: FormData): Promise<OperationsHandoffActionState> {
+export async function acknowledgeOperationsShiftHandoff(
+  formData: FormData,
+): Promise<OperationsHandoffActionState> {
+  if (!shiftHandoffLaunchEnabled()) return shiftHandoffLaunchDisabledState();
   const handoffId = String(formData.get('handoffId') ?? '').trim();
   if (!handoffId) return { message: 'This handoff is no longer available.', status: 'error' };
 
@@ -51,10 +56,20 @@ export async function acknowledgeOperationsShiftHandoff(formData: FormData): Pro
     );
     revalidatePath('/operations-handoff');
     revalidatePath('/audit-log');
-    return { message: `Handoff acknowledged at ${formatDateTime(result.acknowledgedAt)}.`, status: 'success' };
+    return {
+      message: `Handoff acknowledged at ${formatDateTime(result.acknowledgedAt)}.`,
+      status: 'success',
+    };
   } catch (error) {
     return { message: operationsHandoffErrorMessage(error), status: 'error' };
   }
+}
+
+function shiftHandoffLaunchDisabledState(): OperationsHandoffActionState {
+  return {
+    message: 'Shift Handoff is not active for the current launch.',
+    status: 'error',
+  };
 }
 
 function operationsHandoffErrorMessage(error: unknown) {

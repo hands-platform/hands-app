@@ -60,6 +60,28 @@ describe('admin operator server actions', () => {
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/admin-operators');
   });
 
+  it('binds a linked invitation to the server-verified existing User ID', async () => {
+    mockedAdminPostOrThrow.mockResolvedValue({
+      auditLogId: 'audit-linked-1',
+      invitation: { expiresAt: '2026-08-15T12:00:00.000Z', id: 'invite-linked-1' },
+      setupToken: 'copy-once-linked-token',
+    });
+    const formData = new FormData();
+    formData.set('targetUserId', 'existing-user-1');
+    formData.set('email', 'person@example.com');
+    formData.set('fullName', 'Existing Person');
+    formData.set('reason', 'Grant reviewed Admin access to an existing employee identity');
+
+    await inviteAdminOperator(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/admin-operator-invitations',
+      expect.objectContaining({
+        email: 'person@example.com',
+        targetUserId: 'existing-user-1',
+      }),
+    );
+  });
+
   it('keeps an explicit empty permission selection empty and submits the version', async () => {
     mockedAdminPatchOrThrow.mockResolvedValue({ auditLog: { id: 'audit-2' } });
     const formData = new FormData();

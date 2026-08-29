@@ -92,7 +92,7 @@ describe('Admin web session logout route', () => {
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0');
   });
 
-  it('fails visibly and preserves the cookie when server-side revocation fails', async () => {
+  it('fails visibly but still clears the local cookie when server-side revocation fails', async () => {
     const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
@@ -125,7 +125,7 @@ describe('Admin web session logout route', () => {
       error: 'ADMIN_SESSION_REVOCATION_FAILED',
       ok: false,
     });
-    expect(response.headers.get('set-cookie')).toBeNull();
+    expect(response.headers.get('set-cookie')).toContain('Max-Age=0');
   });
 
   it('clears the cookie when the database session is already inactive', async () => {

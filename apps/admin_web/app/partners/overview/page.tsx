@@ -37,6 +37,7 @@ import {
   AdminDisclosure,
   AdminErrorState,
   AdminKpiCard,
+  AdminNoticeCard,
   AdminSection,
 } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
@@ -115,15 +116,13 @@ export default async function PartnerOverviewPage({
         }
       : filter,
   );
-  const freshness = overview
-    ? partnerOverviewFreshness(overview.generatedAt, overview.refreshSeconds)
-    : null;
+  const freshness = overview ? partnerOverviewFreshness(overview.generatedAt, overview.refreshSeconds) : null;
 
   return (
     <AdminPageTemplate
       contentClassName="partner-overview-page"
       description="Current Partner supply, action queues, period performance, and operational risk in Vietnam time."
-      title="Partner Operations"
+      title="Overview"
     >
       <AdminFilterPanel
         actions={
@@ -142,7 +141,9 @@ export default async function PartnerOverviewPage({
                 Risk analysis: latest {overview.queryScope.providerScanLimit}
               </StatusBadge>
             ) : null}
-            <AdminFormControlLink href={partnerOverviewHref(range, filters)}>Refresh now</AdminFormControlLink>
+            <AdminFormControlLink href={partnerOverviewHref(range, filters)}>
+              Refresh now
+            </AdminFormControlLink>
           </>
         }
         className="partner-overview-filter-panel"
@@ -231,7 +232,9 @@ export default async function PartnerOverviewPage({
 
       {!overview ? (
         <AdminErrorState
-          action={<AdminTextLink href={partnerOverviewHref(range, filters)}>Retry Partner Overview</AdminTextLink>}
+          action={
+            <AdminTextLink href={partnerOverviewHref(range, filters)}>Retry Partner Overview</AdminTextLink>
+          }
           message="The Partner Overview API did not return a report. No zero values are shown until the source becomes available."
           title="Partner data unavailable"
         />
@@ -251,8 +254,16 @@ export default async function PartnerOverviewPage({
           <PartnerPeriodPerformance filters={filters} overview={overview} range={range} />
 
           <div className="partner-overview-supply-grid" aria-label="Supply status">
-            <SupplyAreaCard rows={overview.supplyHealth.areas.slice(0, 5)} rangeLabel={overview.rangeLabel} />
-            <SupplyServiceCard rows={overview.supplyHealth.services.slice(0, 5)} rangeLabel={overview.rangeLabel} />
+            <SupplyAreaCard
+              rows={overview.supplyHealth.areas}
+              rangeLabel={overview.rangeLabel}
+              supplyHealthCountScope={overview.queryScope.supplyHealthCountScope}
+            />
+            <SupplyServiceCard
+              rows={overview.supplyHealth.services.slice(0, 5)}
+              rangeLabel={overview.rangeLabel}
+              supplyHealthCountScope={overview.queryScope.supplyHealthCountScope}
+            />
           </div>
 
           <AdminSection
@@ -266,11 +277,11 @@ export default async function PartnerOverviewPage({
             }
             title="Current readiness snapshot"
           >
-            {overview.funnel.steps.map((step, index) => (
+            {overview.funnel.steps.map((step) => (
               <PartnerFunnelStep
+                approvedCount={overview.funnel.steps.find((item) => item.key === 'approved')?.count ?? null}
                 baseCount={overview.funnel.steps[0]?.count ?? null}
                 key={step.key}
-                previousCount={index > 0 ? (overview.funnel.steps[index - 1]?.count ?? null) : null}
                 step={step}
               />
             ))}
@@ -434,12 +445,7 @@ function PartnerPeriodPerformance({
   readonly overview: AdminPartnerOverview;
   readonly range: AdminPartnerOverview['range'];
 }) {
-  const preferredKeys = [
-    'averageResponseTime',
-    'averageRating',
-    'completionRate',
-    'nonCompletedBookingRate',
-  ];
+  const preferredKeys = ['averageResponseTime', 'averageRating', 'completionRate', 'nonCompletedBookingRate'];
   const availableKpis = [...overview.summaryKpis, ...overview.bookingQuality.kpis];
   const kpis = preferredKeys
     .map((key) => availableKpis.find((kpi) => kpi.key === key))
@@ -534,7 +540,7 @@ function OperatingStatusBoard({
       bodyClassName="partner-overview-operating-grid"
       className="partner-overview-section-card partner-overview-operating-board"
       description="Current online, bookable, blocked, and customer-visible Partner supply."
-      statusLabel={`Location <= ${locationFreshnessMinutes}m`}
+      statusLabel={`Fresh location · last ${locationFreshnessMinutes} min`}
       title="Current supply"
     >
       {cards.length > 0 ? (
@@ -631,6 +637,7 @@ function OperatingStatusBoard({
 
 type PartnerPriorityCardConfig = {
   readonly action: string;
+  readonly count: number;
   readonly detail: string;
   readonly href: string;
   readonly icon: typeof Users;
@@ -650,117 +657,70 @@ function PartnerPriorityBoard({
   readonly overview: AdminPartnerOverview;
   readonly range: AdminPartnerOverview['range'];
 }) {
-  const availableBlockedCard = overview.operatingStatus.cards.find(
-    (card) => card.key === 'available-blocked',
-  );
-  const pendingVerificationList = overview.actionLists.find(
-    (list) => list.key === 'pending-verification',
-  );
-  const walletRiskList = overview.actionLists.find((list) => list.key === 'negative-wallet');
-  const availableBlockedLink = partnerOverviewDirectoryLink(
-    availableBlockedCard?.href ?? '/partners?review=available-blocked',
-    range,
-    filters,
-  );
-  const pendingVerificationLink = partnerOverviewDirectoryLink(
-    pendingVerificationList?.viewAllHref ?? '/partners?review=approval-incomplete',
-    range,
-    filters,
-  );
-  const walletLink = partnerOverviewDirectoryLink(
-    walletRiskList?.viewAllHref ?? '/partners?review=unsettled',
-    range,
-    filters,
-  );
-  const qualityRiskCount = overview.bookingQuality.riskPartnerCount;
-  const qualityLink = partnerOverviewDirectoryLink('/partners?review=quality-all', range, filters);
-  const cards = ([
-    {
-      action: 'Review blockers',
-      detail: availableBlockedCard?.detail ?? 'Online available Partners blocked at final acceptance.',
-      href: availableBlockedLink.href,
-      icon: AlertTriangle,
-      key: 'available-blocked',
-      label: 'Online but not bookable',
-      tone: 'warning',
-      value: formatPriorityCount(availableBlockedCard?.count ?? 0, 'partner'),
-      exact: availableBlockedLink.exact,
-    },
-    {
-      action: 'Review verification',
-      detail: 'Partner verification or KYC evidence still needs an operator decision.',
-      href: pendingVerificationLink.href,
-      icon: BadgeCheck,
-      key: 'pending-verification',
-      label: 'Pending verification',
-      tone: 'warning',
-      value: formatPriorityCount(pendingVerificationList?.totalCount ?? 0, 'partner'),
-      exact: pendingVerificationLink.exact,
-    },
-    {
-      action: 'Review wallet',
-      detail:
-        overview.financeWalletRisk.policyNote || 'Negative Partner wallet exposure from canonical VND balances.',
-      href: walletLink.href,
-      icon: WalletCards,
-      key: 'wallet-risk',
-      label: 'Wallet risk',
-      tone: 'danger',
-      value: formatPriorityCount(walletRiskList?.totalCount ?? 0, 'partner'),
-      exact: walletLink.exact,
-    },
-    {
-      action: 'Review quality',
-      detail: 'Non-completed bookings, no-show, low-review, and service-quality follow-up queue.',
-      href: qualityLink.href,
-      icon: Star,
-      key: 'quality-risk',
-      label: 'Quality risk',
-      tone: 'danger',
-      value: formatPriorityCount(qualityRiskCount, 'partner'),
-      exact: qualityLink.exact,
-    },
-  ] satisfies readonly PartnerPriorityCardConfig[]).filter((card) => {
-    if (card.key === 'available-blocked') return (availableBlockedCard?.count ?? 0) > 0;
-    if (card.key === 'pending-verification') return (pendingVerificationList?.totalCount ?? 0) > 0;
-    if (card.key === 'wallet-risk') return (walletRiskList?.totalCount ?? 0) > 0;
-    return qualityRiskCount > 0;
-  });
+  const activeLists = overview.actionLists.filter((list) => list.totalCount > 0);
+  const cards = rankPartnerPriorityLists(activeLists)
+    .slice(0, 2)
+    .map((list): PartnerPriorityCardConfig => {
+      const meta = partnerPriorityQueueMeta(list.key);
+      const directoryLink = partnerOverviewDirectoryLink(list.viewAllHref, range, filters);
+      return {
+        action: meta.action,
+        count: list.totalCount,
+        detail:
+          list.key === 'negative-wallet' ? overview.financeWalletRisk.policyNote || meta.detail : meta.detail,
+        exact: directoryLink.exact,
+        href: directoryLink.href,
+        icon: meta.icon,
+        key: list.key,
+        label: meta.label ?? list.title,
+        tone: meta.tone,
+        value: formatPriorityCount(list.totalCount, 'partner'),
+      };
+    });
+  const detailedQueueCount = activeLists.length;
 
   return (
     <AdminSection
       bodyClassName="partner-overview-priority-grid"
       className="partner-overview-section-card partner-overview-priority-board"
-      description="Only queues with current work are shown."
-      statusLabel={cards.length > 0 ? `${formatPriorityCount(cards.length, 'active queue')}` : 'No action'}
+      description="Ordered by operating risk, affected Partners, then stable queue key. Partners may appear in more than one queue."
+      statusLabel={
+        detailedQueueCount > 0
+          ? `Top ${cards.length} of ${detailedQueueCount} active ${detailedQueueCount === 1 ? 'queue' : 'queues'}`
+          : 'No action'
+      }
       title="Action required"
     >
-      {cards.length > 0 ? cards.map((card) => {
-        const Icon = card.icon;
-        const meta = partnerPriorityCardMeta(card);
+      {cards.length > 0 ? (
+        cards.map((card) => {
+          const Icon = card.icon;
+          const meta = partnerPriorityCardMeta(card);
 
-        return (
-          <AdminOverviewCommandCard
-            ariaLabel={`${card.label}, ${card.value}. ${card.exact ? card.action : 'Open full queue; bounded Risk filter is not applied'}`}
-            baseClassName="partner-overview-command-card"
-            className={`partner-overview-priority-card is-${card.tone}`}
-            detail={card.detail}
-            href={card.href}
-            icon={<Icon size={20} aria-hidden="true" />}
-            iconClassName="partner-overview-command-icon"
-            key={card.key}
-            kind={meta.kind}
-            label={card.label}
-            scope={meta.scope}
-            value={card.value}
-          >
-            <em>
-              {card.exact ? card.action : 'Open full queue'}
-              <ChevronRight size={14} aria-hidden="true" />
-            </em>
-          </AdminOverviewCommandCard>
-        );
-      }) : <AdminEmptyState framed message="No Partner action queues require follow-up." title={null} />}
+          return (
+            <AdminOverviewCommandCard
+              ariaLabel={`${card.label}, ${card.value}. ${card.exact ? card.action : 'Open full queue; bounded Risk filter is not applied'}`}
+              baseClassName="partner-overview-command-card"
+              className={`partner-overview-priority-card is-${card.tone}`}
+              detail={card.detail}
+              href={card.href}
+              icon={<Icon size={20} aria-hidden="true" />}
+              iconClassName="partner-overview-command-icon"
+              key={card.key}
+              kind={meta.kind}
+              label={card.label}
+              scope={meta.scope}
+              value={card.value}
+            >
+              <em>
+                {card.exact ? card.action : 'Open full queue'}
+                <ChevronRight size={14} aria-hidden="true" />
+              </em>
+            </AdminOverviewCommandCard>
+          );
+        })
+      ) : (
+        <AdminEmptyState framed message="No Partner action queues require follow-up." title={null} />
+      )}
     </AdminSection>
   );
 }
@@ -768,14 +728,20 @@ function PartnerPriorityBoard({
 function SupplyAreaCard({
   rangeLabel,
   rows,
+  supplyHealthCountScope,
 }: {
   readonly rangeLabel: string;
   readonly rows: readonly AdminPartnerOverviewAreaRow[];
+  readonly supplyHealthCountScope: AdminPartnerOverview['queryScope']['supplyHealthCountScope'];
 }) {
+  const scopeNote =
+    supplyHealthCountScope === 'full-population-excluding-risk-filter'
+      ? 'Full population for exact filters; the bounded Risk filter is not applied to these counts.'
+      : 'Full filtered Partner population.';
   return (
     <AdminSection
       className="partner-overview-table-card"
-      description={`Current supply with demand outcomes for ${rangeLabel}.`}
+      description={`${scopeNote} Supply by mapped service area, with demand outcomes for ${rangeLabel}. Unknown / unmapped preserves records that cannot be assigned to a supported area.`}
       title="Area supply status"
     >
       <AdminTableScroll ariaLabel="Area supply table" className="partner-overview-table-wrap">
@@ -791,7 +757,7 @@ function SupplyAreaCard({
             'Bookable now',
             'Open demand',
             'Non-completed',
-            'Non-completed share',
+            'Non-completed rate',
             'Response',
           ]}
           rowCount={rows.length}
@@ -825,14 +791,20 @@ function SupplyAreaCard({
 function SupplyServiceCard({
   rangeLabel,
   rows,
+  supplyHealthCountScope,
 }: {
   readonly rangeLabel: string;
   readonly rows: readonly AdminPartnerOverviewServiceRow[];
+  readonly supplyHealthCountScope: AdminPartnerOverview['queryScope']['supplyHealthCountScope'];
 }) {
+  const scopeNote =
+    supplyHealthCountScope === 'full-population-excluding-risk-filter'
+      ? 'Full population for exact filters; the bounded Risk filter is not applied to these counts.'
+      : 'Full filtered Partner population.';
   return (
     <AdminSection
       className="partner-overview-table-card"
-      description={`Current service supply with booking outcomes for ${rangeLabel}.`}
+      description={`${scopeNote} Active service supply with booking outcomes for ${rangeLabel}. A Partner can appear in more than one service.`}
       title="Service supply status"
     >
       <AdminTableScroll ariaLabel="Service supply table" className="partner-overview-table-wrap">
@@ -841,32 +813,32 @@ function SupplyServiceCard({
           emptyMessage="No service supply rows for this range."
           headers={[
             'Service',
+            'Status',
             'Offering',
             'Online available',
             'Bookable now',
             'Open demand',
             'Completed',
-            'Completed share',
+            'Completion rate',
             'Lifetime Partner rating',
-            'Status',
           ]}
           rowCount={rows.length}
         >
           {rows.map((row) => (
             <tr key={row.serviceId}>
               <td>{row.serviceName}</td>
-              <td>{formatNumber(row.partnersOffering)}</td>
-              <td>{formatNumber(row.onlinePartners)}</td>
-              <td>{formatNumber(row.eligiblePartners)}</td>
-              <td>{formatNumber(row.openRequests)}</td>
-              <td>{formatNumber(row.completedBookings)}</td>
-              <td>{row.completionRate === null ? 'No events' : `${row.completionRate}%`}</td>
-              <td>{row.avgRating === null ? '-' : row.avgRating.toFixed(2)}</td>
               <td>
                 <StatusBadgeFromPillClass pillClass={riskPillClass(row.riskLevel)}>
                   {row.status}
                 </StatusBadgeFromPillClass>
               </td>
+              <td>{formatNumber(row.partnersOffering)}</td>
+              <td>{formatNumber(row.onlinePartners)}</td>
+              <td>{formatNumber(row.eligiblePartners)}</td>
+              <td>{formatNumber(row.openRequests)}</td>
+              <td>{formatNumber(row.completedBookings)}</td>
+              <td>{row.completionRate === null ? 'No outcomes' : `${row.completionRate}%`}</td>
+              <td>{row.avgRating === null ? '-' : row.avgRating.toFixed(2)}</td>
             </tr>
           ))}
         </AdminDataTable>
@@ -876,23 +848,21 @@ function SupplyServiceCard({
 }
 
 function PartnerFunnelStep({
+  approvedCount,
   baseCount,
-  previousCount,
   step,
 }: {
+  readonly approvedCount: number | null;
   readonly baseCount: number | null;
-  readonly previousCount: number | null;
   readonly step: AdminPartnerOverviewFunnelStep;
 }) {
-  const shareOfRegistered =
-    step.count !== null && baseCount !== null && baseCount > 0
-      ? Math.round((step.count / baseCount) * 100)
+  const isBookableStep = step.key === 'ready-now' || step.key === 'bookable-now';
+  const denominatorCount = isBookableStep ? approvedCount : baseCount;
+  const denominatorLabel = isBookableStep ? 'approved' : 'registered';
+  const shareOfDenominator =
+    step.count !== null && denominatorCount !== null && denominatorCount > 0
+      ? Math.round((step.count / denominatorCount) * 100)
       : null;
-  const shareOfPrevious =
-    step.count !== null && previousCount !== null && previousCount > 0
-      ? Math.round((step.count / previousCount) * 100)
-      : null;
-
   return (
     <AdminCard
       className={`partner-overview-funnel-step ${step.dataStatus === 'available' ? 'is-primary' : 'is-neutral'}`}
@@ -903,9 +873,9 @@ function PartnerFunnelStep({
       </div>
       <small>
         {step.dataStatus === 'available'
-          ? previousCount === null
+          ? step.key === 'registered'
             ? 'Current registered Partner accounts'
-            : `${shareOfPrevious ?? 0}% of previous stage · ${shareOfRegistered ?? 0}% of registered`
+            : `${isBookableStep ? 'Bookable' : 'Approved'} / ${denominatorLabel}: ${shareOfDenominator ?? 0}% · current snapshot, not cohort conversion`
           : 'Current snapshot unavailable'}
       </small>
     </AdminCard>
@@ -966,7 +936,9 @@ function WalletRiskCard({
     <AdminSection
       actions={
         negativeWalletPartnerCount > 0 ? (
-          <AdminTextLink href="/partners?review=unsettled">View all negative wallets</AdminTextLink>
+          <AdminTextLink href="/partners?review=unsettled">
+            View all {formatNumber(negativeWalletPartnerCount)}
+          </AdminTextLink>
         ) : null
       }
       bodyClassName="partner-overview-risk-card-body"
@@ -974,7 +946,7 @@ function WalletRiskCard({
       description={policyNote || 'Ledger-backed Partner wallet exposure.'}
       statusLabel={
         negativeWalletPartnerCount > 0
-          ? `Showing ${formatNumber(rows.length)} of ${formatNumber(negativeWalletPartnerCount)}`
+          ? `Largest ${formatNumber(rows.length)} receivables · sorted by balance (most negative first)`
           : 'No negative wallets'
       }
       statusTone={negativeWalletPartnerCount > 0 ? 'warning' : 'success'}
@@ -987,6 +959,7 @@ function WalletRiskCard({
       <div className="partner-overview-finance-metric-group">
         <strong>Current exposure and payout readiness</strong>
         <MiniKpiStrip ariaLabel="Current wallet and payout metrics" kpis={currentKpis} />
+        <p className="muted">Unique Partner count; wallet, bank, and tax block reasons can overlap.</p>
       </div>
       <PartnerRiskTable rows={rows} showWallet />
     </AdminSection>
@@ -1027,6 +1000,8 @@ function PartnerAppActivitySection({
   const periodKeys = new Set(['appActivePartners', 'partnerAppOpens', 'partnerSessionStarts']);
   const periodKpis = kpis.filter((kpi) => periodKeys.has(kpi.key));
   const coverageKpis = kpis.filter((kpi) => !periodKeys.has(kpi.key));
+  const telemetryCoverage = kpis.find((kpi) => kpi.key === 'partnerAppTelemetryCoverage')?.value ?? null;
+  const coverageIsLimited = telemetryCoverage !== null && telemetryCoverage < 80;
 
   return (
     <>
@@ -1038,6 +1013,12 @@ function PartnerAppActivitySection({
         title="Partner app usage · period"
       >
         <MiniKpiStrip ariaLabel="Partner app usage metrics" kpis={periodKpis} />
+        {coverageIsLimited ? (
+          <AdminNoticeCard role="status" tone="warning">
+            <strong>Telemetry covers {telemetryCoverage}% of approved Partners.</strong> Period usage includes
+            tracked activity only and is not a complete Partner total.
+          </AdminNoticeCard>
+        ) : null}
       </AdminSection>
       <AdminSection
         actions={
@@ -1089,7 +1070,10 @@ function PartnerAppActivityTable({
 }) {
   return (
     <AdminSection className="partner-overview-table-card" title={title}>
-      <AdminTableScroll ariaLabel={`${title} Partner app telemetry table`} className="partner-overview-table-wrap">
+      <AdminTableScroll
+        ariaLabel={`${title} Partner app telemetry table`}
+        className="partner-overview-table-wrap"
+      >
         <AdminDataTable
           className="partner-overview-table"
           emptyMessage={emptyMessage}
@@ -1174,7 +1158,9 @@ function PartnerRiskTable({
             <td>{row.area}</td>
             {showWallet ? (
               <>
-                <td><MoneyText amount={row.walletBalance} /></td>
+                <td>
+                  <MoneyText amount={row.walletBalance} />
+                </td>
                 <td>{row.mainReason}</td>
               </>
             ) : (
@@ -1300,20 +1286,31 @@ function SelectionFrictionCard({
             <tr key={row.partnerId}>
               <td>
                 <AdminTextLink href={row.href}>{row.partnerName}</AdminTextLink>
-                <small>{row.area} · {formatPartnerStatus(row.status)}</small>
+                <small>
+                  {row.area} · {formatPartnerStatus(row.status)}
+                </small>
                 <AdminDisclosure className="partner-overview-selection-details">
                   <summary>Profile and service details</summary>
                   <span>
-                    <PartnerOverviewPriceRange maxValue={row.maxServicePrice} minValue={row.minServicePrice} />
-                    {' · '}{formatNumber(row.galleryImageCount)} gallery
-                    {' · '}{formatNumber(row.activeServiceCount)} services
-                    {' · '}{row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : 'No rating'}
+                    <PartnerOverviewPriceRange
+                      maxValue={row.maxServicePrice}
+                      minValue={row.minServicePrice}
+                    />
+                    {' · '}
+                    {formatNumber(row.galleryImageCount)} gallery
+                    {' · '}
+                    {formatNumber(row.activeServiceCount)} services
+                    {' · '}
+                    {row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : 'No rating'}
                   </span>
                 </AdminDisclosure>
               </td>
               <td>
                 {formatNumber(row.profileViews)} views
-                <small>{formatNumber(row.favoriteCount)} favorites · {formatNumber(row.profileViewCustomers)} customers</small>
+                <small>
+                  {formatNumber(row.favoriteCount)} favorites · {formatNumber(row.profileViewCustomers)}{' '}
+                  customers
+                </small>
               </td>
               <td>
                 <StatusBadge tone={row.readinessFlags.includes('Not bookable') ? 'warning' : 'success'}>
@@ -1324,7 +1321,9 @@ function SelectionFrictionCard({
               <td>{formatDurationSeconds(row.averageResponseSeconds)}</td>
               <td>
                 {row.selectionRate}% selected
-                <small>{formatNumber(row.completedBookings)} completed · {row.mainReason}</small>
+                <small>
+                  {formatNumber(row.completedBookings)} completed · {row.mainReason}
+                </small>
               </td>
               <td>
                 <AdminFormControlLink
@@ -1346,15 +1345,18 @@ function SelectionFrictionCard({
 function partnerOperatingStatusMeta(card: AdminPartnerOverviewOperatingStatusCard) {
   if (card.count === 0) return { kind: 'record', scope: 'No action' } as const;
 
-  if (card.key === 'ready-now' || card.key === 'busy' || card.key === 'busy-now' || card.key === 'available-soon') {
+  if (card.key === 'offline') return { kind: 'record', scope: 'Current status' } as const;
+
+  if (
+    card.key === 'ready-now' ||
+    card.key === 'busy' ||
+    card.key === 'busy-now' ||
+    card.key === 'available-soon'
+  ) {
     return { kind: 'live', scope: 'Live' } as const;
   }
 
-  if (
-    card.key === 'available-blocked' ||
-    card.key === 'inactive-7d' ||
-    card.tone === 'danger'
-  ) {
+  if (card.key === 'available-blocked' || card.key === 'inactive-7d' || card.tone === 'danger') {
     return { kind: 'risk', scope: 'Needs action' } as const;
   }
 
@@ -1378,11 +1380,16 @@ function DetailedActionQueues({
       bodyClassName="partner-overview-action-table-body"
       className="partner-overview-section-card"
       description="Active Partner supply, quality, and Finance/Tax queues behind the priorities above."
-      statusLabel={activeLists.length > 0 ? formatPriorityCount(activeLists.length, 'active queue') : 'No work'}
+      statusLabel={
+        activeLists.length > 0 ? formatPriorityCount(activeLists.length, 'active queue') : 'No work'
+      }
       statusTone={activeLists.length > 0 ? 'warning' : 'success'}
       title="Detailed action queues"
     >
-      <AdminTableScroll ariaLabel="Detailed Partner action queues table" className="partner-overview-table-wrap">
+      <AdminTableScroll
+        ariaLabel="Detailed Partner action queues table"
+        className="partner-overview-table-wrap"
+      >
         <AdminDataTable
           className="partner-overview-table partner-overview-action-table"
           emptyMessage="No Partner action queues require follow-up."
@@ -1394,8 +1401,14 @@ function DetailedActionQueues({
             const directoryLink = partnerOverviewDirectoryLink(list.viewAllHref, range, filters);
             return (
               <tr key={list.key}>
-                <td><strong>{list.title}</strong></td>
-                <td><StatusBadge tone={finance ? 'warning' : 'info'}>{finance ? 'Finance / Tax' : 'Partner operations'}</StatusBadge></td>
+                <td>
+                  <strong>{list.title}</strong>
+                </td>
+                <td>
+                  <StatusBadge tone={finance ? 'warning' : 'info'}>
+                    {finance ? 'Finance / Tax' : 'Partner operations'}
+                  </StatusBadge>
+                </td>
                 <td>{formatNumber(list.totalCount)}</td>
                 <td>
                   <AdminTextLink
@@ -1415,10 +1428,8 @@ function DetailedActionQueues({
 }
 
 function partnerPriorityCardMeta(card: PartnerPriorityCardConfig) {
-  if (card.key === 'wallet-risk' || card.key === 'quality-risk' || card.tone === 'danger') {
-    return card.tone === 'success'
-      ? ({ kind: 'live', scope: 'Current queue' } as const)
-      : ({ kind: 'risk', scope: 'Needs action' } as const);
+  if (card.tone === 'danger') {
+    return { kind: 'risk', scope: 'Needs action' } as const;
   }
 
   if (card.tone === 'warning') {
@@ -1426,6 +1437,83 @@ function partnerPriorityCardMeta(card: PartnerPriorityCardConfig) {
   }
 
   return { kind: 'live', scope: 'Live' } as const;
+}
+
+function rankPartnerPriorityLists(lists: readonly AdminPartnerOverview['actionLists'][number][]) {
+  return [...lists].sort((left, right) => {
+    const toneDifference =
+      partnerPriorityToneRank(partnerPriorityQueueMeta(left.key).tone) -
+      partnerPriorityToneRank(partnerPriorityQueueMeta(right.key).tone);
+    if (toneDifference !== 0) return toneDifference;
+    if (left.totalCount !== right.totalCount) return right.totalCount - left.totalCount;
+    return left.key.localeCompare(right.key);
+  });
+}
+
+function partnerPriorityToneRank(tone: PartnerPriorityCardConfig['tone']) {
+  if (tone === 'danger') return 0;
+  if (tone === 'warning') return 1;
+  if (tone === 'primary') return 2;
+  if (tone === 'info') return 3;
+  if (tone === 'success') return 4;
+  return 5;
+}
+
+function partnerPriorityQueueMeta(key: string): {
+  readonly action: string;
+  readonly detail: string;
+  readonly icon: typeof Users;
+  readonly label?: string;
+  readonly tone: PartnerPriorityCardConfig['tone'];
+} {
+  if (key === 'negative-wallet') {
+    return {
+      action: 'Review wallet',
+      detail: 'Negative Partner wallet exposure from canonical VND balances.',
+      icon: WalletCards,
+      label: 'Wallet risk',
+      tone: 'danger',
+    };
+  }
+  if (key === 'pending-verification') {
+    return {
+      action: 'Review verification',
+      detail: 'Partner verification or KYC evidence still needs an operator decision.',
+      icon: BadgeCheck,
+      label: 'Pending verification',
+      tone: 'warning',
+    };
+  }
+  if (key === 'payout-blocked') {
+    return {
+      action: 'Review payout readiness',
+      detail: 'Wallet, bank, or tax readiness currently blocks payout.',
+      icon: WalletCards,
+      tone: 'info',
+    };
+  }
+  if (key === 'high-cancellation' || key === 'no-show-risk' || key === 'low-rating') {
+    return {
+      action: 'Review quality',
+      detail: 'Booking outcome or review signals require Partner operations follow-up.',
+      icon: Star,
+      tone: 'warning',
+    };
+  }
+  if (key === 'tax-info-missing') {
+    return {
+      action: 'Review tax readiness',
+      detail: 'Tax profile readiness requires Finance or Tax follow-up.',
+      icon: WalletCards,
+      tone: 'info',
+    };
+  }
+  return {
+    action: 'Review queue',
+    detail: 'This active Partner queue requires an operator follow-up.',
+    icon: Users,
+    tone: 'info',
+  };
 }
 
 function firstParam(value: string | string[] | undefined) {

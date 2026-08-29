@@ -19,6 +19,20 @@ describe('CouponsPage', () => {
     mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({ data: fallback, ok: true, status: 200 }));
   });
 
+  it('renders the launch-off state without reading coupon APIs', async () => {
+    vi.stubEnv('COUPON_LAUNCH_ENABLED', 'false');
+    try {
+      const page = await CouponsPage({ searchParams: Promise.resolve({ drawer: 'create' }) });
+      const markup = renderToStaticMarkup(page);
+
+      expect(markup).toContain('Not active for current launch');
+      expect(markup).toContain('Historical finance and audit records remain retained');
+      expect(mockedAdminGetResult).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('keeps the default payload small and does not fetch usage until requested', async () => {
     await CouponsPage({ searchParams: Promise.resolve({}) });
     const hrefs = mockedAdminGetResult.mock.calls.map(([href]) => href);
@@ -48,12 +62,20 @@ describe('CouponsPage', () => {
 
   it('paginates the coupon list after applying DB-backed state and search filters', async () => {
     await CouponsPage({
-      searchParams: Promise.resolve({ couponPage: '2', q: 'welcome', view: 'records' }),
+      searchParams: Promise.resolve({ couponPage: '2', q: 'welcome', sort: 'ending-soon', view: 'paused' }),
     });
     const hrefs = mockedAdminGetResult.mock.calls.map(([href]) => href);
 
-    expect(hrefs).toContain('/admin/coupons?take=10&state=records&q=welcome&skip=10');
-    expect(hrefs).toContain('/admin/coupons/summary?state=records&q=welcome');
+    expect(hrefs).toContain('/admin/coupons?take=10&state=paused&q=welcome&sort=ending-soon&skip=10');
+    expect(hrefs).toContain('/admin/coupons/summary?state=paused&q=welcome');
+  });
+
+  it('keeps the legacy records view as the combined API alias', async () => {
+    await CouponsPage({ searchParams: Promise.resolve({ view: 'records' }) });
+    const hrefs = mockedAdminGetResult.mock.calls.map(([href]) => href);
+
+    expect(hrefs).toContain('/admin/coupons?take=10&state=records');
+    expect(hrefs).toContain('/admin/coupons/summary?state=records');
   });
 
   it('renders a page-2 confirmation from the independent coupon lookup', async () => {
@@ -79,8 +101,35 @@ describe('CouponsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Activate PAGE2?');
+    expect(markup).toContain('Operational reason');
+    expect(markup).toContain('required=""');
     expect(markup).toContain('name="returnTo"');
     expect(markup).toContain('/coupons?couponPage=2&amp;view=records');
+  });
+
+  it('uses the sanitized embedded returnTo from a generated confirmation link', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/coupons/coupon-page-2') {
+        return {
+          data: { active: false, code: 'PAGE2', discount: { type: 'percent', value: 10 }, id: 'coupon-page-2' },
+          ok: true,
+          status: 200,
+        };
+      }
+      return { data: fallback, ok: true, status: 200 };
+    });
+
+    const markup = renderToStaticMarkup(await CouponsPage({
+      searchParams: Promise.resolve({
+        confirm: 'toggle',
+        couponId: 'coupon-page-2',
+        returnTo: '/coupons?couponPage=2&q=PAGE&sort=ending-soon&view=paused',
+      }),
+    }));
+
+    expect(markup).toContain(
+      'href="/coupons?couponPage=2&amp;q=PAGE&amp;sort=ending-soon&amp;view=paused"',
+    );
   });
 
   it('does not render zero KPI values or mutation links when summary fails', async () => {

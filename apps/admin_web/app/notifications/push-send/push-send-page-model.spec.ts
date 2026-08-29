@@ -32,6 +32,21 @@ describe('push send page model', () => {
     expect(normalizePushCampaignPage('3.9')).toBe(3);
   });
 
+  it('caps generated history requests at the last truthful offset while preserving the range', () => {
+    const api = new URL(buildPushCampaignApiHref({
+      campaignPage: '502',
+      campaignRange: 'all',
+    }), 'http://admin.local');
+
+    expect(api.searchParams.get('skip')).toBe('10000');
+    expect(api.searchParams.get('from')).toBeNull();
+    expect(api.searchParams.get('to')).toBeNull();
+    expect(buildPushCampaignPageHref(502, { campaignRange: 'all' })).toBe(
+      '/notifications/push-send?campaignRange=all&campaignPage=501',
+    );
+    expect(normalizePushCampaignPage('502')).toBe(502);
+  });
+
   it('uses honest history and lifecycle labels', () => {
     expect(pushCampaignDateRangeLinks.at(-1)?.label).toBe('All history');
     expect(pushCampaignDateRangeLabel('yesterday')).toBe('Yesterday');

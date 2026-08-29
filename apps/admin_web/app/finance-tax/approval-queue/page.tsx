@@ -76,6 +76,7 @@ type FinanceApprovalPriorityItem = {
   readonly createdAt: string;
   readonly currency?: string;
   readonly detail: string;
+  readonly detailIsMachineToken?: boolean;
   readonly href: string;
   readonly id: string;
   readonly amount?: number;
@@ -84,9 +85,11 @@ type FinanceApprovalPriorityItem = {
   readonly riskRank: number;
   readonly riskTone: StatusBadgeTone;
   readonly subject: string;
+  readonly subjectIsMachineToken?: boolean;
   readonly typeLabel: string;
   readonly typeTone: StatusBadgeTone;
   readonly unassigned: boolean;
+  readonly workstream: 'decision' | 'repair';
 };
 
 const EMPTY_QUEUE: AdminFinanceApprovalQueue = {
@@ -159,7 +162,7 @@ const EMPTY_BANK_RECONCILIATION_SUMMARY: AdminBankReconciliationSummary = {
   unmatchedCount: 0,
 };
 
-export const metadata: Metadata = { title: 'Finance Approval Queue | HANDS Admin' };
+export const metadata: Metadata = { title: 'Finance Approval Queue' };
 
 export default async function FinanceApprovalQueuePage({ searchParams }: FinanceApprovalQueuePageProps) {
   const params = searchParams ? await searchParams : {};
@@ -287,7 +290,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
   const readyPriorityItems = priorityItems.filter((item) => financeApprovalPriorityWorkstream(item) === 'decision');
   const repairPriorityItems = priorityItems.filter((item) => financeApprovalPriorityWorkstream(item) === 'repair');
   const priorityCount = queue.summary.totalOpenCount;
-  const focusedQueueCount = queue.pagination?.totalCount ?? financeApprovalFocusedQueueCount(queue, queueView);
+  const focusedQueueCount = queue.pagination?.totalCount ?? financeApprovalFocusedQueueCount(queue, queueView, review);
   const focusedQueueClear = queueView !== 'priority' && focusedQueueCount === 0;
   const queuePagination = queue.pagination ?? {
     hasNext: false,
@@ -305,7 +308,10 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
 
   return (
     <AdminPageTemplate
-      actions={
+      description="Start with the oldest open finance work, then open one focused queue to review evidence and make a controlled decision."
+      title="Finance Approval Queue"
+    >
+      <div className="finance-approval-workspace-navigation">
         <AdminSegmentedControl
           activeValue={isOtherApprovalView(queueView) ? 'other' : queueView}
           ariaLabel="Finance approval workspaces"
@@ -319,10 +325,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
             { href: financeApprovalQueueHref(take, 'policies'), label: 'Other approvals', value: 'other' },
           ]}
         />
-      }
-      description="Start with the oldest open finance work, then open one focused queue to review evidence and make a controlled decision."
-      title="Finance Approval Queue"
-    >
+      </div>
       <FinanceApprovalSnapshotControl generatedAt={queue.generatedAt} />
 
       {!queueResult.ok ? (
@@ -394,22 +397,22 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
         className="finance-approval-command-board"
       >
         <FinanceListCommandCard
-          detail={`${queue.summary.refundReadyCount} ready · ${queue.summary.refundBlockedCount} blocked · ${queue.summary.refundStateMismatchCount} state mismatch`}
+          detail={`${queue.summary.refundReadyCount} ready now · ${queue.summary.refundBlockedCount} blocked · ${queue.summary.refundStateMismatchCount} repairs`}
           href={financeApprovalQueueHref(take, 'refunds')}
           icon={RotateCcw}
           label="Refund approvals"
-          scope={approvalQueueCardScope(queue.summary.refundPendingCount, 'Needs approval')}
-          tone={queue.summary.refundPendingCount > 0 ? 'danger' : 'success'}
-          value={String(queue.summary.refundPendingCount)}
+          scope={approvalQueueReadyCardScope(queue.summary.refundReadyCount)}
+          tone={queue.summary.refundReadyCount > 0 ? 'danger' : queue.summary.refundPendingCount > 0 ? 'warning' : 'success'}
+          value={String(queue.summary.refundReadyCount)}
         />
         <FinanceListCommandCard
-          detail={`${queue.summary.payoutBatchReadyCount} ready · ${queue.summary.payoutBatchBlockedCount} blocked`}
+          detail={`${queue.summary.payoutBatchReadyCount} ready now · ${queue.summary.payoutBatchBlockedCount} blocked`}
           href={financeApprovalQueueHref(take, 'payouts')}
           icon={Landmark}
           label="Payout approvals"
-          scope={approvalQueueCardScope(queue.summary.payoutBatchPendingCount, 'Needs approval')}
-          tone={queue.summary.payoutBatchPendingCount > 0 ? 'danger' : 'success'}
-          value={String(queue.summary.payoutBatchPendingCount)}
+          scope={approvalQueueReadyCardScope(queue.summary.payoutBatchReadyCount)}
+          tone={queue.summary.payoutBatchReadyCount > 0 ? 'danger' : queue.summary.payoutBatchPendingCount > 0 ? 'warning' : 'success'}
+          value={String(queue.summary.payoutBatchReadyCount)}
         />
         <FinanceListCommandCard
           detail={`${queue.summary.withdrawalPaidCloseoutPendingCount} paid closeout pending · ${queue.summary.withdrawalReviewRequiredCount} requires review`}
@@ -520,7 +523,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
         </AdminFormGrid>
       </AdminFilterPanel> : null}
 
-      {queueResult.ok && !focusedQueueClear && (queueView === 'refunds' || queueView === 'payouts') ? (
+      {queueResult.ok && (queueView === 'refunds' || queueView === 'payouts') ? (
         <div aria-label="Review state" className="finance-approval-review-controls" role="group">
           <span className="muted">Review state</span>
           <AdminSegmentedControl
@@ -567,8 +570,8 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
             </AdminFormControlLink>
           }
           className="finance-approval-empty-queue"
-          description="There is no work in this approval queue. No table or inactive decision controls are shown."
-          statusLabel="No work"
+          description={financeApprovalEmptyQueueDescription(queue, queueView, review)}
+          statusLabel="Current scope empty"
           statusTone="success"
           title={financeApprovalFocusedQueueTitle(queueView)}
         >
@@ -856,6 +859,11 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
                 <StatusBadge tone={request.hasBankAccount ? 'success' : 'danger'}>
                   {request.hasBankAccount ? 'Recorded' : 'Missing'}
                 </StatusBadge>
+                <div className="muted">
+                  {request.bankName && request.bankAccountLast4
+                    ? `${request.bankName} · •••• ${request.bankAccountLast4}`
+                    : 'Masked bank evidence unavailable'}
+                </div>
               </td>
               <td><DateTimeText value={request.createdAt} /></td>
               <td>
@@ -874,7 +882,12 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
                         Approve paid closeout
                       </AdminFormControlLink>
                     ) : (
-                      <StatusBadge tone="danger">Approval blocked</StatusBadge>
+                      <>
+                        <StatusBadge tone="danger">Approval blocked</StatusBadge>
+                        {request.approvalEvidenceMissing?.length ? (
+                          <span className="muted">Missing {request.approvalEvidenceMissing.join(', ')}</span>
+                        ) : null}
+                      </>
                     )
                   ) : null}
                   <StatusBadgeLink
@@ -924,14 +937,21 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
                   <div className="muted">{batch.providerProfileId}</div>
                 </td>
                 <td><strong><MoneyText amount={batch.totalNetAmount} currency={batch.currency} /></strong></td>
-                <td>{batch.transferRef ?? <span className="muted">Missing</span>}</td>
+                <td>
+                  {batch.transferRef ?? <span className="muted">Missing</span>}
+                  <div className="muted">
+                    {batch.bankName && batch.bankAccountLast4
+                      ? `${batch.bankName} · •••• ${batch.bankAccountLast4}`
+                      : 'Masked bank evidence unavailable'}
+                  </div>
+                </td>
                 <td>
                   {batch.paidCloseoutRequestedBy?.fullName ??
                     batch.paidCloseoutRequestedBy?.email ??
                     batch.paidCloseoutRequestedByAdminId ??
                     'Unknown maker'}
                 </td>
-                <td><DateTimeText value={batch.createdAt} /></td>
+                <td>{batch.requestedAt ? <DateTimeText value={batch.requestedAt} /> : <span className="muted">Unavailable</span>}</td>
                 <td>
                   <div className="admin-inline-action-stack">
                     {batch.reviewState === 'READY' ? (
@@ -950,7 +970,12 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
                         Approve paid closeout
                       </AdminFormControlLink>
                     ) : (
-                      <StatusBadge tone="danger">Approval blocked</StatusBadge>
+                      <>
+                        <StatusBadge tone="danger">Approval blocked</StatusBadge>
+                        {batch.approvalEvidenceMissing?.length ? (
+                          <span className="muted">Missing {batch.approvalEvidenceMissing.join(', ')}</span>
+                        ) : null}
+                      </>
                     )}
                     <StatusBadgeLink
                       href={`/payouts?${new URLSearchParams({
@@ -996,13 +1021,22 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
                         ? 'State mismatch'
                         : 'Blocked'}
                   </StatusBadge>
-                  {request.blockers.length ? (
-                    <div className="muted">{request.blockers.map((blocker) => blocker.message).join(' ')}</div>
-                  ) : null}
+                  <strong className="admin-mt-6">{financeApprovalRefundPrimaryBlocker(request)}</strong>
+                  <AdminDetails className="finance-approval-row-details">
+                    <summary>Evidence details</summary>
+                    <div className="muted">
+                      {request.blockers.length
+                        ? request.blockers.map((blocker) => blocker.message).join(' ')
+                        : 'No server blocker is recorded.'}
+                    </div>
+                    <div className="muted">Refund {request.id} · Payment {request.paymentId}</div>
+                    <div className="muted">
+                      Source {humanizeStatus(request.source ?? 'ADMIN_MANUAL')} · Maker {request.requestedByAdminId ?? 'System request'}
+                    </div>
+                  </AdminDetails>
                 </td>
                 <td>
-                  <strong>{request.bookingId}</strong>
-                  <div className="muted">{request.paymentId}</div>
+                  <strong><FinanceApprovalRecordToken machine value={request.bookingId} /></strong>
                 </td>
                 <td>
                   <strong>{humanizeStatus(request.paymentMethod)}</strong>
@@ -1011,13 +1045,9 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
                 <td><strong><MoneyText amount={request.amount} currency={request.currency} /></strong></td>
                 <td>
                   <strong>{request.reason ?? 'Refund requested'}</strong>
-                  <div className="muted">{humanizeStatus(request.source ?? 'ADMIN_MANUAL')}</div>
                 </td>
                 <td>
                   <DateTimeText value={request.requestedAt} />
-                  <div className="muted">
-                    {request.requestedByAdminId ?? 'System request'}
-                  </div>
                 </td>
                 <td>
                   <div className="finance-approval-decision-actions">
@@ -1099,12 +1129,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
               </td>
               <td>
                 <strong>{request.ownerName ?? request.ownerId}</strong>
-                <div className="muted">{request.ownerType} · {request.ownerId}</div>
                 <strong>{humanizeStatus(request.adjustmentType)}</strong>
-                <div className="muted">{humanizeStatus(request.direction)} · {request.reason}</div>
-                <div className="muted">
-                  Maker {request.requestedBy?.fullName ?? request.requestedBy?.email ?? request.requestedByAdminId}
-                </div>
               </td>
               <td><strong><MoneyText amount={request.amount} currency={request.currency} /></strong></td>
               <td>
@@ -1129,6 +1154,8 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
                 <AdminDetails className="finance-approval-row-details">
                   <summary>Evidence details</summary>
                   <div className="muted">
+                    {request.ownerType} · {request.ownerId}. {humanizeStatus(request.direction)} · {request.reason}.
+                    Maker {request.requestedBy?.fullName ?? request.requestedBy?.email ?? request.requestedByAdminId}.
                     Attachment {request.requiresAttachment ? (request.attachmentUrl ? 'attached' : 'missing') : 'optional'}.
                     {request.monthlyPeriod ? ` Period ${request.monthlyPeriod}.` : ''}
                   </div>
@@ -1250,32 +1277,40 @@ function FinanceApprovalPriorityTable({
     <FinanceDataTable
       ariaLabel={ariaLabel}
       emptyMessage={emptyMessage}
-      headers={['Risk', 'Work type', 'Subject', 'Amount', 'Age', 'Control', 'Owner', 'Action']}
+      headers={['Risk / Work', 'Subject', 'Amount / Age', 'Control / Owner', 'Action']}
       rowCount={items.length}
       scrollClassName="finance-approval-priority-table"
     >
       {items.map((item) => (
         <tr key={item.id}>
-          <td><StatusBadge tone={item.riskTone}>{item.riskLabel}</StatusBadge></td>
-          <td><StatusBadge tone={item.typeTone}>{item.typeLabel}</StatusBadge></td>
           <td>
-            <strong>{item.subject}</strong>
-            <div className="muted">{item.detail}</div>
+            <div className="finance-approval-priority-badges">
+              <StatusBadge tone={item.riskTone}>{item.riskLabel}</StatusBadge>
+              <StatusBadge tone={item.typeTone}>{item.typeLabel}</StatusBadge>
+            </div>
           </td>
           <td>
+            <strong>
+              <FinanceApprovalRecordToken machine={item.subjectIsMachineToken} value={item.subject} />
+            </strong>
+            <div className="muted finance-approval-priority-detail">
+              <FinanceApprovalRecordToken machine={item.detailIsMachineToken} value={item.detail} />
+            </div>
+          </td>
+          <td className="finance-approval-priority-amount-age">
             {item.amount !== undefined && item.currency ? (
               <strong><MoneyText amount={item.amount} currency={item.currency} /></strong>
             ) : (
               <span className="muted">Policy change</span>
             )}
-          </td>
-          <td>
             <strong>{financeApprovalAgeLabel(item.createdAt)}</strong>
             <div className="muted"><DateTimeText value={item.createdAt} /></div>
           </td>
-          <td><StatusBadge tone={item.controlTone}>{item.controlLabel}</StatusBadge></td>
-          <td>{item.ownerLabel}</td>
-          <td>
+          <td className="finance-approval-priority-control-owner">
+            <StatusBadge tone={item.controlTone}>{item.controlLabel}</StatusBadge>
+            <span className="muted">{item.ownerLabel}</span>
+          </td>
+          <td className="finance-approval-priority-action">
             <StatusBadgeLink
               aria-label={`${item.actionLabel}: ${item.typeLabel} ${item.subject}`}
               href={item.href}
@@ -1287,6 +1322,21 @@ function FinanceApprovalPriorityTable({
         </tr>
       ))}
     </FinanceDataTable>
+  );
+}
+
+function FinanceApprovalRecordToken({
+  machine = false,
+  value,
+}: {
+  readonly machine?: boolean;
+  readonly value: string;
+}) {
+  if (!machine || value.length <= 24) return value;
+  return (
+    <span aria-label={value} className="finance-approval-record-token" title={value}>
+      <span aria-hidden="true">{value.slice(0, 12)}…{value.slice(-8)}</span>
+    </span>
   );
 }
 
@@ -1502,6 +1552,7 @@ function buildFinanceApprovalPriorityItems(
     id: `policy-${request.requestId}`,
     ownerLabel: request.requestedBy.fullName ?? request.requestedBy.email ?? request.requestedBy.id,
     subject: request.policyName, typeLabel: 'Fee policy', typeTone: 'info', unassigned: false,
+    workstream: 'decision',
   }));
   const companyBankAccountItems = queue.companyBankAccountRequests.map<FinanceApprovalPriorityItem>((request) => ({
     ...financeApprovalPriorityRisk(request.reviewState, request.requestedAt),
@@ -1515,6 +1566,7 @@ function buildFinanceApprovalPriorityItems(
     id: `company-bank-account-${request.requestId}`,
     ownerLabel: request.requestedBy.fullName ?? request.requestedBy.email ?? request.requestedBy.id,
     subject: request.proposed.name, typeLabel: 'Bank account', typeTone: 'warning', unassigned: false,
+    workstream: request.reviewState === 'READY' ? 'decision' : 'repair',
   }));
   const depositItems = queue.partnerBankDepositRequests.map<FinanceApprovalPriorityItem>((request) => {
     const ready = request.preflight?.canApprove === true;
@@ -1525,12 +1577,14 @@ function buildFinanceApprovalPriorityItems(
       controlLabel: hasEvidence ? (ready ? 'Independent approval' : 'Control blocked') : 'Evidence missing',
       controlTone: ready ? 'warning' : 'danger', createdAt: request.createdAt, currency: request.currency,
       detail: request.bankTransactionId,
+      detailIsMachineToken: true,
       href: ready
         ? financeApprovalConfirmHref(take, 'deposits', 'approve-deposit', request.id)
         : `/finance-tax/partner-bank-deposits/${encodeURIComponent(request.id)}`,
       id: `deposit-${request.id}`,
       ownerLabel: request.requestedBy.fullName ?? request.requestedBy.email ?? request.requestedBy.id,
       subject: request.partnerName, typeLabel: 'Bank deposit', typeTone: 'warning', unassigned: false,
+      workstream: ready ? 'decision' : 'repair',
     };
   });
   const withdrawalItems = queue.withdrawalRequests.map<FinanceApprovalPriorityItem>((request) => {
@@ -1538,14 +1592,25 @@ function buildFinanceApprovalPriorityItems(
     return {
       ...financeApprovalPriorityRisk(ready ? 'READY' : request.reviewState, request.createdAt),
       actionLabel: ready ? 'Review paid closeout' : 'Open withdrawal', amount: request.amount,
-      controlLabel: ready ? 'Independent approval' : request.hasBankAccount ? humanizeStatus(request.status) : 'Bank account missing',
+      controlLabel: ready
+        ? 'Independent approval'
+        : request.approvalEvidenceMissing?.length
+          ? `Missing ${request.approvalEvidenceMissing.join(', ')}`
+          : request.hasBankAccount ? humanizeStatus(request.status) : 'Bank account missing',
       controlTone: ready ? 'warning' : request.hasBankAccount ? withdrawalTone(request.status) : 'danger',
       createdAt: request.createdAt, currency: request.currency, detail: request.providerProfileId,
+      detailIsMachineToken: true,
       href: ready
         ? financeApprovalConfirmHref(take, 'withdrawals', 'approve-withdrawal-paid', request.id)
-        : `/payouts?${new URLSearchParams({ range: 'all', withdrawalStatus: request.status }).toString()}`,
+        : `/payouts?${new URLSearchParams({
+            range: 'all',
+            view: 'withdrawals',
+            withdrawalId: request.id,
+            withdrawalStatus: request.status,
+          }).toString()}#withdrawal-${encodeURIComponent(request.id)}`,
       id: `withdrawal-${request.id}`, ownerLabel: 'Unassigned', subject: request.partnerName,
       typeLabel: 'Withdrawal', typeTone: withdrawalTone(request.status), unassigned: true,
+      workstream: ready ? 'decision' : 'repair',
     };
   });
   const payoutItems = queue.payoutBatchRequests.map<FinanceApprovalPriorityItem>((batch) => {
@@ -1554,11 +1619,24 @@ function buildFinanceApprovalPriorityItems(
     return {
       ...financeApprovalPriorityRisk(batch.reviewState, batch.createdAt),
       actionLabel: ready ? 'Review paid closeout' : 'Open payout', amount: batch.totalNetAmount,
-      controlLabel: ready ? 'Independent approval' : 'Control blocked', controlTone: ready ? 'warning' : 'danger',
+      controlLabel: ready
+        ? 'Independent approval'
+        : batch.approvalEvidenceMissing?.length
+          ? `Missing ${batch.approvalEvidenceMissing.join(', ')}`
+          : 'Control blocked',
+      controlTone: ready ? 'warning' : 'danger',
       createdAt: batch.createdAt, currency: batch.currency, detail: batch.transferRef ?? batch.providerProfileId,
-      href: ready ? financeApprovalConfirmHref(take, 'payouts', 'approve-payout-paid', batch.id) : '/payouts?workspace=operations&review=in-progress',
+      detailIsMachineToken: true,
+      href: ready
+        ? financeApprovalConfirmHref(take, 'payouts', 'approve-payout-paid', batch.id)
+        : `/payouts?${new URLSearchParams({
+            payoutBatchId: batch.id,
+            review: 'in-progress',
+            workspace: 'operations',
+          }).toString()}#payout-batch-${encodeURIComponent(batch.id)}`,
       id: `payout-${batch.id}`, ownerLabel, subject: batch.partnerName, typeLabel: 'Payout',
       typeTone: ready ? 'warning' : 'danger', unassigned: ownerLabel === 'Unassigned',
+      workstream: ready ? 'decision' : 'repair',
     };
   });
   const walletItems = queue.walletAdjustmentRequests.map<FinanceApprovalPriorityItem>((request) => {
@@ -1579,7 +1657,9 @@ function buildFinanceApprovalPriorityItems(
         ? financeApprovalConfirmHref(take, 'wallet', action, request.id)
         : `${financeApprovalQueueHref(take, 'wallet')}#approval-${request.id}`,
       id: `wallet-${request.id}`, ownerLabel, subject: request.ownerName ?? request.ownerId,
+      subjectIsMachineToken: !request.ownerName,
       typeLabel: 'Wallet', typeTone: 'warning', unassigned: ownerLabel === 'Unassigned',
+      workstream: action === 'approve-wallet' ? 'decision' : 'repair',
     };
   });
   const refundItems = queue.refundRequests.map<FinanceApprovalPriorityItem>((request) => {
@@ -1597,7 +1677,9 @@ function buildFinanceApprovalPriorityItems(
           ? financeApprovalConfirmHref(take, 'refunds', 'approve-refund', request.id)
           : `${financeApprovalQueueHref(take, 'refunds')}#approval-${request.id}`,
       id: `refund-${request.id}`, ownerLabel, subject: request.bookingId,
+      subjectIsMachineToken: true,
       typeLabel: 'Refund', typeTone: 'danger', unassigned: ownerLabel === 'Unassigned',
+      workstream: request.reviewState === 'READY' ? 'decision' : 'repair',
     };
   });
 
@@ -1624,9 +1706,7 @@ function buildFinanceApprovalPriorityItems(
 }
 
 function financeApprovalPriorityWorkstream(item: FinanceApprovalPriorityItem) {
-  return item.controlTone === 'danger' || item.riskLabel === 'State mismatch' || item.riskLabel === 'Stale request'
-    ? ('repair' as const)
-    : ('decision' as const);
+  return item.workstream;
 }
 
 function priorityTimestamp(value: string) {
@@ -1678,9 +1758,22 @@ function isOtherApprovalView(view: FinanceApprovalQueueView) {
   return view === 'policies' || view === 'bank-accounts' || view === 'deposits';
 }
 
-function financeApprovalFocusedQueueCount(queue: AdminFinanceApprovalQueue, view: FinanceApprovalQueueView) {
-  if (view === 'refunds') return queue.summary.refundPendingCount;
-  if (view === 'payouts') return queue.summary.payoutBatchPendingCount;
+function financeApprovalFocusedQueueCount(
+  queue: AdminFinanceApprovalQueue,
+  view: FinanceApprovalQueueView,
+  review: FinanceApprovalPayoutReview | FinanceApprovalRefundReview | 'all',
+) {
+  if (view === 'refunds') {
+    if (review === 'ready') return queue.summary.refundReadyCount;
+    if (review === 'blocked') return queue.summary.refundBlockedCount;
+    if (review === 'state-mismatch') return queue.summary.refundStateMismatchCount;
+    return queue.summary.refundPendingCount;
+  }
+  if (view === 'payouts') {
+    if (review === 'ready') return queue.summary.payoutBatchReadyCount;
+    if (review === 'blocked') return queue.summary.payoutBatchBlockedCount;
+    return queue.summary.payoutBatchPendingCount;
+  }
   if (view === 'withdrawals') return queue.summary.withdrawalOpenCount;
   if (view === 'wallet') return queue.summary.walletAdjustmentPendingCount;
   if (view === 'policies') return queue.summary.paymentFeePolicyPendingCount;
@@ -1698,6 +1791,20 @@ function financeApprovalFocusedQueueTitle(view: FinanceApprovalQueueView) {
   if (view === 'bank-accounts') return 'Company bank account approvals';
   if (view === 'deposits') return 'Partner deposit approvals';
   return 'Priority finance work';
+}
+
+function financeApprovalEmptyQueueDescription(
+  queue: AdminFinanceApprovalQueue,
+  view: FinanceApprovalQueueView,
+  review: FinanceApprovalPayoutReview | FinanceApprovalRefundReview | 'all',
+) {
+  if (view === 'refunds') {
+    return `No refund decisions are ${review === 'ready' ? 'ready for this operator' : `in the ${review} scope`}. ${queue.summary.refundBlockedCount} blocked and ${queue.summary.refundStateMismatchCount} repair requests remain available in Review state.`;
+  }
+  if (view === 'payouts') {
+    return `No payout decisions are ${review === 'ready' ? 'ready for this operator' : `in the ${review} scope`}. ${queue.summary.payoutBatchBlockedCount} blocked requests remain available in Review state.`;
+  }
+  return 'The current approval scope is empty. Other active finance queues remain linked below.';
 }
 
 function financeApprovalActiveQueueLinks(queue: AdminFinanceApprovalQueue, take: number) {
@@ -1791,7 +1898,8 @@ function buildFinanceApprovalConfirmation(
     if (
       !withdrawal ||
       withdrawal.status !== 'BANK_TRANSFER_PENDING' ||
-      withdrawal.reviewState !== 'READY'
+      withdrawal.reviewState !== 'READY' ||
+      !financeApprovalWithdrawalEvidenceReady(withdrawal)
     ) {
       return null;
     }
@@ -1807,10 +1915,12 @@ function buildFinanceApprovalConfirmation(
         { label: 'Amount', value: formatMoney(withdrawal.amount, withdrawal.currency) },
         { label: 'Lifecycle', value: withdrawal.status },
         { label: 'Transfer reference', value: withdrawal.transferRef ?? 'Missing' },
+        { label: 'Maker', value: withdrawal.requestedBy?.fullName ?? withdrawal.requestedBy?.email ?? withdrawal.requestedByAdminId },
+        { label: 'Requested at', value: withdrawal.requestedAt },
         { label: 'Current approver', value: adminOperatorLabel(queue.currentApprover) },
-        { label: 'Bank evidence', value: withdrawal.hasBankAccount ? 'Bank account linked' : 'Bank account missing' },
+        { label: 'Bank evidence', value: `${withdrawal.bankName} · •••• ${withdrawal.bankAccountLast4}` },
         { label: 'Primary blocker', value: approvalPreflightBlockerSummary(withdrawal.preflight) },
-        { label: 'Wallet / debit impact', value: 'Partner wallet debit after paid closeout' },
+        { label: 'Wallet / debit impact', value: `${formatMoney(withdrawal.walletBefore ?? 0, withdrawal.currency)} → ${formatMoney(withdrawal.walletAfter ?? 0, withdrawal.currency)}` },
         { label: 'GL / settlement / tax', value: 'Balanced paid withdrawal journal; no booking tax mutation' },
         { label: 'Snapshot time', value: queue.generatedAt },
       ],
@@ -1836,7 +1946,12 @@ function buildFinanceApprovalConfirmation(
   }
   if (action === 'approve-payout-paid') {
     const batch = queue.payoutBatchRequests.find((item) => item.id === requestId);
-    if (!batch || batch.status !== 'PROCESSING' || batch.reviewState !== 'READY') {
+    if (
+      !batch ||
+      batch.status !== 'PROCESSING' ||
+      batch.reviewState !== 'READY' ||
+      !financeApprovalPayoutEvidenceReady(batch)
+    ) {
       return null;
     }
     return {
@@ -1852,11 +1967,14 @@ function buildFinanceApprovalConfirmation(
         { label: 'Lifecycle', value: batch.status },
         { label: 'Transfer reference', value: batch.transferRef ?? 'Missing' },
         { label: 'Maker', value: batch.paidCloseoutRequestedBy?.fullName ?? batch.paidCloseoutRequestedBy?.email ?? batch.paidCloseoutRequestedByAdminId ?? 'Unknown maker' },
-        { label: 'Requested at', value: batch.createdAt },
+        { label: 'Requested at', value: batch.requestedAt },
         { label: 'Current approver', value: adminOperatorLabel(queue.currentApprover) },
         { label: 'Independent control', value: batch.reviewState === 'READY' ? 'Passed' : 'Blocked' },
+        { label: 'Bank evidence', value: `${batch.bankName} · •••• ${batch.bankAccountLast4}` },
+        { label: 'Linked earnings', value: `${batch.earningCount} earning${batch.earningCount === 1 ? '' : 's'}` },
+        { label: 'Withholding evidence', value: batch.withholdingApplied ? `${batch.withholdingCount} linked deduction record${batch.withholdingCount === 1 ? '' : 's'}` : 'Not applicable' },
         { label: 'Primary blocker', value: approvalPreflightBlockerSummary(batch.preflight) },
-        { label: 'Wallet / debit impact', value: 'Partner wallet debit and linked earnings paid' },
+        { label: 'Wallet / debit impact', value: `${formatMoney(batch.walletBefore ?? 0, batch.currency)} → ${formatMoney(batch.walletAfter ?? 0, batch.currency)}` },
         { label: 'GL / settlement / tax', value: 'Balanced payout journal and withholding closeout' },
         { label: 'Snapshot time', value: queue.generatedAt },
       ],
@@ -2035,6 +2153,38 @@ function buildFinanceApprovalConfirmation(
   };
 }
 
+function financeApprovalWithdrawalEvidenceReady(
+  withdrawal: AdminFinanceApprovalQueue['withdrawalRequests'][number],
+) {
+  return (withdrawal.approvalEvidenceMissing?.length ?? 0) === 0 &&
+    Boolean(withdrawal.requestedByAdminId) &&
+    Boolean(withdrawal.requestedAt) &&
+    Boolean(withdrawal.transferRef?.trim()) &&
+    Boolean(withdrawal.bankName?.trim()) &&
+    /^\d{4}$/u.test(withdrawal.bankAccountLast4 ?? '') &&
+    typeof withdrawal.walletBefore === 'number' &&
+    typeof withdrawal.walletAfter === 'number' &&
+    withdrawal.walletAfter === withdrawal.walletBefore - withdrawal.amount;
+}
+
+function financeApprovalPayoutEvidenceReady(
+  batch: AdminFinanceApprovalQueue['payoutBatchRequests'][number],
+) {
+  return (batch.approvalEvidenceMissing?.length ?? 0) === 0 &&
+    Boolean(batch.paidCloseoutRequestedByAdminId) &&
+    Boolean(batch.requestedAt) &&
+    Boolean(batch.transferRef?.trim()) &&
+    Boolean(batch.bankName?.trim()) &&
+    /^\d{4}$/u.test(batch.bankAccountLast4 ?? '') &&
+    Number.isInteger(batch.earningCount) &&
+    (batch.earningCount ?? 0) > 0 &&
+    Number.isInteger(batch.withholdingCount) &&
+    (!batch.withholdingApplied || (batch.withholdingCount ?? 0) > 0) &&
+    typeof batch.walletBefore === 'number' &&
+    typeof batch.walletAfter === 'number' &&
+    batch.walletAfter === batch.walletBefore - batch.totalNetAmount;
+}
+
 function FinanceApprovalEvidenceSnapshot({
   description,
   rows,
@@ -2092,6 +2242,16 @@ function approvalPreflightBlockerSummary(preflight?: { blockers?: Array<{ messag
   return preflight?.blockers?.map((blocker) => blocker.message).join(' ') || 'None';
 }
 
+function financeApprovalRefundPrimaryBlocker(
+  request: AdminFinanceApprovalQueue['refundRequests'][number],
+) {
+  if (request.reviewState === 'READY') return 'Current evidence passed';
+  if (request.reviewState === 'STATE_MISMATCH') {
+    return `Payment is ${humanizeStatus(request.paymentStatus)}; repair before decision`;
+  }
+  return 'Independent Finance approver required';
+}
+
 function walletAdjustmentPrimaryBlocker(
   request: AdminFinanceApprovalQueue['walletAdjustmentRequests'][number],
 ) {
@@ -2129,6 +2289,10 @@ function readSearchParam(value: string | string[] | undefined) {
 
 function approvalQueueCardScope(count: number, activeScope: string) {
   return count > 0 ? activeScope : 'Clear';
+}
+
+function approvalQueueReadyCardScope(readyCount: number) {
+  return readyCount > 0 ? 'Needs approval' : 'No ready decisions';
 }
 
 function normalizeFinanceApprovalWalletReview(value: string): FinanceApprovalWalletReview {

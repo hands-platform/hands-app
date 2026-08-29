@@ -60,9 +60,9 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain("smokePath: '/finance-tax/settlement-reversals'");
     expect(scriptSource).toContain("listPath: '/finance-tax/settlement-reversals?range=all'");
     expect(scriptSource).toContain('shouldRunDeepSection(target.smokePath ?? target.listPath)');
-    expect(scriptSource).toContain('Settlement record overview');
-    expect(scriptSource).toContain('Settlement evidence hub');
-    expect(scriptSource).toContain('Accounting amount breakdown');
+    expect(scriptSource).toContain('Identity');
+    expect(scriptSource).toContain('Canonical evidence');
+    expect(scriptSource).toContain('Allocation equation');
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/payment-clearing'), 'finance-tax/payment-clearing')");
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/general-ledger'), 'finance-tax/general-ledger')");
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/bank-reconciliation'), 'finance-tax/bank-reconciliation')");

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   APP_USAGE_DELAY_THRESHOLD_MS,
+  adminUsageProductionCustomerSql,
   getAdminUsageOverview,
   usageFreshnessStatus,
 } from './admin-usage-overview-query';
@@ -207,6 +208,8 @@ describe('getAdminUsageOverview', () => {
     expect(sql).toContain("= 'PRODUCTION'");
     expect(sql).toContain("<> 'SYNTHETIC'");
     expect(sql).toContain('customer_user."fixtureKind" IS NULL');
+    expect(sql).toContain('customer_user."fixtureRunId" IS NULL');
+    expect(sql).toContain('customer_user."fixtureExpiresAt" IS NULL');
     expect(sql).not.toContain("event.metadata #>> '{dataOrigin}'");
     expect(aggregateQueries.length).toBeGreaterThan(0);
     expect(aggregateQueries.every((query) => query.values?.includes(AppUsageOrigin.PRODUCTION))).toBe(true);
@@ -225,6 +228,18 @@ describe('getAdminUsageOverview', () => {
     expect(rankingSql).toContain('INNER JOIN usage');
     expect(rankingSql).toContain('usage."totalEventCount" > 0');
   });
+
+  it.each(['fixtureKind', 'fixtureRunId', 'fixtureExpiresAt'] as const)(
+    'requires %s to be null for the production customer cohort',
+    (marker) => {
+      const predicate = adminUsageProductionCustomerSql();
+      const sql = predicate.strings.join(' ');
+
+      expect(sql).toContain(`customer_user."${marker}" IS NULL`);
+      expect(sql).not.toContain('fullName');
+      expect(sql).not.toContain('Smoke');
+    },
+  );
 
   it('classifies production aggregate freshness without treating missing data as current', () => {
     const generatedAt = new Date('2026-08-10T05:00:00.000Z');

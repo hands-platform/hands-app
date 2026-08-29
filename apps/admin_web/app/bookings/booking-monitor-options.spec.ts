@@ -6,6 +6,7 @@ import {
   postMatchCancellationBookingViewOptions,
   realtimeBookingViewOptions,
 } from './booking-monitor-options';
+import { bookingOperationsWorkspace } from './booking-monitor';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 describe('booking monitor options', () => {
@@ -126,11 +127,59 @@ describe('booking monitor options', () => {
     expect(bookingMonitorPagePathForView('no-show')).toBe('/bookings/post-match-cancellations');
   });
 
+  it.each(completedBookingViewOptions)(
+    'uses the existing $label description in the completed result panel',
+    (option) => {
+      expect(
+        bookingOperationsWorkspace(
+          option.view,
+          option.label,
+          option.description,
+          '/bookings/completed',
+          0,
+        ),
+      ).toMatchObject({
+        description: option.description,
+        title: option.label,
+      });
+    },
+  );
+
   it('keeps blocked-create operator hint support-facing instead of debug-facing', () => {
     const blockedCreate = bookingViewOptions.find((option) => option.view === 'blocked-create');
 
     expect(blockedCreate?.operatorHint).toContain('Review optional GPS evidence');
     expect(blockedCreate?.operatorHint).not.toContain('debug');
+  });
+
+  it.each(['first-pick', 'marketplace', 'customer-choice', 'matched'] as const)(
+    'uses the existing %s view description in the operations result panel',
+    (view) => {
+      const option = bookingViewOptions.find((candidate) => candidate.view === view);
+
+      if (!option) throw new Error(`Missing booking view option: ${view}`);
+      expect(
+        bookingOperationsWorkspace(view, option.label, option.description, '/bookings', 0),
+      ).toMatchObject({
+        description: option.description,
+        title: option.label,
+      });
+    },
+  );
+
+  it('does not describe Open matching as dispatch, arrival, or service work', () => {
+    const option = bookingViewOptions.find((candidate) => candidate.view === 'marketplace');
+    if (!option) throw new Error('Missing marketplace booking view option');
+    const workspace = bookingOperationsWorkspace(
+      option.view,
+      option.label,
+      option.description,
+      '/bookings',
+      0,
+    );
+
+    expect(workspace.description).toBe('Open matching bookings inside the original customer wait window.');
+    expect(workspace.description).not.toMatch(/dispatch|arrival|service/i);
   });
 
   it('keeps address view copy operator-facing instead of snapshot-facing', () => {

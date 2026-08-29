@@ -15,6 +15,7 @@ import {
   AdminPushCampaignConfirmDto,
   AdminPushCampaignDto,
   AllocateCashSettlementDebtDto,
+  RevokeFinanceApproverLegacyAttestationDto,
 } from './admin.dto';
 
 describe('admin request DTO validation', () => {
@@ -26,6 +27,23 @@ describe('admin request DTO validation', () => {
     ) as unknown[];
     return paramTypes?.[bodyIndex] as object | undefined;
   }
+
+  it('requires a durable reason for finance approver legacy attestation revocation', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform(
+        { reason: '  Owner evidence requires immediate independent review.  ' },
+        { type: 'body', metatype: RevokeFinanceApproverLegacyAttestationDto, data: '' },
+      ),
+    ).resolves.toEqual({ reason: 'Owner evidence requires immediate independent review.' });
+    await expect(
+      pipe.transform(
+        { reason: 'too short' },
+        { type: 'body', metatype: RevokeFinanceApproverLegacyAttestationDto, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
 
   it('requires explicit role, locale, destination, and copy for manual Push preview', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
@@ -157,6 +175,36 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('markReferralRewardCashoutPaid', 2) as { name?: string })?.name).toBe(
       'ReferralRewardCashoutPaidDto',
     );
+    expect((bodyMetatype('approveReferralRewardTaxReview', 2) as { name?: string })?.name).toBe(
+      'ReferralRewardTaxDecisionDto',
+    );
+    expect((bodyMetatype('holdReferralRewardTaxReview', 2) as { name?: string })?.name).toBe(
+      'ReferralRewardTaxDecisionDto',
+    );
+    expect((bodyMetatype('rejectReferralRewardTaxReview', 2) as { name?: string })?.name).toBe(
+      'ReferralRewardTaxDecisionDto',
+    );
+  });
+
+  it('requires explicit confirmation for referral tax decisions', async () => {
+    const metatype = bodyMetatype('approveReferralRewardTaxReview', 2) as never;
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const payload = {
+      confirmation: ' confirmed ',
+      expectedStatus: 'TAX_REVIEW_REQUIRED',
+      expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+      reason: 'reviewed authoritative tax evidence',
+    };
+
+    await expect(
+      pipe.transform(payload, { type: 'body', metatype, data: '' }),
+    ).resolves.toMatchObject({ confirmation: 'confirmed' });
+    await expect(
+      pipe.transform(
+        { ...payload, confirmation: undefined },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
   });
 
   it('uses a validated DTO for booking settlement repairs', async () => {
@@ -1233,6 +1281,9 @@ describe('admin request DTO validation', () => {
   });
 
   it('uses concrete DTOs for service and pricing administration payloads', () => {
+    expect((bodyMetatype('saveServiceCatalogGroup', 2) as { name?: string })?.name).toBe(
+      'SaveServiceCatalogGroupDto',
+    );
     expect((bodyMetatype('createServiceDurationSet', 1) as { name?: string })?.name).toBe(
       'CreateServiceDurationSetDto',
     );
@@ -1247,6 +1298,93 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('updateServicePayoutRule', 2) as { name?: string })?.name).toBe(
       'UpdateServicePayoutRuleDto',
     );
+  });
+
+  it('allows a reasonless SAVE_DRAFT through the real service catalog DTO boundary', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('saveServiceCatalogGroup', 2) as never;
+    const payload = {
+      requestId: 'de3d4c4a-7ad3-4f36-b42c-7e9f89be1234',
+      expectedVersion: 0,
+      intent: 'SAVE_DRAFT',
+      nameTranslations: { en: 'Incomplete draft' },
+      priceStep: 100000,
+      displayOrder: 100,
+      durations: [60, 90, 120].map((durationMin) => ({
+        durationMin,
+        enabled: false,
+        displayOrder: 100 + durationMin,
+      })),
+    };
+
+    await expect(
+      pipe.transform(payload, { type: 'body', metatype, data: '' }),
+    ).resolves.toMatchObject({ intent: 'SAVE_DRAFT', reason: undefined });
+    await expect(
+      pipe.transform(
+        { ...payload, reason: '  optional draft note  ' },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).resolves.toMatchObject({ reason: 'optional draft note' });
+    await expect(
+      pipe.transform(
+        { ...payload, intent: 'PUBLISH' },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
+    await expect(
+      pipe.transform(
+        { ...payload, intent: 'NOT_A_REAL_INTENT' },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
+    await expect(
+      pipe.transform(
+        { ...payload, reason: 'x'.repeat(501) },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('enforces group and duration display-order bounds at the service catalog DTO boundary', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('saveServiceCatalogGroup', 2) as never;
+    const payload = {
+      requestId: 'de3d4c4a-7ad3-4f36-b42c-7e9f89be5678',
+      expectedVersion: 0,
+      intent: 'SAVE_DRAFT',
+      priceStep: 100000,
+      displayOrder: 0,
+      durations: [60, 90, 120].map((durationMin) => ({
+        durationMin,
+        enabled: false,
+        displayOrder: 10_000,
+      })),
+    };
+
+    await expect(
+      pipe.transform(payload, { type: 'body', metatype, data: '' }),
+    ).resolves.toMatchObject({ displayOrder: 0 });
+    for (const invalid of [
+      { ...payload, displayOrder: -1 },
+      { ...payload, displayOrder: 10_001 },
+      {
+        ...payload,
+        durations: payload.durations.map((row, index) =>
+          index === 0 ? { ...row, displayOrder: -1 } : row,
+        ),
+      },
+      {
+        ...payload,
+        durations: payload.durations.map((row, index) =>
+          index === 0 ? { ...row, displayOrder: 10_001 } : row,
+        ),
+      },
+    ]) {
+      await expect(
+        pipe.transform(invalid, { type: 'body', metatype, data: '' }),
+      ).rejects.toThrow();
+    }
   });
 
   it('normalizes service payloads and strips unsupported pricing fields', async () => {
@@ -1369,7 +1507,28 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('addProviderOpsNote', 2) as { name?: string })?.name).toBe('PartnerOpsNoteDto');
     expect((bodyMetatype('blockProviderDevice', 2) as { name?: string })?.name).toBe('AdminReasonDto');
     expect((bodyMetatype('blockProviderAccount', 2) as { name?: string })?.name).toBe('AdminReasonDto');
+    expect((bodyMetatype('unblockProviderAccount', 2) as { name?: string })?.name).toBe(
+      'LiftPartnerSanctionDto',
+    );
     expect((bodyMetatype('rejectProvider', 2) as { name?: string })?.name).toBe('AdminReasonDto');
+  });
+
+  it('validates account unblock lift reason at the API boundary', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('unblockProviderAccount', 2) as never;
+
+    for (const reason of ['', '   ', 'x'.repeat(11), 'x'.repeat(501)]) {
+      await expect(
+        pipe.transform({ reason }, { type: 'body', metatype, data: '' }),
+      ).rejects.toThrow();
+    }
+
+    await expect(
+      pipe.transform({ reason: `  ${'x'.repeat(12)}  ` }, { type: 'body', metatype, data: '' }),
+    ).resolves.toEqual({ reason: 'x'.repeat(12) });
+    await expect(
+      pipe.transform({ reason: 'x'.repeat(500) }, { type: 'body', metatype, data: '' }),
+    ).resolves.toEqual({ reason: 'x'.repeat(500) });
   });
 
   it('uses concrete DTOs for reports, sanctions, moderation, coupons, and handoff', () => {
@@ -1388,12 +1547,45 @@ describe('admin request DTO validation', () => {
     );
     expect((bodyMetatype('createCoupon', 1) as { name?: string })?.name).toBe('CreateCouponDto');
     expect((bodyMetatype('updateCoupon', 2) as { name?: string })?.name).toBe('UpdateCouponDto');
+    expect((bodyMetatype('activateCoupon', 2) as { name?: string })?.name).toBe('CouponStateChangeDto');
+    expect((bodyMetatype('pauseCoupon', 2) as { name?: string })?.name).toBe('CouponStateChangeDto');
     expect((bodyMetatype('addOperationsHandoffNote', 1) as { name?: string })?.name).toBe(
       'OperationsHandoffNoteDto',
     );
     expect((bodyMetatype('createOperationsShiftHandoff', 1) as { name?: string })?.name).toBe(
       'CreateOperationsShiftHandoffDto',
     );
+  });
+
+  it('requires and trims bounded sanction create evidence at the API boundary', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('createProviderSanction', 2) as never;
+
+    for (const reason of [undefined, '', '   ', 'x'.repeat(11), 'x'.repeat(501)]) {
+      await expect(
+        pipe.transform({ reason }, { type: 'body', metatype, data: '' }),
+      ).rejects.toThrow();
+    }
+    await expect(
+      pipe.transform({ reason: `  ${'x'.repeat(12)}  ` }, { type: 'body', metatype, data: '' }),
+    ).resolves.toEqual({ reason: 'x'.repeat(12) });
+    await expect(
+      pipe.transform({ reason: 'x'.repeat(500) }, { type: 'body', metatype, data: '' }),
+    ).resolves.toEqual({ reason: 'x'.repeat(500) });
+  });
+
+  it('requires and trims a bounded reason for coupon state changes', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('activateCoupon', 2) as never;
+
+    for (const reason of [undefined, '', '   ', 'x'.repeat(501)]) {
+      await expect(
+        pipe.transform({ reason }, { type: 'body', metatype, data: '' }),
+      ).rejects.toThrow();
+    }
+    await expect(
+      pipe.transform({ reason: '  Campaign owner approved launch  ' }, { type: 'body', metatype, data: '' }),
+    ).resolves.toEqual({ reason: 'Campaign owner approved launch' });
   });
 
   it('requires an open-case count and validates structured handoff cases', async () => {

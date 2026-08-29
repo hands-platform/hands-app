@@ -140,18 +140,25 @@ describe('OperationsShiftHandoffSection', () => {
     const emptyMarkup = renderToStaticMarkup(
       <OperationsShiftHandoffSection
         {...props}
+        filterContent={<div>Open case filters</div>}
         openCases={{ ...cases, items: [], openCount: 0, pagination: { ...cases.pagination, totalRows: 0 } }}
       />,
     );
     const filteredMarkup = renderToStaticMarkup(
       <OperationsShiftHandoffSection
         {...props}
+        filterContent={<div>Open case filters</div>}
         openCases={{ ...cases, items: [], openCount: 1, pagination: { ...cases.pagination, totalRows: 0 } }}
       />,
     );
 
-    expect(emptyMarkup).toContain('No open cases are waiting for handoff.');
-    expect(filteredMarkup).toContain('No open cases match this search.');
+    expect(emptyMarkup).not.toContain('Open case filters');
+    expect(emptyMarkup).not.toContain('Select visible page');
+    expect(emptyMarkup).not.toContain('<table');
+    expect(emptyMarkup).toContain('Clear-shift confirmation · No open cases at handoff time');
+    expect(emptyMarkup).toContain('Preview handoff');
+    expect(filteredMarkup).toContain('Open case filters');
+    expect(filteredMarkup).toContain('No open cases match the current filters.');
     expect(filteredMarkup).toContain(
       'Select at least one open case, or resolve the queue before sending a clear handoff.',
     );
@@ -167,7 +174,7 @@ describe('OperationsShiftHandoffSection', () => {
     );
 
     expect(markup).toContain('No handoff history');
-    expect(markup).toContain('Reset filters');
+    expect(markup).not.toContain('Reset filters');
     expect(markup).not.toContain('<table');
     expect(markup).not.toContain('Follow-up owner</th>');
   });

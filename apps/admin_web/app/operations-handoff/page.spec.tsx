@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 
 import { adminGetResult } from '../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
-import OperationsHandoffPage from './page';
+import OperationsHandoffPage, { metadata } from './page';
 
 const { redirect } = vi.hoisted(() => ({
   redirect: vi.fn(() => {
@@ -49,15 +49,37 @@ describe('OperationsHandoffPage', () => {
     mockedGet.mockImplementation(async (_href, fallback) => ({ data: fallback, ok: true, status: 200 }));
   });
 
+  it('renders the launch-off state without reading handoff APIs or operator access', async () => {
+    vi.stubEnv('SHIFT_HANDOFF_LAUNCH_ENABLED', 'false');
+    try {
+      const markup = renderToStaticMarkup(
+        await OperationsHandoffPage({ searchParams: Promise.resolve({ view: 'history' }) }),
+      );
+
+      expect(markup).toContain('Not active for current launch');
+      expect(markup).toContain('Existing audit history remains retained');
+      expect(mockedGet).not.toHaveBeenCalled();
+      expect(mockedAccess).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('loads Current from the canonical bare route with independent exact queues', async () => {
     const markup = renderToStaticMarkup(await OperationsHandoffPage({ searchParams: Promise.resolve({}) }));
     const hrefs = mockedGet.mock.calls.map(([href]) => href);
 
     expect(markup).toContain('<h1>Shift Handoff</h1>');
     expect(markup).toContain('Current shift summary');
-    expect(markup).toContain('No open handoffs');
+    expect(markup).not.toContain('No open handoffs');
     expect(markup).toContain('Create handoff');
     expect(markup).toContain('Current Operator · Admin · operator@hands.test');
+    expect(markup).toContain('Clear-shift confirmation · No open cases at handoff time');
+    expect(markup).toContain('Preview handoff');
+    expect(markup).toContain(' Current shift</a>');
+    expect(markup).not.toContain('Open case filters');
+    expect(markup).not.toContain('Select visible page');
+    expect(markup).not.toContain('Selectable open handoff cases');
     expect(hrefs).toEqual([
       '/admin/operations-handoff/shift?page=1&pageSize=25&relationship=assigned&scope=current&status=open',
       '/admin/operations-handoff/shift?page=1&pageSize=25&relationship=waiting&scope=current&status=open',
@@ -74,7 +96,11 @@ describe('OperationsHandoffPage', () => {
     );
 
     expect(markup).toContain('Handoff history filters');
+    expect(markup).toContain('Date range uses sent time. Confirmed time is shown separately.');
     expect(markup).toContain('No handoff history');
+    expect(markup.match(/ Reset<\/a>/gu) ?? []).toHaveLength(1);
+    expect(markup).toContain('<span class="admin-form-label">Search</span>');
+    expect(markup).toContain('<span class="admin-form-label">Operator</span>');
     expect(markup).not.toContain('Create handoff');
     expect(mockedGet).toHaveBeenCalledTimes(1);
     expect(String(mockedGet.mock.calls[0]?.[0])).toContain('/admin/operations-handoff/shift?');
@@ -99,5 +125,38 @@ describe('OperationsHandoffPage', () => {
 
     expect(markup).toContain('Handoff history unavailable');
     expect(markup).not.toContain('No handoff history');
+  });
+
+  it('keeps filters and one reset for a filtered-empty current queue', async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: emptyHandoffs, ok: true, status: 200 })
+      .mockResolvedValueOnce({ data: emptyHandoffs, ok: true, status: 200 })
+      .mockResolvedValueOnce({
+        data: {
+          items: [],
+          openCount: 3,
+          pagination: { page: 1, pageSize: 25, totalPages: 1, totalRows: 0 },
+        },
+        ok: true,
+        status: 200,
+      })
+      .mockResolvedValueOnce({ data: [], ok: true, status: 200 });
+
+    const markup = renderToStaticMarkup(
+      await OperationsHandoffPage({
+        searchParams: Promise.resolve({ age: 'over-24h', q: 'not-found', queue: 'refund-review' }),
+      }),
+    );
+
+    expect(markup).toContain('Open case filters');
+    expect(markup).toContain('Find open work by case ID, queue, or age.');
+    expect(markup).toContain('No open cases match the current filters.');
+    expect(markup).toContain('<span class="admin-form-label">Search</span>');
+    expect(markup.match(/ Reset<\/a>/gu) ?? []).toHaveLength(1);
+    expect(markup).not.toContain('Selectable open handoff cases');
+  });
+
+  it('defines the suffix-free page title for the root layout template', () => {
+    expect(metadata).toEqual({ title: 'Shift Handoff' });
   });
 });

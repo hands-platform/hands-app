@@ -11,15 +11,24 @@ const DeferredUsageOverviewTrendChart = dynamic(
 );
 
 export function UsageOverviewTrendChartDeferred({
+  bookingAvailable = true,
+  bookingExcludedCount = 0,
   rows,
   usageAvailable = true,
 }: {
+  readonly bookingAvailable?: boolean;
+  readonly bookingExcludedCount?: number;
   readonly rows: readonly AdminUsageOverviewTrendRow[];
   readonly usageAvailable?: boolean;
 }) {
   return (
     <AdminDeferredRender fallback={<ChartPlaceholder />}>
-      <DeferredUsageOverviewTrendChart rows={rows} usageAvailable={usageAvailable} />
+      <DeferredUsageOverviewTrendChart
+        bookingAvailable={bookingAvailable}
+        bookingExcludedCount={bookingExcludedCount}
+        rows={rows}
+        usageAvailable={usageAvailable}
+      />
     </AdminDeferredRender>
   );
 }

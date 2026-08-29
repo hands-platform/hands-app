@@ -179,9 +179,7 @@ export function PartnerFilterBoard({
               }))}
             />
           </div>
-          {['high-cancellation', 'no-show-risk', 'quality-risk', 'quality-all'].includes(
-            filters.review,
-          ) ? (
+          {['high-cancellation', 'no-show-risk', 'quality-risk', 'quality-all'].includes(filters.review) ? (
             <AdminDisclosure className="vuexy-partner-filter-details" open={showAdvancedFilters}>
               <summary>
                 <span>Quality period</span>
@@ -244,6 +242,7 @@ function PartnerTaskQueueFilterBoard({
   'activeFilters' | 'csvDownloadName' | 'csvHref' | 'filteredCount' | 'filters' | 'totalCount'
 >) {
   const onboarding = filters.review === 'unapproved';
+  const queueSortOptions = onboarding ? partnerQueueSortButtonOptions : partnerWalletQueueSortButtonOptions;
   const queueTitle = onboarding ? 'Onboarding filters' : 'Wallet debt filters';
   const queueDescription = onboarding
     ? 'Narrow by the current verification stage or recent Partner App activity, then review the top blocker.'
@@ -339,7 +338,7 @@ function PartnerTaskQueueFilterBoard({
               activeValue={filters.sort}
               ariaLabel={`${queueTitle} sort`}
               className="vuexy-partner-filter-buttons"
-              options={partnerQueueSortButtonOptions.map((option) => ({
+              options={queueSortOptions.map((option) => ({
                 href: buildPartnerListHref(filters, { sort: option.value }),
                 label: option.label,
                 value: option.value,
@@ -486,6 +485,11 @@ const partnerSortButtonOptions = [
 const partnerQueueSortButtonOptions = [
   { label: 'Recently registered', value: 'newest' },
   { label: 'Name', value: 'name' },
+] as const;
+
+const partnerWalletQueueSortButtonOptions = [
+  ...partnerQueueSortButtonOptions,
+  { label: 'Debt: high to low', value: 'wallet-debt' },
 ] as const;
 
 function partnerQueueHref(review: string) {

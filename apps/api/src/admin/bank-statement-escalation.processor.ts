@@ -6,6 +6,7 @@ import {
   BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME,
   BANK_STATEMENT_ESCALATION_JOB_NAME,
   BANK_STATEMENT_ESCALATION_QUEUE_NAME,
+  PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME,
   type BankStatementEscalationJob,
 } from './bank-statement-escalation.queue';
 
@@ -40,6 +41,15 @@ export class BankStatementEscalationProcessor extends WorkerHost {
         this.backgroundJobs.syncQueueHealthAlerts(),
       ]);
       return { failures, missingJobs, queueHealth };
+    }
+    if (job.name === PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME) {
+      const result = await this.admin.purgeExpiredPartnerWalletDebtSnapshots();
+      if (result.hasMore) {
+        throw new Error(
+          `Expired Partner wallet debt snapshot backlog remains after purging ${result.purgedCount} records`,
+        );
+      }
+      return result;
     }
     return { skipped: true, reason: 'UNSUPPORTED_JOB' };
   }

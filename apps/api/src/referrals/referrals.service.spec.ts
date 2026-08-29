@@ -4,12 +4,14 @@ import {
   BookingStatus,
   PaymentStatus,
   Prisma,
+  ProviderBankAccountStatus,
   ReferralAttributionStatus,
   ReferralAudience,
   ReferralFraudReviewStatus,
   ReferralRewardMode,
   ReferralRewardStatus,
 } from '@prisma/client';
+import { settlementMonthlyPeriod } from '../settlements/settlements.service';
 import { ReferralsService } from './referrals.service';
 
 function createService(prisma: unknown, notifications?: unknown) {
@@ -82,6 +84,41 @@ const cashoutApprovedReferralRewardStatus = 'CASHOUT_APPROVED' as ReferralReward
 const cashoutRequestedReferralRewardStatus = 'CASHOUT_REQUESTED' as ReferralRewardStatus;
 const paidReferralRewardStatus = 'PAID' as ReferralRewardStatus;
 const taxReviewRequiredReferralRewardStatus = 'TAX_REVIEW_REQUIRED' as ReferralRewardStatus;
+
+function approvedReferralCashoutBankAccount(overrides: Record<string, unknown> = {}) {
+  return {
+    accountHolderName: 'Partner One',
+    accountNumberLast4: '4321',
+    accountNumberMasked: '******4321',
+    bankName: 'Vietcombank',
+    deletedAt: null,
+    id: 'provider-bank-account-1',
+    isPrimary: true,
+    providerProfileId: 'provider-profile-1',
+    status: ProviderBankAccountStatus.APPROVED,
+    updatedAt: new Date('2026-08-10T09:00:00.000Z'),
+    ...overrides,
+  };
+}
+
+function referralCashoutPayoutDestinationMetadata(
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    referralCashoutPayoutDestination: {
+      accountHolderName: 'Partner One',
+      accountNumberLast4: '4321',
+      accountNumberMasked: '•••• 4321',
+      bankAccountId: 'provider-bank-account-1',
+      bankAccountUpdatedAt: '2026-08-10T09:00:00.000Z',
+      bankName: 'Vietcombank',
+      capturedAt: '2026-08-10T10:00:00.000Z',
+      providerProfileId: 'provider-profile-1',
+      version: 1,
+      ...overrides,
+    },
+  };
+}
 
 describe('ReferralsService', () => {
   it('returns an existing customer referral code without creating a new one', async () => {
@@ -289,7 +326,7 @@ describe('ReferralsService', () => {
     );
   });
 
-  it('lists owned rewards without raw booking ids and exposes server cashout eligibility', async () => {
+  it('lists owned rewards without raw booking ids and keeps Customer cashout unavailable', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       customerProfile: {
@@ -328,8 +365,8 @@ describe('ReferralsService', () => {
           amount: 50_000,
           availableAt: createdAt,
           bookingReference: 'HANDS-23456789',
-          canRequestCashout: true,
-          cashoutUnavailableReason: null,
+          canRequestCashout: false,
+          cashoutUnavailableReason: 'CUSTOMER_WALLET_ONLY_MVP',
           cashoutAmount: 50_000,
           createdAt,
           currency: 'VND',
@@ -394,6 +431,40 @@ describe('ReferralsService', () => {
         }),
       }),
     );
+  });
+
+  it('fails closed when the only enabled ReferralPolicy has the trusted referral fixture marker', async () => {
+    const prisma = {
+      customerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+      },
+      referralCode: {
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      referralPolicy: {
+        findUnique: vi.fn().mockResolvedValue({
+          audience: ReferralAudience.CUSTOMER,
+          commissionPercentBps: 500,
+          currency: 'VND',
+          enabled: true,
+          fixedRewardAmount: null,
+          holdPeriodDays: 0,
+          maxRewardedReferrals: 10,
+          maxRewardsPerReferred: 1,
+          metadata: { smoke: 'referral-admin' },
+          perRewardCapAmount: null,
+          rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+          totalRewardCapAmount: null,
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.issueCustomerReferralCode('user-1')).rejects.toThrow(
+      'Referral program is not active',
+    );
+    expect(prisma.referralCode.create).not.toHaveBeenCalled();
   });
 
   it('does not issue a new customer referral code while the policy is disabled', async () => {
@@ -1724,81 +1795,29 @@ describe('ReferralsService', () => {
     });
   });
 
-  it('moves an owned credited customer referral reward into cashout request once', async () => {
-    const now = new Date('2026-06-24T10:00:00.000Z');
-    const creditedReward = {
-      id: 'reward-request-1',
-      amount: 25_000,
-      availableAt: now,
-      calculationSnapshot: {},
-      currency: 'VND',
-      qualifyingBookingId: 'booking-request-1',
-      sourceKey: 'referral:CUSTOMER:attribution-request-1:booking-request-1',
-      status: creditedReferralRewardStatus,
-      walletLedgerReference: 'customer-earned-ledger-request-1',
-      walletOwnerCustomerProfileId: 'customer-profile-1',
-      walletOwnerProviderProfileId: null,
-    };
-    const requestedReward = {
-      id: creditedReward.id,
-      amount: creditedReward.amount,
-      availableAt: now,
-      currency: creditedReward.currency,
-      sourceKey: creditedReward.sourceKey,
-      status: cashoutRequestedReferralRewardStatus,
-      walletLedgerReference: creditedReward.walletLedgerReference,
-    };
-    const tx = {
-      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
-      customerWalletLedgerEntry: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 25_000 } }),
-      },
-      providerWalletLedgerEntry: {
-        aggregate: vi.fn(),
-      },
-      referralReward: {
-        findFirst: vi.fn().mockResolvedValue(creditedReward),
-        findMany: vi.fn().mockResolvedValue([]),
-        findUnique: vi.fn(),
-        findUniqueOrThrow: vi.fn().mockResolvedValue(requestedReward),
-        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-      },
-    };
+  it('fails customer referral cashout requests closed before any profile, wallet, or reward access', async () => {
     const prisma = {
       customerProfile: {
         findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
       },
-      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
-        callback(tx),
-      ),
+      $transaction: vi.fn(),
     };
     const service = createService(prisma);
 
     await expect(
-      service.requestCustomerRewardCashout('customer-user-1', creditedReward.id),
-    ).resolves.toMatchObject({
-      id: creditedReward.id,
-      status: cashoutRequestedReferralRewardStatus,
-    });
-    expect(tx.customerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
-      where: { customerProfileId: 'customer-profile-1', currency: 'VND' },
-      _sum: { amount: true },
-    });
-    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
-      tx.customerWalletLedgerEntry.aggregate.mock.invocationCallOrder[0],
-    );
-    expect(tx.referralReward.updateMany).toHaveBeenCalledWith({
-      data: { status: cashoutRequestedReferralRewardStatus },
-      where: {
-        id: creditedReward.id,
-        status: creditedReferralRewardStatus,
-        walletLedgerReference: creditedReward.walletLedgerReference,
-        walletOwnerCustomerProfileId: 'customer-profile-1',
+      service.requestCustomerRewardCashout('customer-user-1', 'reward-request-1'),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'CUSTOMER_REFERRAL_CASHOUT_UNAVAILABLE',
+        message: 'Customer referral cashout is unavailable in wallet-only MVP.',
       },
+      status: 409,
     });
+    expect(prisma.customerProfile.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it('keeps a repeated owned referral cashout request idempotent', async () => {
+  it('keeps repeated Customer cashout requests fail-closed without touching prior state', async () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
     const requestedCandidate = {
       id: 'reward-request-replay-1',
@@ -1843,10 +1862,12 @@ describe('ReferralsService', () => {
 
     await expect(
       service.requestCustomerRewardCashout('customer-user-1', requestedCandidate.id),
-    ).resolves.toMatchObject({
-      id: requestedCandidate.id,
-      status: cashoutRequestedReferralRewardStatus,
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'CUSTOMER_REFERRAL_CASHOUT_UNAVAILABLE' }),
+      status: 409,
     });
+    expect(prisma.customerProfile.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(tx.customerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
     expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
   });
@@ -1869,15 +1890,13 @@ describe('ReferralsService', () => {
 
     await expect(
       service.requestCustomerRewardCashout('customer-user-1', 'another-customer-reward'),
-    ).rejects.toBeInstanceOf(NotFoundException);
-    expect(tx.referralReward.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: 'another-customer-reward',
-          walletOwnerCustomerProfileId: 'customer-profile-1',
-        },
-      }),
-    );
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'CUSTOMER_REFERRAL_CASHOUT_UNAVAILABLE' }),
+      status: 409,
+    });
+    expect(prisma.customerProfile.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.referralReward.findFirst).not.toHaveBeenCalled();
   });
 
   it('rejects Partner referral cashout when the current wallet ledger cannot cover it', async () => {
@@ -1925,7 +1944,7 @@ describe('ReferralsService', () => {
     expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
   });
 
-  it('rejects a referral cashout when earlier requests already reserve the remaining wallet balance', async () => {
+  it('rejects a Partner referral cashout when earlier requests reserve the remaining wallet balance', async () => {
     const reward = {
       id: 'customer-reward-request-2',
       amount: 50_000,
@@ -1933,11 +1952,11 @@ describe('ReferralsService', () => {
       calculationSnapshot: {},
       currency: 'VND',
       qualifyingBookingId: 'booking-customer-request-2',
-      sourceKey: 'referral:CUSTOMER:attribution-request-2:booking-customer-request-2',
+      sourceKey: 'referral:PARTNER:attribution-request-2:booking-customer-request-2',
       status: creditedReferralRewardStatus,
       walletLedgerReference: 'customer-earned-ledger-request-2',
-      walletOwnerCustomerProfileId: 'customer-profile-1',
-      walletOwnerProviderProfileId: null,
+      walletOwnerCustomerProfileId: null,
+      walletOwnerProviderProfileId: 'provider-profile-1',
     };
     const reservedReward = {
       ...reward,
@@ -1948,9 +1967,11 @@ describe('ReferralsService', () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       customerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 100_000 } }),
       },
-      providerWalletLedgerEntry: { aggregate: vi.fn() },
       referralReward: {
         findFirst: vi.fn().mockResolvedValue(reward),
         findMany: vi.fn().mockResolvedValue([reservedReward]),
@@ -1958,8 +1979,8 @@ describe('ReferralsService', () => {
       },
     };
     const prisma = {
-      customerProfile: {
-        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-profile-1' }),
       },
       $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
@@ -1968,7 +1989,7 @@ describe('ReferralsService', () => {
     const service = createService(prisma);
 
     await expect(
-      service.requestCustomerRewardCashout('customer-user-1', reward.id),
+      service.requestPartnerRewardCashout('provider-user-1', reward.id),
     ).rejects.toThrow('Wallet balance cannot cover referral cashout');
 
     expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
@@ -1985,15 +2006,14 @@ describe('ReferralsService', () => {
             taxReviewRequiredReferralRewardStatus,
           ],
         },
-        walletOwnerCustomerProfileId: 'customer-profile-1',
+        walletOwnerProviderProfileId: 'provider-profile-1',
       },
       select: expect.any(Object),
     });
     expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
   });
 
-  it('approves customer referral cashout requests without posting payout cash automatically', async () => {
-    const now = new Date('2026-06-24T10:00:00.000Z');
+  it('fails customer referral cashout approval closed before any state change', async () => {
     const prisma = {
       referralReward: {
         findUnique: vi.fn().mockResolvedValue({
@@ -2001,18 +2021,10 @@ describe('ReferralsService', () => {
           status: cashoutRequestedReferralRewardStatus,
           updatedAt: referralRewardUpdatedAt,
           walletLedgerReference: 'customer-wallet-ledger-1',
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
         }),
-        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        findUniqueOrThrow: vi.fn().mockResolvedValue({
-          id: 'reward-1',
-          amount: 25000,
-          availableAt: now,
-          currency: 'VND',
-          sourceKey: 'referral:CUSTOMER:attr-1:booking-1',
-          status: cashoutApprovedReferralRewardStatus,
-          updatedAt: referralRewardUpdatedAt,
-          walletLedgerReference: 'customer-wallet-ledger-1',
-        }),
+        updateMany: vi.fn(),
       },
     };
     const service = createService(prisma);
@@ -2022,16 +2034,196 @@ describe('ReferralsService', () => {
         'reward-1',
         expectedRewardState(cashoutRequestedReferralRewardStatus),
       ),
-    ).resolves.toMatchObject({
-      id: 'reward-1',
-      status: cashoutApprovedReferralRewardStatus,
-      updatedAt: referralRewardUpdatedAt,
-      walletLedgerReference: 'customer-wallet-ledger-1',
+    ).rejects.toMatchObject({
+      response: {
+        code: 'CUSTOMER_REFERRAL_CASHOUT_UNAVAILABLE',
+        message: 'Customer referral cashout is unavailable in wallet-only MVP.',
+      },
+      status: 409,
     });
-    expect(prisma.referralReward.updateMany).toHaveBeenCalledWith({
-      data: { status: cashoutApprovedReferralRewardStatus },
-      where: { id: 'reward-1', status: cashoutRequestedReferralRewardStatus, updatedAt: referralRewardUpdatedAt },
+    expect(prisma.referralReward.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('fails Partner cashout approval closed when no approved owned bank account exists', async () => {
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-partner-approval-missing-bank',
+          metadata: null,
+          status: cashoutRequestedReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'provider-wallet-ledger-1',
+          walletOwnerCustomerProfileId: null,
+          walletOwnerProviderProfileId: 'provider-profile-1',
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
     });
+
+    await expect(
+      service.approveRewardCashoutRequest(
+        'reward-partner-approval-missing-bank',
+        expectedRewardState(cashoutRequestedReferralRewardStatus),
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'PARTNER_REFERRAL_PAYOUT_DESTINATION_UNAVAILABLE',
+        message: 'Partner referral cashout requires an approved, active bank account.',
+      },
+      status: 409,
+    });
+    expect(tx.providerBankAccount.findFirst).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        providerProfileId: 'provider-profile-1',
+        status: 'APPROVED',
+      },
+      orderBy: [{ isPrimary: 'desc' }, { updatedAt: 'desc' }, { id: 'asc' }],
+      select: expect.any(Object),
+    });
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['pending', { status: ProviderBankAccountStatus.PENDING_REVIEW }],
+    ['rejected', { status: ProviderBankAccountStatus.REJECTED }],
+    ['deleted', { deletedAt: new Date('2026-08-10T09:30:00.000Z') }],
+    ['owned by another Partner', { providerProfileId: 'provider-profile-2' }],
+  ])('fails Partner cashout approval closed for a %s bank account', async (_label, bankOverrides) => {
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(approvedReferralCashoutBankAccount(bankOverrides)),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-partner-approval-invalid-bank',
+          metadata: null,
+          status: cashoutRequestedReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'provider-wallet-ledger-1',
+          walletOwnerCustomerProfileId: null,
+          walletOwnerProviderProfileId: 'provider-profile-1',
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.approveRewardCashoutRequest(
+        'reward-partner-approval-invalid-bank',
+        expectedRewardState(cashoutRequestedReferralRewardStatus),
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'PARTNER_REFERRAL_PAYOUT_DESTINATION_UNAVAILABLE' }),
+      status: 409,
+    });
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('binds Partner cashout approval to an approved owned masked bank snapshot', async () => {
+    const bankAccount = approvedReferralCashoutBankAccount({ accountNumberMasked: '1234567894321' });
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(bankAccount),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-partner-approval-1',
+          metadata: { existingEvidence: 'preserved' },
+          status: cashoutRequestedReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'provider-wallet-ledger-1',
+          walletOwnerCustomerProfileId: null,
+          walletOwnerProviderProfileId: 'provider-profile-1',
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'reward-partner-approval-1',
+          amount: 50_000,
+          currency: 'VND',
+          status: cashoutApprovedReferralRewardStatus,
+          updatedAt: new Date('2026-08-10T10:01:00.000Z'),
+          walletLedgerReference: 'provider-wallet-ledger-1',
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.approveRewardCashoutRequest(
+        'reward-partner-approval-1',
+        expectedRewardState(cashoutRequestedReferralRewardStatus),
+      ),
+    ).resolves.toMatchObject({ status: cashoutApprovedReferralRewardStatus });
+
+    const update = tx.referralReward.updateMany.mock.calls[0]?.[0];
+    expect(update).toEqual({
+      data: {
+        metadata: {
+          existingEvidence: 'preserved',
+          referralCashoutPayoutDestination: {
+            accountHolderName: 'Partner One',
+            accountNumberLast4: '4321',
+            accountNumberMasked: '•••• 4321',
+            bankAccountId: 'provider-bank-account-1',
+            bankAccountUpdatedAt: '2026-08-10T09:00:00.000Z',
+            bankName: 'Vietcombank',
+            capturedAt: expect.any(String),
+            providerProfileId: 'provider-profile-1',
+            version: 1,
+          },
+        },
+        status: cashoutApprovedReferralRewardStatus,
+      },
+      where: {
+        id: 'reward-partner-approval-1',
+        status: cashoutRequestedReferralRewardStatus,
+        updatedAt: referralRewardUpdatedAt,
+      },
+    });
+    expect(JSON.stringify(update)).not.toContain('1234567894321');
+  });
+
+  it('fails customer referral cashout tax-review mutation closed for legacy rows', async () => {
+    const prisma = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-customer-tax-review-1',
+          status: cashoutRequestedReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.requireRewardTaxReview(
+        'reward-customer-tax-review-1',
+        expectedRewardState(cashoutRequestedReferralRewardStatus),
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'CUSTOMER_REFERRAL_CASHOUT_UNAVAILABLE',
+        message: 'Customer referral cashout is unavailable in wallet-only MVP.',
+      },
+      status: 409,
+    });
+    expect(prisma.referralReward.updateMany).not.toHaveBeenCalled();
   });
 
   it('marks referral rewards for tax review without changing wallet ledger references', async () => {
@@ -2071,6 +2263,279 @@ describe('ReferralsService', () => {
     expect(prisma.referralReward.updateMany).toHaveBeenCalledWith({
       data: { status: taxReviewRequiredReferralRewardStatus },
       where: { id: 'reward-1', status: cashoutRequestedReferralRewardStatus, updatedAt: referralRewardUpdatedAt },
+    });
+  });
+
+  it('approves a legacy Customer tax review without changing its credited wallet ledger', async () => {
+    const tx = {
+      providerBankAccount: { findFirst: vi.fn() },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-customer-tax-approve-1',
+          metadata: { legacyCashout: true },
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'reward-customer-tax-approve-1',
+          status: cashoutApprovedReferralRewardStatus,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.approveRewardTaxReview(
+        'reward-customer-tax-approve-1',
+        expectedRewardState(taxReviewRequiredReferralRewardStatus),
+      ),
+    ).resolves.toMatchObject({
+      status: cashoutApprovedReferralRewardStatus,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    expect(tx.providerBankAccount.findFirst).not.toHaveBeenCalled();
+    expect(tx.referralReward.updateMany).toHaveBeenCalledWith({
+      data: { status: cashoutApprovedReferralRewardStatus },
+      where: {
+        id: 'reward-customer-tax-approve-1',
+        status: taxReviewRequiredReferralRewardStatus,
+        updatedAt: referralRewardUpdatedAt,
+      },
+    });
+  });
+
+  it('binds Partner tax approval to an approved owned masked bank snapshot', async () => {
+    const bankAccount = approvedReferralCashoutBankAccount({ accountNumberMasked: '1234567894321' });
+    const tx = {
+      providerBankAccount: { findFirst: vi.fn().mockResolvedValue(bankAccount) },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-partner-tax-approve-1',
+          metadata: { taxEvidence: 'reviewed' },
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'provider-wallet-ledger-1',
+          walletOwnerCustomerProfileId: null,
+          walletOwnerProviderProfileId: 'provider-profile-1',
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'reward-partner-tax-approve-1',
+          status: cashoutApprovedReferralRewardStatus,
+          walletLedgerReference: 'provider-wallet-ledger-1',
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await service.approveRewardTaxReview(
+      'reward-partner-tax-approve-1',
+      expectedRewardState(taxReviewRequiredReferralRewardStatus),
+    );
+
+    const update = tx.referralReward.updateMany.mock.calls[0]?.[0];
+    expect(update).toEqual({
+      data: {
+        metadata: {
+          taxEvidence: 'reviewed',
+          referralCashoutPayoutDestination: expect.objectContaining({
+            accountNumberLast4: '4321',
+            accountNumberMasked: '•••• 4321',
+            bankAccountId: 'provider-bank-account-1',
+            providerProfileId: 'provider-profile-1',
+          }),
+        },
+        status: cashoutApprovedReferralRewardStatus,
+      },
+      where: {
+        id: 'reward-partner-tax-approve-1',
+        status: taxReviewRequiredReferralRewardStatus,
+        updatedAt: referralRewardUpdatedAt,
+      },
+    });
+    expect(JSON.stringify(update)).not.toContain('1234567894321');
+  });
+
+  it('records a tax hold as a versioned decision without moving or mutating wallet value', async () => {
+    const tx = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-tax-hold-1',
+          metadata: null,
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'reward-tax-hold-1',
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: new Date('2026-08-10T10:05:00.000Z'),
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.holdRewardTaxReview(
+        'reward-tax-hold-1',
+        expectedRewardState(taxReviewRequiredReferralRewardStatus),
+      ),
+    ).resolves.toMatchObject({ status: taxReviewRequiredReferralRewardStatus });
+    expect(tx.referralReward.updateMany).toHaveBeenCalledWith({
+      data: { status: taxReviewRequiredReferralRewardStatus, updatedAt: expect.any(Date) },
+      where: {
+        id: 'reward-tax-hold-1',
+        status: taxReviewRequiredReferralRewardStatus,
+        updatedAt: referralRewardUpdatedAt,
+      },
+    });
+  });
+
+  it('rejects tax-reviewed cashout only and restores the existing wallet reward to CREDITED', async () => {
+    const tx = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-tax-reject-1',
+          metadata: null,
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'reward-tax-reject-1',
+          status: creditedReferralRewardStatus,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.rejectRewardTaxReview(
+        'reward-tax-reject-1',
+        expectedRewardState(taxReviewRequiredReferralRewardStatus),
+      ),
+    ).resolves.toMatchObject({
+      status: creditedReferralRewardStatus,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    expect(tx.referralReward.updateMany).toHaveBeenCalledWith({
+      data: { status: creditedReferralRewardStatus },
+      where: {
+        id: 'reward-tax-reject-1',
+        status: taxReviewRequiredReferralRewardStatus,
+        updatedAt: referralRewardUpdatedAt,
+      },
+    });
+  });
+
+  it('fails tax decisions closed when the tax-review row has no credited wallet ledger', async () => {
+    const tx = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-tax-invalid-1',
+          metadata: null,
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: null,
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.rejectRewardTaxReview(
+        'reward-tax-invalid-1',
+        expectedRewardState(taxReviewRequiredReferralRewardStatus),
+      ),
+    ).rejects.toThrow('Referral tax review requires an existing wallet ledger reference');
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('blocks tax decisions for fixture rewards before any state mutation', async () => {
+    const tx = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          attribution: null,
+          id: 'reward-tax-fixture-1',
+          metadata: { smoke: 'referral-admin' },
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.rejectRewardTaxReview(
+        'reward-tax-fixture-1',
+        expectedRewardState(taxReviewRequiredReferralRewardStatus),
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'REFERRAL_FIXTURE_MUTATION_BLOCKED' }),
+      status: 409,
+    });
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('prevents replay when a tax-review version changes during the decision', async () => {
+    const tx = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-tax-replay-1',
+          metadata: null,
+          status: taxReviewRequiredReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+          walletOwnerCustomerProfileId: 'customer-profile-1',
+          walletOwnerProviderProfileId: null,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.holdRewardTaxReview(
+        'reward-tax-replay-1',
+        expectedRewardState(taxReviewRequiredReferralRewardStatus),
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'REWARD_STATE_CHANGED' }),
+      status: 409,
     });
   });
 
@@ -2184,10 +2649,16 @@ describe('ReferralsService', () => {
         sourceKey: 'accounting-journal:referral-wallet-credit:reward-1',
         sourceId: 'reward-1',
         sourceType: 'REFERRAL_REWARD',
+        monthlyPeriod: expect.any(String),
+        metadata: expect.objectContaining({ actionOccurredAt: expect.any(String) }),
         totalCredit: 25_000,
         totalDebit: 25_000,
       }),
     });
+    const journalCreate = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].create;
+    expect(journalCreate.monthlyPeriod).toBe(
+      settlementMonthlyPeriod(new Date(journalCreate.metadata.actionOccurredAt)),
+    );
     expect(tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].update).toEqual({});
   });
 
@@ -2405,12 +2876,11 @@ describe('ReferralsService', () => {
     );
   });
 
-  it('marks an approved customer referral cashout as paid with a customer cashout ledger entry', async () => {
-    const now = new Date('2026-06-24T10:00:00.000Z');
+  it('fails customer referral cashout paid closeout before any wallet, ledger, journal, or status mutation', async () => {
     const reward = {
       id: 'reward-1',
       amount: 25_000,
-      availableAt: now,
+      availableAt: new Date('2026-06-24T10:00:00.000Z'),
       currency: 'VND',
       qualifyingBookingId: 'booking-1',
       sourceKey: 'referral:CUSTOMER:attribution-1:booking-1',
@@ -2420,28 +2890,23 @@ describe('ReferralsService', () => {
       walletOwnerCustomerProfileId: 'customer-profile-1',
       walletOwnerProviderProfileId: null,
     };
-    const ledger = { id: 'customer-cashout-ledger-1' };
     const tx = {
-      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      $queryRaw: vi.fn(),
       customerWalletLedgerEntry: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 25_000 } }),
-        upsert: vi.fn().mockResolvedValue(ledger),
+        aggregate: vi.fn(),
+        upsert: vi.fn(),
       },
       providerWalletLedgerEntry: {
         upsert: vi.fn(),
       },
       accountingJournalBatch: {
-        upsert: vi.fn().mockResolvedValue({ id: 'referral-cashout-journal-1' }),
+        upsert: vi.fn(),
       },
       referralReward: {
-        findMany: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn(),
         findUnique: vi.fn().mockResolvedValue(reward),
-        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        update: vi.fn().mockResolvedValue({
-          ...reward,
-          status: paidReferralRewardStatus,
-          walletLedgerReference: ledger.id,
-        }),
+        updateMany: vi.fn(),
+        update: vi.fn(),
       },
     };
     const prisma = {
@@ -2458,53 +2923,177 @@ describe('ReferralsService', () => {
         notes: 'Manual bank transfer completed.',
         reference: 'VCB-REF-001',
       }),
-    ).resolves.toMatchObject({
-      id: 'reward-1',
-      status: paidReferralRewardStatus,
-      walletLedgerReference: 'customer-cashout-ledger-1',
-    });
-    expect(tx.$queryRaw).toHaveBeenCalledOnce();
-    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
-      tx.customerWalletLedgerEntry.aggregate.mock.invocationCallOrder[0],
-    );
-    expect(tx.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { sourceKey: 'referral:wallet-cashout:reward-1' },
-        update: {},
-        create: expect.objectContaining({
-          amount: -25_000,
-          bookingId: 'booking-1',
-          currency: 'VND',
-          customerProfileId: 'customer-profile-1',
-          notes: 'Manual bank transfer completed.',
-          referralRewardId: 'reward-1',
-          reference: 'VCB-REF-001',
-          sourceKey: 'referral:wallet-cashout:reward-1',
-          type: 'CUSTOMER_REFERRAL_CASHOUT',
-        }),
-      }),
-    );
-    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
-    expect(tx.referralReward.update).toHaveBeenCalledWith({
-      data: {
-        status: paidReferralRewardStatus,
-        walletLedgerReference: 'customer-cashout-ledger-1',
+    ).rejects.toMatchObject({
+      response: {
+        code: 'CUSTOMER_REFERRAL_CASHOUT_UNAVAILABLE',
+        message: 'Customer referral cashout is unavailable in wallet-only MVP.',
       },
-      where: { id: 'reward-1', status: ReferralRewardStatus.LOCKED },
-      select: expect.any(Object),
+      status: 409,
     });
-    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
-      where: { sourceKey: 'accounting-journal:referral-wallet-cashout:reward-1' },
-      update: {},
-      create: expect.objectContaining({
-        customerProfileId: 'customer-profile-1',
-        sourceKey: 'accounting-journal:referral-wallet-cashout:reward-1',
-        sourceId: 'reward-1',
-        sourceType: 'REFERRAL_REWARD',
-        totalCredit: 25_000,
-        totalDebit: 25_000,
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
+    expect(tx.customerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(tx.customerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+  });
+
+  it('fails Partner cashout paid closeout when the approved bank account changed', async () => {
+    const reward = {
+      id: 'reward-partner-bank-changed',
+      amount: 50_000,
+      availableAt: new Date('2026-06-24T10:00:00.000Z'),
+      calculationSnapshot: {},
+      currency: 'VND',
+      metadata: referralCashoutPayoutDestinationMetadata(),
+      qualifyingBookingId: 'booking-partner-bank-changed',
+      sourceKey: 'referral:PARTNER:attribution-bank-changed:booking-partner-bank-changed',
+      status: cashoutApprovedReferralRewardStatus,
+      updatedAt: referralRewardUpdatedAt,
+      walletLedgerReference: 'provider-earned-ledger-1',
+      walletOwnerCustomerProfileId: null,
+      walletOwnerProviderProfileId: 'provider-profile-1',
+    };
+    const tx = {
+      $queryRaw: vi.fn(),
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(approvedReferralCashoutBankAccount({
+          updatedAt: new Date('2026-08-10T09:30:00.000Z'),
+        })),
+      },
+      customerWalletLedgerEntry: { aggregate: vi.fn(), upsert: vi.fn() },
+      providerWalletLedgerEntry: { aggregate: vi.fn(), upsert: vi.fn() },
+      accountingJournalBatch: { upsert: vi.fn() },
+      referralReward: {
+        findMany: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue(reward),
+        updateMany: vi.fn(),
+        update: vi.fn(),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.payRewardCashout(reward.id, {
+        expectedStatus: cashoutApprovedReferralRewardStatus,
+        expectedUpdatedAt: referralRewardUpdatedAt.toISOString(),
+        reference: 'BIDV-CHANGED-001',
       }),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'PARTNER_REFERRAL_PAYOUT_DESTINATION_CHANGED',
+        message: 'Partner payout destination changed after cashout approval.',
+      },
+      status: 409,
     });
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+  });
+
+  it('fails Partner cashout paid closeout when approval-time payout evidence is missing', async () => {
+    const tx = {
+      $queryRaw: vi.fn(),
+      providerBankAccount: { findFirst: vi.fn() },
+      providerWalletLedgerEntry: { aggregate: vi.fn(), upsert: vi.fn() },
+      accountingJournalBatch: { upsert: vi.fn() },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-partner-evidence-missing',
+          amount: 50_000,
+          calculationSnapshot: {},
+          currency: 'VND',
+          metadata: null,
+          qualifyingBookingId: 'booking-partner-evidence-missing',
+          sourceKey: 'referral:PARTNER:evidence-missing',
+          status: cashoutApprovedReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'provider-earned-ledger-1',
+          walletOwnerCustomerProfileId: null,
+          walletOwnerProviderProfileId: 'provider-profile-1',
+        }),
+        updateMany: vi.fn(),
+        update: vi.fn(),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.payRewardCashout('reward-partner-evidence-missing', {
+        expectedStatus: cashoutApprovedReferralRewardStatus,
+        expectedUpdatedAt: referralRewardUpdatedAt.toISOString(),
+        reference: 'BIDV-MISSING-001',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'PARTNER_REFERRAL_PAYOUT_EVIDENCE_MISSING' }),
+      status: 409,
+    });
+    expect(tx.providerBankAccount.findFirst).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['missing', null],
+    ['rejected', approvedReferralCashoutBankAccount({ status: ProviderBankAccountStatus.REJECTED })],
+    ['deleted', approvedReferralCashoutBankAccount({ deletedAt: new Date('2026-08-10T09:30:00.000Z') })],
+    ['owned by another Partner', approvedReferralCashoutBankAccount({ providerProfileId: 'provider-profile-2' })],
+  ])('fails Partner cashout paid closeout when the current bank account is %s', async (_label, bankAccount) => {
+    const tx = {
+      $queryRaw: vi.fn(),
+      providerBankAccount: { findFirst: vi.fn().mockResolvedValue(bankAccount) },
+      providerWalletLedgerEntry: { aggregate: vi.fn(), upsert: vi.fn() },
+      accountingJournalBatch: { upsert: vi.fn() },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-partner-current-bank-invalid',
+          amount: 50_000,
+          calculationSnapshot: {},
+          currency: 'VND',
+          metadata: referralCashoutPayoutDestinationMetadata(),
+          qualifyingBookingId: 'booking-partner-current-bank-invalid',
+          sourceKey: 'referral:PARTNER:current-bank-invalid',
+          status: cashoutApprovedReferralRewardStatus,
+          updatedAt: referralRewardUpdatedAt,
+          walletLedgerReference: 'provider-earned-ledger-1',
+          walletOwnerCustomerProfileId: null,
+          walletOwnerProviderProfileId: 'provider-profile-1',
+        }),
+        updateMany: vi.fn(),
+        update: vi.fn(),
+      },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.payRewardCashout('reward-partner-current-bank-invalid', {
+        expectedStatus: cashoutApprovedReferralRewardStatus,
+        expectedUpdatedAt: referralRewardUpdatedAt.toISOString(),
+        reference: 'BIDV-INVALID-001',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'PARTNER_REFERRAL_PAYOUT_DESTINATION_CHANGED' }),
+      status: 409,
+    });
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
   });
 
   it('marks an approved Partner referral cashout as paid with a Partner cashout ledger entry', async () => {
@@ -2514,6 +3103,7 @@ describe('ReferralsService', () => {
       amount: 50_000,
       availableAt: now,
       currency: 'VND',
+      metadata: referralCashoutPayoutDestinationMetadata(),
       qualifyingBookingId: 'booking-2',
       sourceKey: 'referral:PARTNER:attribution-2:booking-2',
       status: cashoutApprovedReferralRewardStatus,
@@ -2525,6 +3115,9 @@ describe('ReferralsService', () => {
     const ledger = { id: 'provider-cashout-ledger-1' };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(approvedReferralCashoutBankAccount()),
+      },
       customerWalletLedgerEntry: {
         upsert: vi.fn(),
       },
@@ -2577,6 +3170,12 @@ describe('ReferralsService', () => {
           amount: -50_000,
           bookingId: 'booking-2',
           currency: 'VND',
+          metadata: expect.objectContaining({
+            payoutDestination: expect.objectContaining({
+              bankAccountId: 'provider-bank-account-1',
+              providerProfileId: 'provider-profile-1',
+            }),
+          }),
           notes: 'Partner referral cashout paid.',
           providerProfileId: 'provider-profile-1',
           reference: 'BIDV-REF-002',
@@ -2586,6 +3185,19 @@ describe('ReferralsService', () => {
       }),
     );
     expect(tx.customerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          metadata: expect.objectContaining({
+            payoutDestination: expect.objectContaining({
+              accountNumberMasked: '•••• 4321',
+              bankAccountId: 'provider-bank-account-1',
+            }),
+          }),
+        }),
+        update: {},
+      }),
+    );
     expect(tx.referralReward.update).toHaveBeenCalledWith({
       data: {
         status: paidReferralRewardStatus,
@@ -2604,6 +3216,7 @@ describe('ReferralsService', () => {
       availableAt: now,
       calculationSnapshot: { taxPolicySnapshot: 'INDIVIDUAL_COMMISSION_PIT_10' },
       currency: 'VND',
+      metadata: referralCashoutPayoutDestinationMetadata(),
       qualifyingBookingId: 'booking-withheld-cashout-1',
       sourceKey: 'referral:PARTNER:attribution-withheld-cashout:booking-withheld-cashout-1',
       status: cashoutApprovedReferralRewardStatus,
@@ -2615,6 +3228,9 @@ describe('ReferralsService', () => {
     const ledger = { id: 'provider-cashout-ledger-withheld-1' };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(approvedReferralCashoutBankAccount()),
+      },
       customerWalletLedgerEntry: {
         upsert: vi.fn(),
       },

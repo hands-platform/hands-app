@@ -139,7 +139,13 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('Status');
     expect(rendered).toContain('Detail');
     expect(rendered).toContain('Action');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#kyc', '#documents', '#bank', '#tax']));
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/partners/partner-1?section=dossier&dossier=evidence#documents',
+        '/partners/partner-1?section=dossier&dossier=finance#bank',
+        '/partners/partner-1?section=dossier&dossier=finance#tax',
+      ]),
+    );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
@@ -371,7 +377,7 @@ function buildApprovalEvidenceRows(): PartnerApprovalEvidenceSummaryRow[] {
   return [
     {
       detail: 'Status PENDING; CCCD/CMND ****1234; submitted 20 Jun 2026, 09:00.',
-      href: '#kyc',
+      href: '/partners/partner-1?section=dossier&dossier=evidence#documents',
       id: 'kyc-evidence-summary',
       label: 'KYC',
       status: 'PENDING',
@@ -380,7 +386,7 @@ function buildApprovalEvidenceRows(): PartnerApprovalEvidenceSummaryRow[] {
     },
     {
       detail: '3/3 required document(s) approved.',
-      href: '#documents',
+      href: '/partners/partner-1?section=dossier&dossier=evidence#documents',
       id: 'document-evidence-summary',
       label: 'DOCS',
       status: 'APPROVED',
@@ -389,7 +395,7 @@ function buildApprovalEvidenceRows(): PartnerApprovalEvidenceSummaryRow[] {
     },
     {
       detail: 'VCB / Linh Wellness / ****6789.',
-      href: '#bank',
+      href: '/partners/partner-1?section=dossier&dossier=finance#bank',
       id: 'bank-evidence-summary',
       label: 'BANK',
       status: 'PENDING',
@@ -398,7 +404,7 @@ function buildApprovalEvidenceRows(): PartnerApprovalEvidenceSummaryRow[] {
     },
     {
       detail: 'Partner has no first earning yet, so tax evidence does not block onboarding.',
-      href: '#tax',
+      href: '/partners/partner-1?section=dossier&dossier=finance#tax',
       id: 'tax-evidence-summary',
       label: 'TAX',
       status: 'DEFERRED',

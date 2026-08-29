@@ -3,6 +3,8 @@ import { readSearchParam } from '../../../lib/date-range';
 export type PushCampaignDateRange = 'all' | 'today' | 'yesterday' | '7d' | '30d';
 
 const PUSH_CAMPAIGN_API_TAKE = 20;
+export const PUSH_CAMPAIGN_MAX_SKIP = 10000;
+export const PUSH_CAMPAIGN_MAX_PAGE = PUSH_CAMPAIGN_MAX_SKIP / PUSH_CAMPAIGN_API_TAKE + 1;
 const ICT_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -16,7 +18,10 @@ export const pushCampaignDateRangeLinks = [
 
 export function buildPushCampaignApiHref(params: Record<string, string | string[] | undefined>) {
   const range = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
-  const page = normalizePushCampaignPage(readSearchParam(params.campaignPage));
+  const page = Math.min(
+    normalizePushCampaignPage(readSearchParam(params.campaignPage)),
+    PUSH_CAMPAIGN_MAX_PAGE,
+  );
   const query = new URLSearchParams({ take: String(PUSH_CAMPAIGN_API_TAKE) });
   const skip = (page - 1) * PUSH_CAMPAIGN_API_TAKE;
   if (skip) query.set('skip', String(skip));
@@ -45,7 +50,7 @@ export function buildPushCampaignPageHref(
   const query = new URLSearchParams();
   const range = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
   if (range !== 'today') query.set('campaignRange', range);
-  const normalizedPage = Math.max(1, Math.trunc(page));
+  const normalizedPage = Math.min(PUSH_CAMPAIGN_MAX_PAGE, Math.max(1, Math.trunc(page)));
   if (normalizedPage > 1) query.set('campaignPage', String(normalizedPage));
   return query.size ? `/notifications/push-send?${query.toString()}` : '/notifications/push-send';
 }
@@ -62,7 +67,7 @@ export function normalizePushCampaignDateRange(value: string): PushCampaignDateR
 
 export function normalizePushCampaignPage(value: string) {
   const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 500) : 1;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
 export function pushCampaignStatusView(status: string) {

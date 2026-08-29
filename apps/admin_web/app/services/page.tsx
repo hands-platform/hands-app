@@ -1,10 +1,13 @@
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import {
   adminGetResult,
+  type AdminServiceCatalogAuditEvidence,
   type AdminServiceCatalogGroup,
   type AdminServiceCatalogHealth,
   type AdminServiceCatalogImpact,
 } from '../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
 import { readSingleParam, type ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { serviceActionNotice } from '../../lib/service-action-notice';
 import { ServiceActionNoticeSection } from './service-action-notice-section';
@@ -14,7 +17,8 @@ type ServicesPageSearchParams = Promise<Record<string, string | string[] | undef
 
 export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const [groupsResult, healthResult] = await Promise.all([
+  const evidenceGroupKey = readSingleParam(params.evidence);
+  const [groupsResult, healthResult, operatorAccess, evidenceResult] = await Promise.all([
     adminGetResult<AdminServiceCatalogGroup[]>('/admin/services/groups?scope=operational', [], {
       freshness: 'stable',
       revalidateSeconds: 300,
@@ -25,6 +29,14 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       revalidateSeconds: 300,
       tags: ['service-catalog'],
     }),
+    getCurrentAdminOperatorAccess(),
+    evidenceGroupKey
+      ? adminGetResult<AdminServiceCatalogAuditEvidence | null>(
+          `/admin/services/groups/${encodeURIComponent(evidenceGroupKey)}/audit-evidence`,
+          null,
+          { freshness: 'aggregate', revalidateSeconds: 30, tags: ['service-catalog'] },
+        )
+      : Promise.resolve(null),
   ]);
   const groupedServices = groupsResult.data.map(toServiceCatalogGroup);
   const dialogMode = readDialogMode(params.dialog);
@@ -47,8 +59,12 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         <ServiceActionNoticeSection notice={serviceActionNotice(params)} />
         <ServiceCatalogManagerSection
           dataAvailable={groupsResult.ok}
+          canOpenFullAuditLog={hasAdminOperatorCategory(operatorAccess, 'SYSTEM_AUDIT')}
           dialogMode={dialogMode}
           editGroup={editGroup}
+          evidence={evidenceResult?.data ?? null}
+          evidenceAvailable={evidenceResult?.ok ?? true}
+          evidenceGroupKey={evidenceGroupKey ?? null}
           groups={groupedServices}
           health={healthResult.data}
           healthAvailable={healthResult.ok}

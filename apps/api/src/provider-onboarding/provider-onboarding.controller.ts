@@ -180,8 +180,11 @@ export class ProviderOnboardingController {
 
   @Get('admin/tax-policy-integrity-summary')
   @Roles(Role.ADMIN)
-  taxPolicyIntegritySummary(@CurrentUser() user: AuthenticatedUser) {
-    return this.onboarding.taxPolicyIntegritySummary(user.id);
+  taxPolicyIntegritySummary(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('source') source?: string,
+  ) {
+    return this.onboarding.taxPolicyIntegritySummary(user.id, { source });
   }
 
   @Get('admin/tax-policy-integrity-records')

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
@@ -44,10 +44,22 @@ export function CashSettlementReviewDrawer({
   const onClose = useCallback(() => router.replace(closeHref, { scroll: false }), [closeHref, router]);
   useAdminModalFocus(drawerRef, onClose);
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+    };
+  }, []);
+
   const titleId = 'cash-settlement-review-title';
   const earning = detail?.earning;
   const partnerName =
     earning?.providerProfile?.displayName ?? earning?.providerProfile?.user?.fullName ?? 'Partner';
+  const reviewAvailable = Boolean(detailLoaded && detail && earning);
 
   return (
     <>
@@ -60,32 +72,39 @@ export function CashSettlementReviewDrawer({
         surfaceRef={drawerRef}
         tabIndex={-1}
       >
-        <div className="calendar-drawer-header">
-          <div>
-            <span className="calendar-drawer-eyebrow">Approved evidence allocation</span>
-            <h2 id={titleId}>{partnerName}</h2>
-            <p className="muted">One open cash fee receivable</p>
-          </div>
-          <AdminFormControlButton
-            aria-label="Close cash settlement review"
-            className="button-secondary calendar-icon-button"
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" size={16} />
-          </AdminFormControlButton>
-        </div>
-
-        <div className="calendar-drawer-body">
-          {!detailLoaded || !detail || !earning ? (
-            <AdminNoticeCard role="alert" tone="danger">
-              <strong>Debt evidence unavailable</strong>
+        <div className="cash-settlement-review-drawer-shell service-menu-dialog-shell">
+          <div className="calendar-drawer-header">
+            <div>
+              <span className="calendar-drawer-eyebrow">
+                {reviewAvailable ? 'Approved evidence allocation' : 'Review unavailable'}
+              </span>
+              <h2 id={titleId}>{reviewAvailable ? partnerName : 'Cash settlement evidence'}</h2>
               <p className="muted">
-                The exact open earning could not be loaded. No financial action is available.
+                {reviewAvailable
+                  ? 'One open cash fee receivable'
+                  : 'The selected receivable could not be verified.'}
               </p>
-            </AdminNoticeCard>
-          ) : (
-            <>
+            </div>
+            <AdminFormControlButton
+              aria-label="Close cash settlement review"
+              className="button-secondary calendar-icon-button"
+              onClick={onClose}
+              type="button"
+            >
+              <X aria-hidden="true" size={16} />
+            </AdminFormControlButton>
+          </div>
+
+          <div className="calendar-drawer-body">
+            {!detailLoaded || !detail || !earning ? (
+              <AdminNoticeCard role="alert" tone="danger">
+                <strong>Debt evidence unavailable</strong>
+                <p className="muted">
+                  The exact open earning could not be loaded. No financial action is available.
+                </p>
+              </AdminNoticeCard>
+            ) : (
+              <>
               <AdminNoticeCard tone="warning">
                 <strong>Settlement requires approved deposit evidence</strong>
                 <p className="muted">
@@ -311,8 +330,9 @@ export function CashSettlementReviewDrawer({
                   reference cannot settle this receivable.
                 </p>
               </AdminNoticeCard>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </AdminDrawerSurface>
     </>

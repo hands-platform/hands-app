@@ -8,6 +8,7 @@ import {
 
 const boardSource = readFileSync('app/customers/[id]/customer-booking-operation-board.tsx', 'utf8');
 const pageSource = readFileSync('app/customers/[id]/page.tsx', 'utf8');
+const globalStyles = readFileSync('app/globals.css', 'utf8');
 
 describe('CustomerBookingOperationBoard', () => {
   it('renders booking situation metrics and Partner avatar rows', () => {
@@ -21,13 +22,14 @@ describe('CustomerBookingOperationBoard', () => {
     const rendered = textContent(board).replace(/\s+/g, ' ');
 
     expect(rendered).toContain('Recent bookings');
-    expect(rendered).toContain('Latest 14 bookings');
+    expect(rendered).toContain('Latest 6 bookings');
     expect(rendered).toContain('View all bookings');
-    expect(rendered).toContain('All 14');
-    expect(rendered).toContain('Live 11');
+    expect(hrefsIn(board)).toContain('/bookings?view=all&dateRange=all&q=customer-1');
+    expect(rendered).toContain('All 6');
+    expect(rendered).toContain('Live 3');
     expect(rendered).toContain('Completed 1');
     expect(rendered).toContain('Cancelled 2');
-    expect(rendered).toContain('Showing 1 to 5 of 14 entries');
+    expect(rendered).toContain('booking-3');
     expect(rendered).toContain('Smoke Partner');
     expect(rendered).toContain('Money');
     expect(rendered).toContain('Wallet');
@@ -37,20 +39,21 @@ describe('CustomerBookingOperationBoard', () => {
     expect(classNames).toEqual(
       expect.arrayContaining([
         'table vuexy-data-table vuexy-booking-table admin-data-table customer-recent-bookings-table',
-        'admin-rounded-pagination vuexy-booking-pagination',
         'vuexy-booking-avatar is-partner',
         'vuexy-booking-person',
         'admin-avatar-status-dot is-working',
       ]),
     );
     expect(classNames).not.toContain('admin-table-scroll');
+    expect(rendered).not.toContain('Current filters');
+    expect(rendered).not.toContain('All records');
   });
 
-  it('renders server-bounded operation rows while keeping the full group count for pagination', () => {
+  it('renders all six server-bounded operation rows even when a legacy page parameter is present', () => {
     const board = CustomerBookingOperationBoard({
       basePath: '/customers/customer-1',
       groups: [
-        group('live', 'Current / In Progress', 'Current booking rows.', 11),
+        group('live', 'Current / In Progress', 'Current booking rows.', 6),
       ],
       metrics: buildMetrics(),
       searchParams: { bookingHistoryPage: '2', range: '7d' },
@@ -58,11 +61,10 @@ describe('CustomerBookingOperationBoard', () => {
 
     const rendered = textContent(board).replace(/\s+/g, ' ');
 
-    expect(rendered).toContain('Showing 6 to 10 of 11 entries');
     expect(rendered).toContain('booking-6');
-    expect(rendered).toContain('booking-2');
-    expect(rendered).not.toContain('booking-11');
-    expect(boardSource).toContain('filteredRows.slice(');
+    expect(rendered).toContain('booking-1');
+    expect(boardSource).not.toContain('filteredRows.slice(');
+    expect(boardSource).not.toContain('CUSTOMER_BOOKING_OPERATION_PAGE_SIZE');
   });
 
   it('uses a compact empty state instead of rendering four empty booking tables', () => {
@@ -80,13 +82,13 @@ describe('CustomerBookingOperationBoard', () => {
     const rendered = textContent(board).replace(/\s+/g, ' ');
     const classNames = classNamesIn(board);
 
-    expect(rendered).toContain('No booking matched this recent-booking filter.');
-    expect(rendered).toContain('All 0');
-    expect(rendered).toContain('Live 0');
-    expect(rendered).toContain('Completed 0');
-    expect(rendered).toContain('Cancelled 0');
-    expect(rendered).toContain('Money');
-    expect(classNames).toContain(
+    expect(rendered).toContain('No recent booking records were found for this customer.');
+    expect(rendered).not.toContain('All 0');
+    expect(rendered).not.toContain('Live 0');
+    expect(rendered).not.toContain('Completed 0');
+    expect(rendered).not.toContain('Cancelled 0');
+    expect(rendered).not.toContain('Money');
+    expect(classNames).not.toContain(
       'table vuexy-data-table vuexy-booking-table admin-data-table customer-recent-bookings-table',
     );
   });
@@ -134,15 +136,22 @@ describe('CustomerBookingOperationBoard', () => {
     expect(pageSource).not.toContain('stateDetail: formatDate(stateAt)');
   });
 
-  it('uses the shared table pagination footer for customer booking operation groups', () => {
+  it('keeps recent bookings in one bounded table without pagination', () => {
     expect(boardSource).toContain('AdminTablePanel');
     expect(boardSource).not.toContain(
       'className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section"',
     );
-    expect(boardSource).toContain('AdminTablePaginationFooter');
-    expect(boardSource).toContain('className="customer-booking-operation-footer"');
+    expect(boardSource).not.toContain('AdminTablePaginationFooter');
+    expect(boardSource).not.toContain('className="customer-booking-operation-footer"');
     expect(boardSource).not.toContain('<AdminTableFooter');
     expect(boardSource).not.toContain('Showing {pageFrom} to {pageTo} of {group.rows.length} entries');
+  });
+
+  it('overrides the shared booking table minimum width only for customer detail', () => {
+    expect(globalStyles).toMatch(
+      /\.customer-booking-operation-section \.customer-recent-bookings-table\s*\{[^}]*min-width:\s*0;[^}]*table-layout:\s*fixed;[^}]*width:\s*100%;/u,
+    );
+    expect(boardSource).toContain("'Outcome'");
   });
 });
 
@@ -166,7 +175,7 @@ function group(
   key: string,
   title: string,
   _description: string,
-  rowCount = key === 'live' ? 11 : 1,
+  rowCount = key === 'live' ? 3 : 1,
 ): CustomerBookingOperationGroup {
   return {
     key,
@@ -226,6 +235,21 @@ function classNamesIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const className = typeof props?.className === 'string' ? [props.className] : [];
   return [...className, ...classNamesIn(props?.children)];
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

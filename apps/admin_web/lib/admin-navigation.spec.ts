@@ -18,8 +18,29 @@ import {
   adminNavWorkspaceDestinations,
   allAdminNavSections,
 } from './admin-navigation';
+import { adminNavigationPrimaryMode } from './admin-nav-match';
 
 describe('admin navigation', () => {
+  it('hides Coupons from access-filtered navigation when the launch gate is off', () => {
+    vi.stubEnv('COUPON_LAUNCH_ENABLED', 'false');
+    try {
+      const sections = adminNavSectionsForAccess({ categories: [], roles: ['MASTER_ADMIN'] });
+      expect(sidebarHrefs(sections)).not.toContain('/coupons');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('hides Shift Handoff from access-filtered navigation when the launch gate is off', () => {
+    vi.stubEnv('SHIFT_HANDOFF_LAUNCH_ENABLED', 'false');
+    try {
+      const sections = adminNavSectionsForAccess({ categories: [], roles: ['MASTER_ADMIN'] });
+      expect(sidebarHrefs(sections)).not.toContain('/operations-handoff');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('organizes one direct Shift Command link and seven operator work areas', () => {
     expect(adminNavSections.map((section) => section.label)).toEqual([
       'Shift Command',
@@ -34,7 +55,12 @@ describe('admin navigation', () => {
     expect(adminNavSections).toHaveLength(8);
     expect(adminNavSections[0]).toMatchObject({ href: '/', links: [] });
     expect(adminNavSections.slice(1).every((section) => section.links.length >= 1)).toBe(true);
-    expect(adminNavSections.slice(1).every((section) => section.links.length <= 7)).toBe(true);
+    expect(
+      adminNavSections
+        .filter((section) => section.id !== 'partner-operations')
+        .every((section) => section.links.length <= 7),
+    ).toBe(true);
+    expect(adminNavSections.find((section) => section.id === 'partner-operations')?.links).toHaveLength(8);
   });
 
   it('uses stable unique ids and explicit valid icon keys', () => {
@@ -51,12 +77,18 @@ describe('admin navigation', () => {
     expect(items.every((item) => adminNavIconKeys.includes(item.iconKey))).toBe(true);
   });
 
-  it('keeps direct sidebar destinations unique by exact href and pathname', () => {
+  it('keeps direct sidebar destinations unique by href and explicit primary mode', () => {
     const hrefs = sidebarHrefs(adminNavSections);
-    const pathnames = hrefs.map(normalizeMenuRoute);
+    const routeModes = hrefs.map(
+      (href) => `${normalizeMenuRoute(href)}:${adminNavigationPrimaryMode(href) ?? 'default'}`,
+    );
+    const duplicatePathnames = hrefs
+      .map(normalizeMenuRoute)
+      .filter((pathname, index, values) => values.indexOf(pathname) !== index);
 
     expect(hrefs.length).toBe(new Set(hrefs).size);
-    expect(pathnames.length).toBe(new Set(pathnames).size);
+    expect(routeModes.length).toBe(new Set(routeModes).size);
+    expect(new Set(duplicatePathnames)).toEqual(new Set(['/partners', '/partner-controls']));
   });
 
   it('places daily operating routes in their operator work areas', () => {
@@ -64,7 +96,7 @@ describe('admin navigation', () => {
 
     expect(links.get('/cash-settlements')).toBe('Finance Operations: Cash Settlements');
     expect(links.get('/finance-closeout')).toBe('Finance Operations: Settlement Repair');
-    expect(links.get('/partners/overview')).toBe('Partner Operations: Partner Operations');
+    expect(links.get('/partners/overview')).toBe('Partner Operations: Overview');
     expect(links.get('/chat-archive')).toBe('Customer Support: Chat Evidence');
     expect(sidebarHrefs(adminNavSections)).not.toContain('/usage-overview');
     expect(links.get('/usage-overview')).toBe('Growth & Communications: Customer Usage');
@@ -104,7 +136,9 @@ describe('admin navigation', () => {
       categories: ['BOOKINGS', 'CUSTOMERS_DIRECTORY', 'CUSTOMERS_REVIEWS', 'NOTIFICATIONS_DELIVERY'],
       roles: ['ADMIN'],
     });
-    const partner = visibleNav({ categories: ['PARTNERS', 'CUSTOMERS_REVIEWS'], roles: ['ADMIN'] });
+    const partnerDirectory = visibleNav({ categories: ['PARTNERS_DIRECTORY'], roles: ['ADMIN'] });
+    const partnerApprovals = visibleNav({ categories: ['PARTNERS_UNAPPROVED'], roles: ['ADMIN'] });
+    const partnerControls = visibleNav({ categories: ['PARTNERS_DETAIL'], roles: ['ADMIN'] });
     const finance = visibleNav({ categories: ['FINANCE'], roles: ['ADMIN', 'FINANCE_APPROVER'] });
     const master = visibleNav({ categories: [], roles: ['ADMIN', 'MASTER_ADMIN'] });
 
@@ -116,12 +150,17 @@ describe('admin navigation', () => {
     expect(shift.sidebarHrefs).not.toContain('/finance-overview');
     expect(shift.localGroups).not.toContain('System Health');
 
-    expect(partner.sidebarHrefs).toContain('/partners/overview');
-    expect(partner.sidebarHrefs).not.toContain('/partners');
-    expect(partner.sidebarHrefs).not.toContain('/partner-controls');
-    expect(partner.workspaceHrefs).toContain('/partners');
-    expect(partner.workspaceHrefs).toContain('/partner-controls');
-    expect(partner.sidebarHrefs).not.toContain('/customers');
+    expect(partnerDirectory.sidebarHrefs).toEqual(['/partners/overview', '/partners']);
+    expect(partnerApprovals.sidebarHrefs).toEqual([
+      '/partners?review=approval-pending&sort=oldest',
+      '/partners?review=unapproved',
+    ]);
+    expect(partnerControls.sidebarHrefs).toEqual([
+      '/partner-controls',
+      '/partner-controls?details=controls',
+      '/partner-controls?details=reports',
+      '/partner-controls?details=sanctions',
+    ]);
 
     expect(finance.sidebarHrefs).toContain('/finance-overview');
     expect(finance.sidebarHrefs).toContain('/cash-settlements');
@@ -135,20 +174,27 @@ describe('admin navigation', () => {
     expect(master.localGroups).toContain('System Health');
   });
 
-  it('keeps one Partner Directory item and searchable queue deep links', () => {
+  it('renders eight direct Partner Operations destinations in operating order', () => {
     const partnerLinks = adminNavSections.find((section) => section.id === 'partner-operations')?.links ?? [];
-    const workspaceLinks = partnerLinks.filter((link) => link.href === '/partners/overview');
     const searchEntries = adminNavSearchEntries(adminNavSections);
     const findByLabel = (label: string) => searchEntries.find((entry) => entry.label === label);
 
-    expect(workspaceLinks.map((link) => [link.href, link.label])).toEqual([
-      ['/partners/overview', 'Partner Operations'],
+    expect(partnerLinks.map((link) => [link.label, link.href])).toEqual([
+      ['Overview', '/partners/overview'],
+      ['Action Queue', '/partner-controls'],
+      ['Approvals', '/partners?review=approval-pending&sort=oldest'],
+      ['Onboarding Blockers', '/partners?review=unapproved'],
+      ['Partner Blockers', '/partner-controls?details=controls'],
+      ['Reports', '/partner-controls?details=reports'],
+      ['Account Controls', '/partner-controls?details=sanctions'],
+      ['Directory', '/partners'],
     ]);
-    expect(findByLabel('Partner Directory')?.href).toBe('/partners');
-    expect(findByLabel('Partner Action Queue')?.href).toBe('/partner-controls');
-    expect(findByLabel('Partner Approvals')?.href).toBe('/partners?review=approval-pending&sort=oldest');
+    expect(findByLabel('Directory')?.href).toBe('/partners');
+    expect(findByLabel('Action Queue')?.href).toBe('/partner-controls');
+    expect(findByLabel('Approvals')?.href).toBe('/partners?review=approval-pending&sort=oldest');
     expect(findByLabel('Onboarding Blockers')?.href).toBe('/partners?review=unapproved');
     expect(findByLabel('Wallet Debt')?.href).toBe('/partners?review=unsettled');
+    expect(partnerLinks.some((link) => link.label === 'Partner workspace')).toBe(false);
   });
 
   it('ranks exact and Partner-title results ahead of description matches', () => {
@@ -159,16 +205,29 @@ describe('admin navigation', () => {
       Number.MAX_SAFE_INTEGER,
     );
 
-    expect(partnerResults.results[0]?.label).toBe('Partner Operations');
-    expect(partnerResults.results.map((entry) => entry.label)).toContain('Partner Directory');
-    expect(partnerResults.results.map((entry) => entry.label)).toContain('Partner Action Queue');
+    expect(partnerResults.results[0]?.label).toBe('Partner Blockers');
+    expect(partnerResults.results.map((entry) => entry.label)).toContain('Overview');
+    expect(partnerResults.results.map((entry) => entry.label)).toContain('Directory');
+    expect(partnerResults.results.map((entry) => entry.label)).toContain('Action Queue');
     expect(partnerResults.total).toBeGreaterThan(7);
-    expect(exactResults.results[0]?.label).toBe('Partner Directory');
+    expect(exactResults.results[0]?.label).toBe('Directory');
     expect(partnerResults.results.findIndex((entry) => entry.label === 'Live Bookings')).toBeGreaterThan(0);
     expect(
       partnerResults.results.findIndex((entry) => entry.label === 'Notification Delivery'),
     ).toBeGreaterThan(0);
   });
+
+  it.each(['partner', 'partners', 'provider', 'providers'])(
+    'finds Partner Overview once for the %s alias',
+    (query) => {
+      const matches = adminNavSearchResults(adminNavSections, query, Number.MAX_SAFE_INTEGER).results.filter(
+        (entry) => entry.href === '/partners/overview',
+      );
+
+      expect(matches).toHaveLength(1);
+      expect(matches[0]?.label).toBe('Overview');
+    },
+  );
 
   it('uses representative destinations before a search and limits only after ranking', () => {
     const limited = adminNavSearchResults(adminNavSections, '');
@@ -180,12 +239,30 @@ describe('admin navigation', () => {
       'Shift Command',
       'Live Bookings',
       'Customers',
-      'Partner Operations',
+      'Overview',
       'Finance Overview',
       'Payments',
       'Insights',
       'Operations Policy',
     ]);
+  });
+
+  it.each([
+    ['Partner Overview', 'Overview', '/partners/overview'],
+    ['Partner Action Queue', 'Action Queue', '/partner-controls'],
+    ['Partner Approvals', 'Approvals', '/partners?review=approval-pending&sort=oldest'],
+    ['Onboarding Blockers', 'Onboarding Blockers', '/partners?review=unapproved'],
+    ['Partner Blockers', 'Partner Blockers', '/partner-controls?details=controls'],
+    ['Partner Reports', 'Reports', '/partner-controls?details=reports'],
+    ['Partner Account Controls', 'Account Controls', '/partner-controls?details=sanctions'],
+    ['Partner Directory', 'Directory', '/partners'],
+  ])('returns one direct destination for %s', (query, label, href) => {
+    const matches = adminNavSearchResults(adminNavSections, query, Number.MAX_SAFE_INTEGER).results.filter(
+      (entry) => entry.href === href,
+    );
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0]?.label).toBe(label);
   });
 
   it('groups expanded search results by section without changing rank order', () => {

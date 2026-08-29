@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 import type { AdminCashSettlementSummary, AdminEarning } from '../../lib/admin-api';
 import { adminGetResult } from '../../lib/admin-api';
-import CashSettlementsPage from './page';
+import CashSettlementsPage, { metadata } from './page';
 
 const { mockedRedirect } = vi.hoisted(() => ({ mockedRedirect: vi.fn() }));
 
@@ -29,6 +29,10 @@ describe('CashSettlementsPage', () => {
   beforeEach(() => {
     mockedAdminGetResult.mockReset();
     mockedRedirect.mockReset();
+  });
+
+  it('lets the root metadata template append the Admin title exactly once', () => {
+    expect(metadata.title).toBe('Cash Settlement Workbench');
   });
 
   it('renders four action KPIs and the compact evidence workbench from server-scoped data', async () => {
@@ -75,6 +79,61 @@ describe('CashSettlementsPage', () => {
     expect(markup).toContain('Cash settlement data is incomplete');
     expect(markup).toContain('Unavailable');
     expect(markup).not.toContain('Open exposure: </span>0');
+  });
+
+  it('keeps period KPIs and empty recovery on the period all-open baseline', async () => {
+    const selectedSummary = {
+      ...cashSummary(),
+      cashPaymentRowCount: 0,
+      missingPaymentEvidenceCount: 0,
+      missingSettlementEvidenceCount: 0,
+      providerCount: 0,
+      queueAgeCounts: { all: 0, '1-4h': 0, '4-24h': 0, 'over-24h': 0, 'under-1h': 0 },
+      queueSla: { overdueCount: 0, thresholdMinutes: 60 },
+      rowCount: 0,
+      staleDebtRowCount: 0,
+      totalAllocatedAmount: 0,
+      totalCompanyCouponOffset: 0,
+      totalDebtAmount: 0,
+      totalOriginalDebtAmount: 0,
+      totalPlatformFee: 0,
+      totalTaxAmount: 0,
+    } satisfies AdminCashSettlementSummary;
+    const baselineSummary = {
+      ...cashSummary(),
+      missingSettlementEvidenceCount: 15,
+      providerCount: 15,
+      queueCounts: { all: 15, highDebt: 0, missingEvidence: 15, paymentCheck: 0, stale: 15 },
+      rowCount: 15,
+      staleDebtRowCount: 15,
+      totalDebtAmount: 1_200_000,
+      totalOriginalDebtAmount: 1_200_000,
+      totalPlatformFee: 1_200_000,
+      totalTaxAmount: 60_000,
+    } satisfies AdminCashSettlementSummary;
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/cash-settlement-summary?period=2026-08&sort=oldest&queue=payment-check') {
+        return { data: selectedSummary, ok: true, status: 200 } as never;
+      }
+      if (href === '/admin/cash-settlement-summary?period=2026-08&sort=oldest') {
+        return { data: baselineSummary, ok: true, status: 200 } as never;
+      }
+      if (href === '/admin/cash-settlement-earnings?period=2026-08&take=10&sort=oldest&queue=payment-check') {
+        return { data: [], ok: true, status: 200 } as never;
+      }
+      return { data: fallback, ok: true, status: 200 } as never;
+    });
+
+    const page = await CashSettlementsPage({
+      searchParams: Promise.resolve({ period: '2026-08', queue: 'payment-check', sort: 'oldest' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('1.200.000 VND');
+    expect(markup).toContain('Filtered: 0 rows');
+    expect(markup).toContain('Accounting month 2026-08: 15 all open.');
+    expect(markup).toContain('Return to All open (15)');
+    expect(markup).not.toContain('Return to All open (89)');
   });
 
   it('loads a selected debt by exact earning id instead of searching the current page rows', async () => {

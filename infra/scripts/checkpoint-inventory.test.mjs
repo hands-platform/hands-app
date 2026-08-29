@@ -23,6 +23,7 @@ test('classifies representative checkpoint paths by functional ownership', () =>
   assert.deepEqual(classifyCheckpointPath('apps/customer_app/lib/src/bootstrap.dart').unitIds, ['08']);
   assert.deepEqual(classifyCheckpointPath('.github/workflows/ci.yml').unitIds, ['09']);
   assert.deepEqual(classifyCheckpointPath('apps/api/package.json').unitIds, ['09']);
+  assert.deepEqual(classifyCheckpointPath('apps/api/vitest.config.mts').unitIds, ['09']);
   assert.deepEqual(classifyCheckpointPath('eslint.config.mjs').unitIds, ['09']);
 });
 

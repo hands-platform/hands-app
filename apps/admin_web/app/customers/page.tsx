@@ -25,7 +25,7 @@ import { CustomersTableSection } from './customers-table-section';
 
 type CustomersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export const metadata: Metadata = { title: 'Customers | HANDS Admin' };
+export const metadata: Metadata = { title: 'Customers' };
 
 export default async function CustomersPage({ searchParams }: { searchParams?: CustomersPageSearchParams }) {
   const rawSearchParams = searchParams ? await searchParams : {};

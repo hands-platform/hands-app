@@ -161,7 +161,15 @@ export default async function PaymentClearingDetailPage({
           scope: 'Clearing record',
           value: <MoneyText amount={remainingAmount} currency={entry.currency} />,
         },
-        { helper: 'Expected direction for an eligible bank match.', kind: 'record', label: 'Bank direction', scope: 'Clearing record', value: entry.expectedBankDirection ?? 'Manual review required' },
+        {
+          helper: clearingState.isTerminal
+            ? 'Historical expected direction retained with this terminal evidence.'
+            : 'Expected direction for an eligible bank match.',
+          kind: 'record',
+          label: 'Bank direction',
+          scope: 'Clearing record',
+          value: entry.expectedBankDirection ?? 'Manual review required',
+        },
       ]}
       title="Payment Clearing Detail"
     >
@@ -382,7 +390,11 @@ export default async function PaymentClearingDetailPage({
             ))}
           </FinanceDataTable>
         ) : (
-          <p className="muted">No review owner has been assigned. Use Assign owner before approving reconciliation evidence.</p>
+          <p className="muted">
+            {clearingState.isTerminal
+              ? 'No review owner was recorded for this retained evidence.'
+              : 'No review owner has been assigned. Use Assign owner before approving reconciliation evidence.'}
+          </p>
         )}
       </FinanceTablePanel>
 

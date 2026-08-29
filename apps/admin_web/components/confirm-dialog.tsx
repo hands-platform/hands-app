@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, type FormEventHandler, type ReactNode, type RefObject } from 'react';
 
 import { AdminFormInput, AdminFormSelect } from './admin-form-controls';
 import { AdminSectionHeader } from './admin-page-template';
@@ -49,7 +49,10 @@ type ConfirmDialogProps = {
   readonly id: string;
   readonly loading?: boolean;
   readonly loadingLabel?: string;
+  readonly onCancel?: () => void;
+  readonly onSubmit?: FormEventHandler<HTMLFormElement>;
   readonly requireValidForm?: boolean;
+  readonly returnFocusRef?: RefObject<HTMLElement | null>;
   readonly selectInputs?: readonly ConfirmDialogSelectInput[];
   readonly supportingLinks?: readonly ConfirmDialogSupportingLink[];
   readonly textInputs?: readonly ConfirmDialogTextInput[];
@@ -96,7 +99,10 @@ export function ConfirmDialog({
   id,
   loading = false,
   loadingLabel = 'Working...',
+  onCancel,
+  onSubmit,
   requireValidForm = false,
+  returnFocusRef,
   selectInputs = [],
   supportingLinks = [],
   textInputs = [],
@@ -114,6 +120,8 @@ export function ConfirmDialog({
       cancelHref={cancelHref}
       id={id}
       loading={loading}
+      onCancel={onCancel}
+      returnFocusRef={returnFocusRef}
     >
       <Fragment>
         <AdminSectionHeader
@@ -127,7 +135,7 @@ export function ConfirmDialog({
         <StatusBadgeLink href={cancelHref} tone="neutral">
           {cancelLabel}
         </StatusBadgeLink>
-        <form action={action} className="confirm-dialog-form">
+        <form action={action} className="confirm-dialog-form" onSubmit={onSubmit}>
           {hiddenInputs.map((input) => (
             <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
           ))}

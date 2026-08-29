@@ -31,9 +31,16 @@ import {
   acknowledgeBackgroundJobFailure,
   resolveBackgroundJobFailure,
 } from './actions';
+import { backgroundJobAuditActorLabel } from './background-job-audit-actor';
 import { backgroundJobWorkflow } from './background-job-workflows';
 
 const unavailableHealth: AdminBackgroundJobHealth = {
+  availability: {
+    failureReviews: 'UNAVAILABLE',
+    healthEvents: 'UNAVAILABLE',
+    queues: 'UNAVAILABLE',
+    recurringIncidents: 'UNAVAILABLE',
+  },
   failedJobs: [],
   generatedAt: new Date(0).toISOString(),
   ok: false,
@@ -46,6 +53,7 @@ const unavailableHealth: AdminBackgroundJobHealth = {
     pageSize: 10,
     scannedCount: 0,
     totalCount: 0,
+    unavailableQueueNames: [],
   },
   healthEvents: [],
   healthEventPage: {
@@ -105,6 +113,7 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
     review: filters.review,
   });
   appendBackgroundJobId(query, filters.jobId);
+  const returnTo = backgroundJobPageHref(filters, filters.page);
   const health = await adminGet<AdminBackgroundJobHealth>(
     `/admin/system/background-jobs?${query.toString()}`,
     unavailableHealth,
@@ -116,22 +125,32 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
   const recurringIncidentPage = health.recurringIncidentPage ?? unavailableHealth.recurringIncidentPage;
   const recurringIncidentSummary = health.recurringIncidentSummary ?? unavailableHealth.recurringIncidentSummary;
   const available = health.queues.length > 0;
+  const healthAvailability = health.availability ?? {
+    failureReviews: 'AVAILABLE' as const,
+    healthEvents: 'AVAILABLE' as const,
+    queues: available ? 'AVAILABLE' as const : 'UNAVAILABLE' as const,
+    recurringIncidents: 'AVAILABLE' as const,
+  };
   const failedCount = health.failedJobs.length;
   const visibleOpenFailureCount = health.failedJobs.filter(
     (job) => job.review?.status !== 'RESOLVED',
   ).length;
+  const failureEvidencePartial = healthAvailability.failureReviews !== 'AVAILABLE' ||
+    (failurePage.unavailableQueueNames?.length ?? 0) > 0;
   const pendingCount = health.queues.reduce(
     (total, queue) => total + queue.counts.waiting + queue.counts.active + queue.counts.delayed,
     0,
   );
   const healthyCount = health.queues.filter(
-    (queue) => queue.status !== 'ATTENTION' && queue.status !== 'STALE',
+    (queue) => (queue.availability ?? 'AVAILABLE') === 'AVAILABLE' &&
+      (queue.failureReviewCoverage ?? 'COMPLETE') === 'COMPLETE' &&
+      queue.status !== 'ATTENTION' && queue.status !== 'STALE',
   ).length;
 
   return (
     <AdminPageTemplate
       actions={
-        <AdminFormControlLink className="button-outline" href="/background-jobs">
+        <AdminFormControlLink className="button-outline" href={returnTo}>
           Refresh status
         </AdminFormControlLink>
       }
@@ -179,6 +198,16 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
         />
       ) : (
         <>
+          {healthAvailability.queues !== 'AVAILABLE' ? (
+            <AdminNoticeCard tone="warning">
+              <strong>
+                {healthAvailability.queues === 'UNAVAILABLE'
+                  ? 'Queue data unavailable'
+                  : `Partial data — ${health.queues.filter((queue) => queue.availability === 'UNAVAILABLE').length} queue unavailable`}
+              </strong>
+              <p>Available queue rows and database audit evidence remain visible. Unavailable reads are not counted as healthy or empty.</p>
+            </AdminNoticeCard>
+          ) : null}
           <AdminFilterPanel
             className="admin-mb-16"
             description="Filter retained BullMQ failures on the server. Queue reads are bounded and never expose job payloads or stack traces."
@@ -257,8 +286,8 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
               </>
             }
             status={
-              <StatusBadge tone={health.ok ? 'success' : 'danger'}>
-                {health.ok ? 'HEALTHY' : 'ATTENTION'}
+              <StatusBadge tone={backgroundJobOverallTone(health, healthAvailability)}>
+                {backgroundJobOverallLabel(health, healthAvailability)}
               </StatusBadge>
             }
             title="Queue health"
@@ -281,17 +310,23 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                 {health.queues.map((queue) => (
                   <tr key={queue.name}>
                     <td>
-                      <StatusBadge tone={queueStatusTone(queue.status)}>{queue.status}</StatusBadge>
+                      <StatusBadge tone={backgroundQueueState(queue).tone}>
+                        {backgroundQueueState(queue).label}
+                      </StatusBadge>
                     </td>
                     <td>
                       <strong>{queue.label}</strong>
                     </td>
-                    <td>{queue.counts.waiting}</td>
-                    <td>{queue.counts.active}</td>
-                    <td>{queue.counts.failed}</td>
+                    <td>{(queue.availability ?? 'AVAILABLE') === 'AVAILABLE' ? queue.counts.waiting : 'Unavailable'}</td>
+                    <td>{(queue.availability ?? 'AVAILABLE') === 'AVAILABLE' ? queue.counts.active : 'Unavailable'}</td>
+                    <td>{backgroundQueueFailureEvidence(queue)}</td>
                     <td>
-                      {backgroundQueueTiming(queue)}
-                      <span className="muted">SLA {formatQueueDuration(queue.staleAfterMs)}</span>
+                      {(queue.availability ?? 'AVAILABLE') === 'AVAILABLE' ? (
+                        <>
+                          {backgroundQueueTiming(queue)}
+                          <span className="muted">SLA {formatQueueDuration(queue.staleAfterMs)}</span>
+                        </>
+                      ) : 'Unavailable'}
                     </td>
                     <td>{backgroundJobWorkflowLink(queue.name)}</td>
                   </tr>
@@ -311,8 +346,8 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                   {health.queues.map((queue) => (
                     <tr key={queue.name}>
                       <td>{queue.name}</td>
-                      <td>{queue.workers}</td>
-                      <td>{queue.counts.delayed}</td>
+                      <td>{(queue.availability ?? 'AVAILABLE') === 'AVAILABLE' ? queue.workers : 'Unavailable'}</td>
+                      <td>{(queue.availability ?? 'AVAILABLE') === 'AVAILABLE' ? queue.counts.delayed : 'Unavailable'}</td>
                       <td>
                         <DateTimeText
                           fallback={queue.lastFailedAt ? 'Last run failed' : 'No retained run'}
@@ -335,10 +370,16 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
 
           <AdminTableSection
             className="admin-mb-16"
-            description="One row represents one recurring scheduler failure episode, from the first alert through successful recovery."
+            description={healthAvailability.recurringIncidents === 'AVAILABLE'
+              ? 'One row represents one recurring scheduler failure episode, from the first alert through successful recovery.'
+              : 'Recurring incident audit evidence is unavailable. Queue snapshots above remain available.'}
             status={
-              <StatusBadge tone={recurringIncidents.some((incident) => incident.status === 'OPEN') ? 'danger' : 'neutral'}>
-                {recurringIncidentPage.totalCount ?? `${recurringIncidents.length}+`} incidents
+              <StatusBadge tone={healthAvailability.recurringIncidents !== 'AVAILABLE'
+                ? 'warning'
+                : recurringIncidents.some((incident) => incident.status === 'OPEN') ? 'danger' : 'neutral'}>
+                {healthAvailability.recurringIncidents === 'AVAILABLE'
+                  ? `${recurringIncidentPage.totalCount ?? `${recurringIncidents.length}+`} incidents`
+                  : 'Unavailable'}
               </StatusBadge>
             }
             title="Recurring job incidents"
@@ -346,7 +387,9 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
             <AdminTableScroll>
               <AdminDataTable
                 className="background-job-recurring-incident-table"
-                emptyMessage="No recurring scheduler incidents match the current queue and period filters."
+                emptyMessage={healthAvailability.recurringIncidents === 'AVAILABLE'
+                  ? 'No recurring scheduler incidents match the current queue and period filters.'
+                  : 'Recurring incident audit evidence is unavailable.'}
                 headers={[
                   'Status',
                   'Scheduler',
@@ -383,7 +426,7 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                       />
                     </td>
                     <td>{incident.resolvedFailureCount}</td>
-                    <td>{incident.actor.fullName || incident.actor.email || incident.actor.id}</td>
+                    <td>{backgroundJobAuditActorLabel(incident)}</td>
                     <td>
                       <AdminFormControlLink
                         className="button-secondary"
@@ -421,79 +464,12 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
           </AdminTableSection>
 
           <AdminTableSection
-            className="admin-mb-16"
-            description="Audited stale alerts and recoveries. This history is read from the server in bounded pages."
+            description={failureEvidencePartial
+              ? 'Retained failure evidence is partial. Unavailable queue scans or review audit reads are not reported as zero.'
+              : 'Server-filtered retained failures. Resolve the source issue before retrying from the owning workflow.'}
             status={
-              <StatusBadge tone={healthEvents.some((event) => event.event === 'ALERTED') ? 'warning' : 'neutral'}>
-                {healthEventPage.totalCount} events
-              </StatusBadge>
-            }
-            title="Queue health events"
-          >
-            <AdminTableScroll>
-              <AdminDataTable
-                className="background-job-health-event-table"
-                emptyMessage="No queue SLA alerts or recoveries match the current filters."
-                headers={['Event', 'Queue', 'Recorded at', 'Detected at', 'Observed lag', 'SLA', 'Audit actor']}
-                rowCount={healthEvents.length}
-              >
-                {healthEvents.map((event) => (
-                  <tr key={event.id}>
-                    <td>
-                      <StatusBadge tone={event.event === 'ALERTED' ? 'warning' : 'success'}>
-                        {event.event}
-                      </StatusBadge>
-                    </td>
-                    <td>
-                      <strong>{backgroundJobQueueLabel(event.queueName)}</strong>
-                      <span className="muted">{event.queueName}</span>
-                    </td>
-                    <td><DateTimeText value={event.recordedAt} /></td>
-                    <td><DateTimeText fallback="Not retained" value={event.detectedAt} /></td>
-                    <td>
-                      {event.openJobLagMs === null
-                        ? <span className="muted">Not retained</span>
-                        : formatQueueDuration(event.openJobLagMs)}
-                    </td>
-                    <td>
-                      {event.staleAfterMs === null
-                        ? <span className="muted">Not retained</span>
-                        : formatQueueDuration(event.staleAfterMs)}
-                    </td>
-                    <td>{event.actor.fullName || event.actor.email || event.actor.id}</td>
-                  </tr>
-                ))}
-              </AdminDataTable>
-            </AdminTableScroll>
-            <AdminTableFooter>
-              <span>{backgroundJobEventPageSummary(healthEvents.length, healthEventPage)}</span>
-              <AdminFormControlStack aria-label="Queue health event pages">
-                {healthEventPage.hasPreviousPage ? (
-                  <AdminFormControlLink
-                    className="button-secondary"
-                    href={backgroundJobEventPageHref(filters, healthEventPage.page - 1)}
-                  >
-                    Previous
-                  </AdminFormControlLink>
-                ) : null}
-                <span className="muted">Page {healthEventPage.page}</span>
-                {healthEventPage.hasNextPage ? (
-                  <AdminFormControlLink
-                    className="button-secondary"
-                    href={backgroundJobEventPageHref(filters, healthEventPage.page + 1)}
-                  >
-                    Next
-                  </AdminFormControlLink>
-                ) : null}
-              </AdminFormControlStack>
-            </AdminTableFooter>
-          </AdminTableSection>
-
-          <AdminTableSection
-            description="Server-filtered retained failures. Resolve the source issue before retrying from the owning workflow."
-            status={
-              <StatusBadge tone={visibleOpenFailureCount > 0 ? 'danger' : 'success'}>
-                {health.failedJobs.length} retained
+              <StatusBadge tone={failureEvidencePartial ? 'warning' : visibleOpenFailureCount > 0 ? 'danger' : 'success'}>
+                {failureEvidencePartial ? 'Partial evidence' : `${health.failedJobs.length} retained`}
               </StatusBadge>
             }
             title="Failed job records"
@@ -501,7 +477,9 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
             <AdminTableScroll>
               <AdminDataTable
                 className="background-job-failure-table"
-                emptyMessage="No retained background job failures need Developer/System review."
+                emptyMessage={failureEvidencePartial
+                  ? 'Retained failure evidence is unavailable for part of the selected scope.'
+                  : 'No retained background job failures need Developer/System review.'}
                 headers={['Queue', 'Job', 'Attempts', 'Failed at', 'Failure', 'Review', 'Action']}
                 rowCount={health.failedJobs.length}
               >
@@ -549,8 +527,12 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                       </td>
                       <td>{job.failure}</td>
                       <td>
-                        <StatusBadge tone={reviewStatusTone(review.status)}>{review.status}</StatusBadge>
-                        {review.actor ? (
+                        <StatusBadge tone={healthAvailability.failureReviews === 'AVAILABLE'
+                          ? reviewStatusTone(review.status)
+                          : 'warning'}>
+                          {healthAvailability.failureReviews === 'AVAILABLE' ? review.status : 'UNAVAILABLE'}
+                        </StatusBadge>
+                        {healthAvailability.failureReviews === 'AVAILABLE' && review.actor ? (
                           <span className="muted">
                             {review.actor.fullName || review.actor.email || review.actor.id}
                             {' / '}
@@ -560,12 +542,15 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                         {review.reason ? <span className="muted">{review.reason}</span> : null}
                       </td>
                       <td>
-                        {backgroundJobReviewAction(
-                          job.queueName,
-                          job.id,
-                          review.status,
-                          job.reference,
-                        )}
+                        {healthAvailability.failureReviews === 'AVAILABLE'
+                          ? backgroundJobReviewAction(
+                              job.queueName,
+                              job.id,
+                              review.status,
+                              job.reference,
+                              returnTo,
+                            )
+                          : <span className="muted">Review audit unavailable</span>}
                       </td>
                     </tr>
                   );
@@ -588,6 +573,80 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                   <AdminFormControlLink
                     className="button-secondary"
                     href={backgroundJobPageHref(filters, failurePage.page + 1)}
+                  >
+                    Next
+                  </AdminFormControlLink>
+                ) : null}
+              </AdminFormControlStack>
+            </AdminTableFooter>
+          </AdminTableSection>
+
+          <AdminTableSection
+            description={healthAvailability.healthEvents === 'AVAILABLE'
+              ? 'Audited stale alerts and recoveries. This history is read from the server in bounded pages.'
+              : 'Queue health audit history is unavailable. Live queue snapshots above remain available.'}
+            status={
+              <StatusBadge tone={healthAvailability.healthEvents !== 'AVAILABLE'
+                ? 'warning'
+                : healthEvents.some((event) => event.event === 'ALERTED') ? 'warning' : 'neutral'}>
+                {healthAvailability.healthEvents === 'AVAILABLE' ? `${healthEventPage.totalCount} events` : 'Unavailable'}
+              </StatusBadge>
+            }
+            title="Queue health events"
+          >
+            <AdminTableScroll>
+              <AdminDataTable
+                className="background-job-health-event-table"
+                emptyMessage={healthAvailability.healthEvents === 'AVAILABLE'
+                  ? 'No queue SLA alerts or recoveries match the current filters.'
+                  : 'Queue health audit history is unavailable.'}
+                headers={['Event', 'Queue', 'Recorded at', 'Detected at', 'Observed lag', 'SLA', 'Audit actor']}
+                rowCount={healthEvents.length}
+              >
+                {healthEvents.map((event) => (
+                  <tr key={event.id}>
+                    <td>
+                      <StatusBadge tone={event.event === 'ALERTED' ? 'warning' : 'success'}>
+                        {event.event}
+                      </StatusBadge>
+                    </td>
+                    <td>
+                      <strong>{backgroundJobQueueLabel(event.queueName)}</strong>
+                      <span className="muted">{event.queueName}</span>
+                    </td>
+                    <td><DateTimeText value={event.recordedAt} /></td>
+                    <td><DateTimeText fallback="Not retained" value={event.detectedAt} /></td>
+                    <td>
+                      {event.openJobLagMs === null
+                        ? <span className="muted">Not retained</span>
+                        : formatQueueDuration(event.openJobLagMs)}
+                    </td>
+                    <td>
+                      {event.staleAfterMs === null
+                        ? <span className="muted">Not retained</span>
+                        : formatQueueDuration(event.staleAfterMs)}
+                    </td>
+                    <td>{backgroundJobAuditActorLabel(event)}</td>
+                  </tr>
+                ))}
+              </AdminDataTable>
+            </AdminTableScroll>
+            <AdminTableFooter>
+              <span>{backgroundJobEventPageSummary(healthEvents.length, healthEventPage)}</span>
+              <AdminFormControlStack aria-label="Queue health event pages">
+                {healthEventPage.hasPreviousPage ? (
+                  <AdminFormControlLink
+                    className="button-secondary"
+                    href={backgroundJobEventPageHref(filters, healthEventPage.page - 1)}
+                  >
+                    Previous
+                  </AdminFormControlLink>
+                ) : null}
+                <span className="muted">Page {healthEventPage.page}</span>
+                {healthEventPage.hasNextPage ? (
+                  <AdminFormControlLink
+                    className="button-secondary"
+                    href={backgroundJobEventPageHref(filters, healthEventPage.page + 1)}
                   >
                     Next
                   </AdminFormControlLink>
@@ -817,10 +876,11 @@ function backgroundJobReviewAction(
   jobId: string | null,
   status: AdminBackgroundJobReviewStatus,
   reference: AdminBackgroundJobReference | null,
+  returnTo: string,
 ) {
   return (
     <AdminFormControlStack>
-      {backgroundJobReviewControl(queueName, jobId, status)}
+      {backgroundJobReviewControl(queueName, jobId, status, returnTo)}
       {backgroundJobWorkflowLink(queueName, reference)}
     </AdminFormControlStack>
   );
@@ -830,6 +890,7 @@ function backgroundJobReviewControl(
   queueName: string,
   jobId: string | null,
   status: AdminBackgroundJobReviewStatus,
+  returnTo: string,
 ) {
   if (!jobId) return <span className="muted">Job ID unavailable</span>;
   if (status === 'RESOLVED') return <span className="muted">Review complete</span>;
@@ -838,6 +899,7 @@ function backgroundJobReviewControl(
       <AdminInlineForm action={acknowledgeBackgroundJobFailure}>
         <input name="queueName" type="hidden" value={queueName} />
         <input name="jobId" type="hidden" value={jobId} />
+        <input name="returnTo" type="hidden" value={returnTo} />
         <AdminFormControlButton className="button-secondary" type="submit">
           {status === 'UNTRACKED' ? 'Capture & acknowledge' : 'Acknowledge'}
         </AdminFormControlButton>
@@ -848,6 +910,7 @@ function backgroundJobReviewControl(
     <AdminInlineForm action={resolveBackgroundJobFailure}>
       <input name="queueName" type="hidden" value={queueName} />
       <input name="jobId" type="hidden" value={jobId} />
+      <input name="returnTo" type="hidden" value={returnTo} />
       <AdminFormInput
         label="Resolution note"
         maxLength={500}
@@ -875,6 +938,55 @@ function backgroundJobWorkflowLink(
     >
       {workflow.actionLabel}
     </AdminFormControlLink>
+  );
+}
+
+function backgroundJobOverallLabel(
+  health: AdminBackgroundJobHealth,
+  availability: NonNullable<AdminBackgroundJobHealth['availability']>,
+) {
+  if (availability.queues === 'UNAVAILABLE') return 'UNAVAILABLE';
+  const incomplete = Object.values(availability).some((value) => value !== 'AVAILABLE') ||
+    health.queues.some((queue) => (queue.failureReviewCoverage ?? 'COMPLETE') !== 'COMPLETE');
+  if (incomplete) return 'PARTIAL';
+  return health.ok ? 'HEALTHY' : 'ATTENTION';
+}
+
+function backgroundJobOverallTone(
+  health: AdminBackgroundJobHealth,
+  availability: NonNullable<AdminBackgroundJobHealth['availability']>,
+): StatusBadgeTone {
+  const label = backgroundJobOverallLabel(health, availability);
+  if (label === 'HEALTHY') return 'success';
+  if (label === 'PARTIAL') return 'warning';
+  return 'danger';
+}
+
+function backgroundQueueState(queue: AdminBackgroundJobHealth['queues'][number]) {
+  if ((queue.availability ?? 'AVAILABLE') === 'UNAVAILABLE') {
+    return { label: 'UNAVAILABLE', tone: 'danger' as const };
+  }
+  if ((queue.failureReviewCoverage ?? 'COMPLETE') !== 'COMPLETE') {
+    return { label: 'PARTIAL', tone: 'warning' as const };
+  }
+  return { label: queue.status, tone: queueStatusTone(queue.status) };
+}
+
+function backgroundQueueFailureEvidence(queue: AdminBackgroundJobHealth['queues'][number]) {
+  if ((queue.availability ?? 'AVAILABLE') === 'UNAVAILABLE') return 'Unavailable';
+  const coverage = queue.failureReviewCoverage ?? 'COMPLETE';
+  const unresolved = queue.unresolvedFailureCount ?? queue.counts.failed;
+  return (
+    <span>
+      <strong>{queue.counts.failed} retained</strong>
+      <span className="muted">
+        {coverage === 'COMPLETE'
+          ? `${unresolved} unresolved`
+          : coverage === 'INCOMPLETE'
+            ? `Review coverage incomplete · ${unresolved} visible unresolved`
+            : 'Review coverage unavailable'}
+      </span>
+    </span>
   );
 }
 

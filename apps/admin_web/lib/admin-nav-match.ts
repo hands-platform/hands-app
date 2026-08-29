@@ -37,6 +37,12 @@ export function hrefMatchesPath(href: string, pathname: string, search: string) 
         primaryPartnerReview(new URLSearchParams(search))
       );
     }
+    if (hrefPath === '/partner-controls' && pathname === hrefPath) {
+      return (
+        primaryPartnerControlDetails(new URLSearchParams(hrefQuery)) ===
+        primaryPartnerControlDetails(new URLSearchParams(search))
+      );
+    }
     return pathname === hrefPath && new URLSearchParams(search).toString() === hrefQuery;
   }
 
@@ -79,8 +85,19 @@ export function hrefMatchesPath(href: string, pathname: string, search: string) 
 export function partnerWorkspaceModeLabel(search: string) {
   const review = primaryPartnerReview(new URLSearchParams(search));
   if (review === 'approval-pending') return 'Approvals';
-  if (review === 'unapproved') return 'Onboarding blockers';
-  if (review === 'unsettled') return 'Wallet debt';
+  if (review === 'unapproved') return 'Onboarding Blockers';
+  if (review === 'unsettled') return 'Wallet Debt';
+  return null;
+}
+
+export function adminNavigationPrimaryMode(href: string) {
+  const url = new URL(href, 'http://admin.local');
+  if (url.pathname === '/partners') {
+    return primaryPartnerReview(url.searchParams) || 'directory';
+  }
+  if (url.pathname === '/partner-controls') {
+    return primaryPartnerControlDetails(url.searchParams);
+  }
   return null;
 }
 
@@ -116,6 +133,11 @@ export function postMatchCancellationWorkspaceFromSearch(search: string) {
 function primaryPartnerReview(params: URLSearchParams) {
   const review = params.get('review') ?? '';
   return ['approval-pending', 'unapproved', 'unsettled'].includes(review) ? review : '';
+}
+
+function primaryPartnerControlDetails(params: URLSearchParams) {
+  const details = params.get('details') ?? '';
+  return ['controls', 'reports', 'sanctions'].includes(details) ? details : 'summary';
 }
 
 export function bestMatchingNavHref(hrefs: readonly string[], pathname: string, search: string) {
@@ -186,7 +208,7 @@ export function adminBreadcrumbContext(
   const pageLabel =
     paymentMatchingPage ??
     cancellationMode ??
-    partnerBreadcrumbModeLabel(partnerMode) ??
+    partnerMode ??
     activeQuerySpecificSearchEntry?.label ??
     activeWorkspacePage?.label ??
     activeSearchEntry?.label ??
@@ -241,8 +263,7 @@ function paymentMatchingPageLabel(pathname: string, search: string) {
 
 function isPaymentMatchingPrimaryHref(url: URL) {
   return (
-    url.pathname === '/finance-tax/bank-reconciliation' &&
-    url.searchParams.get('workspace') === 'operations'
+    url.pathname === '/finance-tax/bank-reconciliation' && url.searchParams.get('workspace') === 'operations'
   );
 }
 
@@ -258,7 +279,9 @@ function isBankReconciliationPath(pathname: string) {
 }
 
 function isPaymentClearingPath(pathname: string) {
-  return pathname === '/finance-tax/payment-clearing' || pathname.startsWith('/finance-tax/payment-clearing/');
+  return (
+    pathname === '/finance-tax/payment-clearing' || pathname.startsWith('/finance-tax/payment-clearing/')
+  );
 }
 
 function detailIdAfter(pathname: string, basePath: string) {
@@ -269,13 +292,6 @@ function detailIdAfter(pathname: string, basePath: string) {
 
 function shortRecordId(value: string) {
   return value.length > 12 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
-}
-
-function partnerBreadcrumbModeLabel(label: ReturnType<typeof partnerWorkspaceModeLabel>) {
-  if (label === 'Approvals') return 'Partner Approvals';
-  if (label === 'Onboarding blockers') return 'Partner Onboarding Blockers';
-  if (label === 'Wallet debt') return 'Partner Wallet Debt';
-  return null;
 }
 
 function titleFromAdminPath(pathname: string) {

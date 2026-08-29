@@ -111,7 +111,7 @@ describe('partner detail control records model', () => {
 
     expect(rows[0]).toMatchObject({
       liftControlHref:
-        '/partners/partner%201?controlAction=lift-control&sanctionId=sanction+active&control=records&section=control#reports',
+        '/partners/partner%201?controlAction=lift-control&sanctionId=sanction+active&access=controls&section=access#partner-reports-controls',
       reportLine: 'Report: SAFETY / HIGH',
     });
     expect(rows[1]?.liftControlHref).toBeUndefined();

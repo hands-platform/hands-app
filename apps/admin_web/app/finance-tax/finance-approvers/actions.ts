@@ -15,6 +15,8 @@ export type FinanceApproverActionReceipt = AdminFinanceApproverGovernanceReceipt
 export type FinanceApproverActionState = {
   error?: string;
   fieldErrors?: Record<string, string>;
+  mfaRequired?: boolean;
+  reauthRequired?: boolean;
   receipt?: FinanceApproverActionReceipt;
   status: 'idle' | 'error' | 'success';
 };
@@ -118,6 +120,9 @@ function financeApproverActionErrorState(error: unknown): FinanceApproverActionS
   return {
     error: message,
     ...(field ? { fieldErrors: { [field]: message } } : {}),
+    ...(code === 'RECENT_REAUTH_REQUIRED' || code === 'SESSION_MFA_UNVERIFIED'
+      ? { mfaRequired: code === 'SESSION_MFA_UNVERIFIED', reauthRequired: true }
+      : {}),
     status: 'error',
   };
 }
@@ -132,6 +137,12 @@ function financeApproverActionErrorMessage(
   }
   if (code === 'MAKER_CANNOT_APPROVE') {
     return 'The requester cannot decide this access request. Ask a different verified role governor.';
+  }
+  if (code === 'RECENT_REAUTH_REQUIRED') {
+    return 'Confirm your current password and MFA for this Admin Web session, then retry the same decision.';
+  }
+  if (code === 'SESSION_MFA_UNVERIFIED') {
+    return 'Verify MFA for this Admin Web session, then retry the same decision.';
   }
   if (code === 'FINANCE_APPROVER_REASON_LENGTH') {
     return 'Use between 12 and 500 characters after whitespace is normalized.';

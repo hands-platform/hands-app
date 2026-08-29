@@ -142,6 +142,7 @@ describe('partner overview page model', () => {
       appActivityCountScope: 'full-population',
       operatingStatusCountScope: 'full-population',
       providerScanLimit: 500,
+      supplyHealthCountScope: 'full-population',
       walletBalancePartnerCount: 0,
       walletBalanceScopeTruncated: false,
       walletStatusFilterBounded: false,

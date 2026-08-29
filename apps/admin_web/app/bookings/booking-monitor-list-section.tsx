@@ -54,13 +54,12 @@ import {
   isPostMatchCancellationManualReviewRequired,
   isPostMatchCancellationReviewBooking,
   postMatchCancellationFeeState,
-  postMatchCancellationDecisionAt,
   postMatchCancellationDecisionSource,
   postMatchCancellationDecisionSla,
   postMatchCancellationMinutesAfterMatch,
   postMatchCancellationResolution,
+  postMatchCancellationTimeDisplay,
 } from './booking-post-match-cancellations-model';
-import { relativeTimeLabel } from './booking-list-time';
 import { bookingMonitorDetailHrefSuffix } from './booking-monitor-operation-links';
 import type { BookingPageView } from './booking-page-params';
 import { BOOKING_RECORD_VIEWS } from './booking-monitor-realtime';
@@ -577,8 +576,8 @@ function BookingMonitorPostMatchTableRow({
 }) {
   const { booking } = row;
   const source = postMatchCancellationDecisionSource(booking);
-  const decisionAt = postMatchCancellationDecisionAt(booking);
   const decisionSla = postMatchCancellationDecisionSla(booking, nowMs);
+  const timeDisplay = postMatchCancellationTimeDisplay(booking, nowMs);
   const reason = postMatchCancellationReasonDisplay(booking);
   const detail = postMatchCancellationDetail(booking);
   const feeState = postMatchCancellationFeeState(booking);
@@ -605,10 +604,21 @@ function BookingMonitorPostMatchTableRow({
           ) : (
             <StatusBadge tone="neutral">{postMatchCancellationDecisionSourceLabel(source)}</StatusBadge>
           )}
-          {decisionAt ? <DateTimeText value={decisionAt} /> : <span>Decision time unavailable</span>}
-          <span className="muted">
-            {decisionAt && nowMs > 0 ? relativeTimeLabel(decisionAt, nowMs) : 'Decision age unavailable'}
-          </span>
+          {timeDisplay.timestamp ? (
+            <span>
+              {timeDisplay.timestampLabel} <DateTimeText value={timeDisplay.timestamp} />
+            </span>
+          ) : (
+            <span>Time unavailable</span>
+          )}
+          {timeDisplay.timestamp ? (
+            <span className="muted">
+              {timeDisplay.ageLabel}{' '}
+              {timeDisplay.ageMinutes === null
+                ? 'time unavailable'
+                : postMatchCancellationElapsedDuration(timeDisplay.ageMinutes)}
+            </span>
+          ) : null}
         </div>
       </td>
       <td data-label="Booking · Actor">
@@ -679,6 +689,12 @@ function BookingMonitorPostMatchTableRow({
       </td>
     </tr>
   );
+}
+
+function postMatchCancellationElapsedDuration(minutes: number) {
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 48 * 60) return `${Math.floor(minutes / 60)}h`;
+  return `${Math.floor(minutes / (24 * 60))}d`;
 }
 
 function postMatchCancellationActionLabel(

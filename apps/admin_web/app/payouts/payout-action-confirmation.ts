@@ -85,11 +85,11 @@ export function readPayoutConfirmationAction(value: string): PayoutConfirmationA
 export function buildPayoutActionConfirmation(
   batches: readonly AdminPayoutBatch[],
   action: PayoutConfirmationAction | null,
-  payoutBatchId: string,
+  payoutBatchId: string | null,
   availability: PayoutActionAvailability = {},
   cancelHref = '/payouts',
 ): PayoutActionConfirmation | null {
-  if (!action) {
+  if (!action || !payoutBatchId) {
     return null;
   }
 

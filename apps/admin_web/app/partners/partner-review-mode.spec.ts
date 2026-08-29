@@ -1,7 +1,6 @@
 import {
   nextPartnerApprovalHref,
   partnerApprovalQueueDetailHref,
-  partnerPrimaryListMode,
   partnerDeepOpsAvailable,
   partnerReviewModeContent,
   readPartnerDecisionQueue,
@@ -68,13 +67,6 @@ describe('partner review mode content', () => {
   it('stays hidden for ordinary partner views', () => {
     expect(partnerReviewModeContent('')).toBeNull();
     expect(partnerReviewModeContent('kyc')).toBeNull();
-  });
-
-  it('maps the primary partner pages to the same list-first shell', () => {
-    expect(partnerPrimaryListMode('')).toBe('partners');
-    expect(partnerPrimaryListMode('unapproved')).toBe('unapproved');
-    expect(partnerPrimaryListMode('unsettled')).toBe('unsettled');
-    expect(partnerPrimaryListMode('kyc')).toBe('partners');
   });
 
   it('loads secondary operations analysis only when a review queue explicitly requests it', () => {

@@ -13,19 +13,23 @@ export type SessionCheckQueueItem = {
 
 type AppSessionsCheckQueueSectionProps = {
   readonly items: readonly SessionCheckQueueItem[];
+  readonly scopeLabel?: 'Current page';
 };
 
-export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSectionProps) {
+export function AppSessionsCheckQueueSection({ items, scopeLabel }: AppSessionsCheckQueueSectionProps) {
+  const partialSample = scopeLabel === 'Current page';
   return (
     <AdminSection
       className="admin-mb-16"
-      description="Check old app versions, stale sessions, missing push readiness, and duplicate device usage."
+      description={partialSample
+        ? 'Checks are limited to records loaded on the current page; absence here is not a global health conclusion.'
+        : 'Check old app versions, stale sessions, missing push readiness, and duplicate device usage.'}
       status={
-        <StatusBadge tone={items.length ? 'warning' : 'success'}>
-          {items.length ? `${items.length} review` : 'No session check'}
+        <StatusBadge tone={items.length ? 'warning' : partialSample ? 'neutral' : 'success'}>
+          {items.length ? `${items.length} review` : partialSample ? 'No issue on this page' : 'No session check'}
         </StatusBadge>
       }
-      title="Session check queue"
+      title={partialSample ? 'Current page review queue' : 'Session check queue'}
     >
       {items.length ? (
         <AdminTaskGrid className="admin-mt-12">
@@ -41,7 +45,12 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
           ))}
         </AdminTaskGrid>
       ) : (
-        <AdminEmptyState framed message="No visible session issue in the latest heartbeat snapshot." />
+        <AdminEmptyState
+          framed
+          message={partialSample
+            ? 'No review item is visible in the current page sample.'
+            : 'No visible session issue in the latest heartbeat snapshot.'}
+        />
       )}
     </AdminSection>
   );

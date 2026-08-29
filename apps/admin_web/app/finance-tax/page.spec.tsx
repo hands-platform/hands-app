@@ -230,6 +230,7 @@ function monthlySummary(): AdminMonthlyTaxClosingSummary {
     partnerVatWithheldTotal: 0,
     partnerWithholdingTotal: 45000,
     paymentFeeReviewFlagCount: 2,
+    platformVatReviewFlagCount: 0,
     paymentProcessingFeeTotal: 70000,
     period: '2026-07',
     periodState: 'REVIEWED',

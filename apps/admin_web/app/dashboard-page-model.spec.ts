@@ -7,6 +7,7 @@ import {
   buildStartShiftDemandSupplyAnalytics,
   buildStartShiftRankingAnalytics,
   buildDashboardViewMode,
+  startShiftRankingSectionTitle,
 } from './dashboard-page-model';
 import type { AdminStartShiftAnalytics } from '../lib/admin-api';
 
@@ -97,6 +98,31 @@ describe('dashboard page model', () => {
     expect(buildDashboardRange({ range: '30d' })).toBe('30d');
     expect(buildDashboardRange({ range: '90d' })).toBe('30d');
     expect(buildDashboardRange({ range: 'all' })).toBe('30d');
+  });
+
+  it.each([
+    ['Partner attention only', false, true, false, 'Partner needs attention'],
+    ['Customer attention only', true, false, false, 'Customer needs attention'],
+    ['Both attention', true, true, false, 'Customers and Partners needing attention'],
+    ['Performance rankings', true, true, true, 'Customer and Partner leaders'],
+  ])('labels %s ranking content accurately', (_name, customerAttention, partnerAttention, performance, expected) => {
+    const customerRow = { customerProfileId: 'customer-1' } as never;
+    const partnerRow = { providerProfileId: 'partner-1' } as never;
+    expect(startShiftRankingSectionTitle({
+      customerRankings: {
+        highestValue: [],
+        mostActive: performance ? [customerRow] : [],
+        mostCompleted: [],
+        needsAttention: customerAttention ? [customerRow] : [],
+      },
+      partnerRankings: {
+        fastestResponse: [],
+        highestRated: [],
+        mostActive: [],
+        mostCompleted: [],
+        needsAttention: partnerAttention ? [partnerRow] : [],
+      },
+    })).toBe(expected);
   });
 
   it('does not load policy diagnostics from retired Start Shift modes', () => {

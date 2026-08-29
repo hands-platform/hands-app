@@ -135,6 +135,22 @@ export function buildCouponCreateNotice({
     };
   }
 
+  if (notice === 'state-reason-required') {
+    return {
+      detail: 'Enter a non-blank operational reason before changing coupon availability.',
+      title: 'Coupon status was not changed',
+      tone: 'danger',
+    };
+  }
+
+  if (notice === 'state-conflict') {
+    return {
+      detail: 'The coupon already has the requested status. Refresh before making another change.',
+      title: 'Coupon status already changed',
+      tone: 'warning',
+    };
+  }
+
   if (notice === 'activate-expired') {
     return {
       detail: 'Update the ICT end time before activating this coupon.',

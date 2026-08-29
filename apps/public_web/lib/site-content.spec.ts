@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchPublicSitePage,
   fetchPublicSitePreview,
+  fetchManagedPublicSitePage,
   fetchPublishedRoutes,
   isPublicSiteIndexingEnabled,
   publicSiteTemplatePath,
@@ -64,5 +65,21 @@ describe('publicSiteTemplatePath', () => {
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 503 });
     await expect(fetchPublicSitePage('MAIN', 'vi', '/about')).rejects.toThrow('503');
+  });
+
+  it('falls back to Live only for invalid preview state and keeps service failures visible', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401 })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: vi.fn().mockResolvedValue({ id: 'live-page' }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchManagedPublicSitePage('expired-token', 'MAIN', 'vi', '/about')).resolves.toMatchObject({
+      isPreview: false,
+      previewRecovery: true,
+      page: { id: 'live-page' },
+    });
+
+    fetchMock.mockReset().mockResolvedValueOnce({ ok: false, status: 503 });
+    await expect(fetchManagedPublicSitePage('valid-looking-token', 'MAIN', 'vi', '/about')).rejects.toThrow('503');
   });
 });

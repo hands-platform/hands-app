@@ -16,6 +16,15 @@ describe('Confirm dialog CSS', () => {
     expect(actionsBlock).not.toContain('align-items: center');
     expect(actionsBlock).not.toContain('margin-top: 12px');
   });
+
+  it('keeps shared drawer backdrops stable across pointer and focus states', () => {
+    expect(globalsCss).toMatch(
+      /button\.calendar-drawer-backdrop,\s*button\.calendar-drawer-backdrop:hover,\s*button\.calendar-drawer-backdrop:focus,\s*button\.calendar-drawer-backdrop:active:not\(:disabled\)\s*{[^}]*background:\s*rgb\(var\(--admin-main-channel\) \/ 0\.36\);[^}]*border-radius:\s*0;[^}]*box-shadow:\s*none;[^}]*padding:\s*0;[^}]*transform:\s*none;/s,
+    );
+    expect(globalsCss).toMatch(
+      /button\.calendar-drawer-backdrop:focus-visible\s*{[^}]*box-shadow:\s*inset 0 0 0 2px var\(--admin-accent\);/s,
+    );
+  });
 });
 
 function cssRuleBlockAt(index: number) {

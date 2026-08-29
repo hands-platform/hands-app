@@ -36,6 +36,7 @@ describe('partner detail approval evidence summary model', () => {
         status: 'APPROVED',
       },
       provider: {
+        id: 'partner-1',
         kyc: {
           cccdNumberLast4: '6789',
           status: 'PENDING',
@@ -79,7 +80,7 @@ describe('partner detail approval evidence summary model', () => {
       hasFirstRevenue: false,
       kycEvidence: { ...kycEvidence, rows: [] },
       primaryBank: null,
-      provider: {},
+      provider: { id: 'partner-1' },
     });
 
     expect(rows.find((row) => row.id === 'kyc-evidence-summary')).toMatchObject({

@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGetResult } from '../../lib/admin-api';
-import ReviewsPage from './page';
+import ReviewsPage, { metadata } from './page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
@@ -33,6 +33,10 @@ describe('ReviewsPage', () => {
     });
   });
 
+  it('declares the page-specific title used by the root metadata template', () => {
+    expect(metadata).toEqual({ title: 'Customer Reviews' });
+  });
+
   it('renders scoped queue counts and defaults to all dates', async () => {
     const page = await ReviewsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
@@ -53,7 +57,8 @@ describe('ReviewsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('No hidden reviews');
-    expect(markup).toContain('View all reviews');
+    expect(markup.match(/Clear filters/g)).toHaveLength(1);
+    expect(markup).not.toContain('View all reviews');
     expect(markup).not.toContain('card admin-kpi-card');
     expect(markup).not.toContain('Customer review pages');
   });
@@ -78,6 +83,13 @@ describe('ReviewsPage', () => {
 
     expect(markup).toContain('From date must be on or before To date.');
     expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('All —');
+    expect(markup).toContain('Visible —');
+    expect(markup).toContain('Needs review —');
+    expect(markup).toContain('Hidden —');
+    expect(markup).toContain('disabled=""');
+    expect(markup).toContain('Export unavailable: correct the custom date range');
+    expect(markup).not.toContain('href="/reviews/export');
     expect(markup).not.toContain('Review result summary');
     expect(mockedAdminGetResult).not.toHaveBeenCalled();
   });
@@ -102,9 +114,14 @@ describe('ReviewsPage', () => {
     });
     const page = await ReviewsPage({ searchParams: Promise.resolve({
       confirm: 'moderate',
+      dateRange: '30d',
       page: '2',
+      pageSize: '25',
+      q: 'mai',
+      review: 'held',
       returnTo: '/reviews?dateRange=30d&page=2&q=mai',
       reviewId: 'review-42',
+      sort: 'oldest',
       status: 'REPORTED',
     }) });
     const markup = renderToStaticMarkup(page);
@@ -115,5 +132,18 @@ describe('ReviewsPage', () => {
     expect(markup).toContain('href="/reviews?dateRange=30d&amp;page=2&amp;q=mai"');
     expect(markup).toContain('Moderation reason');
     expect(markup).toContain('Operator note (optional)');
+    const listRequest = mockedAdminGetResult.mock.calls
+      .map(([href]) => new URL(String(href), 'http://admin.local'))
+      .find((url) => url.pathname === '/admin/reviews');
+    expect(Object.fromEntries(listRequest?.searchParams.entries() ?? [])).toMatchObject({
+      q: 'mai',
+      review: 'held',
+      skip: '25',
+      sort: 'oldest',
+      take: '25',
+    });
+    expect(listRequest?.searchParams.has('confirm')).toBe(false);
+    expect(listRequest?.searchParams.has('reviewId')).toBe(false);
+    expect(listRequest?.searchParams.has('status')).toBe(false);
   });
 });

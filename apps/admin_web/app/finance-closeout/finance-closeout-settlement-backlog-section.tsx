@@ -130,7 +130,7 @@ export function FinanceCloseoutSettlementBacklogSection({
                   )}
                 </AdminTableSubstack>
               </td>
-              <td>
+              <td className="finance-closeout-settlement-action">
                 <AdminTextLink href={hrefForRepair(row.id)}>Preview repair</AdminTextLink>
               </td>
             </tr>
@@ -146,6 +146,9 @@ export function FinanceCloseoutSettlementBacklogSection({
           totalPages={pagination.totalPages}
           totalRows={pagination.totalRows}
         />
+        <div aria-label="Settlement comparison action at table end" className="finance-closeout-selection-footer">
+          <FinanceCloseoutSettlementSelectionAction statusId="settlement-comparison-selection-status-footer" />
+        </div>
       </AdminTableSection>
     </FinanceCloseoutSettlementSelectionForm>
   );

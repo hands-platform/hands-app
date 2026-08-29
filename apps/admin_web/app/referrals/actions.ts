@@ -11,7 +11,7 @@ import {
 
 type ReferralRewardDecisionRevalidationInput = Pick<
   ReturnType<typeof referralRewardDecisionInput>,
-  'audience' | 'parentId'
+  'audience' | 'parentId' | 'returnTo'
 >;
 
 export async function holdReferralReward(formData: FormData) {
@@ -32,6 +32,33 @@ export async function approveReferralRewardCashout(formData: FormData) {
 
 export async function requireReferralRewardTaxReview(formData: FormData) {
   await runReferralRewardDecision(formData, 'tax-review', 'Reward moved to tax review.');
+}
+
+export async function approveReferralRewardTaxReview(formData: FormData) {
+  await runReferralRewardDecision(
+    formData,
+    'tax-review-approve',
+    'Tax review approved. Payout evidence is still required before paid closeout.',
+    { confirmation: 'confirmed' },
+  );
+}
+
+export async function holdReferralRewardTaxReview(formData: FormData) {
+  await runReferralRewardDecision(
+    formData,
+    'tax-review-hold',
+    'Tax review remains open with new decision evidence.',
+    { confirmation: 'confirmed' },
+  );
+}
+
+export async function rejectReferralRewardTaxReview(formData: FormData) {
+  await runReferralRewardDecision(
+    formData,
+    'tax-review-reject',
+    'Cashout rejected. The existing reward remains credited in the wallet.',
+    { confirmation: 'confirmed' },
+  );
 }
 
 export async function markReferralRewardCashoutPaid(formData: FormData) {
@@ -179,13 +206,24 @@ function referralRewardDecisionInput(formData: FormData) {
     expectedUpdatedAt,
     parentId: String(formData.get('parentId') || '').trim(),
     reason,
+    returnTo: referralRewardDecisionReturnTo(formData),
     rewardId,
   };
 }
 
 async function runReferralRewardDecision(
   formData: FormData,
-  action: 'cashout-approve' | 'cashout-paid' | 'credit' | 'hold' | 'release' | 'reverse' | 'tax-review',
+  action:
+    | 'cashout-approve'
+    | 'cashout-paid'
+    | 'credit'
+    | 'hold'
+    | 'release'
+    | 'reverse'
+    | 'tax-review'
+    | 'tax-review-approve'
+    | 'tax-review-hold'
+    | 'tax-review-reject',
   successMessage: string,
   extraPayload: Record<string, string> = {},
 ) {
@@ -229,8 +267,33 @@ function referralRewardDecisionBaseInput(formData: FormData) {
   return {
     audience: normalizeReferralAudience(String(formData.get('audience') || '')),
     parentId: String(formData.get('parentId') || '').trim(),
+    returnTo: referralRewardDecisionReturnTo(formData),
     rewardId: String(formData.get('rewardId') || '').trim(),
   };
+}
+
+function referralRewardDecisionReturnTo(formData: FormData) {
+  const value = String(formData.get('returnTo') || '').trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value, 'http://admin.local');
+    if (url.origin !== 'http://admin.local' || url.pathname !== '/referrals/cashouts') return null;
+    const params = new URLSearchParams();
+    const audience = url.searchParams.get('audience');
+    if (audience === 'customer' || audience === 'partner') params.set('audience', audience);
+    const status = url.searchParams.get('status');
+    if (status && ['all', 'requested', 'approved', 'tax-review', 'paid'].includes(status)) {
+      params.set('status', status);
+    }
+    const q = url.searchParams.get('q')?.trim();
+    if (q) params.set('q', q.slice(0, 200));
+    const page = Number.parseInt(url.searchParams.get('page') ?? '', 10);
+    if (Number.isFinite(page) && page > 1) params.set('page', String(page));
+    const query = params.toString();
+    return query ? `/referrals/cashouts?${query}` : '/referrals/cashouts';
+  } catch {
+    return null;
+  }
 }
 
 function referralRewardDecisionNoticeHref(
@@ -240,11 +303,15 @@ function referralRewardDecisionNoticeHref(
   detail: { message: string; reason?: string },
 ) {
   const basePath = input.audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
-  const path = input.parentId ? `${basePath}/${encodeURIComponent(input.parentId)}` : basePath;
-  const params = new URLSearchParams({ actionCode: code, actionMessage: detail.message, actionStatus: status });
+  const fallbackPath = input.parentId ? `${basePath}/${encodeURIComponent(input.parentId)}` : basePath;
+  const url = new URL(input.returnTo ?? fallbackPath, 'http://admin.local');
+  const params = url.searchParams;
+  params.set('actionCode', code);
+  params.set('actionMessage', detail.message);
+  params.set('actionStatus', status);
   if (detail.reason) params.set('actionReason', detail.reason.slice(0, 500));
   if (input.rewardId) params.set('rewardId', input.rewardId);
-  return `${path}?${params.toString()}`;
+  return `${url.pathname}?${params.toString()}`;
 }
 
 function assertReferralDecisionReason(reason: string) {

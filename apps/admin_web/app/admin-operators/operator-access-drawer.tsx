@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 
@@ -22,8 +22,10 @@ export function OperatorAccessDrawer({
 }) {
   const router = useRouter();
   const drawerRef = useRef<HTMLElement>(null);
+  const [focusManagementActive, setFocusManagementActive] = useState(false);
   const returnFocusRef = useRef<HTMLElement>(null);
   const titleId = 'operator-access-drawer-title';
+  const closeLabel = `Close ${title}`;
 
   useEffect(() => {
     returnFocusRef.current = returnFocusHref
@@ -33,15 +35,21 @@ export function OperatorAccessDrawer({
       : null;
   }, [returnFocusHref]);
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setFocusManagementActive(true));
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   const onClose = useCallback(() => {
     router.replace(returnHref, { scroll: false });
   }, [returnHref, router]);
 
-  useAdminModalFocus(drawerRef, onClose, returnFocusRef);
+  useAdminModalFocus(drawerRef, onClose, returnFocusRef, focusManagementActive);
 
   return (
     <>
-      <AdminDrawerBackdropButton aria-label="Close Operator Access detail" onClick={onClose} />
+      <AdminDrawerBackdropButton aria-hidden="true" onClick={onClose} tabIndex={-1} />
       <AdminDrawerSurface
         ariaLabel="Operator Access detail"
         ariaLabelledBy={titleId}
@@ -53,10 +61,10 @@ export function OperatorAccessDrawer({
         <div className="calendar-drawer-header">
           <h2 id={titleId}>{title}</h2>
           <AdminFormControlButton
-            aria-label="Close Operator Access detail"
+            aria-label={closeLabel}
             className="button-secondary calendar-icon-button"
             onClick={onClose}
-            title="Close Operator Access detail"
+            title={closeLabel}
             type="button"
           >
             <X aria-hidden="true" size={16} />

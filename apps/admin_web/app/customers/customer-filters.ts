@@ -107,7 +107,7 @@ export function customerSortLabel(sort: CustomerSort) {
   if (sort === 'booking-count') return 'Most bookings';
   if (sort === 'booking-count-asc') return 'Fewest bookings';
   if (sort === 'name') return 'Customer name';
-  return 'Newest first';
+  return 'Newest customers';
 }
 
 export function buildCustomerActiveFilters(filters: CustomerFilters) {

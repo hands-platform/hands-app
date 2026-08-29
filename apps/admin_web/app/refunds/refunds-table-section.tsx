@@ -7,7 +7,9 @@ import { RefundRowsTable } from './refund-rows-table';
 export type RefundChecklistRow = {
   readonly detail: string;
   readonly label: string;
+  readonly missingCategory?: 'action-blocker' | 'historical-evidence';
   readonly pillClass: string;
+  readonly required: boolean;
   readonly status: string;
 };
 

@@ -41,7 +41,7 @@ Complete these steps in order. A stop condition ends the procedure; do not skip 
 
 1. **Back up and inventory (read-only).** Record the recovery point, current ACTIVE policy ID/hash, lifecycle state, source provenance, all referencing earnings, and retained evidence counts. The current baseline includes five tax logs and five immutable snapshots that must remain queryable. **Stop** if the backup cannot be verified, the inventory is incomplete, or the retained counts do not reconcile.
 2. **Assign the authoritative evidence owner.** The `<required legal/accounting evidence owner>` must provide the authoritative Vietnam source package and identify the owner of every rule boundary. **Stop** if the source is missing, non-HTTPS, ambiguous, unowned, or not independently reviewable.
-3. **Create a clean production draft.** The `<required production maker>` creates a new draft from blank production inputs. Smoke, fixture, test, and legacy values are reference-only and must not be silently cloned. **Stop** if the actor is not a verified production operator, the source lineage is non-production, or clean-source acknowledgement is false.
+3. **Create a clean production draft.** The `<required production maker>` creates a new draft from blank production inputs. The candidate provenance must be `OPERATOR`. A historical predecessor may have non-production provenance, but its values are reference-only and every candidate value must be independently rewritten from the authoritative source package. **Stop** if the actor is not a verified production operator, candidate provenance is not `OPERATOR`, or clean-source acknowledgement is false.
 4. **Review lineage and rule boundaries.** Compare every scope, threshold, rate, date boundary, fallback, and legal reference with the source package. Save the candidate ID/hash and review evidence. **Stop** on any unsupported value, ambiguous boundary, hash mismatch, or unknown provenance.
 5. **Complete maker/checker control.** The `<required production checker>` must be a separate verified Finance operator and review the exact candidate ID/hash. **Stop** if maker and checker are the same identity, either capability is unavailable, or MFA/re-authentication assurance is not verifiable.
 6. **Schedule Vietnam effective time.** Record the approved Asia/Ho_Chi_Minh effective time, activation window, job ID, policy ID, and content hash. **Stop** if the time is ambiguous, outside the approved window, or a competing activation is already pending.
@@ -69,7 +69,7 @@ Maker actions:
 2. Enter the production policy name, Vietnam effective time, promulgated date, legal-source title and HTTPS URL, tax subject, change summary, and operator rationale.
 3. Add only rules supported by the legal source. Leave the fallback rate empty if no authoritative fallback has been approved.
 4. Acknowledge the clean-source declaration only after confirming no smoke or fixture source was copied.
-5. Submit once. Save the resulting policy ID, policy content hash, source lineage, audit event ID, and server timestamp.
+5. Submit once. Save the resulting policy ID, policy content hash, candidate provenance, superseded source lineage, audit event ID, and server timestamp.
 6. Reopen the exact policy by ID and verify the rendered values and hash match the submitted source. A mismatch means stop.
 
 ## Independent checker review
@@ -104,7 +104,7 @@ Stop immediately and do not retry blindly when any condition occurs:
 
 - production identity, capability, MFA, recent reauthentication, or independent-checker verification fails;
 - the legal source is missing, non-HTTPS, ambiguous, or inconsistent with a rule;
-- the candidate source lineage is smoke/test/fixture or the clean-source acknowledgement is untrue;
+- the candidate provenance is not `OPERATOR`, any candidate value was copied from smoke/test/fixture evidence without independent authoritative verification, or the clean-source acknowledgement is untrue;
 - the policy ID or content hash changes between authoring, review, schedule, and activation;
 - the approval receipt, audit event, or activation job is missing;
 - zero or multiple ACTIVE policies are observed;

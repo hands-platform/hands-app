@@ -122,8 +122,18 @@ export function PartnerCustomerEvaluationsSection({
               <input name="sort" type="hidden" value={filters.sort} />
               <input name="status" type="hidden" value={filters.review} />
               <input name="dateRange" type="hidden" value="custom" />
-              <AdminFormDate defaultValue={filters.dateFrom} label="From" name="dateFrom" />
-              <AdminFormDate defaultValue={filters.dateTo} label="To" name="dateTo" />
+              <AdminFormDate
+                defaultValue={filters.dateFrom}
+                label="From"
+                labelVisibility="visible"
+                name="dateFrom"
+              />
+              <AdminFormDate
+                defaultValue={filters.dateTo}
+                label="To"
+                labelVisibility="visible"
+                name="dateTo"
+              />
               <AdminFormControlButton className="button-primary booking-date-apply-button">
                 Apply dates
               </AdminFormControlButton>
@@ -244,6 +254,7 @@ export function PartnerCustomerEvaluationsSection({
                           actions={partnerNoteModerationActions(row, returnTo)}
                           className="partner-note-action-menu-root"
                           label={`Actions for Partner note ${row.id}`}
+                          managedDropdown
                           menuClassName="partner-note-action-menu"
                           title="Change note state"
                           variant="dropdown"
@@ -257,11 +268,11 @@ export function PartnerCustomerEvaluationsSection({
                         <summary>View full note and context</summary>
                         <div className="partner-note-detail-panel">
                           <section>
-                            <h4>Full immutable note</h4>
+                            <h3>Full immutable note</h3>
                             <blockquote>{row.commentLabel}</blockquote>
                           </section>
                           <section>
-                            <h4>Context</h4>
+                            <h3>Context</h3>
                             <dl>
                               <div>
                                 <dt>Customer</dt>
@@ -292,7 +303,7 @@ export function PartnerCustomerEvaluationsSection({
                             </dl>
                           </section>
                           <section>
-                            <h4>Moderation</h4>
+                            <h3>Moderation</h3>
                             <dl>
                               <div>
                                 <dt>Current state</dt>
@@ -443,6 +454,6 @@ const partnerNotePageSizeOptions = REVIEW_PAGE_SIZE_OPTIONS.map((option) => ({
 }));
 
 const partnerNoteSortOptions = [
-  { value: 'newest', label: 'Most recently submitted' },
-  { value: 'oldest', label: 'Oldest submitted' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
 ] as const;

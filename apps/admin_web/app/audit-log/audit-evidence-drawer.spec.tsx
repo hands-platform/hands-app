@@ -18,6 +18,8 @@ describe('AuditEvidenceDrawer', () => {
     expect(source).toContain('document.body.style.overflow = previousOverflow');
     expect(source).toContain('Download evidence');
     expect(source).toContain('eventId=${encodeURIComponent(event.id)}');
+    expect(source).toContain('<AdminDrawerBackdropButton aria-hidden="true" onClick={onClose} tabIndex={-1} />');
+    expect(source.match(/aria-label="Close evidence details"/g)).toHaveLength(1);
   });
 
   it('exposes the identifiers and integrity evidence needed for investigation', () => {

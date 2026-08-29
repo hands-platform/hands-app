@@ -186,8 +186,8 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(26);
-    expect(writeRoutes).toHaveLength(12);
+    expect(routes).toHaveLength(27);
+    expect(writeRoutes).toHaveLength(13);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminBankRoutes']));
     expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
@@ -201,6 +201,7 @@ describe('Admin route domain manifest', () => {
       expect.arrayContaining([
         'POST company-bank-accounts',
         'PATCH company-bank-accounts/:id',
+        'POST company-bank-accounts/:id/evidence-review-requests',
         'POST company-bank-accounts/:id/approval-decision',
         'POST bank-reconciliation/transactions',
         'POST bank-reconciliation/transactions/batch-import',
@@ -224,7 +225,7 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(26);
+    expect(routes).toHaveLength(27);
     expect(writeRoutes).toHaveLength(13);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminWalletRoutes']));
     expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
@@ -302,14 +303,16 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(8);
-    expect(writeRoutes).toHaveLength(4);
+    expect(routes).toHaveLength(10);
+    expect(writeRoutes).toHaveLength(6);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminCouponRoutes']));
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
         'POST coupons',
         'POST coupons/batch',
         'PATCH coupons/:id',
+        'POST coupons/:id/activate',
+        'POST coupons/:id/pause',
         'DELETE coupons/:id',
       ]),
     );
@@ -374,9 +377,12 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(38);
-    expect(writeRoutes).toHaveLength(22);
+    expect(routes).toHaveLength(40);
+    expect(writeRoutes).toHaveLength(23);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminIdentityRoutes']));
+    expect(routes.map((route) => `${route.method} ${route.path}`)).toContain(
+      'GET admin-operator-invitations/existing-user-candidate',
+    );
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
         'POST admin-operator-invitations',
@@ -401,6 +407,7 @@ describe('Admin route domain manifest', () => {
         'POST finance-approver-governance/requests/:id/decision',
         'POST finance-approver-governance/legacy-attestations',
         'POST finance-approver-governance/legacy-attestations/:id/decision',
+        'POST finance-approver-governance/legacy-attestations/:id/revoke',
       ]),
     );
   });
@@ -428,8 +435,8 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(21);
-    expect(writeRoutes).toHaveLength(9);
+    expect(routes).toHaveLength(24);
+    expect(writeRoutes).toHaveLength(12);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminReferralRoutes']));
     expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
@@ -446,6 +453,9 @@ describe('Admin route domain manifest', () => {
         'POST referrals/rewards/:id/credit',
         'POST referrals/rewards/:id/cashout-approve',
         'POST referrals/rewards/:id/tax-review',
+        'POST referrals/rewards/:id/tax-review-approve',
+        'POST referrals/rewards/:id/tax-review-hold',
+        'POST referrals/rewards/:id/tax-review-reject',
         'POST referrals/rewards/:id/cashout-paid',
         'POST referrals/rewards/:id/reverse',
       ]),
@@ -501,9 +511,12 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(11);
+    expect(routes).toHaveLength(12);
     expect(writeRoutes).toHaveLength(7);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminCatalogRoutes']));
+    expect(routes.map((route) => `${route.method} ${route.path}`)).toContain(
+      'GET services/groups/:groupKey/audit-evidence',
+    );
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
         'PATCH services/groups/:groupKey',

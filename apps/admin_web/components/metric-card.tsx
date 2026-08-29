@@ -21,6 +21,7 @@ export type MetricCardProps = {
   iconSize?: number;
   kind?: MetricCardKind;
   scope?: ReactNode;
+  scopeKind?: MetricCardKind;
 };
 
 export type MetricCardKind = 'action' | 'live' | 'period' | 'record' | 'risk';
@@ -50,11 +51,13 @@ export function MetricCard({
   iconSize = 20,
   kind,
   scope,
+  scopeKind,
 }: MetricCardProps) {
   const Icon = icon ?? metricIcon(label);
   const inferenceText = [label, metricNodeText(helper)].filter(Boolean).join(' ');
   const visibleScope = scope === undefined ? inferredMetricScope(inferenceText) : scope;
   const visibleKind = kind ?? inferredMetricKind(inferenceText, typeof visibleScope === 'string' ? visibleScope : undefined);
+  const visibleScopeKind = scopeKind ?? visibleKind;
   const content = (
     <div className="metric-card">
       <span className="metric-card-icon" aria-hidden="true">
@@ -62,10 +65,10 @@ export function MetricCard({
       </span>
       <div className="metric-card-content">
         {visibleScope === null ? null : (
-          <span className={joinClassNames('metric-card-scope', `is-${visibleKind}`)}>{visibleScope}</span>
+          <span className={joinClassNames('metric-card-scope', `is-${visibleScopeKind}`)}>{visibleScope}</span>
         )}
         <p>{label}</p>
-        <div className="metric-card-value">
+        <div className={joinClassNames('metric-card-value', visibleKind === 'risk' ? 'is-risk' : undefined)}>
           <span className="sr-only">{label}: </span>
           {value}
         </div>

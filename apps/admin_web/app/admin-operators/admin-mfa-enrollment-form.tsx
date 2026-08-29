@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useId } from 'react';
 import { KeyRound, ShieldCheck } from 'lucide-react';
 
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
@@ -9,6 +9,7 @@ import { AdminNoticeCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { beginAdminMfaEnrollment, verifyAdminMfaEnrollment } from './actions';
 import { INITIAL_ADMIN_OPERATOR_ACTION_STATE } from './action-state';
+import { formatOperatorCount } from './operator-copy';
 
 export function AdminMfaEnrollmentForm({
   enrolledAt,
@@ -27,12 +28,14 @@ export function AdminMfaEnrollmentForm({
     verifyAdminMfaEnrollment,
     INITIAL_ADMIN_OPERATOR_ACTION_STATE,
   );
+  const passwordHelpId = useId();
+  const codeHelpId = useId();
 
   if (state === 'VERIFIED') {
     return (
       <AdminNoticeCard className="operator-access-mfa-notice" tone="success">
-        <strong><ShieldCheck aria-hidden="true" size={18} /> MFA verified</strong>
-        <p>Authenticator protection is active. {recoveryCodesRemaining} recovery code(s) remain.</p>
+        <strong><ShieldCheck aria-hidden="true" size={18} /> Your MFA is verified</strong>
+        <p>Authenticator protection is active. {formatOperatorCount(recoveryCodesRemaining, 'recovery code')} {recoveryCodesRemaining === 1 ? 'remains' : 'remain'}.</p>
         <StatusBadge tone="success">Enrolled {enrolledAt ? new Date(enrolledAt).toLocaleDateString('en-GB') : ''}</StatusBadge>
       </AdminNoticeCard>
     );
@@ -43,14 +46,21 @@ export function AdminMfaEnrollmentForm({
       <strong><KeyRound aria-hidden="true" size={18} /> Complete MFA enrollment</strong>
       <p>Master Admin and Finance actions stay blocked until an authenticator code is verified.</p>
       <form action={beginAction} className="operator-access-reauth-form">
-        <AdminFormInput
-          ariaInvalid={Boolean(beginState.fieldErrors?.password)}
-          autoComplete="current-password"
-          label="Current password"
-          name="password"
-          required
-          type="password"
-        />
+        <div className="operator-access-field-with-help">
+          <AdminFormInput
+            ariaDescribedBy={passwordHelpId}
+            ariaInvalid={Boolean(beginState.fieldErrors?.password)}
+            autoComplete="current-password"
+            label="Current password"
+            labelVisibility="visible"
+            name="password"
+            required
+            type="password"
+          />
+          <small className={beginState.fieldErrors?.password ? 'text-danger' : 'muted'} id={passwordHelpId}>
+            {beginState.fieldErrors?.password ?? 'Confirm your current Admin operator password.'}
+          </small>
+        </div>
         <AdminFormControlButton className="button-secondary" disabled={beginPending} type="submit">
           {beginPending ? 'Preparing…' : state === 'CONFIGURING' ? 'Restart enrollment' : 'Start enrollment'}
         </AdminFormControlButton>
@@ -71,16 +81,23 @@ export function AdminMfaEnrollmentForm({
         </div>
       ) : null}
       <form action={verifyAction} className="operator-access-reauth-form">
-        <AdminFormInput
-          ariaInvalid={Boolean(verifyState.fieldErrors?.code)}
-          autoComplete="one-time-code"
-          inputMode="numeric"
-          label="Current authenticator code"
-          maxLength={6}
-          name="code"
-          pattern="[0-9]{6}"
-          required
-        />
+        <div className="operator-access-field-with-help">
+          <AdminFormInput
+            ariaDescribedBy={codeHelpId}
+            ariaInvalid={Boolean(verifyState.fieldErrors?.code)}
+            autoComplete="one-time-code"
+            inputMode="numeric"
+            label="Current authenticator code"
+            labelVisibility="visible"
+            maxLength={6}
+            name="code"
+            pattern="[0-9]{6}"
+            required
+          />
+          <small className={verifyState.fieldErrors?.code ? 'text-danger' : 'muted'} id={codeHelpId}>
+            {verifyState.fieldErrors?.code ?? 'Enter the current 6-digit code from your authenticator.'}
+          </small>
+        </div>
         <AdminFormControlButton className="button-primary" disabled={verifyPending} type="submit">
           {verifyPending ? 'Verifying…' : 'Verify MFA'}
         </AdminFormControlButton>

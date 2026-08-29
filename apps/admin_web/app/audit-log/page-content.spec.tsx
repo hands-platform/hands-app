@@ -26,7 +26,8 @@ describe('audit log page content contract', () => {
     expect(source).toContain('AuditSavedViews');
     expect(source).toContain('Review-level events');
     expect(source).toContain('Failed');
-    expect(source).toContain('Unacknowledged');
+    expect(source).toContain('Opened event records');
+    expect(source).toContain("? 'Raw records'");
     expect(source).toContain('Data lag');
     expect(source).toContain('aria-label="Saved audit views"');
   });
@@ -38,6 +39,8 @@ describe('audit log page content contract', () => {
     expect(source).toContain('Next page');
     expect(source).toContain('Previous page');
     expect(source).toContain('First page');
+    expect(source).toContain('audit-cursor-toolbar');
+    expect(source).toContain('AuditCursorNavigation');
     expect(source).not.toContain('AdminTablePaginationFooter');
   });
 
@@ -45,6 +48,9 @@ describe('audit log page content contract', () => {
     expect(source).toContain('Action required incidents');
     expect(source).toContain('workspace.actionableIncidents');
     expect(source).toContain('Review incident');
+    expect(source).toContain('No open recurring job incidents');
+    expect(source).toContain('verified open/recovered lifecycle');
+    expect(source).not.toContain('Unacknowledged');
   });
 
   it('keeps advanced filters readable on wide desktop layouts', () => {
@@ -52,6 +58,12 @@ describe('audit log page content contract', () => {
     expect(css).toContain('.audit-more-filter-grid');
     expect(css).toContain('grid-template-columns: repeat(4, minmax(180px, 1fr));');
     expect(css).toContain('grid-column: 1 / -1;');
+    expect(css).toContain('.audit-cursor-toolbar');
+    expect(css).toContain('.audit-more-filter-grid .admin-form-search.admin-form-control-labeled');
+    expect(css).toContain('white-space: nowrap;');
+    for (const label of ['Object type', 'Event ID', 'Correlation ID', 'Request ID']) {
+      expect(source).toMatch(new RegExp(`label="${label}"[\\s\\S]*?labelVisibility="visible"`));
+    }
   });
 
   it('opens the separate evidence detail instead of formatting raw payload in the page', () => {

@@ -1,5 +1,6 @@
 import {
   AdminDataTable,
+  AdminTableFooter,
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../components/admin-data-table';
@@ -12,9 +13,17 @@ import { StatusBadge } from '../../components/status-badge';
 import { adminCountLabel, partnerOperatingStatusLabel } from '../../lib/admin-copy';
 import { formatMoney as formatProviderMoney, formatRelativeAge } from '../../lib/admin-format';
 import { providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
-import { buildPartnerListHref, type PartnerPagination, type ProviderFilters } from './partner-filters';
+import {
+  buildPartnerListHref,
+  buildPartnerSnapshotFirstHref,
+  buildPartnerSnapshotNextHref,
+  buildPartnerSnapshotPreviousHref,
+  type PartnerPagination,
+  type ProviderFilters,
+} from './partner-filters';
 import type { PartnerMasterRow } from './partner-master-row';
 import { PARTNER_APPROVAL_QUEUE_HREF, partnerApprovalQueueDetailHref } from './partner-review-mode';
+import { buildPartnerDetailWorkspaceHref } from './[id]/partner-detail-workspace-model';
 
 export type PartnerMasterListSectionRow = PartnerMasterRow;
 
@@ -22,6 +31,14 @@ type PartnerMasterListSectionProps = {
   readonly filters: ProviderFilters;
   readonly mode?: PartnerMasterListSectionMode;
   readonly pagination: PartnerPagination<PartnerMasterListSectionRow>;
+  readonly snapshotPage?: {
+    readonly hasNextPage: boolean;
+    readonly currentCursor: string;
+    readonly nextCursor: string | null;
+    readonly offset: number;
+    readonly snapshotCursor: string;
+    readonly snapshotAt: string;
+  };
 };
 
 type PartnerMasterListSectionMode = 'approval-pending' | 'default' | 'unapproved' | 'unsettled';
@@ -72,6 +89,7 @@ export function PartnerMasterListSection({
   filters,
   mode = 'default',
   pagination,
+  snapshotPage,
 }: PartnerMasterListSectionProps) {
   const rows = pagination.rows;
   const copy = buildPartnerMasterListSectionCopy(mode, pagination.totalRows);
@@ -99,17 +117,70 @@ export function PartnerMasterListSection({
           {rows.map((row) => renderPartnerMasterRow(row, mode))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTablePaginationFooter
-        activePage={pagination.page}
-        ariaLabel={`${copy.title} pages`}
-        className="vuexy-partner-table-footer"
-        from={pagination.from}
-        hrefForPage={(page) => buildPartnerListHref(filters, { page })}
-        to={pagination.to}
-        totalPages={pagination.totalPages}
-        totalRows={pagination.totalRows}
-      />
+      {snapshotPage ? (
+        <PartnerWalletDebtSnapshotFooter
+          filters={filters}
+          pagination={pagination}
+          snapshotPage={snapshotPage}
+        />
+      ) : (
+        <AdminTablePaginationFooter
+          activePage={pagination.page}
+          ariaLabel={`${copy.title} pages`}
+          className="vuexy-partner-table-footer"
+          from={pagination.from}
+          hrefForPage={(page) => buildPartnerListHref(filters, { page })}
+          to={pagination.to}
+          totalPages={pagination.totalPages}
+          totalRows={pagination.totalRows}
+        />
+      )}
     </AdminTablePanel>
+  );
+}
+
+function PartnerWalletDebtSnapshotFooter({
+  filters,
+  pagination,
+  snapshotPage,
+}: Pick<PartnerMasterListSectionProps, 'filters' | 'pagination'> & {
+  readonly snapshotPage: NonNullable<PartnerMasterListSectionProps['snapshotPage']>;
+}) {
+  if (pagination.totalRows <= 0) return null;
+
+  return (
+    <AdminTableFooter className="vuexy-partner-table-footer">
+      <span className="vuexy-booking-pagination-summary">
+        Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries · Snapshot{' '}
+        <DateTimeText fallback="time unavailable" value={snapshotPage.snapshotAt} />
+      </span>
+      <div aria-label="Wallet debt snapshot pages" className="vuexy-booking-pagination">
+        {snapshotPage.offset > 0 ? (
+          <>
+            <AdminFormControlLink
+              className="button-secondary"
+              href={buildPartnerSnapshotFirstHref(filters, snapshotPage.snapshotCursor)}
+            >
+              First
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              className="button-secondary"
+              href={buildPartnerSnapshotPreviousHref(filters)}
+            >
+              Previous
+            </AdminFormControlLink>
+          </>
+        ) : null}
+        {snapshotPage.hasNextPage && snapshotPage.nextCursor ? (
+          <AdminFormControlLink
+            className="button-secondary"
+            href={buildPartnerSnapshotNextHref(filters, snapshotPage.nextCursor, snapshotPage.currentCursor)}
+          >
+            Next page
+          </AdminFormControlLink>
+        ) : null}
+      </div>
+    </AdminTableFooter>
   );
 }
 
@@ -162,7 +233,13 @@ function renderPartnerMasterRow(row: PartnerMasterListSectionRow, mode: PartnerM
         <td data-label="Restrictions">{renderWalletRestrictionsCell()}</td>
         <td data-label="Withdrawal">{renderWithdrawalCell(row)}</td>
         <td data-label="Account">{renderAccountCell(row, { showApprovalNeeds: false })}</td>
-        <td data-label="Action">{renderOpenPartnerAction(row, 'Review wallet debt')}</td>
+        <td data-label="Action">
+          {renderOpenPartnerAction(
+            row,
+            'Review wallet debt',
+            buildPartnerDetailWorkspaceHref(row.provider.id, 'dossier', 'finance'),
+          )}
+        </td>
       </tr>
     );
   }
@@ -199,7 +276,8 @@ function PartnerCellHelper({ row }: { readonly row: PartnerMasterListSectionRow 
   return (
     <div className="vuexy-partner-person-helper">
       <small>
-        Partner ID {row.provider.id.slice(-8)} · {row.phone === 'No phone' ? 'Phone not saved' : 'Phone saved'}
+        Partner ID {row.provider.id.slice(-8)} ·{' '}
+        {row.phone === 'No phone' ? 'Phone not saved' : 'Phone saved'}
       </small>
     </div>
   );
@@ -294,7 +372,8 @@ function renderOnboardingStageCell(row: PartnerMasterListSectionRow) {
     <div className="vuexy-partner-stack">
       <StatusBadge tone={row.accountBlocked ? 'danger' : 'warning'}>{stage}</StatusBadge>
       <small>
-        {partnerOperatingStatusLabel(row.verificationStatus)} · KYC {partnerOperatingStatusLabel(row.kycStatus)}
+        {partnerOperatingStatusLabel(row.verificationStatus)} · KYC{' '}
+        {partnerOperatingStatusLabel(row.kycStatus)}
       </small>
     </div>
   );
@@ -316,7 +395,7 @@ function renderAccessCell(row: PartnerMasterListSectionRow) {
         {partnerAppActivityLabel(row.appActivityStatus)}
       </StatusBadge>
       <small>
-        App <DateTimeText fallback="not tracked" value={row.appLastActiveAt} />
+        App: <DateTimeText fallback="No activity timestamp" value={row.appLastActiveAt} />
       </small>
       <small>
         Session <DateTimeText fallback="not recorded" value={row.lastSeenAt} />
@@ -340,6 +419,17 @@ function partnerAppActivityTone(
 }
 
 function renderLocationCell(row: PartnerMasterListSectionRow) {
+  if (row.locationPolicyAuthoritative === false) {
+    return (
+      <div className="vuexy-partner-stack">
+        <strong>Freshness unavailable</strong>
+        <small>
+          {providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)} Policy unavailable.
+        </small>
+      </div>
+    );
+  }
+
   return (
     <div className="vuexy-partner-stack">
       <strong>{providerLocationLabel(row.locationState)}</strong>
@@ -388,9 +478,10 @@ function renderWalletDebtCell(row: PartnerMasterListSectionRow) {
 function renderWalletRestrictionsCell() {
   return (
     <div className="vuexy-partner-stack">
-      <StatusBadge tone="danger">Acceptance / service blocked</StatusBadge>
+      <StatusBadge tone="danger">Final acceptance / service start blocked</StatusBadge>
       <StatusBadge tone="warning">Payout release blocked</StatusBadge>
       <small>Marketplace visibility remains available</small>
+      <small>Direct first-pick and existing matches are not retroactively blocked</small>
     </div>
   );
 }
@@ -479,7 +570,8 @@ function onboardingNextAction(row: PartnerMasterListSectionRow, label: string) {
   if (/media rejected/i.test(label)) return { action: 'Replace rejected profile media', owner: 'Partner' };
   if (/media pending/i.test(label)) return { action: 'Review submitted profile media', owner: 'Operator' };
   if (/verification/i.test(label)) {
-    if (row.verificationStatus === 'SUBMITTED') return { action: 'Review verification submission', owner: 'Operator' };
+    if (row.verificationStatus === 'SUBMITTED')
+      return { action: 'Review verification submission', owner: 'Operator' };
     if (row.verificationStatus === 'REJECTED') return { action: 'Resubmit verification', owner: 'Partner' };
     if (row.verificationStatus !== 'APPROVED') return { action: 'Complete verification', owner: 'Partner' };
     return { action: `Review required: ${label}`, owner: 'Operator' };
@@ -588,9 +680,13 @@ function renderAccountCell(
   );
 }
 
-function renderOpenPartnerAction(row: PartnerMasterListSectionRow, label: string) {
+function renderOpenPartnerAction(
+  row: PartnerMasterListSectionRow,
+  label: string,
+  href = `/partners/${encodeURIComponent(row.provider.id)}`,
+) {
   return (
-    <AdminFormControlLink className="button-secondary" href={`/partners/${row.provider.id}`}>
+    <AdminFormControlLink className="button-secondary" href={href}>
       {label}
     </AdminFormControlLink>
   );
@@ -653,11 +749,11 @@ function PartnerMasterEmptyState({
 }) {
   const filtered = Boolean(
     filters.q ||
-      filters.activity ||
-      filters.verification ||
-      filters.kyc ||
-      filters.providerStatus ||
-      filters.bookingFlow,
+    filters.activity ||
+    filters.verification ||
+    filters.kyc ||
+    filters.providerStatus ||
+    filters.bookingFlow,
   );
   const queueName =
     mode === 'unapproved' ? 'onboarding blockers' : mode === 'unsettled' ? 'wallet debt records' : 'Partners';

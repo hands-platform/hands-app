@@ -16,6 +16,14 @@ Always work from `C:\dev\massage-on-demand-vn`.
 
 Ignore `C:\dev\massage-vn-workspace` and do not use it for HANDS work.
 
+## Vietnam Time Standard
+
+Use `Asia/Ho_Chi_Minh` (`ICT`, `UTC+7`) as the single canonical timezone for HANDS operations, UI copy, API contracts, tests, audit evidence, reports, and documentation.
+
+- Do not substitute another IANA region merely because it currently has the same UTC offset.
+- Use the canonical Vietnam identifier for business-time expectations and UTC only when explicitly testing process-timezone independence or representing stored instants.
+- New documentation and generated verification artifacts must state Vietnam-local dates and times with `Asia/Ho_Chi_Minh` when a timezone label is needed.
+
 ## Agent Operating Model
 
 Use a single-agent workflow in this repository.

@@ -108,9 +108,6 @@ const PROVIDER_WITHDRAWAL_STATUS_TRANSITIONS: Partial<
     ProviderWalletWithdrawalRequestStatus.PAID,
     ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
     ProviderWalletWithdrawalRequestStatus.HOLD,
-    ProviderWalletWithdrawalRequestStatus.REJECTED,
-    ProviderWalletWithdrawalRequestStatus.CANCELLED,
-    ProviderWalletWithdrawalRequestStatus.FAILED,
   ],
   [ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED]: [
     ProviderWalletWithdrawalRequestStatus.APPROVED,

@@ -35,7 +35,7 @@ type CashSettlementsPageProps = {
 };
 
 export const metadata: Metadata = {
-  title: 'Cash Settlement Workbench | HANDS Admin',
+  title: 'Cash Settlement Workbench',
 };
 
 export default async function CashSettlementsPage({ searchParams }: CashSettlementsPageProps) {
@@ -45,9 +45,21 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     redirect(cashSettlementHref({ ...filters, view: 'guide' }));
   }
   const reviewId = readSearchParam(params.review).trim();
-  const [earningsResult, summaryResult, detailResult, operatorAccess] = await Promise.all([
+  const periodBaselineFilters = filters.period
+    ? { ...filters, age: 'all' as const, page: 1, pageSize: 10, q: '', queue: 'all' as const, sla: 'all' as const, sort: 'oldest' as const }
+    : null;
+  const needsPeriodBaseline = periodBaselineFilters
+    ? buildCashSettlementSummaryApiHref(periodBaselineFilters) !== buildCashSettlementSummaryApiHref(filters)
+    : false;
+  const [earningsResult, summaryResult, periodBaselineResult, detailResult, operatorAccess] = await Promise.all([
     adminGetResult<AdminEarning[]>(buildCashSettlementApiHref(filters), []),
     adminGetResult<AdminCashSettlementSummary | null>(buildCashSettlementSummaryApiHref(filters), null),
+    needsPeriodBaseline && periodBaselineFilters
+      ? adminGetResult<AdminCashSettlementSummary | null>(
+          buildCashSettlementSummaryApiHref(periodBaselineFilters),
+          null,
+        )
+      : Promise.resolve(null),
     reviewId
       ? adminGetResult<AdminCashSettlementDetail | null>(
           `/admin/cash-settlement-earnings/${encodeURIComponent(reviewId)}`,
@@ -69,14 +81,23 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const notice = readSearchParam(params.notice);
   const noticeCode = readSearchParam(params.code);
   const globalSummary = summaryResult.data?.global ?? null;
-  const pageSummary = filters.period && summaryResult.data
+  const periodBaselineSummary = filters.period
+    ? needsPeriodBaseline
+      ? periodBaselineResult?.ok
+        ? periodBaselineResult.data
+        : null
+      : summaryResult.data
+    : null;
+  const pageSummary = filters.period && periodBaselineSummary
     ? {
-        missingSettlementEvidenceCount: summaryResult.data.missingSettlementEvidenceCount,
-        providerCount: summaryResult.data.providerCount,
-        remainingDebtAmount: summaryResult.data.totalDebtAmount,
-        staleDebtRowCount: summaryResult.data.staleDebtRowCount,
+        missingSettlementEvidenceCount: periodBaselineSummary.missingSettlementEvidenceCount,
+        providerCount: periodBaselineSummary.providerCount,
+        remainingDebtAmount: periodBaselineSummary.totalDebtAmount,
+        rowCount: periodBaselineSummary.rowCount,
+        staleDebtRowCount: periodBaselineSummary.staleDebtRowCount,
       }
     : globalSummary;
+  const periodBaselineUnavailable = Boolean(filters.period && needsPeriodBaseline && !periodBaselineResult?.ok);
   const canAllocate = hasAdminOperatorCategory(operatorAccess, 'FINANCE_SETTLEMENTS');
   const guideHref = cashSettlementHref({ ...filters, page: 1, view: 'guide' });
 
@@ -138,7 +159,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       metricsClassName="cash-settlement-kpi-grid"
       title="Cash Settlement Workbench"
     >
-      {!earningsResult.ok || !summaryResult.ok ? (
+      {!earningsResult.ok || !summaryResult.ok || periodBaselineUnavailable ? (
         <AdminNoticeCard className="admin-mb-16" role="alert" tone="danger">
           <strong>Cash settlement data is incomplete</strong>
           <p className="muted">
@@ -182,6 +203,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
 
       <CashSettlementFilterSection
         ageCounts={summaryResult.data?.queueAgeCounts}
+        allOpenRowCount={pageSummary?.rowCount ?? 0}
         filters={filters}
         generatedAt={summaryResult.data?.generatedAt}
         queueCounts={summaryResult.data?.queueCounts}
@@ -190,7 +212,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         visibleRowCount={rows.length}
       />
 
-      {summaryResult.ok ? (
+      {summaryResult.ok && summary.rowCount > 0 ? (
         <AdminNotePanel className="admin-mb-16 cash-settlement-finance-context">
           <strong>
             Filtered queue · {cashSettlementQueueLabel(filters.queue)} · {summary.rowCount} row(s)
@@ -226,11 +248,13 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         </AdminDisclosureCard>
       ) : null}
 
-      <CashSettlementOpenDebtTableSection
-        filters={filters}
-        globalRowCount={globalSummary?.rowCount ?? 0}
-        pagination={openDebtPagination}
-      />
+      {summary.rowCount > 0 ? (
+        <CashSettlementOpenDebtTableSection
+          allOpenRowCount={pageSummary?.rowCount ?? 0}
+          filters={filters}
+          pagination={openDebtPagination}
+        />
+      ) : null}
 
       {reviewId ? (
         <CashSettlementReviewDrawer

@@ -2,6 +2,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormSearch,
+  AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
@@ -73,6 +74,16 @@ export function CouponFilterBoard({
               placeholder="Coupon code or campaign description"
             />
           </div>
+          <AdminFormSelect
+            defaultValue={filters.sort}
+            label="Sort"
+            labelVisibility="visible"
+            name="sort"
+            options={[
+              { label: 'Code A–Z', value: 'code' },
+              { label: 'Ending soon', value: 'ending-soon' },
+            ]}
+          />
           <div className="admin-directory-filter-actions">
             <AdminFormControlButton className="admin-directory-filter-button" type="submit">
               Apply filters
@@ -90,11 +101,13 @@ export function CouponFilterBoard({
   );
 }
 
-const couponViews: readonly CouponListView[] = ['live', 'scheduled', 'records', 'all'];
+const couponViews: readonly CouponListView[] = ['live', 'scheduled', 'paused', 'expired', 'records', 'all'];
 
 function couponViewCount(view: CouponListView, summary: AdminCouponSummary) {
   if (view === 'live') return summary.liveCount;
   if (view === 'scheduled') return summary.scheduledCount;
+  if (view === 'paused') return summary.pausedCount;
+  if (view === 'expired') return summary.expiredCount;
   if (view === 'records') return summary.expiredCount + summary.pausedCount;
   return summary.totalCount;
 }

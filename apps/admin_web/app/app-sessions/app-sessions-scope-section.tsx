@@ -44,7 +44,7 @@ export function AppSessionsScopeSection({
         </AdminFormControlLink>
       }
       className="admin-mb-16"
-      description={`${activeFilterLabel}. Showing ${loadedCount} of ${totalCount} heartbeat record(s).`}
+      description={`${activeFilterLabel}. Current page sample — ${loadedCount} of ${totalCount} heartbeat record(s).`}
       resultLabel={`${loadedCount}/${totalCount} loaded`}
       title="App session filters"
     >

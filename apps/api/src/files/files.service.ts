@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -246,11 +247,54 @@ export class FilesService {
     if (!(await this.canManageFile(user, file))) {
       throw new ForbiddenException('You do not have access to this file');
     }
+    const retainedEvidence = await this.prisma.companyBankAccountEvidence.findUnique({
+      where: { fileAssetId: file.id },
+      select: { id: true },
+    });
+    if (retainedEvidence) {
+      throw new ConflictException('Retained company bank account evidence cannot be deleted');
+    }
     this.assertStorageAvailable();
 
     await this.s3.deleteObject(file.key, storageVisibilityForFile(file));
     await this.prisma.fileAsset.delete({ where: { id: fileId } });
     return { ok: true, fileId };
+  }
+
+  async companyBankAccountEvidenceIntegrity(fileId: string) {
+    const file = await this.prisma.fileAsset.findUnique({
+      where: { id: fileId },
+      select: {
+        contentType: true,
+        id: true,
+        key: true,
+        ownerUserId: true,
+        purpose: true,
+        sizeBytes: true,
+        uploadedAt: true,
+        uploadStatus: true,
+        visibility: true,
+      },
+    });
+    if (!file) throw new NotFoundException('Finance evidence file not found');
+    if (file.purpose !== FilePurpose.FINANCE_EVIDENCE || file.visibility !== FileVisibility.PRIVATE) {
+      throw new BadRequestException('Company bank account evidence must be a private finance evidence file');
+    }
+    if (file.uploadStatus !== FileUploadStatus.UPLOADED || !file.uploadedAt) {
+      throw new BadRequestException('Company bank account evidence upload is not complete');
+    }
+    this.assertStorageAvailable();
+    const integrity = await this.s3.contentSha256(file.key, FileVisibility.PRIVATE);
+    if (file.sizeBytes != null && file.sizeBytes !== integrity.sizeBytes) {
+      throw new ConflictException('Company bank account evidence size changed after upload');
+    }
+    return {
+      ...integrity,
+      contentType: file.contentType,
+      fileAssetId: file.id,
+      ownerUserId: file.ownerUserId,
+      uploadedAt: file.uploadedAt,
+    };
   }
 
   async approvePublicMedia(fileId: string, reviewerId: string) {

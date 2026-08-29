@@ -275,21 +275,26 @@ export function StartShiftRankingWidgets({
   analytics: AdminStartShiftRankingAnalytics;
   rangeLabel: string;
 }) {
+  const visibleCustomerTabs = customerTabs.filter(
+    (tab) => analytics.customerRankings[tab.key].length > 0,
+  );
+  const visiblePartnerTabs = partnerTabs.filter(
+    (tab) => analytics.partnerRankings[tab.key].length > 0,
+  );
   const [customerMode, setCustomerMode] = useState<CustomerMode>(
-    analytics.customerRankings.needsAttention.length ? 'needsAttention' : 'mostActive',
+    analytics.customerRankings.needsAttention.length
+      ? 'needsAttention'
+      : visibleCustomerTabs[0]?.key ?? 'mostActive',
   );
   const [partnerMode, setPartnerMode] = useState<PartnerMode>(
     analytics.partnerRankings.needsAttention.length
       ? 'needsAttention'
-      : partnerTabs.find((tab) => analytics.partnerRankings[tab.key].length > 0)?.key ?? 'mostActive',
+      : visiblePartnerTabs[0]?.key ?? 'mostActive',
   );
   const hasCustomerRankings = Object.values(analytics.customerRankings).some((rows) => rows.length > 0);
   const hasPartnerRankings = Object.values(analytics.partnerRankings).some((rows) => rows.length > 0);
-  const partnerNeedsAttentionOnly = analytics.partnerRankings.needsAttention.length > 0 &&
-    partnerTabs.every((tab) => tab.key === 'needsAttention' || analytics.partnerRankings[tab.key].length === 0);
-  const visiblePartnerTabs = partnerNeedsAttentionOnly
-    ? partnerTabs.filter((tab) => tab.key === 'needsAttention')
-    : partnerTabs;
+  const customerNeedsAttentionOnly = visibleCustomerTabs.length === 1 && visibleCustomerTabs[0]?.key === 'needsAttention';
+  const partnerNeedsAttentionOnly = visiblePartnerTabs.length === 1 && visiblePartnerTabs[0]?.key === 'needsAttention';
 
   if (!hasCustomerRankings && !hasPartnerRankings) {
     return (
@@ -312,16 +317,23 @@ export function StartShiftRankingWidgets({
         <AdminCard ariaLabelledBy="start-shift-customer-ranking-title" className="start-shift-ranking-card">
           <AdminCardHeader
             description={customerDescriptions[customerMode]}
-            title={<span id="start-shift-customer-ranking-title">Top customers</span>}
+            title={<span id="start-shift-customer-ranking-title">{customerNeedsAttentionOnly ? 'Customer needs attention' : 'Top customers'}</span>}
           />
-          <RankingTabs
-            active={customerMode}
-            ariaLabel="Customer ranking mode"
-            idPrefix="start-shift-customer-ranking"
-            onChange={setCustomerMode}
-            tabs={customerTabs.map((tab) => ({ ...tab, count: analytics.customerRankings[tab.key].length }))}
-          />
-          <div aria-labelledby={`start-shift-customer-ranking-tab-${customerMode}`} id="start-shift-customer-ranking-panel" role="tabpanel">
+          {visibleCustomerTabs.length > 1 ? (
+            <RankingTabs
+              active={customerMode}
+              ariaLabel="Customer ranking mode"
+              idPrefix="start-shift-customer-ranking"
+              onChange={setCustomerMode}
+              tabs={visibleCustomerTabs.map((tab) => ({ ...tab, count: analytics.customerRankings[tab.key].length }))}
+            />
+          ) : null}
+          <div
+            {...(visibleCustomerTabs.length > 1
+              ? { 'aria-labelledby': `start-shift-customer-ranking-tab-${customerMode}`, role: 'tabpanel' }
+              : {})}
+            id="start-shift-customer-ranking-panel"
+          >
             <CustomerRankingTable mode={customerMode} rows={analytics.customerRankings[customerMode]} />
           </div>
         </AdminCard>
@@ -332,14 +344,21 @@ export function StartShiftRankingWidgets({
             description={partnerDescriptions[partnerMode]}
             title={<span id="start-shift-partner-ranking-title">{partnerNeedsAttentionOnly ? 'Partner needs attention' : 'Partner performance'}</span>}
           />
-          <RankingTabs
-            active={partnerMode}
-            ariaLabel="Partner ranking mode"
-            idPrefix="start-shift-partner-ranking"
-            onChange={setPartnerMode}
-            tabs={visiblePartnerTabs.map((tab) => ({ ...tab, count: analytics.partnerRankings[tab.key].length }))}
-          />
-          <div aria-labelledby={`start-shift-partner-ranking-tab-${partnerMode}`} id="start-shift-partner-ranking-panel" role="tabpanel">
+          {visiblePartnerTabs.length > 1 ? (
+            <RankingTabs
+              active={partnerMode}
+              ariaLabel="Partner ranking mode"
+              idPrefix="start-shift-partner-ranking"
+              onChange={setPartnerMode}
+              tabs={visiblePartnerTabs.map((tab) => ({ ...tab, count: analytics.partnerRankings[tab.key].length }))}
+            />
+          ) : null}
+          <div
+            {...(visiblePartnerTabs.length > 1
+              ? { 'aria-labelledby': `start-shift-partner-ranking-tab-${partnerMode}`, role: 'tabpanel' }
+              : {})}
+            id="start-shift-partner-ranking-panel"
+          >
             <PartnerRankingTable mode={partnerMode} rows={analytics.partnerRankings[partnerMode]} />
           </div>
         </AdminCard>

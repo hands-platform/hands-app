@@ -12,7 +12,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminErrorState } from '../../components/admin-surface';
+import { AdminErrorState, AdminNoticeCard } from '../../components/admin-surface';
 import type {
   AdminOperationsHandoffOpenCasePage,
   AdminOperationsHandoffOperator,
@@ -20,6 +20,7 @@ import type {
 } from '../../lib/admin-api';
 import { adminGetResult } from '../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { shiftHandoffLaunchEnabled } from '../../lib/launch-features';
 import { OperationsShiftHandoffSection } from './operations-shift-handoff-section';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -36,9 +37,23 @@ const EMPTY_HANDOFFS: AdminShiftHandoffPage = {
   totalCount: 0,
 };
 
-export const metadata: Metadata = { title: 'Shift Handoff · HANDS Admin' };
+export const metadata: Metadata = { title: 'Shift Handoff' };
 
 export default async function OperationsHandoffPage({ searchParams }: { searchParams?: SearchParams }) {
+  if (!shiftHandoffLaunchEnabled()) {
+    return (
+      <AdminPageTemplate
+        contentClassName="operations-handoff-page"
+        description="Shift transfer, acknowledgement, and handoff notes are disabled for the current launch. Existing audit history remains retained."
+        title="Shift Handoff"
+      >
+        <AdminNoticeCard tone="warning">
+          <strong>Not active for current launch</strong>
+          <p>Shift Handoff requires a separate launch approval and an enabled server feature gate.</p>
+        </AdminNoticeCard>
+      </AdminPageTemplate>
+    );
+  }
   const query = searchParams ? await searchParams : {};
   const view = value(query.view);
   if (view === 'handoff') redirect(canonicalCurrentHref(query));
@@ -183,7 +198,7 @@ function HandoffViewLinks({ active }: { readonly active: 'current' | 'history' }
         className={active === 'current' ? 'button-primary' : 'button-secondary'}
         href="/operations-handoff"
       >
-        <ArrowRightLeft aria-hidden="true" size={16} /> Current
+        <ArrowRightLeft aria-hidden="true" size={16} /> Current shift
       </AdminFormControlLink>
       <AdminFormControlLink
         aria-current={active === 'history' ? 'page' : undefined}
@@ -205,7 +220,7 @@ function CurrentCaseFilters({
 }) {
   return (
     <AdminFilterPanel
-      description="Filter the server-backed open-case queue. Changing a filter resets pagination."
+      description="Find open work by case ID, queue, or age."
       resultLabel={result === null ? 'Unavailable' : `${result} matching`}
       resultTone={result === null ? 'danger' : result ? 'warning' : 'neutral'}
       title="Open case filters"
@@ -216,7 +231,13 @@ function CurrentCaseFilters({
         method="get"
       >
         <AdminFormGridFields className="compact-form">
-          <AdminFormSearch defaultValue={filters.q} label="Search" name="q" placeholder="Case ID or queue" />
+          <AdminFormSearch
+            defaultValue={filters.q}
+            label="Search"
+            labelVisibility="visible"
+            name="q"
+            placeholder="Case ID or queue"
+          />
           <AdminFormSelect
             defaultValue={filters.queue}
             label="Queue"
@@ -254,7 +275,7 @@ function HistoryFilters({
 }) {
   return (
     <AdminFilterPanel
-      description="Created date is the range basis. Acknowledgement time remains a separate field."
+      description="Date range uses sent time. Confirmed time is shown separately."
       resultLabel={result === null ? 'Unavailable' : `${result} records`}
       resultTone={result === null ? 'danger' : 'neutral'}
       title="Handoff history filters"
@@ -269,12 +290,14 @@ function HistoryFilters({
           <AdminFormSearch
             defaultValue={filters.q}
             label="Search"
+            labelVisibility="visible"
             name="q"
             placeholder="Shift, case, operator, or note"
           />
           <AdminFormSearch
             defaultValue={filters.operator}
             label="Operator"
+            labelVisibility="visible"
             name="operator"
             placeholder="Name or operator ID"
           />

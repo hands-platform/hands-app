@@ -265,12 +265,13 @@ export type AdminMarketingSpendCoverageInput = {
 
 const MARKETING_ACTION_THRESHOLDS = {
   attributionCoveragePercent: 80,
+  cancellationMinimumBookings: 3,
   cancellationRatePercent: 25,
   comparisonMinimumBaseline: 3,
   completedDeclinePercent: -25,
   feeBreakEvenRoas: 1,
   spendGrowthPercent: 25,
-  version: 'marketing-risk-v1',
+  version: 'marketing-risk-v2',
 } as const;
 
 const MARKETING_ACTION_VISIBLE_LIMIT = 4;
@@ -303,6 +304,7 @@ const SUPPORTED_MARKETING_SOURCES = new Set<AdminMarketingSource>([
   'direct',
   'unknown',
 ]);
+const PAID_MARKETING_SOURCES = new Set<AdminMarketingSource>(['meta', 'google', 'tiktok']);
 
 export function normalizeAdminMarketingRange(value: unknown): AdminMarketingRange {
   if (typeof value !== 'string') {
@@ -657,6 +659,24 @@ export function canonicalMarketingCampaignKey(value: unknown) {
   return normalized || null;
 }
 
+export function marketingPaidScopeExpected(input: {
+  attributionRows: readonly Pick<AdminMarketingDimensionInput, 'campaignId' | 'source'>[];
+  campaignIdFilter?: string | null;
+  sourceFilter?: AdminMarketingSource | null;
+  spendRowCount: number;
+}) {
+  return (
+    Boolean(canonicalMarketingCampaignKey(input.campaignIdFilter)) ||
+    Boolean(input.sourceFilter && PAID_MARKETING_SOURCES.has(input.sourceFilter)) ||
+    input.spendRowCount > 0 ||
+    input.attributionRows.some(
+      (row) =>
+        Boolean(row.source && PAID_MARKETING_SOURCES.has(row.source)) ||
+        Boolean(canonicalMarketingCampaignKey(row.campaignId)),
+    )
+  );
+}
+
 export function buildMarketingSpendCoverage({
   attributionCampaignIds = [],
   duplicateCanonicalCampaignCount = 0,
@@ -830,20 +850,20 @@ export function buildMarketingActionSummary(input: {
   }
 
   if (
-    input.totals.bookingCreated > 0 &&
+    input.totals.bookingCreated >= MARKETING_ACTION_THRESHOLDS.cancellationMinimumBookings &&
     input.totals.conversionRates.cancellationRate >= MARKETING_ACTION_THRESHOLDS.cancellationRatePercent
   ) {
     actions.push(marketingAction({
       actionLabel: 'Review funnel evidence',
       campaignKey: null,
-      detail: 'The selected new-customer cohort has an elevated cancellation share.',
+      detail: `${input.totals.bookingCancelled} cancelled of ${input.totals.bookingCreated} created bookings · Cancellation rate ${input.totals.conversionRates.cancellationRate}%`,
       evidenceReadiness: input.readiness.status,
       key: 'cohort-cancellation-rate',
       observedValue: input.totals.conversionRates.cancellationRate,
       observedValueKind: 'percent',
       scope: 'Selected cohort',
       severity: 'warning',
-      threshold: `Cancellation rate >= ${MARKETING_ACTION_THRESHOLDS.cancellationRatePercent}%`,
+      threshold: `Created bookings >= ${MARKETING_ACTION_THRESHOLDS.cancellationMinimumBookings} and cancellation rate >= ${MARKETING_ACTION_THRESHOLDS.cancellationRatePercent}%`,
       title: 'Cancellation rate needs review',
     }));
   }
@@ -1138,8 +1158,15 @@ export function buildMarketingInsights(stats: AdminMarketingStats, bySource: rea
     insights.push('First opens are present but no signup completion is attributed in this range.');
   }
 
-  if (stats.bookingCreated > 0 && percent(stats.bookingCancelled, stats.bookingCreated) >= 25) {
+  if (
+    stats.bookingCreated >= MARKETING_ACTION_THRESHOLDS.cancellationMinimumBookings &&
+    percent(stats.bookingCancelled, stats.bookingCreated) >= MARKETING_ACTION_THRESHOLDS.cancellationRatePercent
+  ) {
     insights.push('Booking cancellation rate is above 25%; review source quality before adding spend.');
+  } else if (stats.bookingCreated > 0 && stats.bookingCreated < MARKETING_ACTION_THRESHOLDS.cancellationMinimumBookings) {
+    insights.push(
+      `Insufficient sample: ${stats.bookingCreated} ${stats.bookingCreated === 1 ? 'booking' : 'bookings'}. Cancellation evidence is not promoted to an action.`,
+    );
   }
 
   if (bySource.some((row) => row.source === 'unknown' && row.signups > 0)) {

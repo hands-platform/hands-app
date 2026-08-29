@@ -80,6 +80,9 @@ function reversedInput(paymentMethod: string, lifecycle: 'OPEN_PERIOD' | 'CLOSED
         ? [
             {
               amount: -600_000,
+              bankReconciliationMatches: [
+                { amount: -600_000, matchedAt: '2026-08-10T00:01:00.000Z', status: 'MATCHED' },
+              ],
               id: `clearing-reversal-${paymentMethod.toLowerCase()}`,
               occurredAt: '2026-08-10T00:00:00.000Z',
               status: 'REVERSED',
@@ -150,12 +153,80 @@ describe('settlementAuditHealth', () => {
     expect(health.checks.reversal).toBe('PASS');
     expect(health.checks.reversalClearing).toBe(externalClearingRequired ? 'PASS' : 'NOT_APPLICABLE');
     expect(health.evidence.reversal).toMatchObject({
+      bankMatch: externalClearingRequired ? 'PASS' : 'NOT_APPLICABLE',
       clearingRequired: externalClearingRequired,
       lifecycle,
       state: 'PASS',
     });
     expect(health.state).toBe('REVERSED_CLEAR');
   });
+
+  it.each(['MOMO', 'CARD', 'VNPAY'])('fails %s reversal when bank evidence is missing', (paymentMethod) => {
+    const input = reversedInput(paymentMethod, 'CLOSED_PERIOD');
+    const reversalClearing = input.paymentClearingEntries.find((entry) => entry.type === 'REFUND_REVERSAL');
+    if (reversalClearing) reversalClearing.bankReconciliationMatches = [];
+
+    const health = settlementAuditHealth(input);
+
+    expect(health.evidence.reversal).toMatchObject({
+      bankMatch: 'FAIL',
+      matchedAmount: 0,
+      state: 'FAIL',
+      unmatchedAmount: 600_000,
+    });
+    expect(health.blockers).toEqual(
+      expect.arrayContaining([expect.objectContaining({ amount: 600_000, code: 'BANK_MATCH_INCOMPLETE' })]),
+    );
+  });
+
+  it.each(['MOMO', 'CARD', 'VNPAY'])('fails %s reversal when bank evidence is partial', (paymentMethod) => {
+    const input = reversedInput(paymentMethod, 'OPEN_PERIOD');
+    const reversalClearing = input.paymentClearingEntries.find((entry) => entry.type === 'REFUND_REVERSAL');
+    if (reversalClearing) {
+      reversalClearing.bankReconciliationMatches = [
+        { amount: -250_000, matchedAt: '2026-08-10T00:01:00.000Z', status: 'PARTIALLY_MATCHED' },
+      ];
+    }
+
+    const health = settlementAuditHealth(input);
+
+    expect(health.evidence.reversal).toMatchObject({
+      bankMatch: 'FAIL',
+      matchedAmount: 250_000,
+      state: 'FAIL',
+      unmatchedAmount: 350_000,
+    });
+  });
+
+  it.each([
+    [-600_000, 'REVERSED', [], undefined],
+    [-500_000, 'REVERSED', ['REVERSAL_AMOUNT_MISMATCH'], 100_000],
+    [-600_000, 'OPEN', ['REVERSAL_STATUS_MISMATCH'], undefined],
+    [-500_000, 'OPEN', ['REVERSAL_AMOUNT_MISMATCH', 'REVERSAL_STATUS_MISMATCH'], 100_000],
+  ] as const)(
+    'separates reversal amount %s and status %s evidence',
+    (amount, status, expectedCodes, expectedAmount) => {
+      const input = reversedInput('CARD', 'CLOSED_PERIOD');
+      const reversalClearing = input.paymentClearingEntries.find((entry) => entry.type === 'REFUND_REVERSAL');
+      if (!reversalClearing) throw new Error('Expected reversal clearing fixture');
+      reversalClearing.amount = amount;
+      reversalClearing.status = status;
+
+      const health = settlementAuditHealth(input);
+      const mismatchBlockers = health.blockers.filter(
+        (blocker) =>
+          blocker.code === 'REVERSAL_AMOUNT_MISMATCH' || blocker.code === 'REVERSAL_STATUS_MISMATCH',
+      );
+
+      expect(mismatchBlockers.map((blocker) => blocker.code)).toEqual(expectedCodes);
+      expect(mismatchBlockers.find((blocker) => blocker.code === 'REVERSAL_AMOUNT_MISMATCH')?.amount).toBe(
+        expectedAmount,
+      );
+      expect(
+        mismatchBlockers.find((blocker) => blocker.code === 'REVERSAL_STATUS_MISMATCH')?.amount,
+      ).toBeUndefined();
+    },
+  );
 
   it.each(
     ['MOMO', 'CARD', 'VNPAY'].flatMap((paymentMethod) =>
@@ -213,6 +284,64 @@ describe('settlementAuditHealth', () => {
     );
   });
 
+  it('links journal integrity blockers to the exact journal record', () => {
+    const health = settlementAuditHealth({
+      ...baseInput,
+      accountingJournalBatches: [
+        {
+          ...baseInput.accountingJournalBatches![0]!,
+          entries: [
+            { accountCode: 'cash', amount: 600_000, side: 'DEBIT' },
+            { accountCode: 'partner_payable', amount: 500_000, side: 'CREDIT' },
+          ],
+        },
+      ],
+    });
+
+    expect(
+      health.blockers.find((blocker) => blocker.code === 'JOURNAL_ENTRY_UNBALANCED')?.remediationHref,
+    ).toBe('/finance-tax/general-ledger/journal-settlement');
+  });
+
+  it('links reversal blockers to the exact reversal entry and clearing blockers to exact evidence', () => {
+    const reversalInput = reversedInput('CARD', 'CLOSED_PERIOD');
+    const withoutReversalJournal = settlementAuditHealth({
+      ...reversalInput,
+      accountingJournalBatches: baseInput.accountingJournalBatches,
+    });
+    const clearingMismatch = settlementAuditHealth({
+      ...baseInput,
+      paymentClearingEntries: [
+        {
+          ...baseInput.paymentClearingEntries![0]!,
+          amount: 590_000,
+        },
+      ],
+    });
+
+    expect(
+      withoutReversalJournal.blockers.find((blocker) => blocker.code === 'REVERSAL_JOURNAL_MISSING')
+        ?.remediationHref,
+    ).toBe('/finance-tax/settlement-reversals/reversal-entry-card');
+    expect(
+      clearingMismatch.blockers.find((blocker) => blocker.code === 'CLEARING_AMOUNT_MISMATCH')
+        ?.remediationHref,
+    ).toBe('/finance-tax/payment-clearing/clearing-settlement');
+  });
+
+  it('uses filtered evidence lists only when the exact record is absent', () => {
+    const health = settlementAuditHealth({
+      ...baseInput,
+      accountingJournalBatches: [],
+    });
+
+    expect(
+      health.blockers.find((blocker) => blocker.code === 'CANONICAL_JOURNAL_MISSING')?.remediationHref,
+    ).toBe(
+      '/finance-tax/general-ledger?range=all&review=needs-action&source=BOOKING_SETTLEMENT&page=1&take=25',
+    );
+  });
+
   it('uses the coupon-aware allocation formula without subtracting payment processing fees', () => {
     const health = settlementAuditHealth({
       ...baseInput,
@@ -255,6 +384,9 @@ describe('settlementAuditHealth', () => {
         ...baseInput.paymentClearingEntries!,
         {
           amount: -600_000,
+          bankReconciliationMatches: [
+            { amount: -600_000, matchedAt: '2026-08-10T00:01:00.000Z', status: 'MATCHED' },
+          ],
           id: 'clearing-reversal',
           occurredAt: '2026-08-10T00:00:00.000Z',
           status: 'REVERSED',
@@ -298,7 +430,15 @@ describe('settlementAuditHealth', () => {
       ],
       paymentClearingEntries: [
         ...baseInput.paymentClearingEntries!,
-        { amount: -600_000, id: 'clearing-reversal', status: 'REVERSED', type: 'REFUND_REVERSAL' },
+        {
+          amount: -600_000,
+          bankReconciliationMatches: [
+            { amount: -600_000, matchedAt: '2026-09-01T00:01:00.000Z', status: 'MATCHED' },
+          ],
+          id: 'clearing-reversal',
+          status: 'REVERSED',
+          type: 'REFUND_REVERSAL',
+        },
       ],
       reversalEntries: [
         {

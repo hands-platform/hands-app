@@ -1,13 +1,14 @@
 import { AlertTriangle, CreditCard, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react';
 
 import type {
+  AdminMonthlyTaxClosingSummary,
   AdminPaymentFeePolicyPreflight,
   AdminPaymentFeePolicyApproval,
   AdminPaymentFeePolicyVersion,
   AdminPaymentFeeMethodBreakdown,
   AdminPaymentFeeSummary,
 } from '../../../lib/admin-api';
-import { adminGet } from '../../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { hasAdminOperatorCategory } from '../../../lib/admin-operator-access-model';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -15,6 +16,7 @@ import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminSection } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../../components/status-badge';
@@ -25,9 +27,12 @@ import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { PaymentFeePolicyManagement } from './payment-fee-policy-management';
 import {
+  buildMonthlyTaxClosingSummaryApiHref,
+  buildMonthlyTaxCloseoutCommandState,
   buildPaymentFeeExportHref,
   buildPaymentFeeSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
+  emptyMonthlyTaxClosingSummary,
   emptyPaymentFeeSummary,
   paymentFeeHref,
   readBookingSettlementFilters,
@@ -47,17 +52,29 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
   const policyMode = readPaymentFeeParam(params, 'settings') === 'policy';
   const operatorAccess = await getCurrentAdminOperatorAccess();
   const canManagePolicy = hasAdminOperatorCategory(operatorAccess, 'SYSTEM_POLICY');
-  const [summary, policies] = await Promise.all([
+  const [summaryResult, policiesResult, monthlyClosingResult] = await Promise.all([
     policyMode
-      ? Promise.resolve(emptyPaymentFeeSummary(filters.period))
-      : adminGet<AdminPaymentFeeSummary>(
+      ? Promise.resolve({ data: emptyPaymentFeeSummary(filters.period), ok: true, status: 200 })
+      : adminGetResult<AdminPaymentFeeSummary>(
           buildPaymentFeeSummaryApiHref(filters),
           emptyPaymentFeeSummary(filters.period),
         ),
     policyMode && canManagePolicy
-      ? adminGet<AdminPaymentFeePolicyVersion[]>('/admin/payment-fee-policies?take=20', [])
-      : Promise.resolve([]),
+      ? adminGetResult<AdminPaymentFeePolicyVersion[]>('/admin/payment-fee-policies?take=20', [])
+      : Promise.resolve({ data: [], ok: true, status: 200 }),
+    policyMode
+      ? Promise.resolve({ data: emptyMonthlyTaxClosingSummary(filters.period), ok: true, status: 200 })
+      : adminGetResult<AdminMonthlyTaxClosingSummary>(
+          buildMonthlyTaxClosingSummaryApiHref(filters),
+          emptyMonthlyTaxClosingSummary(filters.period),
+        ),
   ]);
+  if (!policyMode && !summaryResult.ok) {
+    return <PaymentFeesUnavailable period={filters.period} status={summaryResult.status} />;
+  }
+  const summary = summaryResult.data;
+  const policies = policiesResult.data;
+  const monthlyClosingSummary = monthlyClosingResult.data;
   const csvHref = buildPaymentFeeExportHref(filters);
   const periodScope = `Period ${filters.period}`;
   const policyReadiness = summary.policyReadiness;
@@ -85,6 +102,19 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
     : [null, null];
   const policyReturnTo = paymentFeePolicyReturnTo(filters.period, selectedDraftId ?? policyId, method);
   const evidenceQueueHref = paymentFeeEvidenceQueueHref(filters.period);
+  const closeoutState = monthlyClosingResult.ok
+    ? buildMonthlyTaxCloseoutCommandState(monthlyClosingSummary)
+    : {
+        detail: 'Monthly closeout status could not be loaded. Payment fee register data remains available.',
+        scope: 'API unavailable',
+        tone: 'danger' as const,
+        value: 'Data unavailable',
+      };
+  const closeoutEligible =
+    monthlyClosingResult.ok &&
+    monthlyClosingSummary.periodState !== 'FUTURE_PERIOD' &&
+    (monthlyClosingSummary.hasActivity ?? true);
+  const showFeeData = !monthlyClosingResult.ok || closeoutEligible;
 
   return (
     <AdminPageTemplate
@@ -102,13 +132,15 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
               withholdingFilters,
             })}
           >
-            <StatusBadgeLink
-              download={`hands-payment-fees-${filters.period}.csv`}
-              href={csvHref}
-              tone="success"
-            >
-              Export payment fee CSV
-            </StatusBadgeLink>
+            {closeoutEligible ? (
+              <StatusBadgeLink
+                download={`hands-payment-fees-${filters.period}.csv`}
+                href={csvHref}
+                tone="success"
+              >
+                Export payment fee CSV
+              </StatusBadgeLink>
+            ) : null}
             {canManagePolicy ? (
               <AdminFormControlLink className="button-outline" href={paymentFeePolicySettingsHref(filters.period)}>
                 Open policy settings
@@ -124,75 +156,75 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
       }
       title={policyMode ? 'Payment Fee Policy' : 'Payment Fees'}
     >
-      {!policyMode ? <FinanceListCommandBoard ariaLabel="Fee command board">
+      {!policyMode ? <FinanceListCommandBoard ariaLabel="Fee command board" className="finance-five-card-command-board">
         <FinanceListCommandCard
-          detail={
-            policyReadiness.status === 'READY'
-              ? `${policyReadiness.configuredMethods.length} payment method rule(s) are active.`
-              : `${policyReadiness.missingMethods.length} payment method rule(s) require configuration.`
-          }
-          href={paymentFeeHref(filters)}
+          detail={closeoutState.detail}
+          href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
           icon={ShieldCheck}
-          label="Applicable policy"
-          scope="Current"
-          tone={paymentFeePolicyReadinessTone(policyReadiness.status)}
-          value={paymentFeePolicyReadinessLabel(policyReadiness.status)}
+          label="Tax closeout"
+          scope={closeoutState.scope}
+          tone={closeoutState.tone}
+          value={closeoutState.value}
         />
-        <FinanceListCommandCard
-          detail={`${summary.settlementCount} posted settlement(s) and ${summary.reversalCount} reversal(s) are netted into this amount.`}
-          href={paymentFeeHref(filters)}
-          icon={CreditCard}
-          label="Net processing fee"
-          scope={periodScope}
-          tone={summary.paymentProcessingFeeTotal > 0 ? 'warning' : 'neutral'}
-          value={<MoneyText amount={summary.paymentProcessingFeeTotal} currency={summary.currency} />}
-        />
-        <FinanceListCommandCard
-          detail={`Net customer payment volume: ${formatMoneyForFeeDetail(summary.customerPaymentAmountTotal, summary.currency)}.`}
-          href={paymentFeeHref(filters)}
-          icon={ReceiptText}
-          label="Effective fee rate"
-          scope={periodScope}
-          tone={summary.paymentProcessingFeeTotal > 0 ? 'info' : 'neutral'}
-          value={formatFinancePercent(
-            summary.paymentProcessingFeeTotal,
-            summary.customerPaymentAmountTotal,
-          )}
-        />
-        <FinanceListCommandCard
-          detail="Posted settlements without retained payment fee policy evidence. Reversal rows are not treated as missing evidence."
-          href={evidenceQueueHref}
-          icon={AlertTriangle}
-          label="Evidence review"
-          scope={remediationPreview.evidenceReviewCount > 0 ? 'Needs action' : periodScope}
-          tone={remediationPreview.evidenceReviewCount > 0 ? 'danger' : 'success'}
-          value={`${remediationPreview.evidenceReviewCount} settlement(s)`}
-        />
-        <FinanceListCommandCard
-          detail={
-            remediationPreview.delta === null
-              ? 'A complete period-covering policy is required before the evidence gap can be calculated.'
-              : 'Expected fee minus recorded fee on evidence-review settlements.'
-          }
-          href={evidenceQueueHref}
-          icon={WalletCards}
-          label="Evidence fee gap"
-          scope={remediationPreview.delta === null ? 'Blocked' : periodScope}
-          tone={
-            remediationPreview.delta === null
-              ? 'warning'
-              : remediationPreview.delta === 0
-                ? 'success'
-                : 'danger'
-          }
-          value={
-            remediationPreview.delta === null ? (
-              'Not calculated'
-            ) : (
-              <MoneyText amount={remediationPreview.delta} currency={summary.currency} />
-            )
-          }
-        />
+        {showFeeData ? (
+          <>
+            <FinanceListCommandCard
+              detail={`${summary.settlementCount} posted settlement(s) and ${summary.reversalCount} reversal(s) are netted into this amount.`}
+              href={paymentFeeHref(filters)}
+              icon={CreditCard}
+              label="Net processing fee"
+              scope={periodScope}
+              tone={summary.paymentProcessingFeeTotal > 0 ? 'warning' : 'neutral'}
+              value={<MoneyText amount={summary.paymentProcessingFeeTotal} currency={summary.currency} />}
+            />
+            <FinanceListCommandCard
+              detail={`Net customer payment volume: ${formatMoneyForFeeDetail(summary.customerPaymentAmountTotal, summary.currency)}.`}
+              href={paymentFeeHref(filters)}
+              icon={ReceiptText}
+              label="Effective fee rate"
+              scope={periodScope}
+              tone={summary.paymentProcessingFeeTotal > 0 ? 'info' : 'neutral'}
+              value={formatFinancePercent(
+                summary.paymentProcessingFeeTotal,
+                summary.customerPaymentAmountTotal,
+              )}
+            />
+            <FinanceListCommandCard
+              detail="Posted settlements without retained payment fee policy evidence. Reversal rows are not treated as missing evidence."
+              href={evidenceQueueHref}
+              icon={AlertTriangle}
+              label="Evidence review"
+              scope={remediationPreview.evidenceReviewCount > 0 ? 'Needs action' : periodScope}
+              tone={remediationPreview.evidenceReviewCount > 0 ? 'danger' : 'success'}
+              value={`${remediationPreview.evidenceReviewCount} settlement(s)`}
+            />
+            <FinanceListCommandCard
+              detail={
+                remediationPreview.delta === null
+                  ? 'A complete period-covering policy is required before the evidence gap can be calculated.'
+                  : 'Expected fee minus recorded fee on evidence-review settlements.'
+              }
+              href={evidenceQueueHref}
+              icon={WalletCards}
+              label="Evidence fee gap"
+              scope={remediationPreview.delta === null ? 'Blocked' : periodScope}
+              tone={
+                remediationPreview.delta === null
+                  ? 'warning'
+                  : remediationPreview.delta === 0
+                    ? 'success'
+                    : 'danger'
+              }
+              value={
+                remediationPreview.delta === null ? (
+                  'Not calculated'
+                ) : (
+                  <MoneyText amount={remediationPreview.delta} currency={summary.currency} />
+                )
+              }
+            />
+          </>
+        ) : null}
       </FinanceListCommandBoard> : null}
 
       {!policyMode ? <AdminFilterPanel
@@ -210,7 +242,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         />
       </AdminFilterPanel> : null}
 
-      {!policyMode ? <FinanceTablePanel
+      {!policyMode && showFeeData ? <FinanceTablePanel
         grouped
         description="This read-only register shows the immutable policy version covering the full selected month. Example rates in tests are not production policy and are never applied from this page."
         resultLabel={paymentFeePolicyReadinessLabel(policyReadiness.status)}
@@ -256,7 +288,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         </FinanceDataTable>
       </FinanceTablePanel> : null}
 
-      {!policyMode ? <FinanceTablePanel
+      {!policyMode && showFeeData ? <FinanceTablePanel
         grouped
         description="Review net payment fee cost and missing policy evidence by payment method. This register is read-only and never changes settlement or journal records."
         resultLabel={remediationPreview.status === 'READY' ? 'Preview ready' : 'Preview blocked'}
@@ -281,7 +313,13 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         </AdminInlineFallback>
       ) : null}
 
-      {policyMode && canManagePolicy ? <PaymentFeePolicyManagement
+      {policyMode && canManagePolicy && !policiesResult.ok ? (
+        <AdminInlineFallback>
+          Payment Fee Policy data is unavailable. Retry this page before reviewing or changing policy settings.
+        </AdminInlineFallback>
+      ) : null}
+
+      {policyMode && canManagePolicy && policiesResult.ok ? <PaymentFeePolicyManagement
         approval={approval}
         confirmationAction={policyConfirmation}
         currentOperator={operatorAccess}
@@ -293,11 +331,34 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         selectedPolicyId={selectedDraftId}
       /> : null}
 
-      {!policyMode ? <PaymentFeeAccountingBreakdownTable
+      {!policyMode && showFeeData ? <PaymentFeeAccountingBreakdownTable
         currency={summary.currency}
         payerRows={summary.byPayer}
         treatmentRows={summary.byTreatment}
       /> : null}
+    </AdminPageTemplate>
+  );
+}
+
+function PaymentFeesUnavailable({ period, status }: { readonly period: string; readonly status: number | null }) {
+  const href = `/finance-tax/payment-fees?${new URLSearchParams({ period }).toString()}`;
+  return (
+    <AdminPageTemplate
+      description={`Payment fee data for ${period} could not be loaded.`}
+      title="Payment Fees"
+    >
+      <AdminSection
+        actions={<AlertTriangle aria-hidden="true" size={18} />}
+        className="admin-mb-16"
+        description="Fee amounts, evidence counts, policy readiness, exports, and success states are hidden until the authoritative summary is available."
+        statusLabel={status ? `API ${status}` : 'API unavailable'}
+        statusTone="danger"
+        title="Payment fee data unavailable"
+      >
+        <AdminFormControlLink className="button-secondary" href={href}>
+          Retry Payment Fees
+        </AdminFormControlLink>
+      </AdminSection>
     </AdminPageTemplate>
   );
 }

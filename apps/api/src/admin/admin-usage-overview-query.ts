@@ -476,8 +476,8 @@ async function queryPeriodSummary(prisma: PrismaService, window: AdminUsageOverv
       (SELECT COUNT(*) FROM booking_period booking WHERE booking."status" = ${BookingStatus.REFUNDED}::"BookingStatus")::bigint AS "refundCount",
       (SELECT COUNT(*) FROM booking_period booking WHERE booking."status" NOT IN (${RESOLVED_BOOKING_STATUS_SQL}))::bigint AS "unresolvedCount",
       (SELECT COUNT(DISTINCT booking."customerProfileId") FROM closed_period booking WHERE booking."status" IN (${BookingStatus.CANCELLED}::"BookingStatus", ${BookingStatus.NO_SHOW}::"BookingStatus", ${BookingStatus.EXPIRED}::"BookingStatus", ${BookingStatus.REFUNDED}::"BookingStatus"))::bigint AS "issueCustomerCount",
-      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt} AND customer_user."fixtureKind" IS NULL)::bigint AS "newCustomerCount",
-      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt} AND customer_user."fixtureKind" IS NULL AND NOT EXISTS (SELECT 1 FROM "Booking" booking WHERE booking."customerProfileId" = customer."id" AND ${usageBookingProductionSql()}))::bigint AS "newUnbookedCustomerCount",
+      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt} AND ${adminUsageProductionCustomerSql()})::bigint AS "newCustomerCount",
+      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt} AND ${adminUsageProductionCustomerSql()} AND NOT EXISTS (SELECT 1 FROM "Booking" booking WHERE booking."customerProfileId" = customer."id" AND ${usageBookingProductionSql()}))::bigint AS "newUnbookedCustomerCount",
       (SELECT COUNT(*) FROM completed_by_customer WHERE count = 1)::bigint AS "firstCompletedCustomerCount",
       (SELECT COUNT(*) FROM completed_by_customer WHERE count >= 2)::bigint AS "repeatCustomerCount",
       (SELECT COUNT(*) FROM completed_by_customer WHERE count >= 3)::bigint AS "vipCustomerCount",
@@ -496,11 +496,11 @@ async function queryCurrentCustomerBase(prisma: PrismaService, now: Date) {
 
   return prisma.$queryRaw<CurrentCustomerBaseRow[]>(Prisma.sql`
     SELECT
-      (SELECT COUNT(*) FROM "CustomerProfile" customer INNER JOIN "User" customer_user ON customer_user.id = customer."userId" WHERE customer_user."fixtureKind" IS NULL AND NOT EXISTS (
+      (SELECT COUNT(*) FROM "CustomerProfile" customer INNER JOIN "User" customer_user ON customer_user.id = customer."userId" WHERE ${adminUsageProductionCustomerSql()} AND NOT EXISTS (
         SELECT 1 FROM "Booking" booking
         WHERE booking."customerProfileId" = customer."id" AND ${usageBookingProductionSql()}
       ))::bigint AS "neverBookedCustomerCount",
-      (SELECT COUNT(*) FROM "CustomerProfile" customer INNER JOIN "User" customer_user ON customer_user.id = customer."userId" WHERE customer_user."fixtureKind" IS NULL AND EXISTS (
+      (SELECT COUNT(*) FROM "CustomerProfile" customer INNER JOIN "User" customer_user ON customer_user.id = customer."userId" WHERE ${adminUsageProductionCustomerSql()} AND EXISTS (
         SELECT 1 FROM "Booking" booking
         WHERE booking."customerProfileId" = customer."id"
           AND booking."status" = ${BookingStatus.COMPLETED}::"BookingStatus"
@@ -872,6 +872,14 @@ function bookingTimestampSql(column: string, window: AdminUsageOverviewWindow) {
 
 function usageBookingProductionSql() {
   return adminBookingVerifiedProductionSql();
+}
+
+export function adminUsageProductionCustomerSql(customerUser = Prisma.sql`customer_user`) {
+  return Prisma.sql`
+    ${customerUser}."fixtureKind" IS NULL
+    AND ${customerUser}."fixtureRunId" IS NULL
+    AND ${customerUser}."fixtureExpiresAt" IS NULL
+  `;
 }
 
 function usageEventProductionSql() {

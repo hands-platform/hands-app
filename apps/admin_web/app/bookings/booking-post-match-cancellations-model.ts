@@ -43,6 +43,13 @@ export type BookingPostMatchCancellationBoard = {
   readonly totalCount: number;
 };
 
+export type BookingPostMatchCancellationTimeDisplay = {
+  readonly ageLabel: 'Resolved' | 'Waiting';
+  readonly ageMinutes: number | null;
+  readonly timestamp: string | null;
+  readonly timestampLabel: 'Decided at' | 'Resolved at' | 'Review started';
+};
+
 export function buildBookingPostMatchCancellationBoard(
   bookings: readonly AdminBooking[],
   nowMs: number,
@@ -159,22 +166,24 @@ function bookingPostMatchCancellationTime(booking: AdminBooking) {
 export function postMatchCancellationDecisionAt(
   booking: AdminBooking | Pick<AdminBookingDetail, 'auditLogs'>,
 ) {
-  return postMatchCancellationAdminDecision(booking)?.decidedAt ?? null;
+  const listDecisionAt =
+    'postMatchCancellationDecisionAt' in booking
+      ? firstValidTimestamp(booking.postMatchCancellationDecisionAt)
+      : null;
+  return listDecisionAt ?? postMatchCancellationAdminDecision(booking)?.decidedAt ?? null;
 }
 
 export function postMatchCancellationReviewStartedAt(
   booking: Pick<AdminBooking, 'closedAt' | 'createdAt' | 'updatedAt'>,
 ) {
-  return booking.closedAt ?? booking.updatedAt ?? booking.createdAt ?? null;
+  return firstValidTimestamp(booking.closedAt, booking.updatedAt, booking.createdAt);
 }
 
 export function postMatchCancellationDecisionAgeMinutes(
   booking: Pick<AdminBooking, 'closedAt' | 'createdAt' | 'updatedAt'>,
   nowMs: number,
 ) {
-  const reviewStartedAt = safeTime(postMatchCancellationReviewStartedAt(booking));
-  if (reviewStartedAt === null || !Number.isFinite(nowMs) || nowMs < reviewStartedAt) return null;
-  return Math.floor((nowMs - reviewStartedAt) / 60_000);
+  return elapsedMinutes(postMatchCancellationReviewStartedAt(booking), nowMs);
 }
 
 export function postMatchCancellationDecisionSla(
@@ -188,6 +197,38 @@ export function postMatchCancellationDecisionSla(
     label: ageMinutes >= POST_MATCH_CANCELLATION_DECISION_SLA_MINUTES ? 'Overdue' : 'Within 2h',
     overdue: ageMinutes >= POST_MATCH_CANCELLATION_DECISION_SLA_MINUTES,
   } as const;
+}
+
+export function postMatchCancellationTimeDisplay(
+  booking: AdminBooking,
+  nowMs: number,
+): BookingPostMatchCancellationTimeDisplay {
+  const source = postMatchCancellationDecisionSource(booking);
+  if (source === 'open') {
+    const timestamp = postMatchCancellationReviewStartedAt(booking);
+    return {
+      ageLabel: 'Waiting',
+      ageMinutes: postMatchCancellationDecisionAgeMinutes(booking, nowMs),
+      timestamp,
+      timestampLabel: 'Review started',
+    };
+  }
+
+  const auditedDecisionAt =
+    source === 'admin-approved' || source === 'admin-held'
+      ? firstValidTimestamp(postMatchCancellationDecisionAt(booking))
+      : null;
+  const persistedResolutionAt =
+    source === 'admin-approved' || source === 'admin-held'
+      ? firstValidTimestamp(booking.updatedAt, booking.closedAt, booking.createdAt)
+      : postMatchCancellationReviewStartedAt(booking);
+  const timestamp = auditedDecisionAt ?? persistedResolutionAt;
+  return {
+    ageLabel: 'Resolved',
+    ageMinutes: elapsedMinutes(timestamp, nowMs),
+    timestamp,
+    timestampLabel: auditedDecisionAt ? 'Decided at' : 'Resolved at',
+  };
 }
 
 export function postMatchCancellationAdminDecision(
@@ -234,4 +275,14 @@ function safeTime(value: string | null | undefined) {
   }
   const time = new Date(value).getTime();
   return Number.isFinite(time) ? time : null;
+}
+
+function firstValidTimestamp(...values: readonly (string | null | undefined)[]) {
+  return values.find((value) => safeTime(value) !== null) ?? null;
+}
+
+function elapsedMinutes(value: string | null | undefined, nowMs: number) {
+  const timestamp = safeTime(value);
+  if (timestamp === null || !Number.isFinite(nowMs) || nowMs < timestamp) return null;
+  return Math.floor((nowMs - timestamp) / 60_000);
 }

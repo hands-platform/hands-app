@@ -15,6 +15,7 @@ import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
+import { formatMoney } from '../../lib/admin-format';
 import type {
   AdminManualWalletAdjustmentOwnerType,
   AdminManualWalletAdjustmentOpenPeriod,
@@ -36,7 +37,7 @@ type PageProps = {
 };
 
 type WorkspaceView = 'records' | 'requests' | 'create';
-type RequestReview = 'awaiting' | 'blocked' | 'recreation' | 'history';
+type RequestReview = 'awaiting' | 'blocked' | 'recreation' | 'aged24h' | 'history';
 
 const PAGE_SIZE_DEFAULT = 10;
 const PAGE_SIZE_MAX = 50;
@@ -82,7 +83,7 @@ const periodStateOptions = [
   { label: 'Legacy · period missing', value: 'true' },
 ];
 
-export const metadata: Metadata = { title: 'Wallet Adjustments | HANDS Admin' };
+export const metadata: Metadata = { title: 'Wallet Adjustments' };
 
 export default async function WalletAdjustmentsPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
@@ -216,7 +217,7 @@ async function RecordsWorkspace({ params }: { params: Record<string, string | st
   if (filters.page > 1) apiParams.set('skip', String((filters.page - 1) * filters.pageSize));
   const summaryParams = recordApiParams(filters);
 
-  const [rowsResult, summaryResult] = await Promise.all([
+  const [rowsResult, summaryResult, selectedRecordResult] = await Promise.all([
     adminGetResult<AdminManualWalletAdjustmentRow[]>(
       `/admin/wallet-adjustments?${apiParams.toString()}`,
       [],
@@ -225,10 +226,16 @@ async function RecordsWorkspace({ params }: { params: Record<string, string | st
       `/admin/wallet-adjustments/summary${summaryParams.size ? `?${summaryParams.toString()}` : ''}`,
       { total: 0 },
     ),
+    selectedRecordId
+      ? adminGetResult<AdminManualWalletAdjustmentRow>(
+          `/admin/wallet-adjustments/${encodeURIComponent(selectedRecordId)}`,
+          emptyRecord(),
+        )
+      : Promise.resolve(null),
   ]);
   const total = summaryResult.ok ? safeTotal(summaryResult.data.total) : 0;
   const pagination = paginationState(rowsResult.data, filters.page, filters.pageSize, total);
-  const selectedRecord = pagination.rows.find((row) => row.id === selectedRecordId) ?? null;
+  const selectedRecord = selectedRecordResult?.ok ? selectedRecordResult.data : null;
 
   return (
     <>
@@ -248,6 +255,7 @@ async function RecordsWorkspace({ params }: { params: Record<string, string | st
             name="recordQ"
             placeholder="Owner, phone, request, ledger or case"
           />
+          <AdminFormDate defaultValue={filters.period} label="Accounting month" labelVisibility="visible" mode="month" name="recordPeriod" />
           <AdminFormSelect
             defaultValue={filters.ownerType ?? ''}
             label="Record wallet owner"
@@ -255,11 +263,6 @@ async function RecordsWorkspace({ params }: { params: Record<string, string | st
             name="recordOwnerType"
             options={ownerOptions}
           />
-          <AdminFormDate defaultValue={filters.period} label="Accounting month" labelVisibility="visible" mode="month" name="recordPeriod" />
-          <AdminFormSelect defaultValue={filters.adjustmentType} label="Adjustment type" labelVisibility="visible" name="recordAdjustmentType" options={adjustmentTypeOptions} />
-          <AdminFormSelect defaultValue={filters.direction} label="Direction" labelVisibility="visible" name="recordDirection" options={directionOptions} />
-          <AdminFormSelect defaultValue={filters.evidence} label="Evidence" labelVisibility="visible" name="recordEvidence" options={evidenceOptions} />
-          <AdminFormSelect defaultValue={filters.periodMissing} label="Period repair" labelVisibility="visible" name="recordPeriodMissing" options={periodStateOptions} />
           <AdminFormSelect
             defaultValue={filters.sort}
             label="Record order"
@@ -272,18 +275,22 @@ async function RecordsWorkspace({ params }: { params: Record<string, string | st
               { label: 'Lowest amount', value: 'amount-low' },
             ]}
           />
-          <AdminFormSelect
-            defaultValue={String(filters.pageSize)}
-            label="Record rows per page"
-            labelVisibility="visible"
-            name="recordPageSize"
-            options={pageSizeOptions}
-          />
           <AdminFormControlButton>Apply record filters</AdminFormControlButton>
           <AdminFormControlLink href="/wallet-adjustments?view=records">Reset all</AdminFormControlLink>
           <AdminDisclosure ariaLabel="Advanced record filters" className="wallet-adjustment-advanced-filters">
             <summary>Advanced record filters</summary>
             <div className="wallet-adjustment-advanced-filter-grid">
+              <AdminFormSelect defaultValue={filters.adjustmentType} label="Adjustment type" labelVisibility="visible" name="recordAdjustmentType" options={adjustmentTypeOptions} />
+              <AdminFormSelect defaultValue={filters.direction} label="Direction" labelVisibility="visible" name="recordDirection" options={directionOptions} />
+              <AdminFormSelect defaultValue={filters.evidence} label="Evidence" labelVisibility="visible" name="recordEvidence" options={evidenceOptions} />
+              <AdminFormSelect defaultValue={filters.periodMissing} label="Period repair" labelVisibility="visible" name="recordPeriodMissing" options={periodStateOptions} />
+              <AdminFormSelect
+                defaultValue={String(filters.pageSize)}
+                label="Record rows per page"
+                labelVisibility="visible"
+                name="recordPageSize"
+                options={pageSizeOptions}
+              />
               <AdminFormDate defaultValue={filters.from} label="Posted from" labelVisibility="visible" name="recordFrom" />
               <AdminFormDate defaultValue={filters.to} label="Posted to" labelVisibility="visible" name="recordTo" />
               <AdminFormInput defaultValue={filters.amountMin} label="Minimum amount" labelVisibility="visible" min="0" name="recordAmountMin" step="1" type="number" />
@@ -356,7 +363,7 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
   if (filters.page > 1) apiParams.set('skip', String((filters.page - 1) * filters.pageSize));
   const summaryParams = requestApiParams(filters);
 
-  const [rowsResult, summaryResult, workspaceSummaryResult, selectedRequestResult] = await Promise.all([
+  const [rowsResult, summaryResult, workspaceSummaryResult, agedSummaryResult, selectedRequestResult] = await Promise.all([
     adminGetResult<AdminManualWalletAdjustmentRequest[]>(
       `/admin/wallet-adjustment-requests?${apiParams.toString()}`,
       [],
@@ -368,6 +375,10 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
     adminGetResult<AdminManualWalletAdjustmentWorkspaceSummary>(
       '/admin/wallet-adjustment-requests/workspace-summary',
       { awaitingApproval: 0, history: 0, needsRecreation: 0, staleOrBlocked: 0 },
+    ),
+    adminGetResult<AdminManualWalletAdjustmentSummary>(
+      '/admin/wallet-adjustment-requests/summary?review=awaiting&age=24h-plus',
+      { total: 0 },
     ),
     selectedRequestId
       ? adminGetResult<AdminManualWalletAdjustmentRequest>(
@@ -384,17 +395,20 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
       <AdminFilterPanel
         className="admin-mb-16"
         description="Track maker/checker lifecycle here. Approval and rejection remain in the Finance Approval Queue."
-        resultLabel={rowsResult.ok && summaryResult.ok && workspaceSummaryResult.ok ? countLabel(total, 'request') : 'Requests unavailable'}
-        resultTone={rowsResult.ok && summaryResult.ok && workspaceSummaryResult.ok ? (total ? 'info' : 'neutral') : 'danger'}
+        resultLabel={rowsResult.ok && summaryResult.ok && workspaceSummaryResult.ok && agedSummaryResult.ok ? countLabel(total, 'request') : 'Requests unavailable'}
+        resultTone={rowsResult.ok && summaryResult.ok && workspaceSummaryResult.ok && agedSummaryResult.ok ? (total ? 'info' : 'neutral') : 'danger'}
         title="Approval request queue"
       >
         <AdminSegmentedControl
           activeValue={filters.review}
           ariaLabel="Wallet adjustment saved views"
           className="admin-mb-12"
-          options={requestSavedViewOptions(workspaceSummaryResult.data)}
+          options={requestSavedViewOptions(workspaceSummaryResult.data, agedSummaryResult.data.total)}
           semantics="tabs"
         />
+        <p className="muted admin-mb-12">
+          Quick views may overlap. All pending is the total backlog. Needs recreation is a subset of Blocked.
+        </p>
         <AdminFormGrid method="get">
           <input name="view" type="hidden" value="requests" />
           <input name="requestReview" type="hidden" value={filters.review} />
@@ -405,15 +419,6 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
             name="requestQ"
             placeholder="Owner, phone, request, reason or case"
           />
-          {filters.review === 'history' ? (
-            <AdminFormSelect
-              defaultValue={filters.status ?? ''}
-              label="History status"
-              labelVisibility="visible"
-              name="requestStatus"
-              options={requestStatusOptions.filter((option) => option.value !== 'REQUESTED')}
-            />
-          ) : null}
           <AdminFormSelect
             defaultValue={filters.ownerType ?? ''}
             label="Request wallet owner"
@@ -421,11 +426,6 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
             name="requestOwnerType"
             options={ownerOptions}
           />
-          <AdminFormDate defaultValue={filters.period} label="Accounting month" labelVisibility="visible" mode="month" name="requestPeriod" />
-          <AdminFormSelect defaultValue={filters.adjustmentType} label="Adjustment type" labelVisibility="visible" name="requestAdjustmentType" options={adjustmentTypeOptions} />
-          <AdminFormSelect defaultValue={filters.direction} label="Direction" labelVisibility="visible" name="requestDirection" options={directionOptions} />
-          <AdminFormSelect defaultValue={filters.evidence} label="Evidence" labelVisibility="visible" name="requestEvidence" options={evidenceOptions} />
-          <AdminFormSelect defaultValue={filters.periodMissing} label="Period repair" labelVisibility="visible" name="requestPeriodMissing" options={periodStateOptions} />
           <AdminFormSelect
             defaultValue={filters.age}
             label="Pending age"
@@ -437,29 +437,43 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
               { label: 'Older than 72 hours', value: '72h-plus' },
             ]}
           />
-          <AdminFormInput defaultValue={filters.blocker} label="Blocker code" labelVisibility="visible" name="requestBlocker" placeholder="e.g. POLICY_MIGRATION_REQUIRED" />
-          <AdminFormSelect
-            defaultValue={filters.sort}
-            label="Request order"
-            labelVisibility="visible"
-            name="requestSort"
-            options={[
-              { label: 'Oldest first', value: 'oldest' },
-              { label: 'Newest first', value: 'newest' },
-            ]}
-          />
-          <AdminFormSelect
-            defaultValue={String(filters.pageSize)}
-            label="Request rows per page"
-            labelVisibility="visible"
-            name="requestPageSize"
-            options={pageSizeOptions}
-          />
           <AdminFormControlButton>Apply request filters</AdminFormControlButton>
           <AdminFormControlLink href="/wallet-adjustments?view=requests">Reset all</AdminFormControlLink>
           <AdminDisclosure ariaLabel="Advanced request filters" className="wallet-adjustment-advanced-filters">
             <summary>Advanced request filters</summary>
             <div className="wallet-adjustment-advanced-filter-grid">
+              {filters.review === 'history' ? (
+                <AdminFormSelect
+                  defaultValue={filters.status ?? ''}
+                  label="History status"
+                  labelVisibility="visible"
+                  name="requestStatus"
+                  options={requestStatusOptions.filter((option) => option.value !== 'REQUESTED')}
+                />
+              ) : null}
+              <AdminFormDate defaultValue={filters.period} label="Accounting month" labelVisibility="visible" mode="month" name="requestPeriod" />
+              <AdminFormSelect defaultValue={filters.adjustmentType} label="Adjustment type" labelVisibility="visible" name="requestAdjustmentType" options={adjustmentTypeOptions} />
+              <AdminFormSelect defaultValue={filters.direction} label="Direction" labelVisibility="visible" name="requestDirection" options={directionOptions} />
+              <AdminFormSelect defaultValue={filters.evidence} label="Evidence" labelVisibility="visible" name="requestEvidence" options={evidenceOptions} />
+              <AdminFormSelect defaultValue={filters.periodMissing} label="Period repair" labelVisibility="visible" name="requestPeriodMissing" options={periodStateOptions} />
+              <AdminFormInput defaultValue={filters.blocker} label="Blocker code" labelVisibility="visible" name="requestBlocker" placeholder="e.g. POLICY_MIGRATION_REQUIRED" />
+              <AdminFormSelect
+                defaultValue={filters.sort}
+                label="Request order"
+                labelVisibility="visible"
+                name="requestSort"
+                options={[
+                  { label: 'Oldest first', value: 'oldest' },
+                  { label: 'Newest first', value: 'newest' },
+                ]}
+              />
+              <AdminFormSelect
+                defaultValue={String(filters.pageSize)}
+                label="Request rows per page"
+                labelVisibility="visible"
+                name="requestPageSize"
+                options={pageSizeOptions}
+              />
               <AdminFormDate defaultValue={filters.from} label="Requested from" labelVisibility="visible" name="requestFrom" />
               <AdminFormDate defaultValue={filters.to} label="Requested to" labelVisibility="visible" name="requestTo" />
               <AdminFormInput defaultValue={filters.amountMin} label="Minimum amount" labelVisibility="visible" min="0" name="requestAmountMin" step="1" type="number" />
@@ -475,7 +489,7 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
         {filters.ownerId ? <ExactOwnerFilterChip id={filters.ownerId} view="requests" /> : null}
       </AdminFilterPanel>
 
-      {!rowsResult.ok || !summaryResult.ok || !workspaceSummaryResult.ok ? (
+      {!rowsResult.ok || !summaryResult.ok || !workspaceSummaryResult.ok || !agedSummaryResult.ok ? (
         <SectionLoadFailure href={requestHref(filters, filters.page)} label="wallet adjustment requests" />
       ) : (
         <>
@@ -488,7 +502,14 @@ async function RequestsWorkspace({ params }: { params: Record<string, string | s
             <FinanceDataTable
               ariaLabel="Wallet adjustment requests"
               emptyMessage="No wallet adjustment requests match these filters."
-              headers={['Requested', 'Wallet owner', 'Adjustment', 'Amount', 'Lifecycle', 'Next action']}
+              headers={[
+                filters.review === 'history' ? 'Decided / executed' : 'Requested',
+                'Wallet owner',
+                'Adjustment',
+                'Amount',
+                'Lifecycle',
+                'Next action',
+              ]}
               rowCount={pagination.rows.length}
               scrollClassName="wallet-adjustment-table-scroll"
             >
@@ -535,7 +556,7 @@ function RecordRow({ detailHref, row }: { readonly detailHref: string; readonly 
       <td><strong><MoneyText amount={row.amount} currency={row.currency} /></strong><small>Delta <MoneyText amount={row.walletDelta} currency={row.currency} /></small></td>
       <td><strong>{balanceChange(row)}</strong><small>{row.monthlyPeriod ? `Accounting month ${row.monthlyPeriod}` : 'Legacy · period missing'}</small></td>
       <td>
-        <span id={detailOpenerId('record', row.id)} tabIndex={-1}><AdminFormControlLink href={detailHref}>Open details</AdminFormControlLink></span>
+        <span id={detailOpenerId('record', row.id)} tabIndex={-1}><AdminFormControlLink aria-label={`Open details for ${row.ownerLabel} (${shortId(row.id)})`} href={detailHref}>Open details</AdminFormControlLink></span>
       </td>
     </tr>
   );
@@ -543,15 +564,21 @@ function RecordRow({ detailHref, row }: { readonly detailHref: string; readonly 
 
 function RequestRow({ detailHref, request }: { readonly detailHref: string; readonly request: AdminManualWalletAdjustmentRequest }) {
   const pending = request.status === 'REQUESTED' || !request.status;
-  const firstBlocker = request.preflight?.blockers?.[0];
+  const firstBlocker = primaryRequestBlocker(request.preflight?.blockers);
   const needsRecreation = Boolean(request.preflight?.blockers?.some((item) => requestNeedsRecreation(item.code)));
   const needsPolicyMigration = Boolean(request.preflight?.blockers?.some((item) => item.code === 'POLICY_MIGRATION_REQUIRED'));
+  const decisionAction = requestDecisionAction(request);
+  const decision = pending ? null : terminalRequestDecision(request);
+  const lifecycleAt = decision?.timestamp ?? request.updatedAt ?? request.createdAt;
   return (
     <tr>
-      <td><strong><DateTimeText value={request.createdAt} /></strong><small>{pending ? requestAge(request.createdAt) : shortId(request.id)}</small></td>
+      <td>
+        <strong><DateTimeText value={lifecycleAt} /></strong>
+        <small>{pending ? requestAge(request.createdAt) : `Requested ${vietnamDateTimeLabel(request.createdAt)}`}</small>
+      </td>
       <td><strong><AdminTextLink href={ownerHref(request.ownerType, request.ownerId)}>{request.ownerName ?? shortId(request.ownerId)}</AdminTextLink></strong><small>{humanizeEnum(request.ownerType)}</small></td>
       <td><StatusBadge tone={request.direction === 'CREDIT' ? 'success' : 'warning'}>{directionLabel(request.direction)}</StatusBadge><small>{humanizeEnum(request.adjustmentType)}</small></td>
-      <td><strong><MoneyText amount={request.amount} currency={request.currency} /></strong><small><MoneyText amount={request.requestedBeforeBalance} currency={request.currency} /> to <MoneyText amount={request.requestedAfterBalance} currency={request.currency} /></small></td>
+      <td><strong><MoneyText amount={request.amount} currency={request.currency} /></strong><small>Before <MoneyText amount={request.requestedBeforeBalance} currency={request.currency} /> · After <MoneyText amount={request.requestedAfterBalance} currency={request.currency} /></small></td>
       <td>
         <StatusBadge tone={needsRecreation ? 'danger' : requestStatusTone(request.status)}>
           {needsPolicyMigration
@@ -563,14 +590,8 @@ function RequestRow({ detailHref, request }: { readonly detailHref: string; read
         <small>{firstBlocker?.message ?? (pending ? 'Separate finance approval required' : request.decisionReason ?? 'Lifecycle evidence stored')}</small>
       </td>
       <td>
-        {pending ? (
-          <AdminFormControlLink
-            href={`/finance-tax/approval-queue?view=wallet&requestId=${encodeURIComponent(request.id)}${needsRecreation ? '&confirm=cancel-wallet' : ''}`}
-          >
-            {needsRecreation ? 'Cancel and recreate' : 'Review in Approval Queue'}
-          </AdminFormControlLink>
-        ) : null}
-        <span id={detailOpenerId('request', request.id)} tabIndex={-1}><AdminFormControlLink className="admin-mt-8" href={detailHref}>Open details</AdminFormControlLink></span>
+        {decisionAction ? <AdminFormControlLink href={decisionAction.href}>{decisionAction.label}</AdminFormControlLink> : null}
+        <span id={detailOpenerId('request', request.id)} tabIndex={-1}><AdminFormControlLink aria-label={`Open details for ${request.ownerName ?? shortId(request.ownerId)} (${shortId(request.id)})`} className="admin-mt-8" href={detailHref}>Open details</AdminFormControlLink></span>
       </td>
     </tr>
   );
@@ -625,6 +646,9 @@ function RecordEvidencePanel({ closeHref, row }: { readonly closeHref: string; r
 
 function RequestEvidencePanel({ closeHref, request }: { readonly closeHref: string; readonly request: AdminManualWalletAdjustmentRequest }) {
   const blockers = request.preflight?.blockers ?? [];
+  const pending = request.status === 'REQUESTED' || !request.status;
+  const decision = pending ? null : terminalRequestDecision(request);
+  const decisionAction = requestDecisionAction(request);
   const focusCloseHref = detailReturnHref(closeHref, detailOpenerId('request', request.id));
   return (
     <WalletAdjustmentDetailPanel closeHref={focusCloseHref} headingId="wallet-adjustment-request-detail-title">
@@ -632,7 +656,11 @@ function RequestEvidencePanel({ closeHref, request }: { readonly closeHref: stri
         <div>
           <p className="admin-eyebrow">Approval request</p>
           <h2 id="wallet-adjustment-request-detail-title" tabIndex={-1}>Request decision evidence</h2>
-          <p>Policy blockers are rechecked by the same server guard before approval or cancellation.</p>
+          <p>
+            {pending
+              ? 'Policy blockers are rechecked by the same server guard before approval or cancellation.'
+              : 'Stored lifecycle facts are shown as recorded when this request was decided.'}
+          </p>
         </div>
         <AdminFormControlLink href={focusCloseHref}>Close details</AdminFormControlLink>
       </div>
@@ -665,6 +693,9 @@ function RequestEvidencePanel({ closeHref, request }: { readonly closeHref: stri
         <EvidenceFact label="Maker" value={request.requestedBy?.fullName ?? request.requestedBy?.email ?? request.requestedByAdminId} />
         <EvidenceFact label="Approver" value={request.approvedBy?.fullName ?? request.approvedBy?.email ?? request.approvedByAdminId ?? 'Not decided'} />
         <EvidenceFact label="Executed ledger" value={request.ledgerEntryId ?? 'No executed ledger'} />
+        {decision ? <EvidenceFact label={decision.timestampLabel} value={vietnamDateTimeLabel(decision.timestamp)} /> : null}
+        {decision ? <EvidenceFact label="Decision actor" value={decision.actor} /> : null}
+        {decision ? <EvidenceFact label="Decision reason" value={request.decisionReason ?? 'Not stored'} /> : null}
       </dl>
       <div className="wallet-adjustment-evidence-columns">
         <EvidenceNarrative
@@ -682,11 +713,7 @@ function RequestEvidencePanel({ closeHref, request }: { readonly closeHref: stri
       </div>
       <AccountingEntries entries={request.accountingPreview} />
       <div className="wallet-adjustment-detail-actions">
-        {(request.status === 'REQUESTED' || !request.status) ? (
-          <AdminFormControlLink href={`/finance-tax/approval-queue?view=wallet&requestId=${encodeURIComponent(request.id)}${blockers.some((item) => requestNeedsRecreation(item.code)) ? '&confirm=cancel-wallet' : ''}`}>
-            {blockers.some((item) => requestNeedsRecreation(item.code)) ? 'Cancel and recreate' : 'Review in Approval Queue'}
-          </AdminFormControlLink>
-        ) : null}
+        {decisionAction ? <AdminFormControlLink href={decisionAction.href}>{decisionAction.label}</AdminFormControlLink> : null}
         {request.status === 'EXECUTED' && request.ledgerEntryId ? (
           <AdminFormControlLink href={`/wallet-adjustments?view=create&reversalOfRequestId=${encodeURIComponent(request.id)}`}>
             Create reversal request
@@ -857,12 +884,13 @@ function recordFilterLabels(filters: RecordFilters) {
 }
 
 function requestFilterLabels(filters: RequestFilters) {
+  const defaultSort = filters.review === 'history' ? 'newest' : 'oldest';
   return compactLabels([
     ...recordFilterLabels({ ...filters, approverId: '', sort: 'newest' }),
     filters.review === 'history' && filters.status && `Status: ${humanizeEnum(filters.status)}`,
-    filters.age && `Age: ${humanizeEnum(filters.age)}`,
+    filters.review !== 'aged24h' && filters.age && `Age: ${humanizeEnum(filters.age)}`,
     filters.blocker && `Blocker: ${filters.blocker}`,
-    filters.sort !== 'oldest' && `Order: ${humanizeEnum(filters.sort)}`,
+    filters.sort !== defaultSort && `Order: ${humanizeEnum(filters.sort)}`,
   ]);
 }
 
@@ -893,9 +921,11 @@ function readRecordFilters(params: Record<string, string | string[] | undefined>
 }
 
 function readRequestFilters(params: Record<string, string | string[] | undefined>): RequestFilters {
+  const review = normalizeRequestReview(readParam(params, 'requestReview'));
+  const requestedSort = readParam(params, 'requestSort');
   return {
     adjustmentType: readParam(params, 'requestAdjustmentType'),
-    age: readParam(params, 'requestAge'),
+    age: review === 'aged24h' ? '24h-plus' : readParam(params, 'requestAge'),
     amountMax: readParam(params, 'requestAmountMax'),
     amountMin: readParam(params, 'requestAmountMin'),
     approverId: '',
@@ -911,8 +941,11 @@ function readRequestFilters(params: Record<string, string | string[] | undefined
     period: readParam(params, 'requestPeriod'),
     periodMissing: readParam(params, 'requestPeriodMissing'),
     q: readParam(params, 'requestQ'),
-    review: normalizeRequestReview(readParam(params, 'requestReview')),
-    sort: readParam(params, 'requestSort') === 'newest' ? 'newest' : 'oldest',
+    review,
+    sort:
+      requestedSort === 'newest' || (requestedSort !== 'oldest' && review === 'history')
+        ? 'newest'
+        : 'oldest',
     status: normalizeRequestStatus(readParam(params, 'requestStatus')),
     to: readParam(params, 'requestTo'),
   };
@@ -940,7 +973,7 @@ function recordApiParams(filters: RecordFilters) {
 
 function requestApiParams(filters: RequestFilters) {
   const params = recordApiParams(filters);
-  params.set('review', filters.review);
+  params.set('review', filters.review === 'aged24h' ? 'awaiting' : filters.review);
   if (filters.review === 'history' && filters.status) params.set('status', filters.status);
   setQuery(params, 'age', filters.age);
   setQuery(params, 'blocker', filters.blocker);
@@ -961,7 +994,8 @@ function requestHref(filters: RequestFilters, page: number) {
   const href = new URL(filteredHref('requests', filters, page), 'http://admin.local');
   href.searchParams.set('requestReview', filters.review);
   if (filters.review === 'history' && filters.status) href.searchParams.set('requestStatus', filters.status);
-  if (filters.sort !== 'oldest') href.searchParams.set('requestSort', filters.sort);
+  const defaultSort = filters.review === 'history' ? 'newest' : 'oldest';
+  if (filters.sort !== defaultSort) href.searchParams.set('requestSort', filters.sort);
   setQuery(href.searchParams, 'requestAge', filters.age);
   setQuery(href.searchParams, 'requestBlocker', filters.blocker);
   return `${href.pathname}?${href.searchParams.toString()}`;
@@ -1039,7 +1073,9 @@ function normalizeRequestStatus(value: string): AdminManualWalletAdjustmentReque
 }
 
 function normalizeRequestReview(value: string): RequestReview {
-  return value === 'blocked' || value === 'recreation' || value === 'history' ? value : 'awaiting';
+  return value === 'blocked' || value === 'recreation' || value === 'aged24h' || value === 'history'
+    ? value
+    : 'awaiting';
 }
 
 function readParam(params: Record<string, string | string[] | undefined>, key: string) {
@@ -1074,7 +1110,7 @@ function humanizeEnum(value: string) {
 
 function balanceChange(row: AdminManualWalletAdjustmentRow) {
   if (typeof row.beforeBalance !== 'number' || typeof row.afterBalance !== 'number') return 'Balance snapshot unavailable';
-  return `${new Intl.NumberFormat('en-US').format(row.beforeBalance)} to ${new Intl.NumberFormat('en-US').format(row.afterBalance)} VND`;
+  return `Before ${formatMoney(row.beforeBalance, row.currency)} · After ${formatMoney(row.afterBalance, row.currency)}`;
 }
 
 function safeEvidenceUrl(value?: string | null) {
@@ -1088,15 +1124,15 @@ function safeEvidenceUrl(value?: string | null) {
 }
 
 function moneyLabel(value: number | null | undefined, currency: string) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return 'Not stored';
-  return `${new Intl.NumberFormat('en-US').format(value)} ${currency}`;
+  return formatMoney(value, currency, 'Not stored');
 }
 
-function requestSavedViewOptions(summary: AdminManualWalletAdjustmentWorkspaceSummary) {
+function requestSavedViewOptions(summary: AdminManualWalletAdjustmentWorkspaceSummary, aged24h: number) {
   return [
-    { href: '/wallet-adjustments?view=requests&requestReview=awaiting', label: `Awaiting approval · ${safeTotal(summary.awaitingApproval)}`, value: 'awaiting' },
-    { href: '/wallet-adjustments?view=requests&requestReview=blocked', label: `Stale or blocked · ${safeTotal(summary.staleOrBlocked)}`, value: 'blocked' },
+    { href: '/wallet-adjustments?view=requests&requestReview=awaiting', label: `All pending · ${safeTotal(summary.awaitingApproval)}`, value: 'awaiting' },
+    { href: '/wallet-adjustments?view=requests&requestReview=blocked', label: `Blocked · ${safeTotal(summary.staleOrBlocked)}`, value: 'blocked' },
     { href: '/wallet-adjustments?view=requests&requestReview=recreation', label: `Needs recreation · ${safeTotal(summary.needsRecreation)}`, value: 'recreation' },
+    { href: '/wallet-adjustments?view=requests&requestReview=aged24h&requestAge=24h-plus', label: `Aged 24h+ · ${safeTotal(aged24h)}`, value: 'aged24h' },
     { href: '/wallet-adjustments?view=requests&requestReview=history', label: `History · ${safeTotal(summary.history)}`, value: 'history' },
   ] as const;
 }
@@ -1110,10 +1146,48 @@ const REQUEST_RECREATION_BLOCKERS = new Set([
   'WALLET_ADJUSTMENT_PERIOD_NOT_FOUND',
   'WALLET_ADJUSTMENT_PERIOD_NOT_OPEN',
   'WALLET_ADJUSTMENT_PERIOD_REQUIRED',
+  'WALLET_BALANCE_CHANGED',
 ]);
 
 function requestNeedsRecreation(code: string) {
   return REQUEST_RECREATION_BLOCKERS.has(code);
+}
+
+function primaryRequestBlocker(
+  blockers?: readonly { readonly code: string; readonly message: string }[],
+) {
+  return blockers?.reduce<(typeof blockers)[number] | undefined>((selected, blocker) => {
+    if (!selected) return blocker;
+    return requestBlockerPriority(blocker.code) < requestBlockerPriority(selected.code)
+      ? blocker
+      : selected;
+  }, undefined);
+}
+
+function requestBlockerPriority(code: string) {
+  if (code === 'POLICY_MIGRATION_REQUIRED') return 1;
+  if (code === 'WALLET_BALANCE_CHANGED' || code.startsWith('WALLET_ADJUSTMENT_PERIOD_')) return 2;
+  if (code === 'ATTACHMENT_REQUIRED' || code === 'REQUEST_INVALID') return 3;
+  if (code === 'MAKER_CANNOT_APPROVE' || code === 'FINANCE_APPROVER_REQUIRED') return 5;
+  return 4;
+}
+
+function requestDecisionAction(request: AdminManualWalletAdjustmentRequest) {
+  if (request.status && request.status !== 'REQUESTED') return null;
+  const preflight = request.preflight;
+  if (!preflight) return null;
+  const baseHref = `/finance-tax/approval-queue?view=wallet&requestId=${encodeURIComponent(request.id)}`;
+  const needsRecreation = preflight.blockers.some((item) => requestNeedsRecreation(item.code));
+  if (preflight.canCancel === true) {
+    return { href: `${baseHref}&confirm=cancel-wallet`, label: 'Cancel and recreate' };
+  }
+  if (preflight.canReject === true && needsRecreation) {
+    return { href: baseHref, label: 'Reject in Approval Queue' };
+  }
+  if (preflight.canApprove === true || preflight.canReject === true) {
+    return { href: baseHref, label: 'Review in Approval Queue' };
+  }
+  return null;
 }
 
 function requestAge(createdAt: string) {
@@ -1136,6 +1210,39 @@ function requestStatusTone(status?: AdminManualWalletAdjustmentRequestStatus): '
   if (status === 'REJECTED') return 'danger';
   if (status === 'CANCELLED') return 'neutral';
   return 'warning';
+}
+
+function terminalRequestDecision(request: AdminManualWalletAdjustmentRequest) {
+  if (request.status === 'EXECUTED') {
+    return {
+      actor: request.approvedBy?.fullName ?? request.approvedBy?.email ?? request.approvedByAdminId ?? 'Not stored',
+      timestamp: request.executedAt,
+      timestampLabel: 'Executed at',
+    };
+  }
+  if (request.status === 'REJECTED') {
+    return {
+      actor: request.rejectedBy?.fullName ?? request.rejectedBy?.email ?? request.rejectedByAdminId ?? 'Not stored',
+      timestamp: request.rejectedAt,
+      timestampLabel: 'Rejected at',
+    };
+  }
+  return {
+    actor: request.requestedBy?.fullName ?? request.requestedBy?.email ?? request.requestedByAdminId,
+    timestamp: request.updatedAt,
+    timestampLabel: 'Cancelled at',
+  };
+}
+
+function vietnamDateTimeLabel(value?: string | null) {
+  if (!value) return 'Not stored';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Not stored';
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'medium',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(date);
 }
 
 function emptyPolicy(): AdminManualWalletAdjustmentPolicy {
@@ -1163,6 +1270,23 @@ function emptyRequest(): AdminManualWalletAdjustmentRequest {
     requestedByAdminId: '',
     requiresAttachment: false,
     status: 'CANCELLED',
+  };
+}
+
+function emptyRecord(): AdminManualWalletAdjustmentRow {
+  return {
+    adjustmentType: 'ERROR_CORRECTION',
+    amount: 0,
+    currency: 'VND',
+    direction: 'CREDIT',
+    id: '',
+    ledgerType: 'ADMIN_ADJUSTMENT',
+    ownerId: '',
+    ownerLabel: '',
+    ownerPhone: 'Phone unavailable',
+    ownerType: 'CUSTOMER',
+    sourceKey: '',
+    walletDelta: 0,
   };
 }
 

@@ -2,6 +2,7 @@ import { readSearchParam } from '../../lib/date-range';
 
 const CHAT_ARCHIVE_DEFAULT_TAKE = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;
+export const CHAT_ARCHIVE_QUERY_MAX_LENGTH = 120;
 
 export type ChatArchiveDateRange = 'all' | 'today' | '7d' | '30d' | 'custom';
 
@@ -55,6 +56,7 @@ export function buildChatArchiveLoadPlan(
     !isAllowedChatArchiveSender(readSearchParam(params.sender)) ||
     !isAllowedChatArchiveRange(readSearchParam(params.range)) ||
     !isAllowedChatArchiveSort(readSearchParam(params.sort));
+  const queryNeedsCanonicalRedirect = readSearchParam(params.q) !== filters.q;
 
   return {
     activePage: pageState.page,
@@ -67,6 +69,7 @@ export function buildChatArchiveLoadPlan(
     filters,
     needsCanonicalFilterRedirect:
       hasUnknownFilter ||
+      queryNeedsCanonicalRedirect ||
       (dateFilters.range !== 'custom' && Boolean(readSearchParam(params.from) || readSearchParam(params.to))),
     needsCanonicalPageRedirect: pageState.needsCanonicalRedirect,
     validationError,
@@ -77,11 +80,15 @@ export function readChatArchiveFilters(
   params: Record<string, string | string[] | undefined>,
 ): ChatArchiveFilters {
   return {
-    q: readSearchParam(params.q).trim(),
+    q: normalizeChatArchiveQuery(readSearchParam(params.q)),
     sender: normalizeChatArchiveSender(readSearchParam(params.sender)),
     sort: readSearchParam(params.sort).trim().toLowerCase() === 'oldest' ? 'oldest' : 'newest',
     status: normalizeChatArchiveStatus(readSearchParam(params.status)),
   };
+}
+
+export function normalizeChatArchiveQuery(value: string) {
+  return value.trim().slice(0, CHAT_ARCHIVE_QUERY_MAX_LENGTH);
 }
 
 function readChatArchiveDateFilters(

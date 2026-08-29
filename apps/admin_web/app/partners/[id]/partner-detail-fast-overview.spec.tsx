@@ -54,6 +54,7 @@ describe('PartnerDetailFastOverview', () => {
 
     expect(props).toMatchObject({
       accountControlsHref: '/partner-controls?details=sanctions&q=partner-1',
+      actionIssueCount: 2,
       fullHref: '/partners/partner-1?section=full',
       partnerName: 'Partner One',
     });
@@ -67,6 +68,58 @@ describe('PartnerDetailFastOverview', () => {
       'History & controls',
     ]);
     expect(props).not.toHaveProperty('overviewCards');
+  });
+
+  it('keeps the total root-issue count when the command list is capped at five', () => {
+    const view = PartnerDetailFastOverview({
+      bookingArchive: [],
+      cashDebt: 120_000,
+      dispatchPolicy: {
+        backupRadiusMeters: 10_000,
+        locationFreshnessMinutes: 90,
+        responseWindowMinutes: 10,
+      },
+      kycEvidence: {
+        allRequiredApproved: false,
+        missingDocuments: ['CCCD front', 'CCCD back'],
+        nextAction: 'Upload required identity documents.',
+      },
+      payoutOps: {
+        blockers: ['Bank MISSING.'],
+        hold: { reason: 'Manual payout review' },
+        status: 'BLOCKED',
+        tone: 'blocked',
+      },
+      provider: {
+        appActivitySummary: { activityStatus: 'never_tracked' },
+        blockedAt: '2026-08-29T00:00:00.000Z',
+        blockedReason: 'Identity review',
+        city: 'Ho Chi Minh City',
+        devices: [],
+        displayName: 'Partner One',
+        id: 'partner-1',
+        participants: [],
+        status: 'ONLINE_AVAILABLE',
+        user: {
+          createdAt: '2026-07-01T00:00:00.000Z',
+          phone: '+84900000000',
+        },
+        verification: { status: 'DRAFT' },
+      } as unknown as ProviderDetail,
+      servicePricing: { readyCount: 0, rows: [] },
+    });
+
+    const props = readRecord(readRecord(view)?.props);
+    const actions = props?.actionItems as readonly Record<string, unknown>[];
+
+    expect(props?.actionIssueCount).toBe(9);
+    expect(actions).toHaveLength(5);
+    expect(actions.find((action) => action.id === 'kyc-approval')?.href).toBe(
+      '/partners/partner-1?section=dossier&dossier=evidence#documents',
+    );
+    expect(actions.find((action) => action.id === 'bookable-services')?.href).toBe(
+      '/partners/partner-1?section=dossier&dossier=evidence#service-pricing',
+    );
   });
 });
 

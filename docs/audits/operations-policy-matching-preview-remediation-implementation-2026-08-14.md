@@ -102,7 +102,7 @@
 - FAIL, unrelated: API scope는 기존 Push campaign persistence test 1건 실패. 결과는 2401 passed, 11 skipped이며 API typecheck/lint/build는 계속 통과.
 - FAIL, unrelated: Admin scope는 shared notice CSS expectation, company-bank navigation expectation, 날짜 고정 Finance Closeout age expectation 3건 실패.
 - `verify:local` 완료: API/Admin/public web build, Admin/API typecheck, customer/provider Flutter analyze/test 통과. Docker service smoke는 환경상 skipped.
-- `verify:local` 기존 실패: external setup/authority/Vietnam scope/API domain smoke/Supabase schema/Admin full test. 주요 근거는 누락된 deferred setup copy/authority marker, 문서의 Bangkok 문자열, API domain assertion, `FINANCE_EVIDENCE` SQL enum alignment, 위 Admin 3 tests다.
+- `verify:local` 기존 실패: external setup/authority/Vietnam scope/API domain smoke/Supabase schema/Admin full test. 주요 근거는 누락된 deferred setup copy/authority marker, 문서의 비표준 Vietnam timezone 문자열, API domain assertion, `FINANCE_EVIDENCE` SQL enum alignment, 위 Admin 3 tests다.
 - Impeccable detector는 마지막에 한 번 실행했다. 현재 task selector가 아닌 전역 `globals.css`의 기존 side-tab 패턴 6건만 warning으로 보고해 exit 1이었다.
 
 ## 브라우저 증거
@@ -150,4 +150,3 @@
 ## 다음 권장 작업
 
 - 별도 작업에서 실제 운영 데이터를 변경하지 않는 fixture seam으로 production Ready, exact blocked, unavailable, 403의 브라우저 visual regression을 자동화한다. Proposed-policy what-if 비교는 현재 read-only preview 위에 별도 기능으로 설계한다.
-

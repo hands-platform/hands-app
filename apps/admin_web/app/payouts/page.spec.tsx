@@ -8,6 +8,7 @@ import type {
   AdminOperationalPolicySetting,
   AdminPayoutBatch,
   AdminPayoutBatchSummary,
+  AdminProviderWalletWithdrawalRequest,
 } from '../../lib/admin-api';
 import { adminGet, adminGetResult } from '../../lib/admin-api';
 import PayoutsPage from './page';
@@ -104,6 +105,8 @@ describe('PayoutsPage', () => {
     expect(markup).toContain('Reconciliation');
     expect(markup).not.toContain('Payout batch release policy desk');
     expect(markup).not.toContain('Payout inclusion audit');
+    expect(markup).toContain('Created date range');
+    expect(markup).toContain('aria-label="Payout created date range"');
   });
 
   it('keeps batch, withdrawal, and reconciliation row reads in separate views', async () => {
@@ -187,6 +190,91 @@ describe('PayoutsPage', () => {
     );
     expect(markup).toContain('Start payout off-page processing?');
     expect(markup).toContain('Off Page Partner');
+  });
+
+  it('renders an off-page payout batch as the exact hash target without opening a confirmation', async () => {
+    const offPageBatch = {
+      createdAt: '2026-08-10T01:00:00.000Z',
+      currency: 'VND',
+      earnings: [],
+      id: 'off-page-payout-evidence',
+      providerProfile: {
+        displayName: 'Exact Payout Partner',
+        user: { fullName: 'Exact Payout Partner', phone: '+84900009999' },
+      },
+      providerProfileId: 'exact-payout-partner',
+      status: 'PROCESSING',
+      totalNetAmount: 420000,
+      transferRef: 'VCB-EXACT-PAYOUT',
+      withholdingLogs: [],
+    } as AdminPayoutBatch;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/payout-batches/off-page-payout-evidence' ? offPageBatch : fallback,
+    );
+
+    const markup = renderToStaticMarkup(await PayoutsPage({
+      searchParams: Promise.resolve({ payoutBatchId: offPageBatch.id }),
+    }));
+
+    expect(markup).toContain('id="payout-batch-off-page-payout-evidence"');
+    expect(markup).toContain('Exact Payout Partner');
+    expect(markup).toContain('420.000 VND');
+    expect(markup).not.toContain('No other batch was selected');
+  });
+
+  it('renders an off-page withdrawal as the exact hash target', async () => {
+    const withdrawal = {
+      amount: 310000,
+      bankAccount: {
+        accountHolderName: 'Exact Withdrawal Partner',
+        accountNumberMasked: '****7788',
+        bankName: 'VCB',
+        id: 'bank-exact',
+        isPrimary: true,
+        status: 'APPROVED',
+      },
+      bankAccountId: 'bank-exact',
+      createdAt: '2026-08-10T01:00:00.000Z',
+      currency: 'VND',
+      id: 'off-page-withdrawal-evidence',
+      providerProfile: {
+        displayName: 'Exact Withdrawal Partner',
+        user: { phone: '+84900007788' },
+      },
+      providerProfileId: 'exact-withdrawal-partner',
+      status: 'BANK_TRANSFER_PENDING',
+    } as AdminProviderWalletWithdrawalRequest;
+    const exactHref =
+      '/admin/provider-wallet/withdrawal-requests?range=all&take=1&id=off-page-withdrawal-evidence';
+    mockedAdminGet.mockImplementation(async (href, fallback) => href === exactHref ? [withdrawal] : fallback);
+
+    const markup = renderToStaticMarkup(await PayoutsPage({
+      searchParams: Promise.resolve({
+        view: 'withdrawals',
+        withdrawalId: withdrawal.id,
+        withdrawalStatus: withdrawal.status,
+      }),
+    }));
+
+    expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toContain(exactHref);
+    expect(markup).toContain('id="withdrawal-off-page-withdrawal-evidence"');
+    expect(markup).toContain('Exact Withdrawal Partner');
+    expect(markup).toContain('310.000 VND');
+    expect(markup).not.toContain('No other withdrawal was selected');
+  });
+
+  it('fails closed when an exact payout or withdrawal id is invalid or unavailable', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const invalidPayoutMarkup = renderToStaticMarkup(await PayoutsPage({
+      searchParams: Promise.resolve({ payoutBatchId: '../bad' }),
+    }));
+    const missingWithdrawalMarkup = renderToStaticMarkup(await PayoutsPage({
+      searchParams: Promise.resolve({ view: 'withdrawals', withdrawalId: 'missing-withdrawal' }),
+    }));
+
+    expect(invalidPayoutMarkup).toContain('No other batch was selected');
+    expect(missingWithdrawalMarkup).toContain('No other withdrawal was selected');
   });
 
   it('uses the exact post-payment repair count for reconciliation pagination', () => {
@@ -478,6 +566,25 @@ describe('PayoutsPage', () => {
     expect(source).toContain("filters.recon === 'payout-closeout-repair'");
   });
 
+  it('offers only authoritative repair evidence filters with existing date and amount sorts', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const markup = renderToStaticMarkup(await PayoutsPage({
+      searchParams: Promise.resolve({
+        recon: 'payout-closeout-repair',
+        view: 'reconciliation',
+      }),
+    }));
+
+    expect(markup).toContain('name="evidence"');
+    expect(markup).toContain('Missing transfer reference');
+    expect(markup).toContain('Withholding incomplete');
+    expect(markup).toContain('Wallet ledger mismatch');
+    expect(markup).toContain('Posted GL journal missing');
+    expect(markup).toContain('Oldest first');
+    expect(markup).toContain('Highest amount');
+  });
+
   it('does not mix a withdrawal saved view with payout batch rows', async () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
@@ -488,5 +595,55 @@ describe('PayoutsPage', () => {
 
     expect(markup).toContain('No rows in selected filter');
     expect(markup).not.toContain('Payout batch list');
+  });
+
+  it('keeps a bank-transfer-pending saved view in the native Apply filters form', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const markup = renderToStaticMarkup(await PayoutsPage({
+      searchParams: Promise.resolve({
+        pageSize: '25',
+        q: 'VCB pending',
+        range: '7d',
+        sort: 'amount-desc',
+        view: 'withdrawals',
+        withdrawalStatus: 'BANK_TRANSFER_PENDING',
+      }),
+    }));
+
+    expect(markup).toContain('type="hidden" name="withdrawalStatus" value="BANK_TRANSFER_PENDING"');
+    expect(markup).toContain('type="hidden" name="pageSize" value="25"');
+    expect(markup).toContain('placeholder="Search records" type="search" name="q" value="VCB pending"');
+    expect(markup).toContain('value="amount-desc" selected=""');
+  });
+
+  it('preserves withdrawal search, sort, saved scope, and page size across range and pagination links', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/provider-wallet/withdrawal-requests/summary?range=30d&q=VCB+123&providerProfileId=partner-1&reconciliation=unmatched&status=PAID') {
+        return { filteredTotal: 51 } as never;
+      }
+      return fallback;
+    });
+
+    const markup = renderToStaticMarkup(await PayoutsPage({
+      searchParams: Promise.resolve({
+        pageSize: '25',
+        q: 'VCB 123',
+        range: '30d',
+        sort: 'amount-desc',
+        view: 'withdrawals',
+        withdrawalPage: '2',
+        withdrawalPartnerId: 'partner-1',
+        withdrawalReconciliation: 'unmatched',
+        withdrawalStatus: 'PAID',
+      }),
+    }));
+
+    expect(markup).toContain(
+      'href="/payouts?view=withdrawals&amp;q=VCB+123&amp;sort=amount-desc&amp;withdrawalStatus=PAID&amp;withdrawalPartnerId=partner-1&amp;withdrawalReconciliation=unmatched&amp;pageSize=25"',
+    );
+    expect(markup).toContain(
+      'href="/payouts?view=withdrawals&amp;range=30d&amp;q=VCB+123&amp;sort=amount-desc&amp;withdrawalStatus=PAID&amp;withdrawalPartnerId=partner-1&amp;withdrawalReconciliation=unmatched&amp;withdrawalPage=3&amp;pageSize=25#partner-wallet-withdrawal-requests"',
+    );
   });
 });

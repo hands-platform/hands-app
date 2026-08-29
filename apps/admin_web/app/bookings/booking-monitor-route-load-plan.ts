@@ -1,4 +1,6 @@
 import { OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
+import { COMPLETED_BOOKING_DEFAULT_VIEW } from './booking-monitor-options';
+import { readBookingDateRangeFilter } from './booking-page-params';
 import { readPostMatchCancellationReasonFilter } from './booking-post-match-cancellation-reason';
 
 export type BookingMonitorRouteKind = 'all' | 'completed' | 'postMatchCancellations';
@@ -54,8 +56,7 @@ function bookingSummaryApiPath(
   }
 
   const searchParams = new URLSearchParams();
-  const dateRange = readSingleSearchParam(params?.dateRange) ??
-    (kind === 'postMatchCancellations' ? '30d' : 'today');
+  const dateRange = bookingDateRange(params, kind);
   if (kind === 'postMatchCancellations') {
     searchParams.set('dateRange', dateRange);
     if (dateRange === 'custom') {
@@ -85,8 +86,7 @@ function bookingListApiPath(
   kind: BookingMonitorRouteKind,
 ) {
   const searchParams = new URLSearchParams();
-  const dateRange = readSingleSearchParam(params?.dateRange) ??
-    (kind === 'postMatchCancellations' ? '30d' : 'today');
+  const dateRange = bookingDateRange(params, kind);
   const view = readSingleSearchParam(params?.view);
   const statusGroup = bookingListStatusGroup(kind, view);
   const page = readPositiveInteger(readSingleSearchParam(params?.page)) ?? 1;
@@ -164,7 +164,8 @@ function bookingListStatusGroup(kind: BookingMonitorRouteKind, view?: string) {
         expired: 'completed-expired',
         all: 'completed',
       };
-      return statusGroups[view ?? 'closeout'] ?? 'completed-closeout';
+      return statusGroups[view ?? COMPLETED_BOOKING_DEFAULT_VIEW] ??
+        statusGroups[COMPLETED_BOOKING_DEFAULT_VIEW];
     }
     case 'postMatchCancellations': {
       const statusGroups: Record<string, string> = {
@@ -200,6 +201,18 @@ function bookingListStatusGroup(kind: BookingMonitorRouteKind, view?: string) {
 function bookingListUsesDateRange(kind: BookingMonitorRouteKind, view?: string) {
   if (kind === 'postMatchCancellations') return view === 'post-match-cancellations';
   return kind === 'completed' || BOOKING_HISTORY_VIEWS.has(view ?? '');
+}
+
+function bookingDateRange(
+  params: Record<string, string | string[] | undefined> | undefined,
+  kind: BookingMonitorRouteKind,
+) {
+  if (kind === 'completed') return readBookingDateRangeFilter(params?.dateRange);
+  if (kind === 'postMatchCancellations') {
+    return readBookingDateRangeFilter(params?.dateRange, '30d');
+  }
+  return readSingleSearchParam(params?.dateRange) ??
+    'today';
 }
 
 function bookingCreateRejectionAuditPath() {

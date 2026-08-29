@@ -201,6 +201,7 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('Report generated');
     expect(markup).toContain('Through');
     expect(markup).not.toContain('Verification incomplete');
+    expect(markup).not.toContain('usage-overview-data-health-item is-warning');
     expect(pageSource).not.toContain("].join(' · ')");
   });
 
@@ -228,7 +229,113 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('3 unknown rows excluded');
     expect(markup).toContain('Usage exceeds the 48-hour freshness threshold');
     expect(markup).toContain('Delayed');
+    expect(markup).toContain('usage-overview-data-health-item is-warning');
+    expect(markup).toContain('aria-hidden="true"');
   });
+
+  it('limits every booking-derived zero to the verified subset when booking provenance is incomplete', async () => {
+    const overview = emptyUsageOverview('30d');
+    mockedAdminGet.mockResolvedValue({
+      ...overview,
+      customerLifecycle: {
+        ...overview.customerLifecycle,
+        newCustomerCount: 1,
+      },
+      freshness: {
+        ...overview.freshness,
+        usageAggregatedThroughAt: '2026-08-26T03:30:00.000Z',
+        usageStatus: 'fresh',
+      },
+      provenance: {
+        booking: 'incomplete',
+        unknownBookingCount: 646,
+        unknownUsageAggregateCount: 0,
+        usage: 'guaranteed',
+      },
+    });
+
+    const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range: '30d' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).not.toContain('Cohort reconciled');
+    expect(markup).toContain('Verified cohort only');
+    expect(markup).not.toMatch(/Booking records created[\s\S]{0,500}No change vs previous equal period/);
+    expect(markup).not.toMatch(/Unresolved booking records[\s\S]{0,500}No change vs previous equal period/);
+    expect(markup).not.toContain('>Never booked<');
+    expect(markup).not.toContain('>No service demand in this period.<');
+    expect(markup).not.toContain('>No regional booking demand in this period.<');
+    expect(markup).toContain('No verified production booking');
+    expect(markup).toContain('No verified production service demand in this period.');
+    expect(markup).toContain('No verified production regional booking demand in this period.');
+    expect(markup).toContain('Verified subset only · 646 unverified records excluded');
+    expect(markup).toContain('Source incomplete · 646 unverified records excluded');
+    expect(markup).toContain('0 verified');
+    expect(markup).toContain('usage-overview-data-health-item is-warning');
+  });
+
+  it('keeps established booking copy unchanged when booking provenance is guaranteed', async () => {
+    const overview = emptyUsageOverview('30d');
+    mockedAdminGet.mockResolvedValue({
+      ...overview,
+      customerLifecycle: {
+        ...overview.customerLifecycle,
+        newCustomerCount: 1,
+      },
+      provenance: {
+        ...overview.provenance,
+        booking: 'guaranteed',
+        unknownBookingCount: 0,
+      },
+    });
+
+    const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range: '30d' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Cohort reconciled');
+    expect(markup).toContain('No change vs previous equal period');
+    expect(markup).toContain('>Never booked<');
+    expect(markup).toContain('>No service demand in this period.<');
+    expect(markup).toContain('>No regional booking demand in this period.<');
+    expect(markup).not.toContain('Verified cohort only');
+    expect(markup).not.toContain('0 verified');
+  });
+
+  it.each([
+    ['usage unavailable with booking guaranteed', 'failed', 'guaranteed', false, true],
+    ['usage available with booking incomplete', 'fresh', 'incomplete', true, false],
+    ['usage unavailable with booking incomplete', 'failed', 'incomplete', false, false],
+    ['usage available with booking guaranteed', 'fresh', 'guaranteed', true, true],
+  ] as const)(
+    'keeps usage availability independent from booking provenance: %s',
+    async (_label, usageStatus, booking, showsUsageValue, showsReconciledCohort) => {
+      const overview = emptyUsageOverview('7d');
+      mockedAdminGet.mockResolvedValue({
+        ...overview,
+        freshness: {
+          ...overview.freshness,
+          usageAggregatedThroughAt: usageStatus === 'fresh' ? '2026-08-26T03:30:00.000Z' : null,
+          usageStatus,
+        },
+        provenance: {
+          booking,
+          unknownBookingCount: booking === 'incomplete' ? 9 : 0,
+          unknownUsageAggregateCount: usageStatus === 'failed' ? 2 : 0,
+          usage: usageStatus === 'failed' ? 'incomplete' : 'guaranteed',
+        },
+        totals: {
+          ...overview.totals,
+          activeCustomerCount: 17,
+        },
+      });
+
+      const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range: '7d' }) });
+      const markup = renderToStaticMarkup(page);
+
+      expect(markup.includes('>17<')).toBe(showsUsageValue);
+      expect(markup.includes('Cohort reconciled')).toBe(showsReconciledCohort);
+      expect(markup.includes('Verified cohort only')).toBe(!showsReconciledCohort);
+    },
+  );
 
   it('renders usage values as unavailable while retaining independent booking activity', async () => {
     const overview = emptyUsageOverview('7d');
@@ -295,6 +402,46 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('Bookings created');
     expect(markup).toContain('Preferred Partner requests');
     expect(markup).toContain('Completed during period');
+  });
+
+  it('limits an empty booking trend to the verified subset when provenance is incomplete', () => {
+    const markup = renderToStaticMarkup(
+      <UsageOverviewTrendChart
+        bookingAvailable={false}
+        bookingExcludedCount={646}
+        rows={[]}
+        usageAvailable={false}
+      />,
+    );
+
+    expect(markup).toContain('No verified production booking activity in this period');
+    expect(markup).toContain('Source incomplete · 646 unverified records excluded.');
+    expect(markup).not.toContain('No activity in this period');
+  });
+
+  it.each([
+    ['today', 'Use last 7 days', '/usage-overview?range=7d'],
+    ['yesterday', 'Use last 7 days', '/usage-overview?range=7d'],
+    ['7d', 'Try 30 days', '/usage-overview?range=30d'],
+  ] as const)('uses a different empty-state destination for %s', async (range, label, href) => {
+    mockedAdminGet.mockResolvedValue(emptyUsageOverview(range));
+
+    const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(label);
+    expect(markup).toContain(`href="${href.replaceAll('&', '&amp;')}"`);
+    expect(href).not.toBe(`/usage-overview?range=${range}`);
+  });
+
+  it.each(['30d', 'month'] as const)('omits an empty-state self-link for %s', async (range) => {
+    mockedAdminGet.mockResolvedValue(emptyUsageOverview(range));
+
+    const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).not.toContain('Use last 7 days');
+    expect(markup).not.toContain('Try 30 days');
   });
 
   it('uses shared surfaces and direct icon tone selectors', () => {

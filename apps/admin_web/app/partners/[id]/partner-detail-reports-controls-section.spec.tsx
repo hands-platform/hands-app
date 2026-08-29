@@ -1,7 +1,18 @@
 import { readFileSync } from 'node:fs';
+import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { PartnerDetailReportsControlsSection } from './partner-detail-reports-controls-section';
+
+vi.mock('./partner-detail-account-control-form', () => ({
+  PartnerDetailAccountControlForm: ({
+    children,
+    className,
+  }: {
+    readonly children: ReactNode;
+    readonly className?: string;
+  }) => <form className={`admin-form-grid form-grid ${className ?? ''}`.trim()}>{children}</form>,
+}));
 
 describe('PartnerDetailReportsControlsSection', () => {
   it('uses the partner detail Vuexy table panel atom for reports and controls shell', () => {
@@ -92,6 +103,7 @@ describe('PartnerDetailReportsControlsSection', () => {
         startsAt: '2026-06-20T03:00:00.000Z',
         type: 'PAYOUT_HOLD',
       },
+      partnerName: 'Linh Wellness',
       providerId: 'partner-1',
       reports: [
         {
@@ -161,7 +173,7 @@ describe('PartnerDetailReportsControlsSection', () => {
       classNames.filter(
         (className) => className.includes('admin-form-control-fluid') && className.includes('calendar-datepicker-field'),
       ),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
     expect(classNames.filter((className) => className.startsWith('admin-form-input'))).toHaveLength(5);
     expect(classNames.filter((className) => className.includes('partner-report-form-field'))).toEqual([]);
     expect(classNames.filter((className) => className === 'admin-form-control-button button button-primary')).toHaveLength(4);
@@ -175,6 +187,7 @@ describe('PartnerDetailReportsControlsSection', () => {
     const section = PartnerDetailReportsControlsSection({
       accountControls: [],
       payoutHold: null,
+      partnerName: 'Linh Wellness',
       providerId: 'partner-1',
       reports: [],
       reportsDeskHref: '/partner-controls?q=partner-1',
@@ -253,7 +266,8 @@ function normalizeSpaces(value: string): string {
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
-  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+  if (typeof record?.type !== 'function') return value;
+  return resolveElement(record.type(props));
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

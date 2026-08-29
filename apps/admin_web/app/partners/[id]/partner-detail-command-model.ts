@@ -11,6 +11,7 @@ import type {
   ProviderDetail,
   ProviderOpsCard,
 } from './partner-detail-types';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 export type ProviderServicePricingRow = {
   id: string;
@@ -148,7 +149,11 @@ export function buildPartnerOperatorCommandQueue({
       detail: `Missing or not approved: ${missingDocuments.join(', ')}.`,
       owner: 'Verification',
       tone: 'pending',
-      action: { type: 'link', href: '#documents', label: 'Open docs' },
+      action: {
+        type: 'link',
+        href: buildPartnerDetailTargetHref(provider.id, 'documents'),
+        label: 'Open docs',
+      },
     });
   }
 
@@ -199,7 +204,11 @@ export function buildPartnerOperatorCommandQueue({
         'Partner needs at least one service duration priced at or above the admin minimum before customers can book.',
       owner: 'Catalog',
       tone: 'blocked',
-      action: { type: 'link', href: '#service-pricing', label: 'Open services' },
+      action: {
+        type: 'link',
+        href: buildPartnerDetailTargetHref(provider.id, 'service-pricing'),
+        label: 'Open services',
+      },
     });
   }
 
@@ -212,7 +221,11 @@ export function buildPartnerOperatorCommandQueue({
         'No immediate operator action is visible. Continue monitoring bookings, app activity, and payout records.',
       owner: 'Operations',
       tone: 'done',
-      action: { type: 'link', href: '#booking-chat-records', label: 'Open records' },
+      action: {
+        type: 'link',
+        href: buildPartnerDetailTargetHref(provider.id, 'booking-evidence'),
+        label: 'Open records',
+      },
     });
   }
 

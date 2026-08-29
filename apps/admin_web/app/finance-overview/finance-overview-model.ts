@@ -119,6 +119,7 @@ export type FinanceOverviewActionItem = {
   readonly href: string;
   readonly impactScore: number;
   readonly label: string;
+  readonly oldestAgeKnown: boolean;
   readonly oldestAgeMinutes: number;
   readonly oldestLabel?: string;
   readonly ownerLabel: string;
@@ -130,7 +131,7 @@ export type FinanceOverviewActionItem = {
 
 type FinanceOverviewActionItemDraft = Omit<
   FinanceOverviewActionItem,
-  'impactScore' | 'oldestAgeMinutes' | 'slaBreached' | 'sourceIndex'
+  'impactScore' | 'oldestAgeKnown' | 'oldestAgeMinutes' | 'slaBreached' | 'sourceIndex'
 >;
 
 export type FinanceOverviewControlMetric = {
@@ -943,10 +944,7 @@ export function buildFinanceOverviewComparisonKpis(
 
   return [
     {
-      detail: financeOverviewComparisonCountDetail(
-        comparisonSummary.settlementCount,
-        comparisonSummary.previousRangeLabel,
-      ),
+      detail: financeOverviewComparisonCountDetail(comparisonSummary.settlementCount),
       href: `/finance-tax/booking-settlement-audit?range=${encodeURIComponent(range)}`,
       label: 'Settlement records',
       tone: financeOverviewGrowthTone(comparisonSummary.settlementCount),
@@ -955,11 +953,7 @@ export function buildFinanceOverviewComparisonKpis(
     {
       amount: comparisonSummary.customerPaymentAmount.current,
       currency,
-      detail: financeOverviewComparisonMoneyDetail(
-        comparisonSummary.customerPaymentAmount,
-        comparisonSummary.previousRangeLabel,
-        currency,
-      ),
+      detail: financeOverviewComparisonMoneyDetail(comparisonSummary.customerPaymentAmount, currency),
       href: `/finance-tax/booking-settlement-audit?range=${encodeURIComponent(range)}`,
       label: 'Gross customer payments',
       tone: financeOverviewGrowthTone(comparisonSummary.customerPaymentAmount),
@@ -967,11 +961,7 @@ export function buildFinanceOverviewComparisonKpis(
     {
       amount: comparisonSummary.platformFeeNetRevenue.current,
       currency,
-      detail: financeOverviewComparisonMoneyDetail(
-        comparisonSummary.platformFeeNetRevenue,
-        comparisonSummary.previousRangeLabel,
-        currency,
-      ),
+      detail: financeOverviewComparisonMoneyDetail(comparisonSummary.platformFeeNetRevenue, currency),
       href: `/finance-tax/booking-settlement-audit?range=${encodeURIComponent(range)}`,
       label: 'Platform fee net revenue',
       tone: financeOverviewGrowthTone(comparisonSummary.platformFeeNetRevenue),
@@ -979,11 +969,7 @@ export function buildFinanceOverviewComparisonKpis(
     {
       amount: comparisonSummary.partnerPayoutAmount.current,
       currency,
-      detail: financeOverviewComparisonMoneyDetail(
-        comparisonSummary.partnerPayoutAmount,
-        comparisonSummary.previousRangeLabel,
-        currency,
-      ),
+      detail: financeOverviewComparisonMoneyDetail(comparisonSummary.partnerPayoutAmount, currency),
       href: `/earnings?range=${encodeURIComponent(range)}`,
       label: 'Partner payout generated',
       tone: 'info',
@@ -1041,7 +1027,6 @@ export function buildFinanceOverviewSections(
           ...financeOverviewMoneyValue(input.settlementSummary.paymentProcessingFee, currency),
           label: 'Payment processing fee',
           detail: 'Gateway or payment fee cost stored in settlement records.',
-          href: '/finance-tax/payment-fees',
         },
         {
           ...financeOverviewMoneyValue(netRevenueEstimate, currency),
@@ -1063,7 +1048,7 @@ export function buildFinanceOverviewSections(
     },
     {
       title: 'Payment Method Status',
-      description: 'Current payment and gateway states. Monthly payment-fee records stay with period close controls.',
+      description: 'Payment and gateway states recorded in the selected range. Monthly payment-fee records stay with period close controls.',
       href: '/payments',
       tone: 'primary',
       rows: [
@@ -1175,7 +1160,7 @@ export function buildFinanceOverviewSections(
       tone: 'info',
       rows: [
         {
-          ...financeOverviewMoneyValue(input.settlementSummary.companyOutputVat, currency),
+          ...financeOverviewMoneyValue(input.monthlyClosingSummary.companyOutputVatTotal, currency),
           label: 'Company output VAT',
           detail: 'Company VAT payable from platform fee records.',
           href: `/finance-tax/platform-vat?period=${encodeURIComponent(input.monthlyClosingSummary.period)}`,
@@ -1183,7 +1168,7 @@ export function buildFinanceOverviewSections(
         {
           ...financeOverviewMoneyValue(input.partnerWithholdingSummary.totalPartnerTaxWithheld, currency),
           label: 'Partner withholding',
-          detail: `${adminCountLabel(input.partnerWithholdingSummary.partnerCountWithRevenue, 'Partner')} with revenue in ${input.partnerWithholdingSummary.period} · ${adminCountLabel(input.settlementSummary.openTaxCount, 'settlement tax row')} still open.`,
+          detail: `${adminCountLabel(input.partnerWithholdingSummary.partnerCountWithRevenue, 'Partner')} with revenue in ${input.partnerWithholdingSummary.period}.`,
           href: `/finance-tax/partner-withholding-tax?period=${encodeURIComponent(input.monthlyClosingSummary.period)}`,
         },
         {
@@ -1370,9 +1355,14 @@ export function buildFinanceOverviewVisibleSections(
 
 export function buildFinanceOverviewPageSections(
   input: FinanceOverviewSummaryInput,
+  range: FinanceOverviewRange = 'today',
 ): FinanceOverviewSection[] {
   return buildFinanceOverviewVisibleSections(
     buildFinanceOverviewSections(input, { includeHiddenSections: false }),
+  ).map((section) =>
+    section.title === 'Payment Method Status'
+      ? { ...section, href: `/payments?range=${encodeURIComponent(range)}` }
+      : section,
   );
 }
 
@@ -1392,6 +1382,11 @@ export function buildFinanceOverviewPriorityItems(
     .sort((left, right) => {
       const slaDifference = Number(right.slaBreached) - Number(left.slaBreached);
       if (slaDifference !== 0) return slaDifference;
+      const ageKnownDifference = Number(left.oldestAgeKnown) - Number(right.oldestAgeKnown);
+      if (ageKnownDifference !== 0) {
+        const toneDifference = financeOverviewTonePriority(left.tone) - financeOverviewTonePriority(right.tone);
+        return toneDifference !== 0 ? toneDifference : ageKnownDifference;
+      }
       const ageDifference = right.oldestAgeMinutes - left.oldestAgeMinutes;
       if (ageDifference !== 0) return ageDifference;
       const ownerDifference =
@@ -1780,13 +1775,17 @@ export function buildFinanceOverviewActionItems(
     ...(companyBankAccountApprovalSummary.over48hCount > 0 ? ['Bank account approval'] : []),
   ]);
 
-  return items.map((item, sourceIndex) => ({
-    ...item,
-    impactScore: item.amount ?? 0,
-    oldestAgeMinutes: financeOverviewAgeMinutes(oldestAtByLabel.get(item.label)),
-    slaBreached: breachedLabels.has(item.label),
-    sourceIndex,
-  }));
+  return items.map((item, sourceIndex) => {
+    const oldestAge = financeOverviewAge(oldestAtByLabel.get(item.label));
+    return {
+      ...item,
+      impactScore: item.amount ?? 0,
+      oldestAgeKnown: oldestAge.known,
+      oldestAgeMinutes: oldestAge.minutes,
+      slaBreached: breachedLabels.has(item.label),
+      sourceIndex,
+    };
+  });
 }
 
 function financeOverviewTonePriority(tone: FinanceOverviewTone) {
@@ -1799,6 +1798,14 @@ function financeOverviewOwnerPriority(ownerState: FinanceOverviewActionItem['own
 
 export function buildFinanceOverviewRangeLabel(range: FinanceOverviewRange) {
   return dateRangeLabel(range);
+}
+
+export function buildFinanceOverviewEmptyMovementCopy(range: FinanceOverviewRange) {
+  if (range === 'today') {
+    return 'No money movement today (Vietnam time). Current liabilities and open queues remain shown below.';
+  }
+
+  return `No money movement during the ${buildFinanceOverviewRangeLabel(range).toLowerCase()}. Current liabilities and open queues remain shown below.`;
 }
 
 function financeOverviewMoneyValue(amount: number | null | undefined, currency: string) {
@@ -1875,10 +1882,12 @@ function financeOverviewOldestTimestamp(...values: Array<string | null | undefin
   );
 }
 
-function financeOverviewAgeMinutes(value: string | null | undefined, nowMs = Date.now()) {
-  if (!value) return 0;
+function financeOverviewAge(value: string | null | undefined, nowMs = Date.now()) {
+  if (!value) return { known: false, minutes: 0 } as const;
   const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? Math.max(0, Math.floor((nowMs - timestamp) / 60_000)) : 0;
+  return Number.isFinite(timestamp)
+    ? { known: true, minutes: Math.max(0, Math.floor((nowMs - timestamp) / 60_000)) }
+    : { known: false, minutes: 0 };
 }
 
 function financeOverviewAssignedQueueOwner(
@@ -1938,19 +1947,12 @@ function emptyFinanceOverviewComparisonSummary(): AdminFinanceOverviewComparison
   };
 }
 
-function financeOverviewComparisonCountDetail(
-  metric: AdminFinanceOverviewComparisonMetric,
-  previousRangeLabel: string,
-) {
-  return `${previousRangeLabel}: ${metric.previous} · ${financeOverviewComparisonDeltaLabel(metric)}`;
+function financeOverviewComparisonCountDetail(metric: AdminFinanceOverviewComparisonMetric) {
+  return `Current: ${metric.current} · Previous: ${metric.previous} · Delta: ${financeOverviewComparisonDeltaLabel(metric)}`;
 }
 
-function financeOverviewComparisonMoneyDetail(
-  metric: AdminFinanceOverviewComparisonMetric,
-  previousRangeLabel: string,
-  currency: string,
-) {
-  return `${previousRangeLabel}: ${formatMoney(metric.previous, currency)} · ${financeOverviewComparisonDeltaLabel(metric)}`;
+function financeOverviewComparisonMoneyDetail(metric: AdminFinanceOverviewComparisonMetric, currency: string) {
+  return `Current: ${formatMoney(metric.current, currency)} · Previous: ${formatMoney(metric.previous, currency)} · Delta: ${financeOverviewComparisonDeltaLabel(metric)}`;
 }
 
 function financeOverviewComparisonDeltaLabel(metric: AdminFinanceOverviewComparisonMetric) {

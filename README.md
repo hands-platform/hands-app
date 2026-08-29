@@ -20,6 +20,7 @@ Read `docs/README.md` first. It explains which documents are authoritative, whic
 - Partner negative wallet balances do not affect customers. Partners may see marketplace requests, but marketplace participation and payout release are blocked until settlement.
 - Admin is an Operations Command Center, not a CRM.
 - Internal code may still use `Provider` names for compatibility. Visible product and admin copy should say `Partner`.
+- HANDS business time uses the canonical IANA timezone `Asia/Ho_Chi_Minh` (`ICT`, `UTC+7`) across UI, API, tests, audit evidence, and documentation; equivalent UTC offsets do not make other region identifiers interchangeable.
 
 ## Apps
 

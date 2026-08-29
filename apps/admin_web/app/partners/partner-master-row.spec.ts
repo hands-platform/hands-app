@@ -201,6 +201,21 @@ describe('partner master row', () => {
     expect(row.approvalQueueIssues.map((issue) => issue.label)).not.toContain('location missing');
   });
 
+  it('does not turn fallback location freshness into an authoritative review issue', () => {
+    const row = buildPartnerMasterRow(
+      partner({ currentLocationUpdatedAt: new Date(Date.now() - 2 * 60 * 60_000).toISOString() }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+      {
+        displayName: (item: AdminProvider) => item.displayName ?? item.id,
+        operationalPolicyAvailable: false,
+      },
+    );
+
+    expect(row.locationState).toBe('stale');
+    expect(row.locationPolicyAuthoritative).toBe(false);
+    expect(row.approvalIssues.map((issue) => issue.label)).not.toContain('location stale');
+  });
+
   it('summarizes wallet withdrawal requests for the partner list wallet signal', () => {
     const row = buildPartnerMasterRow(
       partner({

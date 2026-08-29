@@ -103,5 +103,10 @@ describe('referralRewardCreditState', () => {
     expect(referralRewardDecisionLabel('referral_reward.cashout_approve')).toBe('Approve cashout');
     expect(referralRewardDecisionLabel('referral_reward.cashout_paid')).toBe('Mark paid');
     expect(referralRewardDecisionLabel('referral_reward.tax_review_required')).toBe('Require tax review');
+    expect(referralRewardDecisionLabel('referral_reward.tax_review_approve')).toBe('Tax review approved');
+    expect(referralRewardDecisionLabel('referral_reward.tax_review_hold')).toBe('Tax review held');
+    expect(referralRewardDecisionLabel('referral_reward.tax_review_reject')).toBe(
+      'Cashout rejected; wallet reward retained',
+    );
   });
 });

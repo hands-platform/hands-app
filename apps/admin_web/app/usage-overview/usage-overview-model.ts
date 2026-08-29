@@ -58,6 +58,16 @@ export function usageOverviewHref(range: UsageOverviewRange) {
   return `/usage-overview?range=${range}`;
 }
 
+export function usageOverviewEmptyRangeAction(range: UsageOverviewRange) {
+  if (range === 'today' || range === 'yesterday') {
+    return { href: usageOverviewHref('7d'), label: 'Use last 7 days' };
+  }
+  if (range === '7d') {
+    return { href: usageOverviewHref('30d'), label: 'Try 30 days' };
+  }
+  return null;
+}
+
 export function usageOverviewCustomHref(today: string) {
   const to = new Date(`${today}T00:00:00.000Z`);
   const from = new Date(to);

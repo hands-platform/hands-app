@@ -60,6 +60,69 @@ export async function assignFinanceReview(formData: FormData) {
   redirect(notificationAssignmentNoticeHref(returnHref, 'assigned'));
 }
 
+export async function openNotificationDeliveryIncident(formData: FormData) {
+  const returnHref = notificationActionReturnHref(formData);
+  try {
+    await adminPostOrThrow('/admin/notification-delivery-incidents', {
+      dataScope: readRequiredFormString(formData, 'dataScope'),
+      failureCode: readRequiredFormString(formData, 'failureCode'),
+      provider: readRequiredFormString(formData, 'provider'),
+      reason: readRequiredFormString(formData, 'reason'),
+    });
+  } catch (error) {
+    redirect(notificationIncidentNoticeHref(returnHref, notificationIncidentFailureNotice(error)));
+  }
+  revalidateNotificationActionPaths();
+  redirect(notificationIncidentNoticeHref(returnHref, 'opened'));
+}
+
+export async function assignNotificationDeliveryIncident(formData: FormData) {
+  const returnHref = notificationActionReturnHref(formData);
+  const incidentId = readRequiredFormString(formData, 'incidentId');
+  try {
+    await adminPostOrThrow(`/admin/notification-delivery-incidents/${encodeURIComponent(incidentId)}/assign`, {
+      assigneeAdminId: readRequiredFormString(formData, 'assigneeAdminId'),
+      expectedRevision: Number(readRequiredFormString(formData, 'expectedRevision')),
+      reason: readRequiredFormString(formData, 'reason'),
+    });
+  } catch (error) {
+    redirect(notificationIncidentNoticeHref(returnHref, notificationIncidentFailureNotice(error)));
+  }
+  revalidateNotificationActionPaths();
+  redirect(notificationIncidentNoticeHref(returnHref, 'assigned'));
+}
+
+export async function resolveNotificationDeliveryIncident(formData: FormData) {
+  const returnHref = notificationActionReturnHref(formData);
+  const incidentId = readRequiredFormString(formData, 'incidentId');
+  try {
+    await adminPostOrThrow(`/admin/notification-delivery-incidents/${encodeURIComponent(incidentId)}/resolve`, {
+      expectedRevision: Number(readRequiredFormString(formData, 'expectedRevision')),
+      reason: readRequiredFormString(formData, 'reason'),
+      resolutionCode: readRequiredFormString(formData, 'resolutionCode'),
+    });
+  } catch (error) {
+    redirect(notificationIncidentNoticeHref(returnHref, notificationIncidentFailureNotice(error)));
+  }
+  revalidateNotificationActionPaths();
+  redirect(notificationIncidentNoticeHref(returnHref, 'resolved'));
+}
+
+export async function reopenNotificationDeliveryIncident(formData: FormData) {
+  const returnHref = notificationActionReturnHref(formData);
+  const incidentId = readRequiredFormString(formData, 'incidentId');
+  try {
+    await adminPostOrThrow(`/admin/notification-delivery-incidents/${encodeURIComponent(incidentId)}/reopen`, {
+      expectedRevision: Number(readRequiredFormString(formData, 'expectedRevision')),
+      reason: readRequiredFormString(formData, 'reason'),
+    });
+  } catch (error) {
+    redirect(notificationIncidentNoticeHref(returnHref, notificationIncidentFailureNotice(error)));
+  }
+  revalidateNotificationActionPaths();
+  redirect(notificationIncidentNoticeHref(returnHref, 'reopened'));
+}
+
 function revalidateNotificationActionPaths() {
   revalidatePath('/notifications');
   revalidatePath('/partners');
@@ -117,5 +180,26 @@ function notificationRetryNoticeHref(
   const url = new URL(returnHref, 'http://admin.local');
   url.searchParams.set('retryNotice', notice);
   if (jobId) url.searchParams.set('retryJob', jobId.slice(0, 24));
+  return `${url.pathname}${url.search}`;
+}
+
+type NotificationIncidentNotice =
+  | 'assigned'
+  | 'failed'
+  | 'opened'
+  | 'permission-denied'
+  | 'reopened'
+  | 'resolved'
+  | 'state-changed';
+
+function notificationIncidentFailureNotice(error: unknown): NotificationIncidentNotice {
+  if (isAdminApiAuthError(error)) return 'permission-denied';
+  if (error instanceof AdminApiRequestError && error.status === 409) return 'state-changed';
+  return 'failed';
+}
+
+function notificationIncidentNoticeHref(returnHref: string, notice: NotificationIncidentNotice) {
+  const url = new URL(returnHref, 'http://admin.local');
+  url.searchParams.set('incidentNotice', notice);
   return `${url.pathname}${url.search}`;
 }

@@ -33,14 +33,14 @@ export type CashSettlementOpenDebtTableRow = {
 };
 
 type CashSettlementOpenDebtTableSectionProps = {
+  readonly allOpenRowCount: number;
   readonly filters: CashSettlementFilters;
-  readonly globalRowCount: number;
   readonly pagination: CashSettlementPagination<CashSettlementOpenDebtTableRow>;
 };
 
 export function CashSettlementOpenDebtTableSection({
+  allOpenRowCount,
   filters,
-  globalRowCount,
   pagination,
 }: CashSettlementOpenDebtTableSectionProps) {
   const rows = pagination.rows;
@@ -57,12 +57,12 @@ export function CashSettlementOpenDebtTableSection({
       {rows.length === 0 ? (
         <div className="cash-settlement-empty-state">
           <AdminEmptyState
-            message={cashSettlementEmptyDescription(filters, globalRowCount)}
+            message={cashSettlementEmptyDescription(filters, allOpenRowCount)}
             title={cashSettlementEmptyTitle(filters)}
           />
           <AdminFilterChipGroup ariaLabel="Cash settlement empty state actions" className="admin-mt-12">
             <AdminTextLink href={cashSettlementHref({ ...filters, page: 1, queue: 'all' })}>
-              Return to All open ({globalRowCount})
+              Return to All open ({allOpenRowCount})
             </AdminTextLink>
             <AdminTextLink href="/cash-settlements">Clear filters</AdminTextLink>
           </AdminFilterChipGroup>
@@ -129,7 +129,12 @@ export function CashSettlementOpenDebtTableSection({
                   </div>
                 </td>
                 <td>
-                  <AdminTextLink href={cashSettlementReviewHref(returnTo, row.earningId)}>Review</AdminTextLink>
+                  <AdminTextLink
+                    aria-label={`Review cash settlement for ${row.providerName}, booking ${row.bookingLabel}`}
+                    href={cashSettlementReviewHref(returnTo, row.earningId)}
+                  >
+                    Review
+                  </AdminTextLink>
                 </td>
               </tr>
             ))}
@@ -149,7 +154,7 @@ export function CashSettlementOpenDebtTableSection({
   );
 }
 
-function cashSettlementEmptyTitle(filters: CashSettlementFilters) {
+export function cashSettlementEmptyTitle(filters: CashSettlementFilters) {
   switch (filters.queue) {
     case 'payment-check':
       return 'No booking-payment anomalies need review';
@@ -167,6 +172,9 @@ function cashSettlementEmptyTitle(filters: CashSettlementFilters) {
   }
 }
 
-function cashSettlementEmptyDescription(filters: CashSettlementFilters, globalRowCount: number) {
-  return `Selected queue: ${cashSettlementQueueLabel(filters.queue)}. The global all-date backlog still contains ${globalRowCount} open receivable(s).`;
+export function cashSettlementEmptyDescription(filters: CashSettlementFilters, allOpenRowCount: number) {
+  const baselineScope = filters.period
+    ? `Accounting month ${filters.period}`
+    : 'The global all-date backlog';
+  return `Selected queue: ${cashSettlementQueueLabel(filters.queue)}. ${baselineScope} still contains ${allOpenRowCount} open receivable(s).`;
 }

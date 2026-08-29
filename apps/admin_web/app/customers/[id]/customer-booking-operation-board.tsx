@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
-import {
-  AdminDataTable,
-  AdminTablePaginationFooter,
-} from '../../../components/admin-data-table';
+import { AdminDataTable } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
@@ -52,7 +50,6 @@ export type CustomerBookingOperationGroup = {
 
 type CustomerBookingHistoryFilter = 'all' | 'cancelled' | 'completed' | 'live';
 
-export const CUSTOMER_BOOKING_OPERATION_PAGE_SIZE = 5;
 const CUSTOMER_BOOKING_OPERATION_HEADERS = [
   'When & booking',
   'Service & Partner',
@@ -89,24 +86,14 @@ export function CustomerBookingOperationBoard({
     .filter((row) => customerBookingHistoryRowMatches(row, activeFilter))
     .sort((left, right) => customerBookingHistorySort(left, right, activeFilter));
   const totalRows = filteredRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / CUSTOMER_BOOKING_OPERATION_PAGE_SIZE));
-  const activePage = Math.min(
-    readPositiveInteger(searchParams.bookingHistoryPage),
-    totalPages,
-  );
-  const startIndex = (activePage - 1) * CUSTOMER_BOOKING_OPERATION_PAGE_SIZE;
-  const visibleRows = filteredRows.slice(
-    startIndex,
-    startIndex + CUSTOMER_BOOKING_OPERATION_PAGE_SIZE,
-  );
   const counts = customerBookingHistoryCounts(allRows);
-  const pageFrom = totalRows === 0 ? 0 : startIndex + 1;
-  const pageTo = Math.min(totalRows, startIndex + visibleRows.length);
 
   return (
     <AdminTablePanel
       actions={
-        <AdminTextLink href={`/bookings?customer=${encodeURIComponent(basePath.split('/').at(-1) ?? '')}`}>
+        <AdminTextLink
+          href={`/bookings?view=all&dateRange=all&q=${encodeURIComponent(basePath.split('/').at(-1) ?? '')}`}
+        >
           View all bookings
         </AdminTextLink>
       }
@@ -117,49 +104,47 @@ export function CustomerBookingOperationBoard({
       resultTone={customerBookingHistoryTone(activeFilter, totalRows)}
       title="Recent bookings"
     >
-      <AdminTraceSummary
-        className="customer-booking-operation-summary admin-mb-12"
-        metrics={metrics.map((metric) => ({
-          className: `customer-booking-operation-metric ${metric.tone}`,
-          detail: metric.helper,
-          label: metric.label,
-          value: metric.value,
-        }))}
-      />
-      <AdminSegmentedControl
-        activeValue={activeFilter}
-        ariaLabel="Recent booking filters"
-        className="customer-booking-history-filters admin-mb-12"
-        options={CUSTOMER_BOOKING_HISTORY_FILTERS.map((filter) => ({
-          href: buildCustomerBookingHistoryHref(basePath, searchParams, filter),
-          label: `${customerBookingHistoryFilterLabel(filter)} ${counts[filter]}`,
-          value: filter,
-        }))}
-      />
+      {allRows.length === 0 ? (
+        <AdminEmptyState
+          className="customer-booking-operation-empty"
+          message="No recent booking records were found for this customer."
+          title={null}
+        />
+      ) : (
+        <>
+          <AdminTraceSummary
+            className="customer-booking-operation-summary admin-mb-12"
+            inferScope={false}
+            metrics={metrics.map((metric) => ({
+              className: `customer-booking-operation-metric ${metric.tone}`,
+              detail: metric.helper,
+              label: metric.label,
+              value: metric.value,
+            }))}
+          />
+          <AdminSegmentedControl
+            activeValue={activeFilter}
+            ariaLabel="Recent booking filters"
+            className="customer-booking-history-filters admin-mb-12"
+            options={CUSTOMER_BOOKING_HISTORY_FILTERS.map((filter) => ({
+              href: buildCustomerBookingHistoryHref(basePath, searchParams, filter),
+              label: `${customerBookingHistoryFilterLabel(filter)} ${counts[filter]}`,
+              value: filter,
+            }))}
+          />
 
-      <AdminDataTable
-        className="vuexy-booking-table customer-recent-bookings-table"
-        emptyMessage="No booking matched this recent-booking filter."
-        headers={CUSTOMER_BOOKING_OPERATION_HEADERS}
-        rowCount={visibleRows.length}
-      >
-        {visibleRows.map((row) => (
-          <CustomerBookingOperationTableRow key={row.id} row={row} />
-        ))}
-      </AdminDataTable>
-
-      <AdminTablePaginationFooter
-        activePage={activePage}
-        ariaLabel="Recent booking pages"
-        className="customer-booking-operation-footer"
-        from={pageFrom}
-        hrefForPage={(page) =>
-          buildCustomerBookingHistoryHref(basePath, searchParams, activeFilter, page)
-        }
-        to={pageTo}
-        totalPages={totalPages}
-        totalRows={totalRows}
-      />
+          <AdminDataTable
+            className="vuexy-booking-table customer-recent-bookings-table"
+            emptyMessage="No booking matched this recent-booking filter."
+            headers={CUSTOMER_BOOKING_OPERATION_HEADERS}
+            rowCount={filteredRows.length}
+          >
+            {filteredRows.map((row) => (
+              <CustomerBookingOperationTableRow key={row.id} row={row} />
+            ))}
+          </AdminDataTable>
+        </>
+      )}
     </AdminTablePanel>
   );
 }
@@ -252,17 +237,10 @@ function readCustomerBookingHistoryFilter(
     : 'all';
 }
 
-function readPositiveInteger(value: string | string[] | undefined) {
-  const normalized = Array.isArray(value) ? value[0] : value;
-  const parsed = Number.parseInt(normalized ?? '1', 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-}
-
-function buildCustomerBookingHistoryHref(
+export function buildCustomerBookingHistoryHref(
   basePath: string,
   searchParams: Record<string, string | string[] | undefined>,
   filter: CustomerBookingHistoryFilter,
-  page = 1,
 ) {
   const params = new URLSearchParams();
 
@@ -270,6 +248,10 @@ function buildCustomerBookingHistoryHref(
     if (
       key === 'bookingHistory' ||
       key === 'bookingHistoryPage' ||
+      key === 'action' ||
+      key === 'noteNotice' ||
+      key === 'notificationNotice' ||
+      key === 'walletAdjustmentNotice' ||
       key.endsWith('BookingsPage') ||
       value === undefined
     ) {
@@ -283,7 +265,6 @@ function buildCustomerBookingHistoryHref(
   }
 
   if (filter !== 'all') params.set('bookingHistory', filter);
-  if (page > 1) params.set('bookingHistoryPage', String(page));
 
   const query = params.toString();
   return `${basePath}${query ? `?${query}` : ''}#customer-booking-history`;

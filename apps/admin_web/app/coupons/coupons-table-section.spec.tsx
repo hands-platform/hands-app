@@ -30,12 +30,34 @@ describe('CouponsTableSection', () => {
     expect(markup).toContain('Edit');
     expect(markup).toContain('1 bookings');
     expect(markup).toContain('More actions for WELCOME10');
+    expect(markup).toContain('aria-haspopup="menu"');
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toContain('Delete coupon');
     expect(markup).toContain('/coupons?view=records&amp;editCouponId=coupon-1');
     expect(markup).toContain('/coupons?view=records&amp;usageCouponId=coupon-1');
     expect(sectionSource).toContain('ActionMenu');
+    expect(sectionSource).toContain('managedDropdown');
+    expect(sectionSource).toContain('variant="dropdown"');
     expect(sectionSource).not.toContain('AdminDisclosure');
     expect(sectionSource).not.toContain('coupon-edit-form');
     expect(sectionSource).not.toContain('couponSections(');
+  });
+
+  it('replaces delete with a pause-only explanation when usage is known', () => {
+    const row = { ...buildRow(), usageBookingCount: 2, usageCountKnown: true };
+    const markup = renderToStaticMarkup(
+      <CouponsTableSection
+        deleteHrefForCoupon={() => '/delete'}
+        editHrefForCoupon={() => '/edit'}
+        rows={[row]}
+        toggleHrefForCoupon={() => '/toggle'}
+        usageHrefForCoupon={() => '/usage'}
+      />,
+    );
+
+    expect(markup).toContain('More actions for WELCOME10');
+    expect(sectionSource).toContain('Pause only · usage retained');
+    expect(sectionSource).toContain('Used coupons are retained for audit');
   });
 
   it('disables campaign mutations when a required source is unavailable', () => {

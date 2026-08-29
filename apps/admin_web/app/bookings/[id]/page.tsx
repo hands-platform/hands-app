@@ -930,7 +930,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         <AdminReviewRecordsSection
           basePath={`/bookings/${id}`}
           customerReviews={bookingReviewRecords.customerReviews}
-          description="Customer review and Partner evaluation attached to this booking."
+          description="Customer review and internal Partner note attached to this booking."
           id="booking-review-records"
           partnerEvaluations={bookingReviewRecords.partnerEvaluations}
           searchParams={detailSearchParams}

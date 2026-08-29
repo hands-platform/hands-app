@@ -62,4 +62,50 @@ describe('BackgroundJobIncidentPage', () => {
     expect(markup).toContain('page=2&amp;pageSize=10');
     expect(markup).not.toContain('Retry');
   });
+
+  it('renders nullable system actors in the incident and failure evidence', async () => {
+    mockedAdminGet.mockResolvedValue({
+      failures: [{
+        actor: null,
+        actorKey: null,
+        actorLabelSnapshot: null,
+        actorType: 'SYSTEM',
+        firstSeenAt: '2026-07-14T03:00:01.000Z',
+        jobId: 'repeat:monitor:1',
+        reason: 'Recurring scheduler recovered.',
+        status: 'RESOLVED',
+        updatedAt: '2026-07-14T03:05:00.000Z',
+      }],
+      incident: {
+        actor: null,
+        actorKey: 'background-job-monitor',
+        actorLabelSnapshot: 'HANDS background monitor',
+        actorType: 'SYSTEM',
+        firstFailureAt: '2026-07-14T03:00:00.000Z',
+        firstFailureJobId: 'repeat:monitor:1',
+        id: 'incident-open-1',
+        jobName: 'background-job-failure-monitor',
+        openedAt: '2026-07-14T03:00:01.000Z',
+        queueName: 'bank-statement-escalation',
+        recoveredAt: '2026-07-14T03:05:00.000Z',
+        resolvedFailureCount: 1,
+        status: 'RECOVERED',
+      },
+      page: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        page: 1,
+        pageSize: 10,
+        totalCount: 1,
+      },
+    });
+
+    const markup = renderToStaticMarkup(await BackgroundJobIncidentPage({
+      params: Promise.resolve({ id: 'incident-open-1' }),
+    }));
+
+    expect(markup).toContain('HANDS background monitor');
+    expect(markup).toContain('HANDS system');
+    expect(markup).not.toContain('Master Admin');
+  });
 });

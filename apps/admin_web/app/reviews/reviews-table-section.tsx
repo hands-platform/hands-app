@@ -13,6 +13,7 @@ import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminTextLink } from '../../components/admin-text-link';
 import type { AdminReviewSummary } from '../../lib/admin-api';
 import {
+  AdminFormActionRow,
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
@@ -96,15 +97,10 @@ export function ReviewsTableSection({
     sort: 'newest',
   });
   const emptyState = rows.length === 0 ? (
-    <div className="admin-empty-state-actions">
-      <AdminEmptyState
-        message={emptyCopy.message}
-        title={emptyCopy.title}
-      />
-      <div className="actions admin-mt-8">
-        {activeFilterLabels.length > 0 ? <AdminTextLink href={clearFiltersHref}>View all reviews</AdminTextLink> : null}
-      </div>
-    </div>
+    <AdminEmptyState
+      message={emptyCopy.message}
+      title={emptyCopy.title}
+    />
   ) : null;
 
   return (
@@ -140,7 +136,7 @@ export function ReviewsTableSection({
             <AdminSegmentedControl
               activeValue={filters.review}
               ariaLabel="Review status"
-              options={reviewStatusButtonOptions(summary).map((option) => ({
+              options={reviewStatusButtonOptions(summary, !dateError).map((option) => ({
                 href: buildReviewListHref(filters, { review: option.value }),
                 label: option.label,
                 value: option.value,
@@ -156,7 +152,7 @@ export function ReviewsTableSection({
               defaultValue={filters.q}
               label="Search reviews"
               name="q"
-              placeholder="Search customer, partner, booking, or review"
+              placeholder="Search name, booking, review ID"
             />
             <AdminFormSelect
               className="admin-directory-filter-select"
@@ -182,11 +178,26 @@ export function ReviewsTableSection({
               name="pageSize"
               options={reviewPageSizeOptions}
             />
-            <AdminFormControlButton className="admin-directory-filter-button">Update list</AdminFormControlButton>
-            <AdminFormControlLink className="admin-directory-filter-export" href={csvHref}>
-              <Download aria-hidden="true" size={16} />
-              Export
-            </AdminFormControlLink>
+            <AdminFormActionRow className="vuexy-review-filter-actions" wide={false}>
+              <AdminFormControlButton className="admin-directory-filter-button">Update list</AdminFormControlButton>
+              {dateError ? (
+                <AdminFormControlButton
+                  aria-label="Export unavailable: correct the custom date range"
+                  className="button-secondary admin-directory-filter-export"
+                  disabled
+                  title="Correct the custom date range before exporting."
+                  type="button"
+                >
+                  <Download aria-hidden="true" size={16} />
+                  Export
+                </AdminFormControlButton>
+              ) : (
+                <AdminFormControlLink className="admin-directory-filter-export" href={csvHref}>
+                  <Download aria-hidden="true" size={16} />
+                  Export
+                </AdminFormControlLink>
+              )}
+            </AdminFormActionRow>
           </AdminFormGrid>
           {filters.dateRange === 'custom' ? (
             <AdminFormShell action="/reviews" className="booking-custom-date-grid vuexy-review-custom-date-grid">
@@ -371,12 +382,13 @@ const reviewSortControlOptions = [
   { label: 'Lowest rating', value: 'rating-asc' },
 ] as const;
 
-function reviewStatusButtonOptions(summary: AdminReviewSummary) {
+function reviewStatusButtonOptions(summary: AdminReviewSummary, countsAvailable: boolean) {
+  const count = (value: number | undefined) => countsAvailable ? (value ?? 0) : '—';
   return [
-    { label: `All ${summary.totalCount}`, value: '' },
-    { label: `Visible ${summary.published ?? 0}`, value: 'published' },
-    { label: `Needs review ${summary.reported ?? 0}`, value: 'reported' },
-    { label: `Hidden ${summary.held ?? 0}`, value: 'held' },
+    { label: `All ${count(summary.totalCount)}`, value: '' },
+    { label: `Visible ${count(summary.published)}`, value: 'published' },
+    { label: `Needs review ${count(summary.reported)}`, value: 'reported' },
+    { label: `Hidden ${count(summary.held)}`, value: 'held' },
   ] as const;
 }
 

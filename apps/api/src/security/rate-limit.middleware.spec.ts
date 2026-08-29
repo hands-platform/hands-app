@@ -11,7 +11,7 @@ describe('rateLimitMiddleware', () => {
     const adminLoginPolicy = apiRateLimitPolicies.find((policy) =>
       policy.pathPattern.test('/api/auth/admin-operator-login'),
     );
-    expect(adminLoginPolicy).toMatchObject({ max: 4, windowMs: 15 * 60_000 });
+    expect(adminLoginPolicy).toMatchObject({ max: 5, windowMs: 15 * 60_000 });
     expect(
       apiRateLimitPolicies.filter((policy) => policy.pathPattern.test('/api/auth/admin-operator-login')),
     ).toHaveLength(1);

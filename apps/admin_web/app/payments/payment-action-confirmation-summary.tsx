@@ -1,4 +1,5 @@
 import type { PaymentActionConfirmation } from './payment-action-confirmation';
+import { DateTimeText } from '../../components/date-time-text';
 
 export function PaymentActionConfirmationSummary({
   confirmation,
@@ -12,7 +13,7 @@ export function PaymentActionConfirmationSummary({
         {confirmation.facts.map((fact) => (
           <div key={fact.label}>
             <dt>{fact.label}</dt>
-            <dd>{fact.value}</dd>
+            <dd>{fact.format === 'datetime' ? <DateTimeText fallback="Not recorded" value={fact.value} /> : fact.value}</dd>
           </div>
         ))}
       </dl>

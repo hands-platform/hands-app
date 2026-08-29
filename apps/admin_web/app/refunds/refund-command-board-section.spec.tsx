@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RefundCommandBoardSection } from './refund-command-board-section';
 
 describe('RefundCommandBoardSection', () => {
-  it('renders one compact strip from exclusive queue counts', () => {
+  it('separates exclusive workstreams from overlapping urgency metrics', () => {
     const markup = renderToStaticMarkup(
       <RefundCommandBoardSection
         approvalRequired={3}
@@ -17,6 +17,7 @@ describe('RefundCommandBoardSection', () => {
         oldestOpenLabel="8d ago"
         oldestOpenHref="/refunds?review=open&sort=oldest"
         otherReview={1}
+        otherReviewHref="/refunds?review=other"
         reconciliationRequired={5}
         reconciliationHref="/refunds?review=state-mismatch"
         refreshHref="/refunds?range=all&amp;review=open&amp;sort=oldest"
@@ -26,6 +27,10 @@ describe('RefundCommandBoardSection', () => {
     );
 
     expect(markup).toContain('Current refund work');
+    expect(markup).toContain('aria-label="Refund workstreams"');
+    expect(markup).toContain('aria-label="Refund urgency"');
+    expect(markup).toContain('Exclusive queue counts');
+    expect(markup).toContain('SLA overdue overlaps the workstreams above.');
     expect(markup).toContain('Approval required');
     expect(markup).toContain('Gateway processing');
     expect(markup).toContain('Reconciliation required');
@@ -35,8 +40,11 @@ describe('RefundCommandBoardSection', () => {
     expect(markup).toContain('8d ago');
     expect(markup).toContain('/finance-tax/approval-queue?view=refunds');
     expect(markup).toContain('refund-command-metrics');
+    expect(markup).toContain('refund-command-workstreams');
+    expect(markup).toContain('refund-command-urgency');
     expect(markup).toContain('href="/refunds?review=requested"');
     expect(markup).toContain('href="/refunds?review=state-mismatch"');
+    expect(markup).toContain('href="/refunds?review=other"');
     expect(markup).toContain('href="/refunds?review=open&amp;sort=oldest"');
     expect(markup).toContain('aria-current="page"');
     expect(markup).not.toContain('refund preview');
@@ -56,6 +64,7 @@ describe('RefundCommandBoardSection', () => {
         oldestOpenLabel="None in scope"
         oldestOpenHref="/refunds?review=open&sort=oldest"
         otherReview={0}
+        otherReviewHref="/refunds?review=other"
         reconciliationRequired={0}
         reconciliationHref="/refunds?review=state-mismatch"
         refreshHref="/refunds?range=all&amp;review=open&amp;sort=oldest"

@@ -809,7 +809,7 @@ async function verifyAdminWebEvidence(evidence) {
       markers: [
         'Journal Batch Detail',
         'Journal batch overview',
-        'Balanced',
+        'Entry debit = credit · Pass',
         evidence.payoutBatchId,
         'partner_wallet_liability',
         'company_bank_cash',
@@ -820,7 +820,7 @@ async function verifyAdminWebEvidence(evidence) {
       markers: [
         'Journal Batch Detail',
         'Journal batch overview',
-        'Balanced',
+        'Entry debit = credit · Pass',
         evidence.payoutBatchId,
         evidence.reversalReference,
         evidence.reversalReason,

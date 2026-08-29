@@ -11,6 +11,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminErrorState, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -70,14 +71,18 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
     <AdminPageTemplate
       actions={
         <div className="audit-page-actions">
-          <AdminFormControlLink className="button-secondary" href={auditExportHref(filters, 'csv')}>
-            <Download aria-hidden="true" size={16} />
-            Export CSV
-          </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href={auditExportHref(filters, 'json')}>
-            <Download aria-hidden="true" size={16} />
-            Export JSON
-          </AdminFormControlLink>
+          {workspaceResult.ok ? (
+            <>
+              <AdminFormControlLink className="button-secondary" href={auditExportHref(filters, 'csv')}>
+                <Download aria-hidden="true" size={16} />
+                Export CSV
+              </AdminFormControlLink>
+              <AdminFormControlLink className="button-secondary" href={auditExportHref(filters, 'json')}>
+                <Download aria-hidden="true" size={16} />
+                Export JSON
+              </AdminFormControlLink>
+            </>
+          ) : null}
           <AdminFormControlLink className="button-secondary" href={refreshedHref}>
             <RefreshCw aria-hidden="true" size={16} />
             Refresh now
@@ -101,15 +106,19 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           <>
             <AuditTrustStrip workspace={workspace} />
             <AuditSavedViews filters={filters} workspace={workspace} />
-            {(workspace.actionableIncidents ?? []).length > 0 ? (
-              <AdminSection
-                className="audit-incidents-section"
-                description="Open recurring system incidents are projected from their latest lifecycle event. Raw occurrences remain in the event table."
-                status={<StatusBadge tone="warning">{workspace.actionableIncidents.length} open</StatusBadge>}
-                title="Action required incidents"
-              >
+            <AdminSection
+              className="audit-incidents-section"
+              description="Only recurring job incidents with a verified open/recovered lifecycle are projected here. Raw occurrences remain in the event table."
+              status={
+                <StatusBadge tone={workspace.actionableIncidents.length > 0 ? 'warning' : 'neutral'}>
+                  {workspace.actionableIncidents.length} open
+                </StatusBadge>
+              }
+              title="Action required incidents"
+            >
+              {workspace.actionableIncidents.length > 0 ? (
                 <div className="audit-incident-list">
-                  {(workspace.actionableIncidents ?? []).map((incident) => (
+                  {workspace.actionableIncidents.map((incident) => (
                     <div className="audit-incident-row" key={incident.id}>
                       <div>
                         <strong>{incident.label}</strong>
@@ -122,8 +131,14 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                     </div>
                   ))}
                 </div>
-              </AdminSection>
-            ) : null}
+              ) : (
+                <AdminEmptyState
+                  framed
+                  message="The supported recurring job lifecycle has no target whose latest event is open."
+                  title="No open recurring job incidents"
+                />
+              )}
+            </AdminSection>
 
             <AdminFilterPanel
               bodyClassName="audit-filter-panel-body"
@@ -186,10 +201,34 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                       name="severity"
                       options={facetOptions('All severities', workspace.facets.severities)}
                     />
-                    <AdminFormSearch defaultValue={filters.objectType} label="Object type" name="objectType" placeholder="booking" />
-                    <AdminFormSearch defaultValue={filters.eventId} label="Event ID" name="eventId" placeholder="Exact event ID" />
-                    <AdminFormSearch defaultValue={filters.correlationId} label="Correlation ID" name="correlationId" placeholder="Exact correlation ID" />
-                    <AdminFormSearch defaultValue={filters.requestId} label="Request ID" name="requestId" placeholder="Exact request ID" />
+                    <AdminFormSearch
+                      defaultValue={filters.objectType}
+                      label="Object type"
+                      labelVisibility="visible"
+                      name="objectType"
+                      placeholder="booking"
+                    />
+                    <AdminFormSearch
+                      defaultValue={filters.eventId}
+                      label="Event ID"
+                      labelVisibility="visible"
+                      name="eventId"
+                      placeholder="Exact event ID"
+                    />
+                    <AdminFormSearch
+                      defaultValue={filters.correlationId}
+                      label="Correlation ID"
+                      labelVisibility="visible"
+                      name="correlationId"
+                      placeholder="Exact correlation ID"
+                    />
+                    <AdminFormSearch
+                      defaultValue={filters.requestId}
+                      label="Request ID"
+                      labelVisibility="visible"
+                      name="requestId"
+                      placeholder="Exact request ID"
+                    />
                     <AdminFormDateTime
                       defaultValue={filters.from}
                       label="From · Vietnam time"
@@ -239,6 +278,13 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               status={<StatusBadge tone="neutral">Server ordered · {filters.sort === 'oldest' ? 'oldest first' : 'newest first'}</StatusBadge>}
               title="Investigation results"
             >
+              {workspace.totalCount > workspace.items.length || filters.cursor ? (
+                <AuditCursorNavigation
+                  className="audit-cursor-toolbar"
+                  filters={filters}
+                  workspace={workspace}
+                />
+              ) : null}
               {notificationContextId && workspace.totalCount === 0 ? (
                 <AdminNoticeCard tone="info">
                   <strong>No audit events have been recorded for this notification.</strong>
@@ -256,31 +302,11 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                   items={workspace.items}
                 />
               )}
-              <div className="audit-cursor-footer">
-                <span>
-                  Showing {workspace.items.length.toLocaleString('en-US')} of {workspace.totalCount.toLocaleString('en-US')} events in this snapshot
-                </span>
-                <div>
-                  {filters.cursor ? (
-                    <AdminFormControlLink className="button-secondary" href={auditHrefFromFilters({ ...filters, cursor: workspace.cursor.previous ?? '', event: '' })}>
-                      Previous page
-                    </AdminFormControlLink>
-                  ) : null}
-                  {filters.cursor ? (
-                    <AdminFormControlLink className="button-plain" href={auditHrefFromFilters({ ...filters, cursor: '', event: '' })}>
-                      First page
-                    </AdminFormControlLink>
-                  ) : null}
-                  {workspace.cursor.next ? (
-                    <AdminFormControlLink
-                      className="button-secondary"
-                      href={auditHrefFromFilters({ ...filters, cursor: workspace.cursor.next, event: '' })}
-                    >
-                      Next page
-                    </AdminFormControlLink>
-                  ) : null}
-                </div>
-              </div>
+              <AuditCursorNavigation
+                className="audit-cursor-footer"
+                filters={filters}
+                workspace={workspace}
+              />
             </AdminSection>
 
             {selectedEventResult && !selectedEventResult.ok ? (
@@ -324,6 +350,51 @@ type AuditFilters = {
   to: string;
   view: string;
 };
+
+function AuditCursorNavigation({
+  className,
+  filters,
+  workspace,
+}: {
+  readonly className: string;
+  readonly filters: AuditFilters;
+  readonly workspace: AdminAuditWorkspaceResponse;
+}) {
+  const previousHref = filters.cursor
+    ? auditHrefFromFilters({ ...filters, cursor: workspace.cursor.previous ?? '', event: '' })
+    : null;
+  const firstHref = filters.cursor
+    ? auditHrefFromFilters({ ...filters, cursor: '', event: '' })
+    : null;
+  const nextHref = workspace.cursor.next
+    ? auditHrefFromFilters({ ...filters, cursor: workspace.cursor.next, event: '' })
+    : null;
+
+  return (
+    <div className={className}>
+      <span>
+        Showing {workspace.items.length.toLocaleString('en-US')} of {workspace.totalCount.toLocaleString('en-US')} events in this snapshot
+      </span>
+      <div>
+        {previousHref ? (
+          <AdminFormControlLink className="button-secondary" href={previousHref}>
+            Previous page
+          </AdminFormControlLink>
+        ) : null}
+        {firstHref ? (
+          <AdminFormControlLink className="button-plain" href={firstHref}>
+            First page
+          </AdminFormControlLink>
+        ) : null}
+        {nextHref ? (
+          <AdminFormControlLink className="button-secondary" href={nextHref}>
+            Next page
+          </AdminFormControlLink>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 function auditFilters(params: Record<string, string | string[] | undefined>): AuditFilters {
   const from = singleParam(params.from);
@@ -408,7 +479,7 @@ function AuditTrustStrip({ workspace }: { readonly workspace: AdminAuditWorkspac
   const metrics = [
     { label: 'Review-level events', value: workspace.summary.reviewRequired, tone: workspace.summary.reviewRequired ? 'warning' : 'neutral' },
     { label: 'Failed', value: workspace.summary.failed, tone: workspace.summary.failed ? 'danger' : 'neutral' },
-    { label: 'Unacknowledged', value: workspace.summary.unacknowledged, tone: workspace.summary.unacknowledged ? 'warning' : 'neutral' },
+    { label: 'Opened event records', value: workspace.summary.unacknowledged, tone: workspace.summary.unacknowledged ? 'warning' : 'neutral' },
     { label: 'Data lag', value: formatLag(workspace.source.dataLagSeconds), tone: workspace.sourceStatus === 'LIVE' ? 'info' : 'danger' },
   ] as const;
 
@@ -425,7 +496,13 @@ function AuditTrustStrip({ workspace }: { readonly workspace: AdminAuditWorkspac
         <div className="audit-trust-metric" key={metric.label}>
           <span>{metric.label}</span>
           <strong>{typeof metric.value === 'number' ? metric.value.toLocaleString('en-US') : metric.value}</strong>
-          <StatusBadge tone={metric.tone}>{metric.label === 'Data lag' ? 'Freshness' : 'Current filters'}</StatusBadge>
+          <StatusBadge tone={metric.tone}>
+            {metric.label === 'Data lag'
+              ? 'Freshness'
+              : metric.label === 'Opened event records'
+                ? 'Raw records'
+                : 'Current filters'}
+          </StatusBadge>
         </div>
       ))}
     </section>

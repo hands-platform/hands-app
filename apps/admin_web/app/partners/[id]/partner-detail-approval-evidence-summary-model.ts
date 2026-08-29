@@ -2,8 +2,10 @@ import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import type { PartnerKycDecisionEvidence } from './partner-detail-kyc-decision-section';
 import type { PartnerApprovalEvidenceSummaryRow } from './partner-detail-review-progress-section';
 import { formatDate } from './partner-detail-format';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 type PartnerApprovalEvidenceProvider = {
+  readonly id: string;
   readonly kyc?: {
     readonly cccdNumberLast4?: string | null;
     readonly status?: string | null;
@@ -59,7 +61,7 @@ export function buildPartnerApprovalEvidenceSummaryRows({
         : 'Partner has not submitted the KYC identity record yet.',
       status: kycStatus,
       tone: approvalEvidenceStatusTone(kycStatus),
-      href: '#kyc',
+      href: buildPartnerDetailTargetHref(provider.id, 'documents'),
     },
     {
       id: 'document-evidence-summary',
@@ -83,7 +85,7 @@ export function buildPartnerApprovalEvidenceSummaryRows({
           : rejectedRequiredDocumentCount
             ? 'pill-danger'
             : 'pill-warn',
-      href: '#documents',
+      href: buildPartnerDetailTargetHref(provider.id, 'documents'),
     },
     {
       id: 'bank-evidence-summary',
@@ -96,7 +98,7 @@ export function buildPartnerApprovalEvidenceSummaryRows({
         : 'Collected only when the Partner requests wallet withdrawal/deposit or manual settlement.',
       status: bankStatus,
       tone: approvalEvidenceStatusTone(bankStatus),
-      href: '#bank',
+      href: buildPartnerDetailTargetHref(provider.id, 'bank'),
     },
     {
       id: 'tax-evidence-summary',
@@ -117,7 +119,7 @@ export function buildPartnerApprovalEvidenceSummaryRows({
             : 'No tax profile is required for current Vietnam operations.',
       status: taxStatus,
       tone: taxStatus === 'DEFERRED' ? 'pill-neutral' : approvalEvidenceStatusTone(taxStatus),
-      href: '#tax',
+      href: buildPartnerDetailTargetHref(provider.id, 'tax'),
     },
   ];
 }

@@ -6,7 +6,6 @@ export type PartnerReviewModeContent = {
   steps: string[];
 };
 
-export type PartnerPrimaryListMode = 'partners' | 'approval-pending' | 'unapproved' | 'unsettled';
 export type PartnerDecisionQueue = 'approval-pending';
 
 export const PARTNER_APPROVAL_QUEUE_HREF = '/partners?review=approval-pending&sort=oldest';
@@ -25,14 +24,6 @@ const PRIMARY_PARTNER_LIST_REVIEWS = new Set([
   'customer-visibility-bank',
   'customer-visibility-documents',
 ]);
-
-export function partnerPrimaryListMode(review: string): PartnerPrimaryListMode {
-  if (review === 'approval-pending' || review === 'unapproved' || review === 'unsettled') {
-    return review;
-  }
-
-  return 'partners';
-}
 
 export function readPartnerDecisionQueue(value: string | null | undefined): PartnerDecisionQueue | null {
   return value === 'approval-pending' ? value : null;

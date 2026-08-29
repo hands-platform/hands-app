@@ -57,11 +57,13 @@ import {
   buildTaxFinanceMetrics,
   buildFinanceOperationsSummaryFilters,
   buildMonthlyTaxClosingMetrics,
+  buildMonthlyTaxCloseoutCommandState,
   buildMonthlyTaxClosingRemittanceEvidenceState,
   buildMonthlyTaxClosingPreflightLinks,
   buildMonthlyTaxClosingRiskLinks,
   emptyBookingSettlementSummary,
   emptyMonthlyTaxClosingSummary,
+  GENERAL_LEDGER_REVIEW_LINKS,
   readBookingSettlementFilters,
   readBookingSettlementAuditFilters,
   readCouponFinanceFilters,
@@ -73,6 +75,7 @@ import {
   safeBankReconciliationReturnTo,
   safePaymentClearingDetailReturnTo,
   safeBookingSettlementAuditReturnTo,
+  safeBookingSettlementReversalReturnTo,
   safeGeneralLedgerReturnTo,
 } from './tax-settlement-page-model';
 
@@ -82,9 +85,7 @@ describe('tax settlement page model', () => {
       safeBankReconciliationReturnTo(
         '/finance-tax/bank-reconciliation?workspace=imports&importRange=all#bank-reconciliation-imports',
       ),
-    ).toBe(
-      '/finance-tax/bank-reconciliation?workspace=imports&importRange=all#bank-reconciliation-imports',
-    );
+    ).toBe('/finance-tax/bank-reconciliation?workspace=imports&importRange=all#bank-reconciliation-imports');
     expect(safeBankReconciliationReturnTo('https://example.com/finance-tax/bank-reconciliation')).toBe(
       '/finance-tax/bank-reconciliation?range=all&review=unmatched',
     );
@@ -203,9 +204,7 @@ describe('tax settlement page model', () => {
   });
 
   it('drops the payment clearing age filter from historical records', () => {
-    expect(
-      readPaymentClearingFilters({ age: '48h', range: 'all', review: 'cleared' }),
-    ).toEqual({
+    expect(readPaymentClearingFilters({ age: '48h', range: 'all', review: 'cleared' })).toEqual({
       page: 1,
       range: 'all',
       review: 'cleared',
@@ -256,10 +255,7 @@ describe('tax settlement page model', () => {
 
   it('keeps the bank reconciliation age filter only on unresolved queues', () => {
     expect(
-      readFinanceAccountingFilters(
-        { age: '48h', range: '30d', review: 'partial' },
-        'unmatched',
-      ),
+      readFinanceAccountingFilters({ age: '48h', range: '30d', review: 'partial' }, 'unmatched'),
     ).toEqual({
       bankReconciliationAge: '48h',
       page: 1,
@@ -268,10 +264,7 @@ describe('tax settlement page model', () => {
       take: 10,
     });
     expect(
-      readFinanceAccountingFilters(
-        { age: '48h', range: '30d', review: 'matched' },
-        'unmatched',
-      ),
+      readFinanceAccountingFilters({ age: '48h', range: '30d', review: 'matched' }, 'unmatched'),
     ).toEqual({
       page: 1,
       range: '30d',
@@ -295,9 +288,7 @@ describe('tax settlement page model', () => {
   });
 
   it('translates legacy bank direction review links without breaking the default queue', () => {
-    expect(
-      readFinanceAccountingFilters({ range: 'all', review: 'inflow' }, 'unmatched'),
-    ).toEqual({
+    expect(readFinanceAccountingFilters({ range: 'all', review: 'inflow' }, 'unmatched')).toEqual({
       bankTransactionType: 'INFLOW',
       page: 1,
       range: 'all',
@@ -398,17 +389,39 @@ describe('tax settlement page model', () => {
   });
 
   it('keeps settlement audit detail return context on the exact local audit route', () => {
-    const returnTo = '/finance-tax/booking-settlement-audit?range=all&review=journal-evidence&q=Demo+Customer';
+    const returnTo =
+      '/finance-tax/booking-settlement-audit?range=all&review=journal-evidence&q=Demo+Customer';
 
     expect(safeBookingSettlementAuditReturnTo(returnTo)).toBe(returnTo);
-    expect(safeBookingSettlementAuditReturnTo('https://example.com/finance-tax/booking-settlement-audit')).toBe(
-      '/finance-tax/booking-settlement-audit?range=all&review=integrity-exceptions&sort=oldest&take=25',
-    );
+    expect(
+      safeBookingSettlementAuditReturnTo('https://example.com/finance-tax/booking-settlement-audit'),
+    ).toBe('/finance-tax/booking-settlement-audit?range=all&review=integrity-exceptions&sort=oldest&take=25');
     expect(safeBookingSettlementAuditReturnTo('//example.com/finance-tax/booking-settlement-audit')).toBe(
       '/finance-tax/booking-settlement-audit?range=all&review=integrity-exceptions&sort=oldest&take=25',
     );
     expect(safeBookingSettlementAuditReturnTo('/finance-tax/booking-settlement-audit/other')).toBe(
       '/finance-tax/booking-settlement-audit?range=all&review=integrity-exceptions&sort=oldest&take=25',
+    );
+  });
+
+  it('keeps settlement reversal list context and rejects unsafe return targets', () => {
+    const returnTo = '/finance-tax/settlement-reversals?range=all&review=non-cash&take=50&page=2';
+
+    expect(bookingSettlementReversalDetailHref('reversal 1', returnTo)).toBe(
+      '/finance-tax/settlement-reversals/reversal%201?returnTo=%2Ffinance-tax%2Fsettlement-reversals%3Frange%3Dall%26review%3Dnon-cash%26take%3D50%26page%3D2',
+    );
+    expect(safeBookingSettlementReversalReturnTo(returnTo)).toBe(returnTo);
+    expect(
+      safeBookingSettlementReversalReturnTo('https://example.com/finance-tax/settlement-reversals'),
+    ).toBe('/finance-tax/settlement-reversals?range=30d&take=25');
+    expect(safeBookingSettlementReversalReturnTo('//example.com/finance-tax/settlement-reversals')).toBe(
+      '/finance-tax/settlement-reversals?range=30d&take=25',
+    );
+    expect(safeBookingSettlementReversalReturnTo('/finance-tax/general-ledger')).toBe(
+      '/finance-tax/settlement-reversals?range=30d&take=25',
+    );
+    expect(safeBookingSettlementReversalReturnTo('/finance-tax/settlement-reversals\\evil')).toBe(
+      '/finance-tax/settlement-reversals?range=30d&take=25',
     );
   });
 
@@ -430,7 +443,9 @@ describe('tax settlement page model', () => {
     expect(bookingSettlementAuditHref(filters)).toBe(
       '/finance-tax/booking-settlement-audit?range=7d&review=posted&take=25&page=3',
     );
-    expect(couponFinanceHref(filters)).toBe('/finance-tax/coupon-finance?range=7d&review=posted&take=25&page=3');
+    expect(couponFinanceHref(filters)).toBe(
+      '/finance-tax/coupon-finance?range=7d&review=posted&take=25&page=3',
+    );
     expect(buildTaxSettlementServerPagination(['row-a', 'row-b'], filters, 57)).toEqual({
       from: 51,
       page: 3,
@@ -459,6 +474,26 @@ describe('tax settlement page model', () => {
     );
     expect(couponFinanceHref(filters)).toBe(
       '/finance-tax/coupon-finance?range=30d&review=coupon-review&take=25&page=2',
+    );
+  });
+
+  it('keeps coupon all-records explicit through URL round trips and pagination changes', () => {
+    const filters = readCouponFinanceFilters({
+      page: '3',
+      range: 'all',
+      review: 'all',
+      take: '50',
+    });
+    const href = couponFinanceHref(filters);
+
+    expect(href).toBe('/finance-tax/coupon-finance?range=all&review=all&take=50&page=3');
+    expect(
+      readCouponFinanceFilters(
+        Object.fromEntries(new URL(href, 'http://hands.local').searchParams.entries()),
+      ),
+    ).toEqual(filters);
+    expect(couponFinanceHref({ ...filters, page: 1, range: '30d', take: 100 })).toBe(
+      '/finance-tax/coupon-finance?range=30d&review=all&take=100',
     );
   });
 
@@ -557,10 +592,10 @@ describe('tax settlement page model', () => {
     expect(buildMonthlyTaxClosingApiHref(filters)).toBe(
       '/admin/monthly-tax-closings?period=2026-06&take=25&skip=25',
     );
-    expect(buildMonthlyTaxClosingHistoryApiHref(filters)).toBe(
-      '/admin/monthly-tax-closings?take=25&skip=25',
+    expect(buildMonthlyTaxClosingHistoryApiHref(filters)).toBe('/admin/monthly-tax-closings?take=25&skip=25');
+    expect(monthlyTaxClosingHref(filters)).toBe(
+      '/finance-tax/monthly-tax-closing?period=2026-06&take=25&page=2',
     );
-    expect(monthlyTaxClosingHref(filters)).toBe('/finance-tax/monthly-tax-closing?period=2026-06&take=25&page=2');
   });
 
   it('builds platform VAT and payment fee summary API hrefs from the same monthly period filter', () => {
@@ -594,7 +629,7 @@ describe('tax settlement page model', () => {
       ['Tax overview', '/finance-tax'],
       ['Finance approval queue', '/finance-tax/approval-queue'],
       ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid&take=50'],
-      ['Settlement reversals', '/finance-tax/settlement-reversals?range=7d&take=50'],
+      ['Closed-period reversals', '/finance-tax/settlement-reversals?range=7d&take=50'],
       ['Journal batches', '/finance-tax/general-ledger?range=7d&take=50&review=all'],
       ['Finance approvers', '/finance-tax/finance-approvers'],
       ['Payment clearing', '/finance-tax/payment-clearing?range=7d&take=50'],
@@ -640,6 +675,72 @@ describe('tax settlement page model', () => {
     );
     expect(safeGeneralLedgerReturnTo('//example.com/finance-tax/general-ledger')).toBe(
       '/finance-tax/general-ledger?range=all&review=needs-action&page=1&take=25',
+    );
+  });
+
+  it('preserves the unassigned-period journal queue across page, API, summary, and export URLs', () => {
+    const filters = readFinanceAccountingFilters(
+      { range: 'all', review: 'unassigned-period', take: '25' },
+      'needs-action',
+    );
+
+    expect(filters.review).toBe('unassigned-period');
+    expect(generalLedgerHref(filters)).toBe(
+      '/finance-tax/general-ledger?range=all&review=unassigned-period&take=25',
+    );
+    expect(buildAccountingJournalBatchApiHref(filters)).toBe(
+      '/admin/accounting-journal-batches?range=all&take=25&review=unassigned-period',
+    );
+    expect(buildAccountingJournalBatchSummaryApiHref(filters)).toBe(
+      '/admin/accounting-journal-batches/summary?range=all&review=unassigned-period',
+    );
+    expect(buildGeneralLedgerExportHref(filters)).toBe(
+      '/api/admin/finance-tax/general-ledger/export?range=all&review=unassigned-period',
+    );
+  });
+
+  it('preserves the evidence-unknown journal queue across page, API, summary, and export URLs', () => {
+    const filters = readFinanceAccountingFilters(
+      { range: 'all', review: 'unknown', take: '25' },
+      'needs-action',
+    );
+
+    expect(filters.review).toBe('unknown');
+    expect(GENERAL_LEDGER_REVIEW_LINKS).toContainEqual({
+      label: 'Evidence unknown',
+      review: 'unknown',
+    });
+    expect(generalLedgerHref(filters)).toBe('/finance-tax/general-ledger?range=all&review=unknown&take=25');
+    expect(buildAccountingJournalBatchApiHref(filters)).toBe(
+      '/admin/accounting-journal-batches?range=all&take=25&review=unknown',
+    );
+    expect(buildAccountingJournalBatchSummaryApiHref(filters)).toBe(
+      '/admin/accounting-journal-batches/summary?range=all&review=unknown',
+    );
+    expect(buildGeneralLedgerExportHref(filters)).toBe(
+      '/api/admin/finance-tax/general-ledger/export?range=all&review=unknown',
+    );
+  });
+
+  it('labels reversed batch lifecycle status separately from settlement reversal source records', () => {
+    expect(GENERAL_LEDGER_REVIEW_LINKS).toContainEqual({
+      label: 'Reversed batch status',
+      review: 'reversed',
+    });
+
+    const settlementReversals = readFinanceAccountingFilters({
+      range: 'all',
+      review: 'all',
+      source: 'BOOKING_SETTLEMENT_REVERSAL',
+    });
+    expect(generalLedgerHref(settlementReversals)).toBe(
+      '/finance-tax/general-ledger?range=all&review=all&source=BOOKING_SETTLEMENT_REVERSAL',
+    );
+    expect(buildAccountingJournalBatchApiHref(settlementReversals)).toBe(
+      '/admin/accounting-journal-batches?range=all&take=10&review=all&source=BOOKING_SETTLEMENT_REVERSAL',
+    );
+    expect(buildGeneralLedgerExportHref(settlementReversals)).toBe(
+      '/api/admin/finance-tax/general-ledger/export?range=all&review=all&source=BOOKING_SETTLEMENT_REVERSAL',
     );
   });
 
@@ -721,11 +822,31 @@ describe('tax settlement page model', () => {
   });
 
   it('summarizes settlement reversal evidence readiness for operations', () => {
+    const clearIntegrity = {
+      blockerCodes: [],
+      checkedAt: '2026-08-26T00:00:00.000Z',
+      checks: {
+        entriesBalanced: 'PASS' as const,
+        formula: 'PASS' as const,
+        headerBalanced: 'PASS' as const,
+        headerMatchesEntries: 'PASS' as const,
+        monthlyPeriod: 'PASS' as const,
+        postedEntries: 'PASS' as const,
+      },
+      discrepancyAmount: 0,
+      entryCount: 2,
+      entryCredit: 100000,
+      entryDebit: 100000,
+      formulaDelta: 0,
+      state: 'CLEAR' as const,
+    };
+
     expect(
       buildBookingSettlementReversalEvidenceState({
         accountingJournalBatches: [
           {
             id: 'journal-1',
+            integrity: clearIntegrity,
             sourceKey: 'journal:1',
             status: 'POSTED',
             totalCredit: 100000,
@@ -744,9 +865,20 @@ describe('tax settlement page model', () => {
             type: 'REFUND_REVERSAL',
           },
         ],
+        reversalEvidence: {
+          bankMatchState: 'PASS',
+          blockerCodes: [],
+          clearingState: 'PASS',
+          journalState: 'PASS',
+          ledgerState: 'NOT_APPLICABLE',
+          matchedAmount: 100000,
+          policy: { externalClearingRequired: true, ledgerType: 'EXTERNAL_CLEARING' },
+          state: 'PASS',
+          unmatchedAmount: 0,
+        },
       }),
     ).toEqual({
-      detail: 'Journal POSTED · Clearing CLEARED',
+      detail: 'Journal POSTED · Integrity CLEAR · Ledger NOT_APPLICABLE · Clearing PASS · Bank PASS',
       label: 'Evidence complete',
       tone: 'success',
     });
@@ -756,6 +888,7 @@ describe('tax settlement page model', () => {
         accountingJournalBatches: [
           {
             id: 'journal-1',
+            integrity: clearIntegrity,
             sourceKey: 'journal:1',
             status: 'POSTED',
             totalCredit: 100000,
@@ -774,11 +907,22 @@ describe('tax settlement page model', () => {
             type: 'REFUND_REVERSAL',
           },
         ],
+        reversalEvidence: {
+          bankMatchState: 'FAIL',
+          blockerCodes: ['REVERSAL_STATUS_MISMATCH', 'BANK_MATCH_INCOMPLETE'],
+          clearingState: 'FAIL',
+          journalState: 'PASS',
+          ledgerState: 'NOT_APPLICABLE',
+          matchedAmount: 0,
+          policy: { externalClearingRequired: true, ledgerType: 'EXTERNAL_CLEARING' },
+          state: 'FAIL',
+          unmatchedAmount: 100000,
+        },
       }),
     ).toEqual({
-      detail: 'Journal POSTED · Clearing OPEN',
-      label: 'Clearing open',
-      tone: 'warning',
+      detail: 'Journal POSTED · Integrity CLEAR · Ledger NOT_APPLICABLE · Clearing FAIL · Bank FAIL',
+      label: 'Clearing mismatch',
+      tone: 'danger',
     });
 
     expect(
@@ -787,10 +931,86 @@ describe('tax settlement page model', () => {
         paymentClearingEntries: [],
       }),
     ).toEqual({
-      detail: 'Journal missing · Clearing missing',
+      detail:
+        'Journal missing · Integrity UNAVAILABLE · Ledger UNAVAILABLE · Clearing missing · Bank UNAVAILABLE',
       label: 'Evidence missing',
       tone: 'danger',
     });
+
+    expect(
+      buildBookingSettlementReversalEvidenceState({
+        accountingJournalBatches: [
+          {
+            id: 'seed-finance-smoke-reversal-journal-batch',
+            integrity: {
+              ...clearIntegrity,
+              blockerCodes: ['HEADER_ENTRY_MISMATCH', 'FORMULA_DELTA'],
+              discrepancyAmount: 110000,
+              entryCredit: 390000,
+              entryDebit: 390000,
+              formulaDelta: 12000,
+              state: 'BLOCKED',
+            },
+            postedAt: '2026-07-01',
+            sourceKey: 'journal:reversal:seed',
+            status: 'POSTED',
+            totalCredit: 500000,
+            totalDebit: 500000,
+          },
+        ],
+        paymentClearingEntries: [],
+        reversalEvidence: {
+          bankMatchState: 'FAIL',
+          blockerCodes: ['REVERSAL_CLEARING_MISSING'],
+          clearingState: 'FAIL',
+          journalState: 'FAIL',
+          ledgerState: 'NOT_APPLICABLE',
+          matchedAmount: 0,
+          policy: { externalClearingRequired: true, ledgerType: 'EXTERNAL_CLEARING' },
+          state: 'FAIL',
+          unmatchedAmount: 500000,
+        },
+      }),
+    ).toEqual({
+      detail: 'Journal POSTED · Integrity BLOCKED · Ledger NOT_APPLICABLE · Clearing FAIL · Bank FAIL',
+      label: 'Journal blocked',
+      tone: 'danger',
+    });
+
+    for (const ledgerType of ['CASH_RECEIVABLE_JOURNAL', 'CUSTOMER_WALLET_REFUND'] as const) {
+      expect(
+        buildBookingSettlementReversalEvidenceState({
+          accountingJournalBatches: [
+            {
+              id: `journal-${ledgerType}`,
+              integrity: clearIntegrity,
+              postedAt: '2026-07-01',
+              sourceKey: `journal:${ledgerType}`,
+              status: 'POSTED',
+              totalCredit: 100000,
+              totalDebit: 100000,
+            },
+          ],
+          paymentClearingEntries: [],
+          reversalEvidence: {
+            bankMatchState: 'NOT_APPLICABLE',
+            blockerCodes: [],
+            clearingState: 'NOT_APPLICABLE',
+            journalState: 'PASS',
+            ledgerState: 'PASS',
+            matchedAmount: 0,
+            policy: { externalClearingRequired: false, ledgerType },
+            state: 'PASS',
+            unmatchedAmount: 0,
+          },
+        }),
+      ).toEqual({
+        detail:
+          'Journal POSTED · Integrity CLEAR · Ledger PASS · Clearing NOT_APPLICABLE · Bank NOT_APPLICABLE',
+        label: 'Evidence complete',
+        tone: 'success',
+      });
+    }
   });
 
   it('builds finance detail trace links to the exact settlement and reversal records', () => {
@@ -831,10 +1051,18 @@ describe('tax settlement page model', () => {
       totalAmount: 2_400_000,
     });
 
-    expect(links.map((link) => [link.label, link.href, link.amount, link.currency, link.amountSuffix])).toEqual([
+    expect(
+      links.map((link) => [link.label, link.href, link.amount, link.currency, link.amountSuffix]),
+    ).toEqual([
       ['Withdrawal requested', '/payouts?range=7d&withdrawalStatus=REQUESTED', 700_000, 'VND', null],
       ['Review required', '/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED', 1_600_000, 'VND', 'locked'],
-      ['Bank transfer pending', '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING', 900_000, 'VND', null],
+      [
+        'Bank transfer pending',
+        '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING',
+        900_000,
+        'VND',
+        null,
+      ],
       ['Cash debt gate', '/cash-settlements?range=7d', null, null, null],
     ]);
   });
@@ -898,18 +1126,60 @@ describe('tax settlement page model', () => {
         platformFeeGross: 420_000,
         platformFeeNetRevenue: 381_818,
         companyOutputVat: 38_182,
-         paymentProcessingFee: 20_000,
-         needsActionCount: 4,
-         openTaxCount: 4,
-         paidTaxCount: 1,
+        paymentProcessingFee: 20_000,
+        needsActionCount: 4,
+        openTaxCount: 4,
+        paidTaxCount: 1,
       },
     });
 
-    expect(links.map((link) => [link.label, link.href, link.count, link.amount, link.currency, link.amountSuffix, link.signal])).toEqual([
-      ['Today needs action', '/finance-tax/booking-settlement-audit?range=today&review=open', 4, null, null, null, 'Needs action'],
-      ['Payment clearing open', '/finance-tax/payment-clearing?range=today&review=open', 2, 1_200_000, 'VND', null, 'Unsettled'],
-      ['Bank unmatched', '/finance-tax/bank-reconciliation?range=today&review=unmatched', 3, 800_000, 'VND', null, 'Unmatched'],
-      ['Monthly close risk', '/finance-tax/monthly-tax-closing?period=2026-06', 3, 170_000, 'VND', 'cash debt', 'Closeout risk'],
+    expect(
+      links.map((link) => [
+        link.label,
+        link.href,
+        link.count,
+        link.amount,
+        link.currency,
+        link.amountSuffix,
+        link.signal,
+      ]),
+    ).toEqual([
+      [
+        'Today needs action',
+        '/finance-tax/booking-settlement-audit?range=today&review=open',
+        4,
+        null,
+        null,
+        null,
+        'Needs action',
+      ],
+      [
+        'Payment clearing open',
+        '/finance-tax/payment-clearing?range=today&review=open',
+        2,
+        1_200_000,
+        'VND',
+        null,
+        'Unsettled',
+      ],
+      [
+        'Bank unmatched',
+        '/finance-tax/bank-reconciliation?range=today&review=unmatched',
+        3,
+        800_000,
+        'VND',
+        null,
+        'Unmatched',
+      ],
+      [
+        'Monthly close risk',
+        '/finance-tax/monthly-tax-closing?period=2026-06',
+        3,
+        170_000,
+        'VND',
+        'cash debt',
+        'Closeout risk',
+      ],
     ]);
   });
 
@@ -960,6 +1230,7 @@ describe('tax settlement page model', () => {
         partnerVatWithheldTotal: 80_000,
         partnerPitWithheldTotal: 40_000,
         totalPartnerTaxWithheld: 120_000,
+        evidenceBreakdown: [],
       },
     );
 
@@ -994,6 +1265,7 @@ describe('tax settlement page model', () => {
       partnerWithholdingTotal: 84_000,
       paymentProcessingFeeTotal: 0,
       paymentFeeReviewFlagCount: 0,
+      platformVatReviewFlagCount: 0,
       partnerDepositReconciliationOpenCount: 0,
       partnerDepositReconciliationOpenAmount: 0,
       payoutBankOutflowReconciliationOpenCount: 0,
@@ -1086,6 +1358,7 @@ describe('tax settlement page model', () => {
       cashDebtTotal: 170_000,
       couponReviewFlagCount: 2,
       paymentFeeReviewFlagCount: 4,
+      platformVatReviewFlagCount: 3,
       partnerDepositReconciliationOpenCount: 2,
       partnerDepositReconciliationOpenAmount: 250_000,
       payoutBankOutflowReconciliationOpenCount: 3,
@@ -1099,16 +1372,107 @@ describe('tax settlement page model', () => {
 
     const links = buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, closingFilters);
 
-    expect(links.map((link) => [link.label, link.href, link.count, link.amount, link.currency, link.amountSuffix, link.signal])).toEqual([
-      ['Journal reconciliation', '/finance-tax/general-ledger?q=2026-06&range=all&review=unbalanced', 0, null, null, null, 'Journal blocker'],
-      ['Open tax rows', '/finance-tax/booking-settlement-audit?range=all&review=tax-open&period=2026-06&sort=oldest&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06', 3, null, null, null, 'Tax review'],
-      ['Coupon review flags', '/finance-tax/coupon-finance?range=30d&review=coupon-review&period=2026-06&sort=oldest&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06', 2, null, null, null, 'Coupon review'],
-      ['Payment fee evidence', '/finance-tax/booking-settlement-audit?range=all&review=payment-fee-evidence&period=2026-06&sort=oldest&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06', 4, null, null, null, 'Fee policy review'],
-      ['Partner deposit reconciliation', '/finance-tax/partner-bank-deposits?period=2026-06&review=needs-reconciliation&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06&sort=oldest', 2, 250_000, 'VND', null, 'Bank evidence'],
-      ['Payout bank outflow reconciliation', '/finance-tax/bank-reconciliation?range=all&review=unmatched&period=2026-06&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06&sort=oldest&workspace=operations&type=OUTFLOW&source=PAYOUT', 3, 360_000, 'VND', null, 'Payout evidence'],
-      ['Payout return inflow reconciliation', '/finance-tax/bank-reconciliation?range=all&review=unmatched&period=2026-06&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06&sort=oldest&workspace=operations&type=INFLOW&source=PAYOUT', 1, 120_000, 'VND', null, 'Return evidence'],
-      ['Cash debt gate', '/cash-settlements?period=2026-06&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06', null, 170_000, 'VND', null, 'Cash debt'],
-      ['Reconciliation deltas', '/finance-tax/monthly-tax-closing?period=2026-06', 2, 60_000, 'VND', null, 'Formula check'],
+    expect(
+      links.map((link) => [
+        link.label,
+        link.href,
+        link.count,
+        link.amount,
+        link.currency,
+        link.amountSuffix,
+        link.signal,
+      ]),
+    ).toEqual([
+      [
+        'Journal reconciliation',
+        '/finance-tax/general-ledger?q=2026-06&range=all&review=unbalanced',
+        0,
+        null,
+        null,
+        null,
+        'Journal blocker',
+      ],
+      [
+        'Open tax rows',
+        '/finance-tax/booking-settlement-audit?range=all&review=tax-open&period=2026-06&sort=oldest&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06',
+        3,
+        null,
+        null,
+        null,
+        'Tax review',
+      ],
+      [
+        'Coupon review flags',
+        '/finance-tax/coupon-finance?range=30d&review=coupon-review&period=2026-06&sort=oldest&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06',
+        2,
+        null,
+        null,
+        null,
+        'Coupon review',
+      ],
+      [
+        'Payment fee evidence',
+        '/finance-tax/booking-settlement-audit?range=all&review=payment-fee-evidence&period=2026-06&sort=oldest&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06',
+        4,
+        null,
+        null,
+        null,
+        'Fee policy review',
+      ],
+      [
+        'Platform VAT evidence',
+        '/finance-tax/booking-settlement-audit?range=all&review=platform-vat-evidence&period=2026-06&sort=oldest&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06',
+        3,
+        null,
+        null,
+        null,
+        'VAT evidence review',
+      ],
+      [
+        'Partner deposit reconciliation',
+        '/finance-tax/partner-bank-deposits?period=2026-06&review=needs-reconciliation&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06&sort=oldest',
+        2,
+        250_000,
+        'VND',
+        null,
+        'Bank evidence',
+      ],
+      [
+        'Payout bank outflow reconciliation',
+        '/finance-tax/bank-reconciliation?range=all&review=unmatched&period=2026-06&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06&sort=oldest&workspace=operations&type=OUTFLOW&source=PAYOUT',
+        3,
+        360_000,
+        'VND',
+        null,
+        'Payout evidence',
+      ],
+      [
+        'Payout return inflow reconciliation',
+        '/finance-tax/bank-reconciliation?range=all&review=unmatched&period=2026-06&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06&sort=oldest&workspace=operations&type=INFLOW&source=PAYOUT',
+        1,
+        120_000,
+        'VND',
+        null,
+        'Return evidence',
+      ],
+      [
+        'Cash debt gate',
+        '/cash-settlements?period=2026-06&returnTo=%2Ffinance-tax%3Fperiod%3D2026-06',
+        null,
+        170_000,
+        'VND',
+        null,
+        'Cash debt',
+      ],
+      [
+        'Reconciliation deltas',
+        '/finance-tax/monthly-tax-closing?period=2026-06',
+        2,
+        60_000,
+        'VND',
+        null,
+        'Formula check',
+      ],
     ]);
   });
 
@@ -1137,11 +1501,12 @@ describe('tax settlement page model', () => {
 
     expect(resolveMonthlyTaxClosingPreflight(summary)).toEqual(summary.preflight);
     expect(
-      buildMonthlyTaxClosingPreflightLinks(
-        summary,
-        settlementFilters,
-        closingFilters,
-      ).map((link) => [link.key, link.label, link.helper, link.href]),
+      buildMonthlyTaxClosingPreflightLinks(summary, settlementFilters, closingFilters).map((link) => [
+        link.key,
+        link.label,
+        link.helper,
+        link.href,
+      ]),
     ).toEqual([
       [
         'remittance-evidence',
@@ -1169,6 +1534,23 @@ describe('tax settlement page model', () => {
     expect(monthlyTaxClosingNextStatusOptions('REVERSED')).toEqual([]);
   });
 
+  it.each([
+    ['future', { hasActivity: false, periodState: 'FUTURE_PERIOD' }, ['Future period', 'Monitoring not started', 'neutral']],
+    ['past no activity', { hasActivity: false, periodState: 'NOT_STARTED' }, ['No activity', 'No close record', 'neutral']],
+    ['active not started', { hasActivity: true, periodState: 'NOT_STARTED' }, ['Review totals', 'Needs review', 'warning']],
+    ['reviewed', { hasActivity: true, periodState: 'REVIEWED', status: 'REVIEWED' }, ['Declare', 'Needs action', 'warning']],
+    ['declared', { hasActivity: true, periodState: 'DECLARED', status: 'DECLARED' }, ['Record payment', 'Needs action', 'warning']],
+    ['paid', { hasActivity: true, periodState: 'PAID', status: 'PAID' }, ['Close period', 'Needs action', 'warning']],
+    ['closed', { hasActivity: true, periodState: 'CLOSED', status: 'CLOSED' }, ['Closed', 'Records', 'success']],
+  ])('keeps %s monthly closeout command semantics distinct', (_label, overrides, expected) => {
+    const state = buildMonthlyTaxCloseoutCommandState({
+      ...emptyMonthlyTaxClosingSummary('2026-06'),
+      ...overrides,
+    } as never);
+
+    expect([state.value, state.scope, state.tone]).toEqual(expected);
+  });
+
   it('exports monthly tax closing summary and stored rows with visible totals', () => {
     const summaryCsv = decodeURIComponent(
       buildMonthlyTaxClosingSummaryCsvHref({
@@ -1190,6 +1572,7 @@ describe('tax settlement page model', () => {
         partnerWithholdingTotal: 84000,
         paymentProcessingFeeTotal: 0,
         paymentFeeReviewFlagCount: 1,
+        platformVatReviewFlagCount: 0,
         partnerDepositReconciliationOpenCount: 0,
         partnerDepositReconciliationOpenAmount: 0,
         payoutBankOutflowReconciliationOpenCount: 0,
@@ -1265,6 +1648,10 @@ describe('tax settlement page model', () => {
           partnerVatWithheldTotal: 90_000,
           partnerPitWithheldTotal: 36_000,
           totalPartnerTaxWithheld: 126_000,
+          completeEvidenceCount: 3,
+          explicitZeroEvidenceCount: 0,
+          missingEvidenceCount: 0,
+          withholdingEvidenceStatus: 'COMPLETE',
         },
       ]),
     );
@@ -1276,6 +1663,7 @@ describe('tax settlement page model', () => {
     expect(rowsCsv).toContain('"4","1"');
     expect(rowsCsv).toContain('"1800000"');
     expect(rowsCsv).toContain('"126000"');
+    expect(rowsCsv).toContain('"COMPLETE"');
   });
 
   it('exports booking settlement snapshot rows as CSV', () => {
@@ -1379,7 +1767,9 @@ describe('tax settlement page model', () => {
       ]),
     );
 
-    expect(rowsCsv).toContain('"generated_at","timezone","generated_by","active_filters","sort","total_rows"');
+    expect(rowsCsv).toContain(
+      '"generated_at","timezone","generated_by","active_filters","sort","total_rows"',
+    );
     expect(rowsCsv).toContain('"snapshot_id","booking_id","payment_id","monthly_period"');
     expect(rowsCsv).toContain('"snapshot-1","booking-1","payment-1","2026-06"');
     expect(rowsCsv).toContain('"Demo Customer"');
@@ -1416,6 +1806,7 @@ describe('tax settlement page model', () => {
         partnerWithholdingTotal: 84_000,
         paymentProcessingFeeTotal: 10_000,
         paymentFeeReviewFlagCount: 1,
+        platformVatReviewFlagCount: 0,
         partnerDepositReconciliationOpenCount: 0,
         partnerDepositReconciliationOpenAmount: 0,
         payoutBankOutflowReconciliationOpenCount: 0,
@@ -1464,6 +1855,7 @@ describe('tax settlement page model', () => {
         platformFeeNetRevenueTotal: 237038,
         companyOutputVatTotal: 18962,
         netRevenueDelta: 0,
+        evidenceBreakdown: [],
         rateBreakdown: [],
       }).map((metric) => [metric.label, metric.value]),
     ).toEqual([
@@ -1522,6 +1914,7 @@ describe('tax settlement page model', () => {
         platformFeeNetRevenueTotal: 237038,
         companyOutputVatTotal: 18962,
         netRevenueDelta: 0,
+        evidenceBreakdown: [],
         rateBreakdown: [
           {
             category: 'REDUCED_8',

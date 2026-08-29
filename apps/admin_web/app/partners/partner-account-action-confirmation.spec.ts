@@ -52,6 +52,21 @@ describe('partner account action confirmation', () => {
     expect(reject?.textInputs[0]?.placeholder).toBe('Partner rejection reason for resubmission');
   });
 
+  it('requires lift reason and evidence before releasing an account hold', () => {
+    const unblock = buildPartnerAccountActionConfirmation([partner], 'unblock', partner.id);
+
+    expect(unblock?.textInputs).toEqual([
+      {
+        label: 'Lift reason and evidence',
+        maxLength: 500,
+        minLength: 12,
+        name: 'reason',
+        placeholder: 'State what was resolved and which evidence was verified',
+        required: true,
+      },
+    ]);
+  });
+
   it('disables Supabase role sync until verification is approved', () => {
     const draftPartner = {
       ...partner,

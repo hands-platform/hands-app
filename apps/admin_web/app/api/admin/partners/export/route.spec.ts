@@ -7,7 +7,9 @@ import { requireAdminWebAccess } from '../../../../../lib/admin-session';
 import { GET } from './route';
 
 vi.mock('../../../../../lib/admin-api', async () => {
-  const actual = await vi.importActual<typeof import('../../../../../lib/admin-api')>('../../../../../lib/admin-api');
+  const actual = await vi.importActual<typeof import('../../../../../lib/admin-api')>(
+    '../../../../../lib/admin-api',
+  );
 
   return {
     ...actual,
@@ -78,7 +80,9 @@ describe('partner export route', () => {
       return { data: fallback, ok: true, status: 200 };
     });
 
-    const response = await GET(new NextRequest('http://localhost/api/admin/partners/export?pageSize=10&q=linh'));
+    const response = await GET(
+      new NextRequest('http://localhost/api/admin/partners/export?pageSize=10&q=linh'),
+    );
     const body = await response.text();
 
     expect(response.status).toBe(200);
@@ -105,6 +109,61 @@ describe('partner export route', () => {
     expect(response.headers.get('x-export-row-count')).toBe('0');
     expect(response.headers.get('x-export-scope')).toBe('current-page');
     expect(body).toContain('"display_name"');
+  });
+
+  it('exports the same frozen wallet debt cursor page shown in the directory', async () => {
+    const provider = {
+      activitySummary: { walletBalance: -305000 },
+      displayName: 'Snapshot Debt Partner',
+      id: 'snapshot-debt-partner',
+      status: 'OFFLINE',
+      user: {
+        createdAt: '2026-06-01T00:00:00.000Z',
+        fullName: 'Snapshot Debt Partner',
+        id: 'snapshot-debt-user',
+        phone: '+84900001111',
+      },
+      userId: 'snapshot-debt-user',
+    } as AdminProvider;
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/wallet-debt-page?take=10&cursor=cursor-2') {
+        return {
+          data: {
+            generatedAt: '2026-08-24T10:01:00.000Z',
+            items: [provider],
+            page: {
+              currentCursor: 'cursor-2',
+              hasNextPage: false,
+              nextCursor: null,
+              offset: 10,
+              returned: 1,
+              snapshotCursor: 'snapshot-current',
+              totalCount: 11,
+            },
+            snapshotAt: '2026-08-24T10:00:00.000Z',
+          },
+          ok: true,
+          status: 200,
+        };
+      }
+      if (href.startsWith('/admin/operational-policy?keys=')) {
+        return { data: [], ok: true, status: 200 };
+      }
+      return { data: fallback, ok: true, status: 200 };
+    });
+
+    const response = await GET(
+      new NextRequest(
+        'http://localhost/api/admin/partners/export?review=unsettled&sort=wallet-debt&cursor=cursor-2&page=2',
+      ),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"Snapshot Debt Partner"');
+    expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toContain(
+      '/admin/partners/wallet-debt-page?take=10&cursor=cursor-2',
+    );
   });
 
   it('returns a clear upstream error instead of an empty CSV', async () => {

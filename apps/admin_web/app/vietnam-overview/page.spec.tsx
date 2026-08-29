@@ -7,7 +7,7 @@ import {
   type AdminVietnamOverviewSummary,
   adminGetResult,
 } from '../../lib/admin-api';
-import VietnamOverviewPage from './page';
+import VietnamOverviewPage, { metadata } from './page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
@@ -15,12 +15,13 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 vi.mock('./vietnam-overview-live-map', () => ({
-  VietnamOverviewLiveMap: (props: { points: unknown[]; sampleCopy: string; signalFilters: Array<{ isActive: boolean; key: string }> }) => (
+  VietnamOverviewLiveMap: (props: { points: unknown[]; sampleCopy: string; signalFilters: Array<{ isActive: boolean; key: string }>; visibleCopy: string }) => (
     <div
       className="vietnam-maplibre-shell"
       data-active-layers={props.signalFilters.filter((item) => item.isActive).map((item) => item.key).join(',')}
       data-point-count={props.points.length}
       data-sample-copy={props.sampleCopy}
+      data-visible-copy={props.visibleCopy}
     />
   ),
 }));
@@ -57,7 +58,7 @@ describe('VietnamOverviewPage', () => {
     expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
     expect(markup).toContain('Needs supply now');
     expect(markup).toContain('Ready Partners');
-    expect(markup).toContain('Supply shortage');
+    expect(markup).toContain('Sampled supply gap');
     expect(markup).toContain('Operating map');
     expect(pageSource).toContain("const defaultLiveSignals: readonly VietnamOverviewMetricDotKey[] = ['needs-supply', 'online'];");
     expect(markup.indexOf('Operating map')).toBeLessThan(markup.indexOf('Regional location sample'));
@@ -108,6 +109,58 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('Manual refresh');
     expect(markup).toContain('Asia/Ho_Chi_Minh');
     expect(markup).not.toContain('Refreshes every');
+    expect(markup.match(/Generated/g)).toHaveLength(1);
+  });
+
+  it('uses the root metadata template once and describes the sampled supply gap honestly', async () => {
+    const markup = renderToStaticMarkup(
+      await VietnamOverviewPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(metadata.title).toBe('Vietnam Overview');
+    expect(markup).toContain('Sampled supply gap');
+    expect(markup).toContain('does not confirm assignment-engine matchability');
+    expect(markup).not.toContain('Supply shortage');
+    expect(markup).not.toContain('assignable Partner coverage');
+  });
+
+  it('separates the bounded source scope from points shown for current layers and focus', async () => {
+    const markup = renderToStaticMarkup(
+      await VietnamOverviewPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(markup).toContain('Showing up to 4 recent mapped signals');
+    expect(markup).toContain('2 shown for all regions and 2 selected layers.');
+  });
+
+  it('retains focused zero regions and customer-only regional coverage rows', async () => {
+    const emptyHanoi = zeroRegion('hanoi', 'Hanoi', 'Hanoi');
+    const customerOnlyDaNang = {
+      ...zeroRegion('da-nang', 'Da Nang', 'Da Nang'),
+      customerCount: 1,
+    };
+    mockedAdminGetResult.mockResolvedValue({
+      data: {
+        ...realtimeFixture,
+        realtimePoints: [],
+        regions: [emptyHanoi, customerOnlyDaNang],
+      },
+      ok: true,
+      status: 200,
+    } as never);
+
+    const focusedMarkup = renderToStaticMarkup(
+      await VietnamOverviewPage({ searchParams: Promise.resolve({ region: 'hanoi' }) }),
+    );
+    const allMarkup = renderToStaticMarkup(
+      await VietnamOverviewPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(focusedMarkup).toContain('Hanoi');
+    expect(focusedMarkup).toContain('No sampled coverage records');
+    expect(allMarkup).toContain('Da Nang');
+    expect(allMarkup).toContain('Customer or Partner context sampled');
+    expect(allMarkup).not.toContain('no sampled live records');
   });
 
   it('uses Vietnam local boundaries and end-exclusive wording for bounded reports', async () => {
@@ -187,6 +240,32 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('bounded location sample');
     expect(markup).not.toContain('High load');
     expect(markup).not.toContain('Regional live load');
+  });
+
+  it('collapses zero-outcome regions while keeping a focused zero region visible', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: {
+        ...overviewFixture,
+        regions: [...overviewFixture.regions, zeroRegion('hanoi', 'Hanoi', 'Hanoi')],
+      },
+      ok: true,
+      status: 200,
+    } as never);
+
+    const allMarkup = renderToStaticMarkup(
+      await VietnamOverviewPage({ searchParams: Promise.resolve({ view: 'period' }) }),
+    );
+    const focusedMarkup = renderToStaticMarkup(
+      await VietnamOverviewPage({
+        searchParams: Promise.resolve({ region: 'hanoi', view: 'period' }),
+      }),
+    );
+
+    expect(allMarkup).toContain('Show 1 region with no sampled outcomes');
+    expect(allMarkup).toContain('<p>Hanoi</p>');
+    expect(focusedMarkup).toContain('Hanoi period outcomes');
+    expect(focusedMarkup).toContain('Current report');
+    expect(focusedMarkup).not.toContain('View region report');
   });
 
   it('uses responsive KPI and table contracts without fixed six-column Vietnam layout', () => {
@@ -313,3 +392,28 @@ const realtimeFixture: AdminVietnamOverviewRealtimePointFeed = {
     },
   ],
 };
+
+function zeroRegion(regionCode: string, regionName: string, shortName: string) {
+  return {
+    ...overviewFixture.regions[0],
+    activeBookingCount: 0,
+    activeCustomerCount: 0,
+    assignedOrInServiceCount: 0,
+    busyPartnerCount: 0,
+    cancellationCount: 0,
+    completedBookingCount: 0,
+    customerCount: 0,
+    customersSeenIn30DaysCount: 0,
+    needsSupplyNowCount: 0,
+    offlinePartnerCount: 0,
+    onlinePartnerCount: 0,
+    partnerCount: 0,
+    readyPartnerCount: 0,
+    regionCode,
+    regionName,
+    shortName,
+    staleActiveRecordCount: 0,
+    stalePartnerCount: 0,
+    supplyShortageCount: 0,
+  };
+}

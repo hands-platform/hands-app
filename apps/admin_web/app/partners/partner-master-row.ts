@@ -47,6 +47,7 @@ export type PartnerMasterRow = {
   latestSessionIp: string;
   latestSessionAppVersion: string;
   locationState: ProviderLocationState;
+  locationPolicyAuthoritative?: boolean;
   bookingCount: number;
   completedCount: number;
   closedCount: number;
@@ -78,6 +79,7 @@ export type PartnerMasterRow = {
 
 export type PartnerMasterRowDeps = {
   displayName: (provider: AdminProvider) => string;
+  operationalPolicyAvailable?: boolean;
 };
 
 export function buildPartnerMasterRow(
@@ -104,7 +106,10 @@ export function buildPartnerMasterRow(
       }
     : partnerBookingClosureCounts(bookingRows);
   const latestAuditLog = latestProviderAuditLog(provider);
-  const approvalIssues = providerReviewIssues(provider, opsPolicy);
+  const operationalPolicyAvailable = deps.operationalPolicyAvailable !== false;
+  const approvalIssues = providerReviewIssues(provider, opsPolicy).filter(
+    (issue) => operationalPolicyAvailable || !issue.label.startsWith('location '),
+  );
 
   return {
     appActivityStatus: provider.appActivitySummary?.activityStatus ?? 'never_tracked',
@@ -128,6 +133,7 @@ export function buildPartnerMasterRow(
     latestSessionIp: latestSessionFacts.ip,
     latestSessionAppVersion: latestSessionFacts.appVersion,
     locationState: providerLocationStatus(provider, opsPolicy),
+    locationPolicyAuthoritative: operationalPolicyAvailable,
     bookingCount: bookingSummary?.bookingCount ?? bookingRows.length,
     completedCount:
       bookingSummary?.completedBookingCount ??

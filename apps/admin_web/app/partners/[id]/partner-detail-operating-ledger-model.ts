@@ -3,6 +3,7 @@ import { providerDocumentLabel } from '../../../lib/admin-api';
 import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../../lib/operations-policy';
 import type { PartnerBookingArchiveBooking, PartnerBookingArchiveRecord } from './partner-detail-booking-model';
 import { amountValue, dateValue, formatCurrency, locationAgeLabel } from './partner-detail-format';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 const ACTIVE_BOOKING_STATUSES: readonly string[] = [
   'OPEN_MATCHING',
@@ -141,7 +142,7 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
       area: 'Services',
       status: `${providerServicePricing.readyCount}/${providerServicePricing.rows.length} bookable`,
       evidence: 'Prices must match admin minimum, step policy, and payout rule lines.',
-      href: `/partners/${provider.id}?section=dossier&dossier=evidence#service-pricing-title`,
+      href: buildPartnerDetailTargetHref(provider.id, 'service-pricing'),
     },
     {
       area: 'Bookings',

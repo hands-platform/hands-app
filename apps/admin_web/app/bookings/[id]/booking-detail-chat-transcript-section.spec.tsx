@@ -9,6 +9,7 @@ describe('BookingDetailChatTranscriptSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminTextLink');
+    expect(source).toContain('BookingDetailChatHashFocus');
     expect(source).not.toContain('<span className="pill pill-info">{countLabel(totalMessages, \'message\')}</span>');
     expect(source).not.toContain('className="text-link"');
   });

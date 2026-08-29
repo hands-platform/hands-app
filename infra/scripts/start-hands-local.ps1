@@ -129,6 +129,9 @@ function Set-LocalServiceDefaults {
   Set-DefaultEnvIfMissing -Key "S3_ACCESS_KEY" -Value "minioadmin"
   Set-DefaultEnvIfMissing -Key "S3_SECRET_KEY" -Value "minioadmin"
   Set-DefaultEnvIfMissing -Key "S3_PUBLIC_BASE_URL" -Value "http://localhost:9000/massage-vn"
+  Set-DefaultEnvIfMissing -Key "SITE_CONTENT_PREVIEW_SECRET" -Value "hands-local-preview-secret-at-least-32-characters"
+  Set-DefaultEnvIfMissing -Key "SITE_CONTENT_CACHE_INVALIDATION_URLS" -Value "http://localhost:3200"
+  Set-DefaultEnvIfMissing -Key "SITE_CONTENT_CACHE_INVALIDATION_SECRET" -Value "hands-local-cache-secret-at-least-32-characters"
 
   # The broad local smoke exercises placeholder CARD/MOMO/VNPAY booking states. The API
   # ignores this override in production, and an explicit local false value remains authoritative.

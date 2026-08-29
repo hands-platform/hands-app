@@ -179,7 +179,7 @@ export function PayoutWalletWithdrawalRequestSection({
             rowCount={requests.length}
           >
           {requests.map((request) => (
-            <tr key={request.id}>
+            <tr id={`withdrawal-${request.id}`} key={request.id} tabIndex={-1}>
               <td>
                 <AdminTextLink href={`/partners/${request.providerProfileId}?section=full#finance`}>
                   {partnerLabel(request)}
@@ -225,7 +225,7 @@ export function PayoutWalletWithdrawalRequestSection({
                   />
                 ) : (
                   <details
-                    aria-label={`Review withdrawal ${shortRecordId(request.id)}`}
+                    aria-label={`Review request for ${partnerLabel(request)} (${shortRecordId(request.id)})`}
                     className="payout-withdrawal-row-actions"
                   >
                     <summary>Review request</summary>
@@ -322,12 +322,38 @@ function WithdrawalRequestActions({
           >
             Open bank match
           </AdminTextLink>
-        ) : (
-          <AdminTextLink href={withdrawalBankReconciliationHref(request)}>
+        ) : request.bankReconciliationCandidate ? (
+          <AdminTextLink
+            aria-label={`Match bank evidence for ${partnerLabel(request)} (${shortRecordId(request.id)})`}
+            href={`/finance-tax/bank-reconciliation/${encodeURIComponent(request.bankReconciliationCandidate.id)}`}
+          >
             Match bank evidence
           </AdminTextLink>
+        ) : request.transferRef?.trim() ? (
+          <>
+            <StatusBadge tone="warning">
+              {request.bankReconciliationCandidateCount
+                ? 'Multiple bank transactions share this reference'
+                : 'Exact bank transaction not identified'}
+            </StatusBadge>
+            <AdminTextLink
+              aria-label={`${
+                request.bankReconciliationCandidateCount
+                  ? 'Review bank transaction candidates'
+                  : 'Open bank statement imports'
+              } for ${partnerLabel(request)} (${shortRecordId(request.id)})`}
+              href={withdrawalBankEvidenceResolutionHref(request)}
+            >
+              {request.bankReconciliationCandidateCount
+                ? 'Review candidate transactions'
+                : 'Open statement imports'}
+            </AdminTextLink>
+          </>
+        ) : (
+          <StatusBadge tone="warning">Transfer reference missing</StatusBadge>
         )}
         <AdminTextLink
+          aria-label={`Open withdrawal journal for ${partnerLabel(request)} (${shortRecordId(request.id)})`}
           href={`/finance-tax/general-ledger?${new URLSearchParams({ q: request.id }).toString()}`}
         >
           Open withdrawal journal
@@ -479,7 +505,6 @@ function WithdrawalRequestActions({
 
       {(request.status === 'REQUESTED' ||
         request.status === 'APPROVED' ||
-        request.status === 'BANK_TRANSFER_PENDING' ||
         request.status === 'HOLD' ||
         request.status === 'REVIEW_REQUIRED') &&
       request.preflight?.canReject !== false ? (
@@ -533,13 +558,17 @@ function withdrawalReversalEvidence(metadata: unknown) {
   };
 }
 
-function withdrawalBankReconciliationHref(request: AdminProviderWalletWithdrawalRequest) {
-  const params = new URLSearchParams({ range: '30d', review: 'unmatched' });
-  const transferRef = request.transferRef?.trim();
-  if (transferRef) {
-    params.set('q', transferRef);
+function withdrawalBankEvidenceResolutionHref(request: AdminProviderWalletWithdrawalRequest) {
+  const transferRef = request.transferRef?.trim() ?? '';
+  if (request.bankReconciliationCandidateCount) {
+    return `/finance-tax/bank-reconciliation?${new URLSearchParams({
+      q: transferRef,
+      range: 'all',
+      review: 'unmatched',
+      type: 'OUTFLOW',
+    }).toString()}`;
   }
-  return `/finance-tax/bank-reconciliation?${params.toString()}`;
+  return '/finance-tax/bank-reconciliation?workspace=imports&importRange=all';
 }
 
 function WithdrawalReconciliationEvidence({

@@ -7,7 +7,7 @@ import type {
   AdminReview,
   AdminGetResult,
 } from '../../../lib/admin-api';
-import { adminGet, adminGetResult } from '../../../lib/admin-api';
+import { adminGetResult } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -44,10 +44,7 @@ import { hasAdminOperatorCategory } from '../../../lib/admin-operator-access-mod
 import { formatDateOnly } from '../../../lib/admin-format';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { readSearchParam } from '../../../lib/date-range';
-import {
-  OPERATIONAL_POLICY_CACHE_OPTIONS,
-  OPERATIONAL_POLICY_KEYS,
-} from '../../../lib/operations-policy';
+import { OPERATIONAL_POLICY_CACHE_OPTIONS, OPERATIONAL_POLICY_KEYS } from '../../../lib/operations-policy';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -126,16 +123,12 @@ import {
   type PartnerControlConfirmationAction,
 } from './partner-detail-control-action-confirmation';
 import { PartnerDetailBookingJourneySection } from './partner-detail-booking-journey-section';
-import {
-  PartnerDetailBookingGateEvidenceSection,
-} from './partner-detail-booking-gate-evidence-section';
+import { PartnerDetailBookingGateEvidenceSection } from './partner-detail-booking-gate-evidence-section';
 import { buildPartnerBookingGateAttemptRows } from './partner-detail-booking-gate-rows-model';
 import { PartnerDetailBookingEvidenceBundlesSection } from './partner-detail-booking-evidence-bundles-section';
 import { PartnerDetailBookingOpsLedgerSection } from './partner-detail-booking-ops-ledger-section';
 import { PartnerDetailRecordDateFilterSection } from './partner-detail-record-date-filter-section';
-import {
-  PartnerDetailAcceptanceUnblockPlaybookSection,
-} from './partner-detail-acceptance-unblock-playbook-section';
+import { PartnerDetailAcceptanceUnblockPlaybookSection } from './partner-detail-acceptance-unblock-playbook-section';
 import {
   PartnerDetailApprovalChecklistSection,
   PartnerDetailRegistrationDossierSection,
@@ -187,9 +180,7 @@ import {
 } from './partner-detail-review-progress-section';
 import { PartnerDetailOperatorCommandQueueSection } from './partner-detail-operator-command-queue-section';
 import { PartnerDetailOperatorNotesSection } from './partner-detail-operator-notes-section';
-import {
-  PartnerDetailReportsControlsSection,
-} from './partner-detail-reports-controls-section';
+import { PartnerDetailReportsControlsSection } from './partner-detail-reports-controls-section';
 import {
   buildPartnerAccountControlRows,
   buildPartnerOperatorNoteRows,
@@ -227,10 +218,7 @@ import {
   partnerProfileAvatarStatus,
   readPartnerProfileTranslations,
 } from './partner-detail-profile-media-model';
-import {
-  buildPartnerBankPayoutGateView,
-  buildPartnerTaxProfileView,
-} from './partner-detail-bank-tax-model';
+import { buildPartnerBankPayoutGateView, buildPartnerTaxProfileView } from './partner-detail-bank-tax-model';
 import {
   PartnerDetailServicePricingSection,
   type PartnerServicePricingDisplayRow,
@@ -287,6 +275,7 @@ import {
   PartnerDetailSectionGroup,
 } from './partner-detail-section-group';
 import {
+  buildPartnerDetailTargetHref,
   buildPartnerDetailWorkspaceHref,
   readPartnerAccessView,
   readPartnerBookingsView,
@@ -302,10 +291,7 @@ import {
   locationAgeMinutes,
   shortRecordId,
 } from './partner-detail-format';
-import type {
-  PartnerDispatchPolicy,
-  ProviderDetail,
-} from './partner-detail-types';
+import type { PartnerDispatchPolicy, ProviderDetail } from './partner-detail-types';
 import {
   activePayoutHold,
   buildProviderPayoutOps,
@@ -314,9 +300,7 @@ import {
   primaryBankAccount,
   providerHasFirstRevenueSignal,
 } from './partner-detail-payout-security-model';
-import {
-  partnerBookingStatusPillClass,
-} from './partner-detail-record-helpers';
+import { partnerBookingStatusPillClass } from './partner-detail-record-helpers';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -366,35 +350,51 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const accessView =
     requestedAccessView === 'diagnostics' && !canLoadPartnerDiagnostics ? 'readiness' : requestedAccessView;
   const shouldLoadAccessDiagnostics =
-    canLoadPartnerDiagnostics &&
-    detailSection === 'access' &&
-    accessView === 'diagnostics';
+    canLoadPartnerDiagnostics && detailSection === 'access' && accessView === 'diagnostics';
   const shouldLoadFinanceRecords = detailSection === 'dossier' && dossierView === 'finance';
   const shouldLoadEvidenceRecords = detailSection === 'dossier' && dossierView === 'evidence';
   const providerEndpoint =
     detailSection === 'overview'
       ? `/admin/partners/${id}/overview`
       : `/admin/partners/${id}?includeDiagnostics=${shouldLoadAccessDiagnostics ? 'true' : 'false'}${
-          shouldLoadFinanceRecords
-            ? '&view=finance'
-            : shouldLoadEvidenceRecords
-              ? '&view=evidence'
-              : ''
+          shouldLoadFinanceRecords ? '&view=finance' : shouldLoadEvidenceRecords ? '&view=evidence' : ''
         }`;
-  const [provider, operationalPolicies] = await Promise.all([
-    adminGet<ProviderDetail | null>(providerEndpoint, null),
+  const shouldLoadOperationalPolicies = !shouldLoadFinanceRecords && !shouldLoadEvidenceRecords;
+  const skippedOperationalPolicies: AdminGetResult<AdminOperationalPolicySetting[]> = {
+    data: [],
+    ok: true,
+    status: 200,
+  };
+  const [providerResult, operationalPoliciesResult] = await Promise.all([
+    adminGetResult<ProviderDetail | null>(providerEndpoint, null),
     shouldLoadFinanceRecords || shouldLoadEvidenceRecords
-      ? Promise.resolve<AdminOperationalPolicySetting[]>([])
-      : adminGet<AdminOperationalPolicySetting[]>(
+      ? Promise.resolve(skippedOperationalPolicies)
+      : adminGetResult<AdminOperationalPolicySetting[]>(
           PARTNER_DETAIL_OPERATIONAL_POLICY_HREF,
           [],
           OPERATIONAL_POLICY_CACHE_OPTIONS,
         ),
   ]);
 
-  if (!provider) {
-    notFound();
+  if (!providerResult.ok) {
+    if (providerResult.status === 404) {
+      notFound();
+    }
+
+    return renderPartnerPrimaryLoadError(id, providerResult.status);
   }
+  const provider = providerResult.data;
+  if (!isProviderDetailPayload(provider)) {
+    return renderPartnerPrimaryLoadError(id, providerResult.status);
+  }
+  const operationalPoliciesAvailable =
+    !shouldLoadOperationalPolicies ||
+    (operationalPoliciesResult.ok && isOperationalPolicySettingList(operationalPoliciesResult.data));
+  const operationalPolicies = operationalPoliciesAvailable ? operationalPoliciesResult.data : [];
+  const operationalPolicyFailureStatus = operationalPoliciesAvailable
+    ? undefined
+    : operationalPoliciesResult.status;
+
   const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const dispatchPolicy: PartnerDispatchPolicy = {
     responseWindowMinutes: providerOpsPolicy.responseWindowMinutes,
@@ -411,7 +411,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         kycEvidence={buildPartnerKycEvidence(provider)}
         latestAccessAt={latestPartnerAccessAt(provider)}
         payoutOps={buildProviderPayoutOps(provider)}
+        operationalPolicyAvailable={operationalPoliciesAvailable}
+        operationalPolicyFailureStatus={operationalPolicyFailureStatus}
         provider={provider}
+        policyRetryHref={`/partners/${encodeURIComponent(provider.id)}`}
         servicePricing={buildProviderServicePricing(provider)}
       />
     );
@@ -444,45 +447,53 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     ok: true,
     status: 200,
   };
-  const [customerReviewsResult, partnerEvaluationsResult, walletWithdrawalResult, partnerManualAdjustmentResult] =
-    await Promise.all([
-      shouldLoadControlRecords && canViewPartnerReviews
-        ? adminGetResult<AdminReview[]>(`/admin/reviews?${reviewQuery}`, [])
-        : Promise.resolve(
-            shouldLoadControlRecords
-              ? { data: [], ok: false, status: 403 } satisfies AdminGetResult<AdminReview[]>
-              : skippedCustomerReviews,
-          ),
-      shouldLoadControlRecords && canViewPartnerReviews
-        ? adminGetResult<AdminPartnerCustomerReview[]>(`/admin/partner-customer-reviews?${reviewQuery}`, [])
-        : Promise.resolve(
-            shouldLoadControlRecords
-              ? { data: [], ok: false, status: 403 } satisfies AdminGetResult<AdminPartnerCustomerReview[]>
-              : skippedPartnerEvaluations,
-          ),
-      shouldLoadFinanceRecords && canViewFinanceSettlements
-        ? adminGetResult<AdminProviderWalletWithdrawalRequest[]>(
-            `/admin/provider-wallet/withdrawal-requests?${walletWithdrawalQuery}`,
-            [],
-          )
-        : Promise.resolve(
-            shouldLoadFinanceRecords
-              ? { data: [], ok: false, status: 403 } satisfies AdminGetResult<AdminProviderWalletWithdrawalRequest[]>
-              : skippedWithdrawalRequests,
-          ),
-      shouldLoadFinanceRecords && canAdjustPartnerWallet
-        ? adminGetResult<AdminManualWalletAdjustmentRow[]>(
-            `/admin/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(
-              provider.id,
-            )}&take=${PARTNER_DETAIL_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
-            [],
-          )
-        : Promise.resolve(
-            shouldLoadFinanceRecords
-              ? { data: [], ok: false, status: 403 } satisfies AdminGetResult<AdminManualWalletAdjustmentRow[]>
-              : skippedManualAdjustments,
-          ),
-    ]);
+  const [
+    customerReviewsResult,
+    partnerEvaluationsResult,
+    walletWithdrawalResult,
+    partnerManualAdjustmentResult,
+  ] = await Promise.all([
+    shouldLoadControlRecords && canViewPartnerReviews
+      ? adminGetResult<AdminReview[]>(`/admin/reviews?${reviewQuery}`, [])
+      : Promise.resolve(
+          shouldLoadControlRecords
+            ? ({ data: [], ok: false, status: 403 } satisfies AdminGetResult<AdminReview[]>)
+            : skippedCustomerReviews,
+        ),
+    shouldLoadControlRecords && canViewPartnerReviews
+      ? adminGetResult<AdminPartnerCustomerReview[]>(`/admin/partner-customer-reviews?${reviewQuery}`, [])
+      : Promise.resolve(
+          shouldLoadControlRecords
+            ? ({ data: [], ok: false, status: 403 } satisfies AdminGetResult<AdminPartnerCustomerReview[]>)
+            : skippedPartnerEvaluations,
+        ),
+    shouldLoadFinanceRecords && canViewFinanceSettlements
+      ? adminGetResult<AdminProviderWalletWithdrawalRequest[]>(
+          `/admin/provider-wallet/withdrawal-requests?${walletWithdrawalQuery}`,
+          [],
+        )
+      : Promise.resolve(
+          shouldLoadFinanceRecords
+            ? ({ data: [], ok: false, status: 403 } satisfies AdminGetResult<
+                AdminProviderWalletWithdrawalRequest[]
+              >)
+            : skippedWithdrawalRequests,
+        ),
+    shouldLoadFinanceRecords && canAdjustPartnerWallet
+      ? adminGetResult<AdminManualWalletAdjustmentRow[]>(
+          `/admin/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(
+            provider.id,
+          )}&take=${PARTNER_DETAIL_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
+          [],
+        )
+      : Promise.resolve(
+          shouldLoadFinanceRecords
+            ? ({ data: [], ok: false, status: 403 } satisfies AdminGetResult<
+                AdminManualWalletAdjustmentRow[]
+              >)
+            : skippedManualAdjustments,
+        ),
+  ]);
   const customerReviews = customerReviewsResult.data;
   const partnerEvaluations = partnerEvaluationsResult.data;
   const walletWithdrawalRequests = walletWithdrawalResult.data;
@@ -509,7 +520,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     providerProfileId: provider.id,
     walletSummary: partnerWalletSummary,
   });
-  const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
+  const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy).filter(
+    (issue) => operationalPoliciesAvailable || !issue.label.startsWith('location '),
+  );
   const primaryBank = primaryBankAccount(provider);
   const partnerBankPayoutGate = buildPartnerBankPayoutGateView(
     provider.id,
@@ -587,7 +600,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     accountBlocked: Boolean(provider.blockedAt),
     accountBlockedReason: provider.blockedReason,
     activeBookingCount: activePartnerBookingCount,
-    activeBookingsHref: '#partner-booking-journey',
+    activeBookingsHref: buildPartnerDetailTargetHref(provider.id, 'booking-journey'),
     availabilityChangedAtLabel: provider.availabilitySummary?.availabilityChangedAt
       ? formatDate(provider.availabilitySummary.availabilityChangedAt)
       : null,
@@ -623,7 +636,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       (check) => check.domain === 'ACCOUNT' || check.domain === 'APPROVAL',
     ).length;
     const workOpenCount = partnerOpenOperationalChecks.filter((check) => check.domain === 'WORK').length;
-    const financeOpenCount = partnerOpenOperationalChecks.filter((check) => check.domain === 'FINANCE').length;
+    const financeOpenCount = partnerOpenOperationalChecks.filter(
+      (check) => check.domain === 'FINANCE',
+    ).length;
 
     return (
       <AdminPageTemplate
@@ -644,12 +659,19 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         } / ${provider.city ?? 'No city'}`}
         title={`${partnerDisplayLabel} work areas`}
       >
+        {operationalPoliciesAvailable
+          ? null
+          : renderOperationalPolicyError(
+              `/partners/${encodeURIComponent(provider.id)}?section=full`,
+              operationalPolicyFailureStatus,
+            )}
         <PartnerDetailFullRecordIndexSection
           approvalOpenCount={approvalOpenCount}
           bookingRecordCount={partnerBookingArchive.length}
           canViewDiagnostics={canLoadPartnerDiagnostics}
           decisionQueue={decisionQueue}
           financeOpenCount={financeOpenCount}
+          operationalPolicyAvailable={operationalPoliciesAvailable}
           partnerId={provider.id}
           workOpenCount={workOpenCount}
         />
@@ -706,7 +728,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     at: record.at,
     detail: record.detail,
     detailNode: record.detailNode,
-    href: partnerActivityRecordHref(record),
+    href: partnerActivityRecordHref(provider.id, record, canLoadPartnerDiagnostics),
     id: record.id,
     title: record.title,
     type: record.type,
@@ -782,6 +804,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     (check) => check.domain === 'ACCOUNT' || check.domain === 'APPROVAL',
   ).length;
   const partnerWorkOpenCount = partnerOpenOperationalChecks.filter((check) => check.domain === 'WORK').length;
+  const visiblePartnerOpenOperationalChecks = operationalPoliciesAvailable
+    ? partnerOpenOperationalChecks
+    : partnerOpenOperationalChecks.filter((check) => check.domain !== 'WORK');
   const partnerFinanceOpenCount = partnerOpenOperationalChecks.filter(
     (check) => check.domain === 'FINANCE',
   ).length;
@@ -790,16 +815,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const canCreateCustomerReview = canViewPartnerReviews;
   const manualReviewBookingOptions = (provider.selectedBookings ?? [])
     .filter(
-      (booking) =>
-        booking.status === 'COMPLETED' &&
-        !booking.review &&
-        Boolean(booking.customerProfile?.id),
+      (booking) => booking.status === 'COMPLETED' && !booking.review && Boolean(booking.customerProfile?.id),
     )
     .map((booking) => ({
       label: `${
-        booking.customerProfile?.user?.fullName ??
-        booking.customerProfile?.user?.phone ??
-        'Customer'
+        booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer'
       } · ${booking.id.slice(0, 8)} · ${formatDateOnly(
         booking.closedAt ?? booking.updatedAt ?? booking.createdAt,
       )}`,
@@ -820,7 +840,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       value: partnerApprovalOpenCount ? 'Needs action' : 'Approved',
     },
     {
-      detail: partnerWorkOpenCount ? (
+      detail: !operationalPoliciesAvailable ? (
+        'Operational policy data is unavailable. Pause matching and readiness decisions.'
+      ) : partnerWorkOpenCount ? (
         `${partnerWorkOpenCount} work readiness issue(s) are open.`
       ) : provider.appActivitySummary?.lastActiveAt ? (
         <>
@@ -832,10 +854,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       ),
       href: buildPartnerDetailWorkspaceHref(provider.id, 'access', 'readiness'),
       label: 'Work now',
-      value: partnerWorkOpenCount ? 'Blocked' : 'Ready',
+      value: !operationalPoliciesAvailable ? 'Unavailable' : partnerWorkOpenCount ? 'Blocked' : 'Ready',
     },
     {
-      detail: `${partnerReviewRecordCount} customer review or Partner evaluation record(s).`,
+      detail: `${partnerReviewRecordCount} customer review or internal Partner note record(s).`,
       href: buildPartnerDetailWorkspaceHref(provider.id, 'bookings', 'journey'),
       label: 'Bookings',
       value: `${partnerBookingEvidenceRows.length} booking(s)`,
@@ -938,6 +960,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       />
     ) : null;
   const partnerReferenceDiagnosticSection =
+    operationalPoliciesAvailable &&
     canLoadPartnerDiagnostics &&
     detailSection === 'control' &&
     controlView === 'reference' ? (
@@ -978,9 +1001,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </PartnerDetailReferenceDetails>
     ) : null;
   const partnerBookingOpsLedgerDiagnosticSection =
-    canLoadPartnerDiagnostics &&
-    detailSection === 'bookings' &&
-    bookingsView === 'ledger' ? (
+    canLoadPartnerDiagnostics && detailSection === 'bookings' && bookingsView === 'ledger' ? (
       <PartnerDetailBookingOpsLedgerSection
         rows={partnerBookingOpsLedgerRows}
         statusPillClass={partnerBookingStatusPillClass}
@@ -1086,14 +1107,22 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         />
       ) : null}
 
+      {operationalPoliciesAvailable
+        ? null
+        : renderOperationalPolicyError(detailBaseHref, operationalPolicyFailureStatus)}
+
       <PartnerDetailSummaryRailSection
         description="Open a status to jump to the complete information below. No Partner record is hidden."
         id="partner-status-summary"
         items={partnerStatusSummaryItems}
         statusLabel={
-          partnerOpenOperationalChecks.length
-            ? `${partnerOpenOperationalChecks.length} open action(s)`
-            : 'Ready'
+          !operationalPoliciesAvailable
+            ? visiblePartnerOpenOperationalChecks.length
+              ? `${visiblePartnerOpenOperationalChecks.length} known open / policy unavailable`
+              : 'Policy unavailable'
+            : partnerOpenOperationalChecks.length
+              ? `${partnerOpenOperationalChecks.length} open action(s)`
+              : 'Ready'
         }
         title="Current partner status"
       />
@@ -1114,11 +1143,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               ? `${partnerReviewRecords.customerReviews.length + partnerReviewRecords.partnerEvaluations.length + partnerOperatorNoteRows.length + partnerRecentTimelineRecords.length} record(s)`
               : controlView === 'reference'
                 ? 'Developer reference'
-                : `${partnerOperatorCommandQueue.commands.length} command(s)`
+                : operationalPoliciesAvailable
+                  ? `${partnerOperatorCommandQueue.commands.length} command(s)`
+                  : 'Policy unavailable'
           }
-          title={
-            controlView === 'records' ? 'Partner control records' : 'Partner control workspace'
-          }
+          title={controlView === 'records' ? 'Partner control records' : 'Partner control workspace'}
         >
           <AdminSection
             description="Keep current decisions, retained records, and Developer diagnostics in separate workspaces."
@@ -1150,11 +1179,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </AdminSection>
           {controlView === 'work' ? (
             <>
-              <PartnerDetailOperatorCommandQueueSection
-                pillClassForTone={partnerOpsPillClass}
-                providerId={provider.id}
-                queue={partnerOperatorCommandQueue}
-              />
+              {operationalPoliciesAvailable ? (
+                <PartnerDetailOperatorCommandQueueSection
+                  pillClassForTone={partnerOpsPillClass}
+                  providerId={provider.id}
+                  queue={partnerOperatorCommandQueue}
+                />
+              ) : null}
               <PartnerDetailReviewControlPanelSection panel={reviewControlPanel} />
               <PartnerDetailApprovalEvidenceSummarySection rows={approvalEvidenceSummaryRows} />
               <PartnerDetailConnectedRecordsSection
@@ -1197,7 +1228,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                 providerId={provider.id}
                 totalCount={partnerOpsNotes.length}
               />
-              <PartnerDetailRecentTimelineSection records={partnerRecentTimelineRecords} />
+              <PartnerDetailRecentTimelineSection
+                fullTimelineHref={
+                  canLoadPartnerDiagnostics
+                    ? buildPartnerDetailTargetHref(provider.id, 'app-activity')
+                    : buildPartnerDetailWorkspaceHref(provider.id, 'access', 'readiness')
+                }
+                records={partnerRecentTimelineRecords}
+              />
             </>
           ) : null}
           {controlView === 'reference' ? partnerReferenceDiagnosticSection : null}
@@ -1220,7 +1258,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               ? `${partnerBookingEvidenceRows.length + partnerBookingChatRecordRows.length} evidence row(s)`
               : bookingsView === 'ledger'
                 ? `${partnerBookingOpsLedgerRows.length} ledger row(s)`
-                : `${partnerBookingJourneyRows.length} booking row(s)`
+                : operationalPoliciesAvailable
+                  ? `${partnerBookingJourneyRows.length} booking row(s)`
+                  : 'Policy unavailable'
           }
           title={
             bookingsView === 'evidence'
@@ -1313,20 +1353,22 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     </AdminFormGrid>
                   ) : (
                     <p className="muted">
-                      Every loaded completed booking already has a review, or no eligible completed
-                      booking is available.
+                      Every loaded completed booking already has a review, or no eligible completed booking is
+                      available.
                     </p>
                   )}
                 </AdminSection>
               ) : null}
-              <PartnerDetailBookingJourneySection
-                description="Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace participation, customer final selection, retained chat, money rows, and staff records."
-                emptyDetail="Use a wider date range to show older booking rows."
-                emptyTitle="No partner booking journey matched this filter"
-                id="partner-booking-journey"
-                rows={partnerBookingJourneyRows}
-                title="Partner booking journey"
-              />
+              {operationalPoliciesAvailable ? (
+                <PartnerDetailBookingJourneySection
+                  description="Booking-by-booking factual journey for this partner: first-pick window, marketplace participation, customer final selection, retained chat, money rows, and staff records."
+                  emptyDetail="Use a wider date range to show older booking rows."
+                  emptyTitle="No partner booking journey matched this filter"
+                  id="partner-booking-journey"
+                  rows={partnerBookingJourneyRows}
+                  title="Partner booking journey"
+                />
+              ) : null}
               <PartnerDetailBookingGateEvidenceSection
                 filteredAttempts={filteredPartnerBookingGateAttempts}
                 loadedAttempts={partnerBookingGateAttempts}
@@ -1374,7 +1416,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               ? `${partnerAppActivityRows.length} diagnostic row(s)`
               : accessView === 'controls'
                 ? `${partnerReportRows.length + partnerAccountControlRows.length} control signal(s)`
-                : 'Current readiness'
+                : operationalPoliciesAvailable
+                  ? 'Current readiness'
+                  : 'Policy unavailable'
           }
           title={
             accessView === 'diagnostics'
@@ -1412,7 +1456,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               ) : null}
             </AdminFilterChipGroup>
           </AdminSection>
-          {accessView === 'readiness' ? (
+          {accessView === 'readiness' && operationalPoliciesAvailable ? (
             <>
               <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
               <PartnerDetailBookingGateDecisionSection
@@ -1430,6 +1474,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           {accessView === 'controls' ? (
             <PartnerDetailReportsControlsSection
               accountControls={partnerAccountControlRows}
+              partnerName={partnerDisplayLabel}
               payoutHold={reportControlPayoutHold}
               providerId={provider.id}
               reports={partnerReportRows}
@@ -1460,9 +1505,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               ? `${walletWithdrawalRequests.length + partnerManualAdjustmentRows.length} finance record(s)`
               : dossierView === 'evidence'
                 ? `${reviewHistoryRows.length + partnerTypedDocumentRows.length + partnerPublicMediaRows.length} evidence record(s)`
-                : reviewChecklist.ready && registrationDossier.ready
-                  ? 'Level 2 ready'
-                  : `${reviewChecklist.blockers + registrationDossier.blockers} blocker(s)`
+                : !operationalPoliciesAvailable
+                  ? 'Policy unavailable'
+                  : reviewChecklist.ready && registrationDossier.ready
+                    ? 'Level 2 ready'
+                    : `${reviewChecklist.blockers + registrationDossier.blockers} blocker(s)`
           }
           title={
             dossierView === 'finance'
@@ -1501,7 +1548,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
           {dossierView === 'approval' ? (
             <>
-              <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
+              {operationalPoliciesAvailable ? (
+                <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
+              ) : null}
               <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
               <PartnerDetailResubmissionGuidanceSection plan={resubmissionPlan} />
             </>
@@ -1530,7 +1579,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       `KYC ${partnerOperatingStatusLabel(provider.kyc?.status ?? 'NOT_SUBMITTED')}`,
                       partnerOperatingStatusLabel(provider.level ?? 'LEVEL_1'),
                     ]}
-                    subtitle={[provider.user?.phone, provider.city].filter(Boolean).join(' / ') || 'Partner profile'}
+                    subtitle={
+                      [provider.user?.phone, provider.city].filter(Boolean).join(' / ') || 'Partner profile'
+                    }
                     translations={partnerProfileTranslations}
                   />
                   <PartnerDetailServicePricingSection
@@ -1676,6 +1727,72 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </PartnerDetailSectionGroup>
       ) : null}
     </AdminPageTemplate>
+  );
+}
+
+function renderPartnerPrimaryLoadError(partnerId: string, status: number | null) {
+  const restricted = status === 401 || status === 403;
+
+  return (
+    <AdminPageTemplate
+      actions={<AdminTextLink href="/partners">Back to partners</AdminTextLink>}
+      contentClassName="partners-page partner-detail-page"
+      description="No Partner state has been inferred from this failed request."
+      title={restricted ? 'Partner access restricted' : 'Partner data unavailable'}
+    >
+      <AdminErrorState
+        action={
+          restricted ? null : (
+            <AdminTextLink href={`/partners/${encodeURIComponent(partnerId)}`}>
+              Retry Partner data
+            </AdminTextLink>
+          )
+        }
+        message={
+          restricted
+            ? 'You do not have permission to view this Partner record.'
+            : 'Partner data could not be loaded. Retry before making an operational decision.'
+        }
+        title={restricted ? 'Partner record restricted' : 'Partner record unavailable'}
+      />
+    </AdminPageTemplate>
+  );
+}
+
+function renderOperationalPolicyError(retryHref: string, status: number | null | undefined) {
+  const restricted = status === 401 || status === 403;
+
+  return (
+    <AdminErrorState
+      action={restricted ? null : <AdminTextLink href={retryHref}>Retry policy data</AdminTextLink>}
+      message={
+        restricted
+          ? 'You do not have permission to load the operational policy used for matching and readiness decisions. Pause matching and readiness decisions.'
+          : 'Operational policy data could not be loaded. Pause matching and readiness decisions, then retry.'
+      }
+      title={restricted ? 'Operational policy restricted' : 'Operational policy unavailable'}
+    />
+  );
+}
+
+function isProviderDetailPayload(value: ProviderDetail | null): value is ProviderDetail {
+  return Boolean(value && typeof value === 'object' && typeof value.id === 'string' && value.id.trim());
+}
+
+function isOperationalPolicySettingList(value: unknown): value is AdminOperationalPolicySetting[] {
+  return Array.isArray(value) && value.every(isOperationalPolicySetting);
+}
+
+function isOperationalPolicySetting(value: unknown): value is AdminOperationalPolicySetting {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const setting = value as Partial<AdminOperationalPolicySetting>;
+  return (
+    typeof setting.key === 'string' &&
+    Boolean(setting.key.trim()) &&
+    ['boolean', 'number', 'string'].includes(typeof setting.value)
   );
 }
 

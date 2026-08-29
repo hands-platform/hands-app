@@ -28,18 +28,19 @@ describe('PartnerMasterListSection', () => {
     expect(source).not.toContain("Joined {row.joinedAt ? formatDate(row.joinedAt) : 'not recorded'}");
   });
 
-  it('uses the shared table pagination footer for partner master pagination', () => {
+  it('uses shared table footers for numeric and snapshot cursor pagination', () => {
     const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).toContain('AdminTableFooter');
+    expect(source).toContain('PartnerWalletDebtSnapshotFooter');
     expect(source).toContain('className="vuexy-partner-table-footer"');
-    expect(source).not.toContain('<AdminTableFooter');
     expect(source).not.toContain('<span>{partnerMasterListFooterLabel(pagination)}</span>');
   });
 
   it('uses the shared Vuexy table panel atom instead of repeating table card classes', () => {
     const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
-    const css = readFileSync('app/globals.css', 'utf8');
+    const css = readFileSync('app/globals.css', 'utf8').replace(/\r\n?/g, '\n');
 
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTableScroll');
@@ -51,10 +52,10 @@ describe('PartnerMasterListSection', () => {
     expect(css).toContain('.vuexy-partner-table {\n  min-width: 0;');
     expect(css).toContain('.vuexy-partner-table.is-approval-pending {\n  min-width: 0;');
     expect(css).not.toContain('.vuexy-partner-table {\n  min-width: 1440px;');
-    expect(css).toContain('.vuexy-partner-table td:last-child a {\n  overflow-wrap: normal;\n  word-break: keep-all;');
     expect(css).toContain(
-      '.vuexy-partner-stack > .pill {\n  overflow-wrap: normal;\n  white-space: normal;',
+      '.vuexy-partner-table td:last-child a {\n  overflow-wrap: normal;\n  word-break: keep-all;',
     );
+    expect(css).toContain('.vuexy-partner-stack > .pill {\n  overflow-wrap: normal;\n  white-space: normal;');
     expect(css).toContain('.vuexy-partner-filter-group.is-primary .admin-directory-filter-select');
     expect(css).toContain('min-width: 148px');
     expect(css).toContain(
@@ -112,11 +113,7 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Open profile');
     expect(rendered).toContain('Showing 1 to 10 of 12 entries');
     expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining([
-        '/partners/partner-1',
-        '/partners',
-        '/partners?page=2',
-      ]),
+      expect.arrayContaining(['/partners/partner-1', '/partners', '/partners?page=2']),
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -132,6 +129,20 @@ describe('PartnerMasterListSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-person-avatar-shell', 'admin-avatar-status-dot is-online']),
     );
+  });
+
+  it('labels row freshness as unavailable when the policy read is not authoritative', () => {
+    const [row] = buildRows();
+    const section = PartnerMasterListSection({
+      filters: buildFilters(),
+      pagination: pagination([{ ...row!, locationPolicyAuthoritative: false }]),
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Freshness unavailable');
+    expect(rendered).toContain('Policy unavailable');
+    expect(rendered).not.toContain('Location recent');
   });
 
   it('renders an empty state when no partner rows are visible', () => {
@@ -168,6 +179,18 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).not.toContain('Account clear');
   });
 
+  it('does not repeat the App not tracked badge as its timestamp fallback', () => {
+    const row = buildRows()[0]!;
+    const section = PartnerMasterListSection({
+      filters: buildFilters(),
+      pagination: pagination([{ ...row, appActivityStatus: 'never_tracked', appLastActiveAt: null }]),
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered.match(/App not tracked/g)).toHaveLength(1);
+    expect(rendered).toContain('App: No activity timestamp');
+  });
+
   it('renders approval-focused copy for unapproved partners', () => {
     const section = PartnerMasterListSection({
       filters: buildFilters({ review: 'unapproved' }),
@@ -190,6 +213,7 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Review required: verification review');
     expect(rendered).toContain('+1 more');
     expect(rendered).toContain('Review blockers');
+    expect(hrefsIn(section)).toContain('/partners/partner-1');
     expect(rendered).not.toContain('Wallet');
   });
 
@@ -291,12 +315,75 @@ describe('PartnerMasterListSection', () => {
     );
     expect(rendered).toContain('1 wallet debt record');
     expect(rendered).toContain('Canonical VND wallet balance');
-    expect(rendered).toContain('Acceptance / service blocked');
+    expect(rendered).toContain('Final acceptance / service start blocked');
+    expect(rendered).toContain('Payout release blocked');
+    expect(rendered).toContain('Marketplace visibility remains available');
+    expect(rendered).toContain('Direct first-pick and existing matches are not retroactively blocked');
+    expect(rendered).not.toContain('Acceptance / service blocked');
     expect(rendered).toContain('Withdrawal');
     expect(rendered).not.toContain('Work origin');
     expect(rendered).toContain('Review wallet debt');
+    expect(hrefsIn(section)).toContain('/partners/partner-1?section=dossier&dossier=finance');
     expect(rendered).not.toContain('Settlement required');
     expect(rendered).not.toContain('Gender');
+  });
+
+  it('renders a frozen wallet debt snapshot footer with cursor navigation', () => {
+    const filters = buildFilters({ review: 'unsettled', sort: 'wallet-debt' });
+    const section = PartnerMasterListSection({
+      filters,
+      mode: 'unsettled',
+      pagination: pagination(buildRows(), { totalRows: 12 }),
+      snapshotPage: {
+        currentCursor: 'snapshot-current',
+        hasNextPage: true,
+        nextCursor: 'cursor-2',
+        offset: 0,
+        snapshotCursor: 'snapshot-current',
+        snapshotAt: '2026-08-24T10:00:00.000Z',
+      },
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Showing 1 to 10 of 12 entries · Snapshot 24 Aug 2026, 17:00');
+    expect(rendered).toContain('Next page');
+    expect(rendered).not.toContain('First');
+    expect(rendered).not.toContain('Previous');
+    expect(hrefsIn(section)).toContain(
+      '/partners?review=unsettled&sort=wallet-debt&cursor=cursor-2&cursorHistory=WyJzbmFwc2hvdC1jdXJyZW50Il0&page=2',
+    );
+  });
+
+  it('keeps first and previous controls inside the same wallet debt snapshot', () => {
+    const filters = buildFilters({
+      cursor: 'cursor-2',
+      cursorHistory: 'WyJzbmFwc2hvdC1jdXJyZW50Il0',
+      page: 2,
+      review: 'unsettled',
+      sort: 'wallet-debt',
+    });
+    const section = PartnerMasterListSection({
+      filters,
+      mode: 'unsettled',
+      pagination: pagination(buildRows(), { page: 2, totalRows: 12 }),
+      snapshotPage: {
+        currentCursor: 'cursor-2',
+        hasNextPage: false,
+        nextCursor: null,
+        offset: 10,
+        snapshotCursor: 'snapshot-current',
+        snapshotAt: '2026-08-24T10:00:00.000Z',
+      },
+    });
+
+    const rendered = normalizedText(section);
+    const hrefs = hrefsIn(section);
+
+    expect(rendered).toContain('First');
+    expect(rendered).toContain('Previous');
+    expect(rendered).not.toContain('Next page');
+    expect(hrefs).toContain('/partners?review=unsettled&sort=wallet-debt&cursor=snapshot-current');
   });
 });
 

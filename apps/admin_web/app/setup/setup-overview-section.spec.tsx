@@ -25,7 +25,8 @@ describe('SetupOverviewSection', () => {
     expect(rendered).toContain('Runtime health');
     expect(rendered).toContain('Not monitored');
     expect(rendered).toContain('Configuration ready');
-    expect(rendered).toContain('No runtime verification recorded');
+    expect(rendered).toContain('Configuration checked');
+    expect(rendered).not.toContain('Last runtime verification');
     expect(rendered).toContain('Technical details');
     expect(rendered).not.toContain('Operational');
     expect(renderToStaticMarkup(section)).not.toContain('>Healthy<');
@@ -102,7 +103,8 @@ describe('SetupOverviewSection', () => {
 
     expect(rendered).toContain('No capabilities match this view.');
     expect(rendered).not.toContain('MoMo payments');
-    expect(rendered).toContain('Launch blockers</span><strong>0</strong>');
+    expect(rendered).toContain('Needs action</span><strong>0</strong>');
+    expect(rendered).not.toContain('Launch blockers');
   });
 
   it.each([
@@ -176,6 +178,34 @@ describe('SetupOverviewSection', () => {
     expect(rendered).toContain('Needs action</span><strong>0</strong>');
   });
 
+  it('does not repeat saved-view counts in the adjacent runtime and readiness summaries', () => {
+    const runtime = renderToStaticMarkup(SetupOverviewSection({
+      errorCode: null,
+      mode: 'runtime',
+      readiness: readinessFixture([serviceFixture({ runtimeStatus: 'NOT_MONITORED' })]),
+      requestId: null,
+      status: 200,
+      view: 'active',
+    }));
+    const readiness = renderToStaticMarkup(SetupOverviewSection({
+      errorCode: null,
+      mode: 'readiness',
+      readiness: readinessFixture([serviceFixture({})]),
+      requestId: null,
+      status: 200,
+      view: 'active',
+    }));
+
+    expect(runtime.match(/>Needs action</gu)).toHaveLength(1);
+    expect(runtime.match(/>Evidence gaps</gu)).toHaveLength(1);
+    expect(runtime).toContain('>Degraded<');
+    expect(runtime).toContain('>Unknown<');
+    expect(runtime).toContain('>Not monitored<');
+    expect(readiness.match(/>Needs action</gu)).toHaveLength(1);
+    expect(readiness.match(/>Required capabilities</gu)).toHaveLength(1);
+    expect(readiness.match(/>Deferred</gu)).toHaveLength(1);
+  });
+
   it('renders a dynamic cash-only positive conclusion instead of a generic empty table', () => {
     const section = SetupOverviewSection({
       errorCode: null,
@@ -226,6 +256,36 @@ describe('SetupOverviewSection', () => {
     expect(rendered).toContain('Review affected app sessions and escalate database connectivity.');
     expect(rendered).toContain('href="/app-sessions?state=live"');
     expect(rendered).toContain('View evidence');
+  });
+
+  it.each([
+    ['CONFIGURATION_ONLY', false],
+    ['CONNECTIVITY', true],
+    ['FUNCTIONAL', true],
+  ] as const)('labels %s evidence without turning configuration checks into runtime verification', (evidenceLevel, runtimeVerified) => {
+    const rendered = renderToStaticMarkup(SetupOverviewSection({
+      errorCode: null,
+      mode: 'readiness',
+      readiness: readinessFixture([
+        serviceFixture({
+          evidenceGap: !runtimeVerified,
+          evidenceLevel,
+          lastVerifiedAt: runtimeVerified ? '2026-08-12T03:05:00.000Z' : null,
+          runtimeStatus: runtimeVerified ? 'HEALTHY' : 'NOT_MONITORED',
+        }),
+      ]),
+      requestId: null,
+      status: 200,
+      view: 'active',
+    }));
+
+    if (runtimeVerified) {
+      expect(rendered).toContain('Last runtime verification');
+    } else {
+      expect(rendered).toContain('Configuration checked');
+      expect(rendered).not.toContain('Last runtime verification');
+      expect(rendered).not.toContain('Last verified');
+    }
   });
 });
 

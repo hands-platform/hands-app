@@ -3,6 +3,7 @@ import {
   buildCustomerDataHrefs,
   buildCustomerFilters,
   buildCustomerListHref,
+  customerSortLabel,
   safeCustomerReturnTo,
 } from './customer-filters';
 
@@ -11,6 +12,7 @@ describe('customer filters', () => {
     const defaults = buildCustomerFilters({});
 
     expect(defaults.view).toBe('needs-action');
+    expect(customerSortLabel(defaults.sort)).toBe('Newest customers');
     expect(buildCustomerActiveFilters(defaults)).toEqual([]);
     expect(buildCustomerDataHrefs(defaults)).toEqual({
       listHref: '/admin/customers?view=needs-action&take=10&skip=0',
@@ -161,5 +163,6 @@ describe('customer filters', () => {
     expect(safeCustomerReturnTo('/payments')).toBe('/customers');
     expect(safeCustomerReturnTo('https://example.com/customers')).toBe('/customers');
     expect(safeCustomerReturnTo('//example.com/customers')).toBe('/customers');
+    expect(safeCustomerReturnTo('/customers\\?view=all')).toBe('/customers');
   });
 });

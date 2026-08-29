@@ -15,6 +15,7 @@ import { BookingMonitor } from './booking-monitor';
 import type { BookingTableGroupKey } from './booking-monitor-list-section';
 import {
   bookingMonitorPagePathForView,
+  COMPLETED_BOOKING_DEFAULT_VIEW,
   completedBookingViewOptions,
   postMatchCancellationBookingViewOptions,
   realtimeBookingViewOptions,
@@ -51,7 +52,7 @@ const bookingMonitorRouteConfig = {
     viewOptions: realtimeBookingViewOptions,
   },
   completed: {
-    defaultView: 'payment',
+    defaultView: COMPLETED_BOOKING_DEFAULT_VIEW,
     pageDescription:
       'Review completed, refunded, and expired bookings that still need payment or settlement follow-up.',
     pagePath: '/bookings/completed',
@@ -161,6 +162,10 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
   ].filter((result) => !result.ok).length;
   const model = buildBookingsPageModel({
     auditLogs: auditLogsResult.data,
+    dateRangeFallback:
+      kind === 'postMatchCancellations' && singleSearchParam(params?.view) === 'post-match-cancellations'
+        ? '30d'
+        : 'today',
     params,
     policySettings: policySettingsResult.data,
   });
@@ -193,11 +198,7 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
       }
       initialCustomDateFrom={model.initialCustomDateFrom}
       initialCustomDateTo={model.initialCustomDateTo}
-      initialDateRangeFilter={
-        kind === 'postMatchCancellations' && initialView === 'post-match-cancellations' && !params?.dateRange
-          ? '30d'
-          : model.initialDateRangeFilter
-      }
+      initialDateRangeFilter={model.initialDateRangeFilter}
       initialView={initialView}
       initialNowMs={Date.now()}
       initialEvidenceFilter={model.initialEvidenceFilter}

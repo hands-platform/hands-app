@@ -1,7 +1,9 @@
 export type PartnerControlSummaryResponse = {
   readonly activeControls?: number;
   readonly blockedAccounts?: number;
+  readonly bankGaps?: number;
   readonly generatedAt?: string;
+  readonly kycGaps?: number;
   readonly locationGaps?: number;
   readonly onboardingGaps?: number;
   readonly openReports?: number;

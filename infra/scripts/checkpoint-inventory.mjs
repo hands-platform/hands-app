@@ -307,6 +307,7 @@ export function classifyCheckpointPath(inputPath) {
     path.startsWith('docker') ||
     path.startsWith('Dockerfile') ||
     path === 'apps/api/package.json' ||
+    path === 'apps/api/vitest.config.mts' ||
     path === 'apps/admin_web/package.json' ||
     path === 'apps/public_web/package.json' ||
     path === 'eslint.config.mjs' ||

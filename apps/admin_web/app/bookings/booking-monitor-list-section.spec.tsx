@@ -11,6 +11,26 @@ import {
 const KOREAN_VIETNAM_COUNTRY = '\uBCB0\uD2B8\uB0A8';
 
 describe('BookingMonitorListSection', () => {
+  it('offers the live filter reset action when the operations result is empty', () => {
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No bookings match the current filters in Needs action."
+        emptyResetHref="/bookings?view=attention"
+        operationsWorkspace={{
+          description: 'Stalled live bookings that need review.',
+          detailPagePath: '/bookings',
+          detailView: 'attention',
+          title: 'Needs action',
+          tone: 'warning',
+        }}
+        rows={[]}
+      />,
+    );
+
+    expect(markup).toContain('href="/bookings?view=attention"');
+    expect(normalizedText(markup)).toContain('Reset filters');
+  });
+
   it('renders the live operations workspace as one compact server-paginated table', () => {
     const markup = renderToStaticMarkup(
       <BookingMonitorListSection
@@ -1117,6 +1137,102 @@ describe('BookingMonitorListSection', () => {
     expect(markup.indexOf('Auto Customer')).toBeGreaterThan(
       markup.indexOf('Cancellation Records / Resolved'),
     );
+  });
+
+  it('renders post-match row time labels from the same review and resolution clocks', () => {
+    const nowMs = new Date('2026-06-20T10:00:00.000Z').getTime();
+    const openTwentyFiveHours = bookingRowFixture({
+      closedAt: '2026-06-19T09:00:00.000Z',
+      closedByRole: 'PROVIDER',
+      closedReason: 'partner_cancelled',
+      customerName: 'Open 25 Hours',
+      id: 'booking_open_25_hours',
+      matchedAt: '2026-06-19T08:30:00.000Z',
+      openedDateLabel: '19 Jun 2026, 08:00',
+      status: 'CANCELLED',
+      statusChangedAt: '2026-06-19T09:00:00.000Z',
+    });
+    const openSevenDays = bookingRowFixture({
+      closedAt: '2026-06-13T10:00:00.000Z',
+      closedByRole: 'PROVIDER',
+      closedReason: 'partner_cancelled',
+      customerName: 'Open Seven Days',
+      id: 'booking_open_seven_days',
+      matchedAt: '2026-06-13T09:30:00.000Z',
+      openedDateLabel: '13 Jun 2026, 09:00',
+      status: 'CANCELLED',
+      statusChangedAt: '2026-06-13T10:00:00.000Z',
+    });
+    const adminResolvedBase = bookingRowFixture({
+      closedAt: '2026-06-19T09:00:00.000Z',
+      closedByRole: 'ADMIN',
+      closedReason: 'post_match_cancellation_approved',
+      customerName: 'Admin Resolved',
+      id: 'booking_admin_resolved',
+      matchedAt: '2026-06-19T08:30:00.000Z',
+      openedDateLabel: '19 Jun 2026, 08:00',
+      status: 'CANCELLED',
+      statusChangedAt: '2026-06-19T09:00:00.000Z',
+    });
+    const noTimeBase = bookingRowFixture({
+      closedByRole: 'PROVIDER',
+      closedReason: 'partner_cancelled',
+      customerName: 'No Persisted Time',
+      id: 'booking_no_time',
+      matchedAt: '2026-06-19T08:30:00.000Z',
+      openedDateLabel: '19 Jun 2026, 08:00',
+      status: 'CANCELLED',
+      statusChangedAt: 'invalid',
+    });
+
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        nowMs={nowMs}
+        operationsWorkspace={{
+          description: 'Review cancellations.',
+          detailPagePath: '/bookings/post-match-cancellations',
+          detailView: 'manual-decision',
+          title: 'Needs decision',
+          tone: 'warning',
+        }}
+        rows={[
+          openTwentyFiveHours,
+          openSevenDays,
+          {
+            ...adminResolvedBase,
+            booking: {
+              ...adminResolvedBase.booking,
+              postMatchCancellationDecisionAt: '2026-06-19T10:15:00.000Z',
+              updatedAt: '2026-06-20T12:00:00.000Z',
+            } as unknown as AdminBooking,
+          },
+          {
+            ...noTimeBase,
+            booking: {
+              ...noTimeBase.booking,
+              closedAt: 'invalid',
+              createdAt: null,
+              updatedAt: null,
+            } as unknown as AdminBooking,
+          },
+        ]}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Review started');
+    expect(rendered).toContain('Waiting 25h');
+    expect(rendered).toContain('Waiting 7d');
+    expect(rendered).toContain('Decided at');
+    expect(rendered).toContain('Admin approved');
+    expect(rendered).toContain('Fee restored');
+    expect(rendered).toContain('View waived fee record');
+    expect(rendered).toContain('Time unavailable');
+    expect(rendered).not.toContain('Decision time unavailable');
+    expect(rendered).not.toContain('Decision age unavailable');
+    expect(markup).toContain('dateTime="2026-06-19T10:15:00.000Z"');
+    expect(markup).toContain('href="/bookings/booking_admin_resolved');
   });
 
   it('keeps no-show review rows in the post-match cancellations group without fee decision actions', () => {

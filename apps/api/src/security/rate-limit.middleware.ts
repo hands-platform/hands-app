@@ -35,7 +35,7 @@ const buckets = new Map<string, Bucket>();
 export const apiRateLimitPolicies: RateLimitOptions[] = [
   {
     windowMs: 15 * 60_000,
-    max: 4,
+    max: 5,
     pathPattern: /^\/api\/auth\/admin-operator-login(?:\?|$)/,
     keyPathDepth: 3,
   },

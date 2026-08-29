@@ -1,5 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { vi } from 'vitest';
+
+import { handleAdminDatePickerInputKeyDown } from './admin-form-date-picker-field';
 
 describe('Admin form control usage', () => {
   it('keeps legacy full tone button class names out of production TSX', () => {
@@ -134,13 +137,27 @@ describe('Admin form control usage', () => {
 
   it('keeps shared react-datepicker poppers out of form layout scroll flow', () => {
     const datePickerFieldSource = readFileSync(join(process.cwd(), 'components/admin-form-date-picker-field.tsx'), 'utf8');
-    const formControlsSource = readFileSync(join(process.cwd(), 'components/admin-form-controls.tsx'), 'utf8');
 
     expect(datePickerFieldSource).toContain('portalId="admin-datepicker-portal"');
     expect(datePickerFieldSource).toContain('popperProps={ADMIN_DATEPICKER_POPPER_PROPS}');
-    expect(datePickerFieldSource).toContain('onMouseDown={preventDatePickerTextInputFocus}');
-    expect(datePickerFieldSource).toContain('event.preventDefault();');
-    expect(formControlsSource).toContain('onMouseDown={preventDatePickerTextInputFocus}');
+  });
+
+  it('opens shared react-datepicker inputs with Enter or Space and forwards Escape while open', () => {
+    const openCalendar = vi.fn();
+    const forwardKeyDown = vi.fn();
+    const spaceEvent = { key: ' ', preventDefault: vi.fn() };
+    const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
+    const escapeEvent = { key: 'Escape', preventDefault: vi.fn() };
+
+    handleAdminDatePickerInputKeyDown(spaceEvent as never, openCalendar, forwardKeyDown, false);
+    handleAdminDatePickerInputKeyDown(enterEvent as never, openCalendar, forwardKeyDown, false);
+    handleAdminDatePickerInputKeyDown(escapeEvent as never, openCalendar, forwardKeyDown, true);
+
+    expect(spaceEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(enterEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(openCalendar).toHaveBeenCalledTimes(2);
+    expect(forwardKeyDown).toHaveBeenCalledOnce();
+    expect(forwardKeyDown).toHaveBeenCalledWith(escapeEvent);
   });
 
   it('keeps legacy page field class names out of production form atoms', () => {

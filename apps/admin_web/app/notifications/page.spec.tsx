@@ -49,6 +49,17 @@ describe('Notification Delivery page contract', () => {
     expect(source).toContain('canViewAdminDeveloperSystem(operatorAccess)');
   });
 
+  it('keeps persistent incident mutation behind an exact permission and audited revision forms', () => {
+    expect(source).toContain("hasAdminOperatorCategory(operatorAccess, 'NOTIFICATIONS_INCIDENTS')");
+    expect(source).toContain('title="Persistent incident lifecycle"');
+    expect(source).toContain('Start incident lifecycle');
+    expect(source).toContain('Take ownership');
+    expect(source).toContain('Resolve incident');
+    expect(source).toContain('Reopen incident');
+    expect(source).toContain('name="expectedRevision"');
+    expect(source).toContain('exact NOTIFICATIONS_INCIDENTS permission');
+  });
+
   it('distinguishes unavailable records and summary from true empty results', () => {
     expect(source).toContain('adminGetResult<AdminNotification[]>');
     expect(source).toContain('adminGetResult<AdminNotificationBoardSummary | null>');
@@ -64,6 +75,8 @@ describe('Notification Delivery page contract', () => {
     expect(source).toContain('view.page > model.notificationPagination.totalPages');
     expect(source).toContain('buildNotificationDeliveryHref(view, { page: model.notificationPagination.totalPages })');
     expect(source).toContain('hrefForPage={(page) => buildNotificationDeliveryHref(view, { page })}');
+    expect(source).toContain('view.page > NOTIFICATION_RECORD_MAX_PAGE');
+    expect(source).toContain('buildNotificationDeliveryHref(view, { page: NOTIFICATION_RECORD_MAX_PAGE })');
   });
 
   it('shows honest scope, Vietnam time, refresh, and boundary state', () => {

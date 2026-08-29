@@ -34,4 +34,18 @@ describe('partner control page structure', () => {
     expect(pageSource).toContain('minLength={12}');
     expect(pageSource).toContain('name="noExpiry"');
   });
+
+  it('routes every filter form through the shared canonical submit action', () => {
+    expect(pageSource.match(/action=\{applyPartnerControlFilters\}/gu)).toHaveLength(4);
+    expect(pageSource).not.toContain('action="/partner-controls" method="get"');
+  });
+
+  it('keeps desktop filter actions beside the final control with a readable search width', () => {
+    expect(pageSource.match(/className="partner-control-filter-grid"/gu)).toHaveLength(4);
+    expect(pageSource.match(/<AdminFormActionRow wide=\{false\}>/gu)).toHaveLength(4);
+    expect(cssSource).toContain('@media (min-width: 1200px)');
+    expect(cssSource).toContain('.partner-control-filter-grid');
+    expect(cssSource).toContain('minmax(280px, 1.4fr)');
+    expect(cssSource).toContain('justify-content: flex-start');
+  });
 });

@@ -1,23 +1,34 @@
-import { Edit3, Plus, RefreshCw } from 'lucide-react';
+import { Edit3, Plus } from 'lucide-react';
 
 import {
   AdminFormControlLink,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { DateTimeText } from '../../components/date-time-text';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
-import type { AdminServiceCatalogHealth, AdminServiceCatalogImpact } from '../../lib/admin-api';
+import type {
+  AdminAuditLog,
+  AdminServiceCatalogAuditEvidence,
+  AdminServiceCatalogHealth,
+  AdminServiceCatalogImpact,
+} from '../../lib/admin-api';
 import { serviceBasePayoutRule } from '../../lib/service-base-payout-rule';
 import type { ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { ServiceCatalogEditorForm } from './service-catalog-editor-form';
 import { ServiceCatalogDrawerShell } from './service-catalog-drawer-shell';
+import { ServiceCatalogRefreshButton } from './service-catalog-refresh-button';
 
 type ServiceCatalogManagerSectionProps = {
+  readonly canOpenFullAuditLog?: boolean;
   readonly dataAvailable: boolean;
   readonly dialogMode: 'new' | 'edit' | null;
   readonly editGroup: ServiceCatalogGroup | null;
+  readonly evidence?: AdminServiceCatalogAuditEvidence | null;
+  readonly evidenceAvailable?: boolean;
+  readonly evidenceGroupKey?: string | null;
   readonly impact?: AdminServiceCatalogImpact | null;
   readonly impactAvailable?: boolean;
   readonly invalidEditGroupKey?: string | null;
@@ -29,9 +40,13 @@ type ServiceCatalogManagerSectionProps = {
 const SERVICE_DURATIONS = [60, 90, 120] as const;
 
 export function ServiceCatalogManagerSection({
+  canOpenFullAuditLog = false,
   dataAvailable,
   dialogMode,
   editGroup,
+  evidence,
+  evidenceAvailable = true,
+  evidenceGroupKey,
   impact,
   impactAvailable = true,
   invalidEditGroupKey,
@@ -44,10 +59,7 @@ export function ServiceCatalogManagerSection({
       <AdminSection
         actions={
           <>
-            <AdminFormControlLink className="button-secondary" href="/services">
-              <RefreshCw aria-hidden="true" size={16} />
-              Refresh
-            </AdminFormControlLink>
+            <ServiceCatalogRefreshButton />
             <AdminFormControlLink className="button-primary" href={serviceDialogHref('new', null)}>
               <Plus aria-hidden="true" size={16} />
               Add service
@@ -86,30 +98,41 @@ export function ServiceCatalogManagerSection({
               </AdminNoticeCard>
             ) : null}
             <dl aria-label="Live public catalog health" className="service-catalog-health-strip">
-              <HealthFact detail={`${health.liveOptionCount} app-visible duration options`} label="Live service groups" tone="success" value={health.liveGroupCount} />
+              <HealthFact
+                detail={health.anomalyCount ? 'Published options blocked or ambiguous' : 'Customer app projection healthy'}
+                label="Public anomalies"
+                priority="primary"
+                tone={health.anomalyCount ? 'danger' : 'neutral'}
+                value={health.anomalyCount}
+              />
+              <HealthFact
+                detail="Unpublished operator changes"
+                label="Working drafts"
+                priority="primary"
+                tone={health.workingDraftCount ? 'warning' : 'neutral'}
+                value={health.workingDraftCount}
+              />
+              <HealthFact
+                detail={health.lastPublishedAt ? formatPublishedTime(health.lastPublishedAt) : 'No publisher timestamp'}
+                label="Last published"
+                priority="primary"
+                value={health.lastPublishedByLabel}
+                valueKind="evidence"
+              />
+              <HealthFact detail={`${health.liveOptionCount} app-visible duration options`} label="Live service groups" priority="secondary" tone="success" value={health.liveGroupCount} />
               <HealthFact
                 detail={`${health.historicalPayoutRuleCount} historical · ${health.blockedOptionCount} blocked options`}
                 label="Current payout rules"
+                priority="secondary"
                 tone={health.blockedOptionCount ? 'danger' : 'success'}
                 value={health.currentPayoutRuleCount}
               />
               <HealthFact
                 detail={`of ${health.liveGroupCount} live service groups`}
                 label="Live EN + VI ready"
+                priority="secondary"
                 tone={health.liveEnViReadyGroupCount === health.liveGroupCount ? 'success' : 'warning'}
                 value={health.liveEnViReadyGroupCount}
-              />
-              <HealthFact
-                detail={health.anomalyCount ? 'Published options blocked or ambiguous' : 'Customer app projection healthy'}
-                label="Public anomalies"
-                tone={health.anomalyCount ? 'danger' : 'success'}
-                value={health.anomalyCount}
-              />
-              <HealthFact detail="Unpublished operator changes" label="Working drafts" tone={health.workingDraftCount ? 'warning' : 'neutral'} value={health.workingDraftCount} />
-              <HealthFact
-                detail={health.lastPublishedAt ? formatPublishedTime(health.lastPublishedAt) : 'No publisher timestamp'}
-                label="Last published"
-                value={health.lastPublishedById ?? 'Unknown actor'}
               />
             </dl>
             <p className="muted service-catalog-health-checked">
@@ -117,14 +140,25 @@ export function ServiceCatalogManagerSection({
               {health.auditTarget ? (
                 <AdminFormControlLink
                   className="text-link"
-                  href={`/audit-log?target=${encodeURIComponent(health.auditTarget)}`}
+                  href={canOpenFullAuditLog
+                    ? `/audit-log?target=${encodeURIComponent(health.auditTarget)}`
+                    : `/services?evidence=${encodeURIComponent(health.lastPublishedGroupKey ?? '')}`}
                 >
-                  View last publish audit
+                  {canOpenFullAuditLog ? 'View last publish audit' : 'View last publish evidence'}
                 </AdminFormControlLink>
               ) : null}
             </p>
           </>
         )}
+
+        {evidenceGroupKey ? (
+          <ServiceCatalogEvidencePanel
+            canOpenFullAuditLog={canOpenFullAuditLog}
+            evidence={evidence}
+            evidenceAvailable={evidenceAvailable}
+            groupKey={evidenceGroupKey}
+          />
+        ) : null}
 
         {groups.length ? (
           <AdminTableScroll ariaLabel="Service catalog comparison table" className="service-catalog-table-scroll">
@@ -155,7 +189,11 @@ export function ServiceCatalogManagerSection({
       </AdminSection>
 
       {dialogMode === 'new' ? (
-        <ServiceCatalogDrawerShell returnHref="/services" title="Add service group">
+        <ServiceCatalogDrawerShell
+          returnFocusHref="/services?dialog=new"
+          returnHref="/services"
+          title="Add service group"
+        >
           <ServiceCatalogEditorForm />
         </ServiceCatalogDrawerShell>
       ) : null}
@@ -172,19 +210,89 @@ export function ServiceCatalogManagerSection({
   );
 }
 
+function ServiceCatalogEvidencePanel({
+  canOpenFullAuditLog,
+  evidence,
+  evidenceAvailable,
+  groupKey,
+}: {
+  readonly canOpenFullAuditLog: boolean;
+  readonly evidence: AdminServiceCatalogAuditEvidence | null | undefined;
+  readonly evidenceAvailable: boolean;
+  readonly groupKey: string;
+}) {
+  return (
+    <section aria-labelledby="service-catalog-evidence-title" className="service-catalog-evidence">
+      <div className="service-catalog-evidence-heading">
+        <div>
+          <h3 id="service-catalog-evidence-title">Service change evidence</h3>
+          <p>Only service catalog actions retained for <code>{groupKey}</code> are shown.</p>
+        </div>
+        <AdminFormControlLink className="button-secondary" href="/services">
+          Close evidence
+        </AdminFormControlLink>
+      </div>
+      {!evidenceAvailable || !evidence ? (
+        <AdminNoticeCard role="alert" tone="danger">
+          Scoped service evidence could not be loaded. No full audit access was assumed.
+        </AdminNoticeCard>
+      ) : evidence.items.length ? (
+        <ol className="service-catalog-evidence-list">
+          {evidence.items.map((item) => (
+            <li key={item.id}>
+              <div>
+                <strong>{serviceCatalogAuditActionLabel(item.action)}</strong>
+                <span>{serviceCatalogAuditActor(item)}</span>
+              </div>
+              <DateTimeText fallback="Evidence time unavailable" value={item.createdAt} />
+              <code>{item.id}</code>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="muted">No retained service catalog actions were found for this group.</p>
+      )}
+      {canOpenFullAuditLog && evidence ? (
+        <AdminFormControlLink
+          className="text-link"
+          href={`/audit-log?target=${encodeURIComponent(evidence.target)}`}
+        >
+          Open full audit log
+        </AdminFormControlLink>
+      ) : null}
+    </section>
+  );
+}
+
+function serviceCatalogAuditActor(item: AdminAuditLog) {
+  return item.actor?.fullName?.trim() || item.actor?.email?.trim() || 'Legacy/seed actor not recorded';
+}
+
+function serviceCatalogAuditActionLabel(action: string) {
+  if (action === 'service_catalog.published') return 'Published';
+  if (action === 'service_catalog.hide') return 'Hidden from apps';
+  if (action === 'service_catalog.archive') return 'Archived';
+  if (action === 'service_catalog.draft_saved') return 'Draft saved';
+  return 'Service catalog action';
+}
+
 function HealthFact({
   detail,
   label,
+  priority = 'secondary',
   tone = 'neutral',
   value,
+  valueKind = 'metric',
 }: {
   readonly detail: string;
   readonly label: string;
+  readonly priority?: 'primary' | 'secondary';
   readonly tone?: 'neutral' | 'success' | 'warning' | 'danger';
   readonly value: number | string;
+  readonly valueKind?: 'metric' | 'evidence';
 }) {
   return (
-    <div className={`service-catalog-health-fact is-${tone}`}>
+    <div className={`service-catalog-health-fact is-${priority} is-${tone} is-value-${valueKind}`}>
       <dt>{label}</dt>
       <dd>{value}</dd>
       <small>{detail}</small>

@@ -3,6 +3,35 @@ import { describe, expect, it } from 'vitest';
 import { buildAccountingJournalIntegrity } from './admin-accounting-journal-integrity';
 
 describe('accounting journal integrity', () => {
+  it.each([
+    ['BOOKING_SETTLEMENT_REVERSAL', '2026-08', '2026-08', 'CLEAR', null],
+    ['BOOKING_SETTLEMENT_REVERSAL', '2026-07', '2026-08', 'BLOCKED', 'PERIOD_MISMATCH'],
+    ['BOOKING_SETTLEMENT_REVERSAL', '2026-08', null, 'UNKNOWN', 'PERIOD_EVIDENCE_MISSING'],
+    ['BOOKING_SETTLEMENT', '2026-06', '2026-06', 'CLEAR', null],
+  ])(
+    'evaluates %s batch period %s against source-linked period %s',
+    (sourceType, monthlyPeriod, linkedMonthlyPeriod, state, blockerCode) => {
+      const integrity = buildAccountingJournalIntegrity({
+        checkedAt: '2026-08-26T00:00:00.000Z',
+        entryCount: 2,
+        entryCredit: 500_000,
+        entryDebit: 500_000,
+        formulaDelta: 0,
+        formulaEvidenceAvailable: true,
+        headerCredit: 500_000,
+        headerDebit: 500_000,
+        linkedMonthlyPeriod,
+        monthlyPeriod,
+        sourceType,
+        status: 'POSTED',
+      });
+
+      expect(integrity.state).toBe(state);
+      if (blockerCode) expect(integrity.blockerCodes).toContain(blockerCode);
+      else expect(integrity.blockerCodes).not.toContain('PERIOD_MISMATCH');
+    },
+  );
+
   it('blocks a header-balanced journal when entries and formula evidence disagree', () => {
     expect(
       buildAccountingJournalIntegrity({
@@ -70,6 +99,76 @@ describe('accounting journal integrity', () => {
         status: 'POSTED',
       }),
     ).toEqual(expect.objectContaining({ blockerCodes: [], discrepancyAmount: 0, state: 'CLEAR' }));
+  });
+
+  it('marks a posted manual wallet adjustment without its required accounting month as unknown', () => {
+    const integrity = buildAccountingJournalIntegrity({
+      checkedAt: '2026-08-26T00:00:00.000Z',
+      entryCount: 2,
+      entryCredit: 80_000,
+      entryDebit: 80_000,
+      formulaDelta: null,
+      formulaEvidenceAvailable: false,
+      headerCredit: 80_000,
+      headerDebit: 80_000,
+      linkedMonthlyPeriod: null,
+      monthlyPeriod: null,
+      sourceType: 'MANUAL_WALLET_ADJUSTMENT',
+      status: 'POSTED',
+    });
+
+    expect(integrity).toEqual(
+      expect.objectContaining({
+        blockerCodes: ['PERIOD_EVIDENCE_MISSING'],
+        state: 'UNKNOWN',
+      }),
+    );
+    expect(integrity.checks.monthlyPeriod).toBe('UNKNOWN');
+  });
+
+  it('keeps a draft manual wallet adjustment period check non-applicable', () => {
+    const integrity = buildAccountingJournalIntegrity({
+      checkedAt: '2026-08-26T00:00:00.000Z',
+      entryCount: 2,
+      entryCredit: 80_000,
+      entryDebit: 80_000,
+      formulaDelta: null,
+      formulaEvidenceAvailable: false,
+      headerCredit: 80_000,
+      headerDebit: 80_000,
+      linkedMonthlyPeriod: null,
+      monthlyPeriod: null,
+      sourceType: 'MANUAL_WALLET_ADJUSTMENT',
+      status: 'DRAFT',
+    });
+
+    expect(integrity).toEqual(expect.objectContaining({ blockerCodes: [], state: 'CLEAR' }));
+    expect(integrity.checks.monthlyPeriod).toBe('NOT_APPLICABLE');
+  });
+
+  it('requires the wallet action accounting month for posted referral reward journals', () => {
+    const integrity = buildAccountingJournalIntegrity({
+      checkedAt: '2026-08-26T00:00:00.000Z',
+      entryCount: 2,
+      entryCredit: 80_000,
+      entryDebit: 80_000,
+      formulaDelta: null,
+      formulaEvidenceAvailable: false,
+      headerCredit: 80_000,
+      headerDebit: 80_000,
+      linkedMonthlyPeriod: null,
+      monthlyPeriod: null,
+      sourceType: 'REFERRAL_REWARD',
+      status: 'POSTED',
+    });
+
+    expect(integrity).toEqual(
+      expect.objectContaining({
+        blockerCodes: ['PERIOD_EVIDENCE_MISSING'],
+        state: 'UNKNOWN',
+      }),
+    );
+    expect(integrity.checks.monthlyPeriod).toBe('UNKNOWN');
   });
 
   it('blocks an entry debit and credit mismatch', () => {

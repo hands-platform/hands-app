@@ -1,5 +1,6 @@
 import {
   adminBreadcrumbContext,
+  adminNavigationPrimaryMode,
   bestMatchingNavHref,
   hrefMatchesPath,
   partnerWorkspaceModeLabel,
@@ -32,8 +33,55 @@ describe('hrefMatchesPath', () => {
   it('names each Partner workspace mode for breadcrumbs', () => {
     expect(partnerWorkspaceModeLabel('')).toBeNull();
     expect(partnerWorkspaceModeLabel('review=approval-pending')).toBe('Approvals');
-    expect(partnerWorkspaceModeLabel('review=unapproved')).toBe('Onboarding blockers');
-    expect(partnerWorkspaceModeLabel('review=unsettled')).toBe('Wallet debt');
+    expect(partnerWorkspaceModeLabel('review=unapproved')).toBe('Onboarding Blockers');
+    expect(partnerWorkspaceModeLabel('review=unsettled')).toBe('Wallet Debt');
+  });
+
+  it.each([
+    ['/partners', 'directory'],
+    ['/partners?review=approval-pending&sort=oldest', 'approval-pending'],
+    ['/partners?review=unapproved', 'unapproved'],
+    ['/partner-controls', 'summary'],
+    ['/partner-controls?details=summary', 'summary'],
+    ['/partner-controls?details=controls', 'controls'],
+    ['/partner-controls?details=reports', 'reports'],
+    ['/partner-controls?details=sanctions', 'sanctions'],
+    ['/bookings', null],
+  ])('normalizes the primary navigation mode for %s', (href, mode) => {
+    expect(adminNavigationPrimaryMode(href)).toBe(mode);
+  });
+
+  it('matches Partner Control primary mode while ignoring secondary filters', () => {
+    expect(hrefMatchesPath('/partner-controls', '/partner-controls', '')).toBe(true);
+    expect(hrefMatchesPath('/partner-controls', '/partner-controls', 'details=summary')).toBe(true);
+    expect(
+      hrefMatchesPath(
+        '/partner-controls?details=controls',
+        '/partner-controls',
+        'details=controls&review=location',
+      ),
+    ).toBe(true);
+    expect(
+      hrefMatchesPath(
+        '/partner-controls?details=reports',
+        '/partner-controls',
+        'details=reports&status=RESOLVED',
+      ),
+    ).toBe(true);
+    expect(
+      hrefMatchesPath(
+        '/partner-controls?details=sanctions',
+        '/partner-controls',
+        'details=sanctions&sanction=HISTORY',
+      ),
+    ).toBe(true);
+    expect(
+      hrefMatchesPath(
+        '/partner-controls?details=reports',
+        '/partner-controls',
+        'details=controls&review=report',
+      ),
+    ).toBe(false);
   });
 
   it('keeps hub routes from swallowing deeper finance and notification pages', () => {
@@ -73,9 +121,9 @@ describe('hrefMatchesPath', () => {
     const paymentMatchingHref =
       '/finance-tax/bank-reconciliation?workspace=operations&range=all&review=unmatched';
 
-    expect(hrefMatchesPath(paymentMatchingHref, '/finance-tax/bank-reconciliation', 'workspace=imports')).toBe(
-      true,
-    );
+    expect(
+      hrefMatchesPath(paymentMatchingHref, '/finance-tax/bank-reconciliation', 'workspace=imports'),
+    ).toBe(true);
     expect(hrefMatchesPath(paymentMatchingHref, '/finance-tax/bank-reconciliation/bank-1', '')).toBe(true);
     expect(
       hrefMatchesPath(paymentMatchingHref, '/finance-tax/payment-clearing', 'range=all&review=partial'),
@@ -105,11 +153,23 @@ describe('hrefMatchesPath', () => {
     ['/notifications/push-send', '', 'Growth & Communications', 'Messaging', 'Push Send'],
     ['/referrals/customers', '', 'Growth & Communications', 'Referrals', 'Customer Referrals'],
     ['/referrals/partners', '', 'Growth & Communications', 'Referrals', 'Partner Referrals'],
-    ['/bookings/post-match-cancellations', '', 'Booking Operations', 'Booking Closeout', 'Post-match Cancellations'],
+    [
+      '/bookings/post-match-cancellations',
+      '',
+      'Booking Operations',
+      'Booking Closeout',
+      'Post-match Cancellations',
+    ],
     ['/setup', '', 'Administration & Settings', 'System Health', 'External Services'],
     ['/app-sessions', '', 'Administration & Settings', 'System Health', 'App Session Diagnostics'],
     ['/background-jobs', '', 'Administration & Settings', 'System Health', 'Background Jobs'],
-    ['/payouts', 'range=all&withdrawalStatus=REVIEW_REQUIRED', 'Finance Records & Close', 'Partner Money', 'Payout / Withdrawal Risk'],
+    [
+      '/payouts',
+      'range=all&withdrawalStatus=REVIEW_REQUIRED',
+      'Finance Records & Close',
+      'Partner Money',
+      'Payout / Withdrawal Risk',
+    ],
   ])(
     'resolves section, workspace, and local page for %s',
     (pathname, search, sectionLabel, workspaceLabel, pageLabel) => {
@@ -123,13 +183,28 @@ describe('hrefMatchesPath', () => {
 
   it('does not repeat Partner Operations as both section and workspace breadcrumb', () => {
     expect(
-      adminBreadcrumbContext(
-        adminNavSections,
-        '/partners',
-        'review=approval-pending&sort=oldest',
-      ),
+      adminBreadcrumbContext(adminNavSections, '/partners', 'review=approval-pending&sort=oldest'),
     ).toEqual({
-      pageLabel: 'Partner Approvals',
+      pageLabel: 'Approvals',
+      sectionLabel: 'Partner Operations',
+      workspace: undefined,
+    });
+  });
+
+  it.each([
+    ['/partners/overview', 'range=7d', 'Overview'],
+    ['/partner-controls', '', 'Action Queue'],
+    ['/partner-controls', 'details=summary', 'Action Queue'],
+    ['/partners', 'review=approval-pending&sort=oldest&q=linh', 'Approvals'],
+    ['/partners', 'review=unapproved&q=linh', 'Onboarding Blockers'],
+    ['/partner-controls', 'details=controls&review=location', 'Partner Blockers'],
+    ['/partner-controls', 'details=reports&status=RESOLVED', 'Reports'],
+    ['/partner-controls', 'details=sanctions&sanction=HISTORY', 'Account Controls'],
+    ['/partners', 'q=linh', 'Directory'],
+    ['/partners/partner-1', '', 'Directory'],
+  ])('uses the direct Partner Operations breadcrumb for %s?%s', (pathname, search, pageLabel) => {
+    expect(adminBreadcrumbContext(adminNavSections, pathname, search)).toEqual({
+      pageLabel,
       sectionLabel: 'Partner Operations',
       workspace: undefined,
     });

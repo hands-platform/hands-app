@@ -33,6 +33,7 @@ export type SettlementAuditBlockerCode =
   | 'REVERSAL_CLEARING_MISSING'
   | 'REVERSAL_LEDGER_MISSING'
   | 'REVERSAL_AMOUNT_MISMATCH'
+  | 'REVERSAL_STATUS_MISMATCH'
   | 'REVERSAL_EVIDENCE_INCONSISTENT';
 
 export type SettlementAuditBlocker = {
@@ -92,15 +93,18 @@ export type SettlementAuditHealth = {
     };
     canonicalJournal: SettlementAuditEvidenceSummary;
     reversal: SettlementAuditEvidenceSummary & {
+      bankMatch: SettlementAuditCheckState;
       clearingCount: number;
       clearingRequired: boolean;
       journalCount: number;
       ledgerEvidence: SettlementAuditCheckState;
       ledgerType: 'CASH_RECEIVABLE_JOURNAL' | 'CUSTOMER_WALLET_REFUND' | 'EXTERNAL_CLEARING' | 'NONE';
       lifecycle: 'NONE' | 'OPEN_PERIOD' | 'CLOSED_PERIOD';
+      matchedAmount: number;
       reason: string | null;
       reversedAt: string | null;
       reversalPeriod: string | null;
+      unmatchedAmount: number;
     };
   };
   formulaVersion: 'CUSTOMER_PLUS_COMPANY_COUPON_V1';
@@ -181,6 +185,25 @@ export type SettlementReversalEvidencePolicy = {
   ledgerType: 'CASH_RECEIVABLE_JOURNAL' | 'CUSTOMER_WALLET_REFUND' | 'EXTERNAL_CLEARING';
 };
 
+export type SettlementReversalEvidenceDecision = {
+  bankMatchState: SettlementAuditCheckState;
+  blockerCodes: Array<
+    | 'BANK_MATCH_INCOMPLETE'
+    | 'REVERSAL_AMOUNT_MISMATCH'
+    | 'REVERSAL_CLEARING_MISSING'
+    | 'REVERSAL_JOURNAL_MISSING'
+    | 'REVERSAL_LEDGER_MISSING'
+    | 'REVERSAL_STATUS_MISMATCH'
+  >;
+  clearingState: SettlementAuditCheckState;
+  journalState: SettlementAuditCheckState;
+  ledgerState: SettlementAuditCheckState;
+  matchedAmount: number;
+  policy: SettlementReversalEvidencePolicy;
+  state: Exclude<SettlementAuditCheckState, 'NOT_APPLICABLE'>;
+  unmatchedAmount: number;
+};
+
 export type SettlementAllocationIdentityInput = {
   readonly companyCouponExpense?: number;
   readonly customerPaymentAmount: number;
@@ -223,6 +246,81 @@ export function settlementReversalEvidencePolicy(paymentMethod: string): Settlem
     return { externalClearingRequired: false, ledgerType: 'CUSTOMER_WALLET_REFUND' };
   }
   return { externalClearingRequired: true, ledgerType: 'EXTERNAL_CLEARING' };
+}
+
+export function settlementReversalEvidenceDecision(input: {
+  readonly cashLedgerPresent: boolean;
+  readonly customerPaymentAmount: number;
+  readonly customerWalletLedgerPresent: boolean;
+  readonly customerWalletRefundLedgerPresent?: boolean | null;
+  readonly journalPresent: boolean;
+  readonly journalState: SettlementAuditCheckState;
+  readonly paymentMethod: string;
+  readonly reversalClearings: AuditClearing[];
+}): SettlementReversalEvidenceDecision {
+  const policy = settlementReversalEvidencePolicy(input.paymentMethod);
+  const blockerCodes: SettlementReversalEvidenceDecision['blockerCodes'] = [];
+  const expectedAmount = Math.abs(input.customerPaymentAmount);
+  let clearingState: SettlementAuditCheckState = 'NOT_APPLICABLE';
+  let bankMatchState: SettlementAuditCheckState = 'NOT_APPLICABLE';
+  let matchedAmount = 0;
+  let unmatchedAmount = 0;
+
+  if (!input.journalPresent) blockerCodes.push('REVERSAL_JOURNAL_MISSING');
+
+  if (policy.externalClearingRequired) {
+    const clearing = input.reversalClearings[0];
+    if (!clearing) {
+      clearingState = 'FAIL';
+      bankMatchState = 'FAIL';
+      unmatchedAmount = expectedAmount;
+      blockerCodes.push('REVERSAL_CLEARING_MISSING');
+    } else {
+      const amountMismatch = clearing.amount !== -expectedAmount;
+      const statusMismatch = clearing.status !== 'REVERSED';
+      if (amountMismatch) blockerCodes.push('REVERSAL_AMOUNT_MISMATCH');
+      if (statusMismatch) blockerCodes.push('REVERSAL_STATUS_MISMATCH');
+      clearingState = amountMismatch || statusMismatch ? 'FAIL' : 'PASS';
+      matchedAmount = (clearing.bankReconciliationMatches ?? [])
+        .filter((match) => match.status !== 'REVERSED')
+        .reduce((sum, match) => sum + Math.abs(match.amount), 0);
+      unmatchedAmount = Math.max(0, expectedAmount - matchedAmount);
+      bankMatchState = unmatchedAmount === 0 ? 'PASS' : 'FAIL';
+      if (bankMatchState === 'FAIL') blockerCodes.push('BANK_MATCH_INCOMPLETE');
+    }
+  }
+
+  let ledgerState: SettlementAuditCheckState = 'NOT_APPLICABLE';
+  if (policy.ledgerType === 'CASH_RECEIVABLE_JOURNAL') {
+    ledgerState = input.cashLedgerPresent ? 'PASS' : 'FAIL';
+  } else if (policy.ledgerType === 'CUSTOMER_WALLET_REFUND') {
+    ledgerState =
+      input.customerWalletRefundLedgerPresent === null ||
+      input.customerWalletRefundLedgerPresent === undefined
+        ? 'UNKNOWN'
+        : input.customerWalletLedgerPresent && input.customerWalletRefundLedgerPresent
+          ? 'PASS'
+          : 'FAIL';
+  }
+  if (ledgerState === 'FAIL') blockerCodes.push('REVERSAL_LEDGER_MISSING');
+
+  const failed =
+    input.journalState === 'FAIL' ||
+    clearingState === 'FAIL' ||
+    bankMatchState === 'FAIL' ||
+    ledgerState === 'FAIL';
+  const unknown = input.journalState === 'UNKNOWN' || ledgerState === 'UNKNOWN';
+  return {
+    bankMatchState,
+    blockerCodes,
+    clearingState,
+    journalState: input.journalState,
+    ledgerState,
+    matchedAmount,
+    policy,
+    state: failed ? 'FAIL' : unknown ? 'UNKNOWN' : 'PASS',
+    unmatchedAmount,
+  };
 }
 
 export function settlementAuditHealth(input: SettlementAuditHealthInput): SettlementAuditHealth {
@@ -337,7 +435,9 @@ export function settlementAuditHealth(input: SettlementAuditHealthInput): Settle
 
   return {
     allocation,
-    blockers: blockers.sort((left, right) => left.priority - right.priority || left.code.localeCompare(right.code)),
+    blockers: blockers.sort(
+      (left, right) => left.priority - right.priority || left.code.localeCompare(right.code),
+    ),
     checkedAt,
     checks,
     evidence: {
@@ -355,6 +455,7 @@ export function settlementAuditHealth(input: SettlementAuditHealthInput): Settle
         state: canonicalJournal,
       },
       reversal: {
+        bankMatch: reversalResult.bankMatchState,
         clearingCount: reversalClearings.length,
         clearingRequired: reversalPolicy.externalClearingRequired,
         count: reversalEntries.length || Math.max(reversalJournals.length, reversalClearings.length),
@@ -363,6 +464,7 @@ export function settlementAuditHealth(input: SettlementAuditHealthInput): Settle
         ledgerEvidence: reversalResult.ledgerState,
         ledgerType: reversalSignal ? reversalPolicy.ledgerType : 'NONE',
         lifecycle: reversalResult.lifecycle,
+        matchedAmount: reversalResult.matchedAmount,
         reason: stringValue(reversalEntries[0]?.reason) ?? stringValue(input.reversalReason),
         reversedAt:
           toIsoString(reversalEntries[0]?.occurredAt) ??
@@ -371,6 +473,7 @@ export function settlementAuditHealth(input: SettlementAuditHealthInput): Settle
           toIsoString(input.closedAt),
         reversalPeriod: stringValue(reversalEntries[0]?.monthlyPeriod),
         state: reversalResult.state,
+        unmatchedAmount: reversalResult.unmatchedAmount,
       },
     },
     formulaVersion: 'CUSTOMER_PLUS_COMPANY_COUPON_V1',
@@ -399,12 +502,80 @@ export function settlementAuditBlockerPriority(code: SettlementAuditBlockerCode)
 
 function settlementAuditRemediationHref(
   code: SettlementAuditBlockerCode,
-  input: Pick<SettlementAuditHealthInput, 'bookingId' | 'id' | 'monthlyPeriod'>,
+  input: Pick<
+    SettlementAuditHealthInput,
+    | 'accountingJournalBatches'
+    | 'bookingId'
+    | 'id'
+    | 'monthlyPeriod'
+    | 'paymentClearingEntries'
+    | 'reversalEntries'
+  >,
 ) {
   const bookingId = input.bookingId ? encodeURIComponent(input.bookingId) : null;
   const snapshotId = input.id ? encodeURIComponent(input.id) : null;
+  const canonicalJournals = (input.accountingJournalBatches ?? []).filter(
+    (journal) => journal.sourceType === 'BOOKING_SETTLEMENT',
+  );
+  const reversalJournals = (input.accountingJournalBatches ?? []).filter(
+    (journal) => journal.sourceType === 'BOOKING_SETTLEMENT_REVERSAL',
+  );
+  const canonicalClearings = (input.paymentClearingEntries ?? []).filter(
+    (entry) => entry.type === 'SETTLEMENT_POSTED' || entry.type === 'CUSTOMER_PAYMENT_CAPTURED',
+  );
+  const reversalClearings = (input.paymentClearingEntries ?? []).filter(
+    (entry) => entry.type === 'REFUND_REVERSAL',
+  );
+  const detailHref = (pathname: string, id: string | undefined) =>
+    id ? `${pathname}/${encodeURIComponent(id)}` : null;
+
+  if (code === 'ALLOCATION_DELTA') {
+    return (
+      detailHref('/finance-tax/general-ledger', canonicalJournals[0]?.id) ??
+      (snapshotId
+        ? `/finance-tax/booking-settlement-audit/${snapshotId}`
+        : '/finance-tax/booking-settlement-audit?range=all&review=integrity-exceptions')
+    );
+  }
+  if (
+    code === 'CANONICAL_JOURNAL_MISSING' ||
+    code === 'CANONICAL_JOURNAL_NOT_POSTED' ||
+    code === 'CANONICAL_JOURNAL_DUPLICATE'
+  ) {
+    return (
+      detailHref('/finance-tax/general-ledger', canonicalJournals[0]?.id) ??
+      '/finance-tax/general-ledger?range=all&review=needs-action&source=BOOKING_SETTLEMENT&page=1&take=25'
+    );
+  }
+  if (
+    code === 'JOURNAL_HEADER_UNBALANCED' ||
+    code === 'JOURNAL_ENTRY_UNBALANCED' ||
+    code === 'JOURNAL_HEADER_ENTRY_MISMATCH' ||
+    code === 'RECONCILIATION_DELTA_ENTRY'
+  ) {
+    const journal = [...canonicalJournals, ...reversalJournals].find((item) => journalHasBlocker(item, code));
+    return (
+      detailHref('/finance-tax/general-ledger', journal?.id) ??
+      '/finance-tax/general-ledger?range=all&review=needs-action&page=1&take=25'
+    );
+  }
+  if (code.startsWith('REVERSAL_')) {
+    return (
+      detailHref('/finance-tax/settlement-reversals', input.reversalEntries?.[0]?.id) ??
+      detailHref('/finance-tax/general-ledger', reversalJournals[0]?.id) ??
+      detailHref('/finance-tax/payment-clearing', reversalClearings[0]?.id) ??
+      '/finance-tax/settlement-reversals?range=all&review=reversed&page=1&take=25'
+    );
+  }
   if (code.includes('CLEARING') || code === 'BANK_MATCH_INCOMPLETE') {
-    return `/finance-tax/payment-clearing${bookingId ? `?bookingId=${bookingId}` : ''}`;
+    const clearing =
+      code === 'BANK_MATCH_INCOMPLETE'
+        ? [...canonicalClearings, ...reversalClearings].find(clearingHasIncompleteBankMatch)
+        : canonicalClearings[0];
+    return (
+      detailHref('/finance-tax/payment-clearing', clearing?.id) ??
+      `/finance-tax/payment-clearing${bookingId ? `?bookingId=${bookingId}` : '?review=unresolved'}`
+    );
   }
   if (code === 'PAYMENT_FEE_POLICY_MISSING') {
     return `/finance-tax/payment-fees${bookingId ? `?bookingId=${bookingId}` : ''}`;
@@ -418,6 +589,36 @@ function settlementAuditRemediationHref(
   return snapshotId
     ? `/finance-tax/booking-settlement-audit/${snapshotId}`
     : '/finance-tax/booking-settlement-audit';
+}
+
+function journalHasBlocker(
+  journal: AuditJournal,
+  code:
+    | 'JOURNAL_HEADER_UNBALANCED'
+    | 'JOURNAL_ENTRY_UNBALANCED'
+    | 'JOURNAL_HEADER_ENTRY_MISMATCH'
+    | 'RECONCILIATION_DELTA_ENTRY',
+) {
+  const entries = journal.entries ?? [];
+  const debit = entries
+    .filter((entry) => entry.side === 'DEBIT')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const credit = entries
+    .filter((entry) => entry.side === 'CREDIT')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  if (code === 'JOURNAL_HEADER_UNBALANCED') return journal.totalDebit !== journal.totalCredit;
+  if (code === 'JOURNAL_ENTRY_UNBALANCED') return entries.length > 0 && debit !== credit;
+  if (code === 'RECONCILIATION_DELTA_ENTRY') {
+    return entries.some((entry) => entry.accountCode === 'settlement_reconciliation_delta');
+  }
+  return entries.length === 0 || debit !== journal.totalDebit || credit !== journal.totalCredit;
+}
+
+function clearingHasIncompleteBankMatch(clearing: AuditClearing) {
+  const matchedAmount = (clearing.bankReconciliationMatches ?? [])
+    .filter((match) => match.status !== 'REVERSED')
+    .reduce((sum, match) => sum + Math.abs(finiteNumber(match.amount)), 0);
+  return matchedAmount !== Math.abs(finiteNumber(clearing.amount));
 }
 
 function journalCheck(
@@ -477,8 +678,12 @@ function journalCheck(
     });
     failed = true;
   } else {
-    const debit = entries.filter((entry) => entry.side === 'DEBIT').reduce((sum, entry) => sum + entry.amount, 0);
-    const credit = entries.filter((entry) => entry.side === 'CREDIT').reduce((sum, entry) => sum + entry.amount, 0);
+    const debit = entries
+      .filter((entry) => entry.side === 'DEBIT')
+      .reduce((sum, entry) => sum + entry.amount, 0);
+    const credit = entries
+      .filter((entry) => entry.side === 'CREDIT')
+      .reduce((sum, entry) => sum + entry.amount, 0);
     if (debit !== credit) {
       addBlocker({
         amount: Math.abs(debit - credit),
@@ -519,7 +724,12 @@ function canonicalClearingCheck(
   addBlocker: AddSettlementAuditBlocker,
 ) {
   if (!required) {
-    return { bankMatch: 'NOT_APPLICABLE', matchedAmount: 0, state: 'NOT_APPLICABLE', unmatchedAmount: 0 } as const;
+    return {
+      bankMatch: 'NOT_APPLICABLE',
+      matchedAmount: 0,
+      state: 'NOT_APPLICABLE',
+      unmatchedAmount: 0,
+    } as const;
   }
   if (clearings.length === 0) {
     addBlocker({
@@ -534,7 +744,12 @@ function canonicalClearingCheck(
 
   const clearing = clearings[0];
   if (!clearing) {
-    return { bankMatch: 'UNKNOWN', matchedAmount: 0, state: 'UNKNOWN', unmatchedAmount: expectedAmount } as const;
+    return {
+      bankMatch: 'UNKNOWN',
+      matchedAmount: 0,
+      state: 'UNKNOWN',
+      unmatchedAmount: expectedAmount,
+    } as const;
   }
   let failed = clearings.length > 1;
   if (clearings.length > 1) {
@@ -604,63 +819,71 @@ function reversalCheck(
 ) {
   if (!input.reversalSignal) {
     return {
+      bankMatchState: 'NOT_APPLICABLE',
       clearingState: 'NOT_APPLICABLE',
       ledgerState: 'NOT_APPLICABLE',
       lifecycle: 'NONE',
+      matchedAmount: 0,
       state: 'NOT_APPLICABLE',
+      unmatchedAmount: 0,
     } as const;
   }
   const lifecycle = input.reversalEntries.length > 0 ? 'CLOSED_PERIOD' : 'OPEN_PERIOD';
   const journalState = journalCheck(input.reversalJournals, true, addBlocker);
-  let failed = journalState !== 'PASS';
-  let clearingState: SettlementAuditCheckState = 'NOT_APPLICABLE';
-  if (input.policy.externalClearingRequired) {
-    const clearing = input.reversalClearings[0];
-    if (!clearing) {
-      addBlocker({
-        amount: input.customerPaymentAmount,
-        code: 'REVERSAL_CLEARING_MISSING',
-        nextAction: 'Open payment clearing and attach the external refund evidence.',
-        ownerTeam: 'Finance operations',
-        severity: 'BLOCKER',
-      });
-      clearingState = 'FAIL';
-      failed = true;
-    } else if (clearing.amount !== -input.customerPaymentAmount || clearing.status !== 'REVERSED') {
-      addBlocker({
-        amount: Math.abs(clearing.amount + input.customerPaymentAmount),
-        code: 'REVERSAL_AMOUNT_MISMATCH',
-        nextAction: 'Reconcile the external refund amount and reversal status.',
-        ownerTeam: 'Finance operations',
-        severity: 'BLOCKER',
-      });
-      clearingState = 'FAIL';
-      failed = true;
-    } else {
-      clearingState = 'PASS';
-    }
-  }
-
-  let ledgerState: SettlementAuditCheckState = 'NOT_APPLICABLE';
   const reversalAccounts = new Set(
     input.reversalJournals.flatMap((journal) => (journal.entries ?? []).map((entry) => entry.accountCode)),
   );
-  if (input.policy.ledgerType === 'CASH_RECEIVABLE_JOURNAL') {
-    ledgerState =
+  const decision = settlementReversalEvidenceDecision({
+    cashLedgerPresent:
       reversalAccounts.has('partner_receivable_negative_wallet') ||
-      reversalAccounts.has('partner_wallet_liability')
-        ? 'PASS'
-        : 'FAIL';
-  } else if (input.policy.ledgerType === 'CUSTOMER_WALLET_REFUND') {
-    const reversalJournalPresent = reversalAccounts.has('customer_wallet_liability');
-    ledgerState =
-      input.customerWalletRefundLedgerPresent === null || input.customerWalletRefundLedgerPresent === undefined
-        ? 'UNKNOWN'
-        : reversalJournalPresent && input.customerWalletRefundLedgerPresent
-          ? 'PASS'
-          : 'FAIL';
+      reversalAccounts.has('partner_wallet_liability'),
+    customerPaymentAmount: input.customerPaymentAmount,
+    customerWalletLedgerPresent: reversalAccounts.has('customer_wallet_liability'),
+    customerWalletRefundLedgerPresent: input.customerWalletRefundLedgerPresent,
+    journalPresent: input.reversalJournals.length > 0,
+    journalState,
+    paymentMethod: input.paymentMethod,
+    reversalClearings: input.reversalClearings,
+  });
+  if (decision.blockerCodes.includes('REVERSAL_CLEARING_MISSING')) {
+    addBlocker({
+      amount: input.customerPaymentAmount,
+      code: 'REVERSAL_CLEARING_MISSING',
+      nextAction: 'Open payment clearing and attach the external refund evidence.',
+      ownerTeam: 'Finance operations',
+      severity: 'BLOCKER',
+    });
   }
-  if (ledgerState === 'FAIL') {
+  if (decision.blockerCodes.includes('REVERSAL_AMOUNT_MISMATCH')) {
+    const clearing = input.reversalClearings[0];
+    addBlocker({
+      amount: clearing
+        ? Math.abs(clearing.amount + input.customerPaymentAmount)
+        : input.customerPaymentAmount,
+      code: 'REVERSAL_AMOUNT_MISMATCH',
+      nextAction: 'Reconcile the external refund amount with the original customer payment.',
+      ownerTeam: 'Finance operations',
+      severity: 'BLOCKER',
+    });
+  }
+  if (decision.blockerCodes.includes('REVERSAL_STATUS_MISMATCH')) {
+    addBlocker({
+      code: 'REVERSAL_STATUS_MISMATCH',
+      nextAction: 'Update or verify the external refund clearing status; the amount already matches.',
+      ownerTeam: 'Finance operations',
+      severity: 'BLOCKER',
+    });
+  }
+  if (decision.blockerCodes.includes('BANK_MATCH_INCOMPLETE')) {
+    addBlocker({
+      amount: decision.unmatchedAmount,
+      code: 'BANK_MATCH_INCOMPLETE',
+      nextAction: 'Match the remaining refund clearing amount to bank evidence.',
+      ownerTeam: 'Finance operations',
+      severity: 'BLOCKER',
+    });
+  }
+  if (decision.blockerCodes.includes('REVERSAL_LEDGER_MISSING')) {
     addBlocker({
       amount: input.customerPaymentAmount,
       code: 'REVERSAL_LEDGER_MISSING',
@@ -671,8 +894,8 @@ function reversalCheck(
       ownerTeam: 'Accounting',
       severity: 'BLOCKER',
     });
-    failed = true;
   }
+  let failed = decision.state === 'FAIL';
   if (input.reversalClearings.length > 1 || input.reversalEntries.length > 1) {
     addBlocker({
       code: 'REVERSAL_EVIDENCE_INCONSISTENT',
@@ -682,12 +905,14 @@ function reversalCheck(
     });
     failed = true;
   }
-  const unknown = ledgerState === 'UNKNOWN';
   return {
-    clearingState,
-    ledgerState,
+    bankMatchState: decision.bankMatchState,
+    clearingState: decision.clearingState,
+    ledgerState: decision.ledgerState,
     lifecycle,
-    state: failed ? 'FAIL' : unknown ? 'UNKNOWN' : 'PASS',
+    matchedAmount: decision.matchedAmount,
+    state: failed ? 'FAIL' : decision.state,
+    unmatchedAmount: decision.unmatchedAmount,
   } as const;
 }
 
@@ -699,11 +924,11 @@ function couponCheck(
   if (companyCouponExpense === 0) return 'NOT_APPLICABLE';
   const complete = Boolean(
     (stringValue(metadata?.couponId) || stringValue(metadata?.couponCodeSnapshot)) &&
-      stringValue(metadata?.couponFundingSourceSnapshot) === 'COMPANY' &&
-      stringValue(metadata?.couponAccountingTreatmentSnapshot) &&
-      stringValue(metadata?.settlementBasePolicySnapshot) &&
-      nonNegativeNumber(metadata?.settlementBaseAmount) > 0 &&
-      !stringValue(metadata?.couponReviewFlag),
+    stringValue(metadata?.couponFundingSourceSnapshot) === 'COMPANY' &&
+    stringValue(metadata?.couponAccountingTreatmentSnapshot) &&
+    stringValue(metadata?.settlementBasePolicySnapshot) &&
+    nonNegativeNumber(metadata?.settlementBaseAmount) > 0 &&
+    !stringValue(metadata?.couponReviewFlag),
   );
   if (!complete) {
     addBlocker({

@@ -17,6 +17,7 @@ import {
 } from './partner-review-mode';
 
 const MIN_REVIEW_REASON_LENGTH = 12;
+const MAX_REVIEW_REASON_LENGTH = 500;
 const PARTNER_PUBLIC_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 const PARTNER_PUBLIC_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -45,7 +46,8 @@ export async function blockProviderAccount(formData: FormData) {
 
 export async function unblockProviderAccount(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/partners/${providerId}/unblock`, {}, null);
+  const reason = readReviewReason(formData);
+  await adminPostOrThrow(`/admin/partners/${providerId}/unblock`, { reason });
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -352,7 +354,10 @@ function readReviewReason(formData: FormData) {
   if (value.length < MIN_REVIEW_REASON_LENGTH) {
     throw new Error(`Review reason must be at least ${MIN_REVIEW_REASON_LENGTH} characters`);
   }
-  return value.slice(0, 500);
+  if (value.length > MAX_REVIEW_REASON_LENGTH) {
+    throw new Error(`Review reason must be at most ${MAX_REVIEW_REASON_LENGTH} characters`);
+  }
+  return value;
 }
 
 function readOptionalProviderId(formData: FormData) {

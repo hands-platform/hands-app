@@ -8,6 +8,7 @@ import {
   AssignCompanyBankTransactionReviewsDto,
   CreateBankReconciliationMatchDto,
   CreateCompanyBankAccountDto,
+  CreateCompanyBankAccountEvidenceReviewDto,
   CreateCompanyBankTransactionDto,
   DecideCompanyBankAccountChangeDto,
   IgnoreCompanyBankTransactionDto,
@@ -87,6 +88,15 @@ export class AdminBankRoutes extends AdminLedgerRoutes {
     @Body() input: UpdateCompanyBankAccountDto,
   ) {
     return this.admin.updateCompanyBankAccount(user.id, id, input);
+  }
+
+  @Post('company-bank-accounts/:id/evidence-review-requests')
+  createCompanyBankAccountEvidenceReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() input: CreateCompanyBankAccountEvidenceReviewDto,
+  ) {
+    return this.admin.createCompanyBankAccountEvidenceReview(user.id, id, input);
   }
 
   @Post('company-bank-accounts/:id/approval-decision')

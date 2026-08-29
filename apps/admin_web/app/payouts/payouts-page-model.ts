@@ -26,6 +26,8 @@ const PAYOUT_RECONCILIATION_VIEWS = new Set([
 const PAYOUT_EVIDENCE_FILTERS = new Set([
   'missing-transfer-ref',
   'withholding-review',
+  'wallet-ledger-mismatch',
+  'posted-gl-journal-missing',
   'complete',
   'bank-match-incomplete',
 ]);
@@ -46,6 +48,7 @@ export type PayoutFilters = {
   readonly page: number;
   readonly pageSize: number;
   readonly period: string | null;
+  readonly payoutBatchId: string | null;
   readonly q: string;
   readonly queue: string | null;
   readonly range: AdminDateRange;
@@ -55,6 +58,7 @@ export type PayoutFilters = {
   readonly sort: string;
   readonly status: string | null;
   readonly view: PayoutView;
+  readonly withdrawalId: string | null;
   readonly withdrawalPage: number;
   readonly withdrawalPartnerId: string | null;
   readonly withdrawalReconciliation: 'unmatched' | 'matched' | null;
@@ -74,13 +78,14 @@ export type PayoutServerPagination<T> = {
 
 export function buildPayoutFilters(params: Record<string, string | string[] | undefined>): PayoutFilters {
   const rangeParam = readSearchParam(params.range);
+  const withdrawalId = readPayoutRecordId(params.withdrawalId);
   const withdrawalStatusParam = readSearchParam(params.withdrawalStatus);
   const withdrawalPartnerId = readPayoutRecordId(params.withdrawalPartnerId);
   const withdrawalReconciliation = normalizeWithdrawalReconciliation(
     readSearchParam(params.withdrawalReconciliation),
   );
   const hasWithdrawalSavedView = Boolean(
-    withdrawalStatusParam || withdrawalPartnerId || withdrawalReconciliation,
+    withdrawalId || withdrawalStatusParam || withdrawalPartnerId || withdrawalReconciliation,
   );
   const view = normalizePayoutView(
     readSearchParam(params.view),
@@ -118,6 +123,7 @@ export function buildPayoutFilters(params: Record<string, string | string[] | un
     page: readPayoutPage(params.page),
     pageSize: readPayoutPageSize(params.pageSize),
     period: readPayoutPeriod(params.period),
+    payoutBatchId: readPayoutRecordId(params.payoutBatchId),
     q: readBoundedQuery(params.q),
     queue,
     range: rangeParam ? normalizeDateRange(rangeParam) : 'all',
@@ -127,6 +133,7 @@ export function buildPayoutFilters(params: Record<string, string | string[] | un
     sort: readAllowedValue(params.sort, PAYOUT_SORTS) ?? 'newest',
     status: readAllowedValue(params.status, PAYOUT_BATCH_STATUSES),
     view,
+    withdrawalId,
     withdrawalPage: readPayoutPage(params.withdrawalPage),
     withdrawalPartnerId,
     withdrawalReconciliation:
@@ -165,7 +172,10 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
   return {
     earningsHref: null,
     operationalPolicyHref: null,
-    payoutBatchSummaryHref: buildPayoutSummaryHref(filters),
+    payoutBatchSummaryHref:
+      filters.view === 'batches' || filters.recon === 'payout-closeout-repair'
+        ? buildPayoutSummaryHref(filters)
+        : null,
     payoutBatchOverviewSummaryHref: `/admin/payout-batches/summary?range=${encodeURIComponent(filters.range)}`,
     payoutBatchesHref:
       filters.view === 'batches' || filters.recon === 'payout-closeout-repair'
@@ -179,8 +189,15 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
       filters.view === 'withdrawals' || filters.recon === 'bank-unmatched'
         ? buildWithdrawalSummaryHref(filters)
         : null,
-    selectedPayoutBatchHref: filters.editPayoutBatchId
-      ? `/admin/payout-batches/${encodeURIComponent(filters.editPayoutBatchId)}`
+    selectedPayoutBatchHref: filters.payoutBatchId || filters.editPayoutBatchId
+      ? `/admin/payout-batches/${encodeURIComponent(filters.payoutBatchId ?? filters.editPayoutBatchId ?? '')}`
+      : null,
+    selectedWithdrawalRequestHref: filters.withdrawalId
+      ? `/admin/provider-wallet/withdrawal-requests?${new URLSearchParams({
+          range: 'all',
+          take: '1',
+          id: filters.withdrawalId,
+        }).toString()}`
       : null,
     providerWalletWithdrawalRequestGlobalSummaryHref:
       '/admin/provider-wallet/withdrawal-requests/summary?range=all',
@@ -221,6 +238,7 @@ export function payoutHref(input: {
   readonly page?: number;
   readonly pageSize?: number;
   readonly period?: string | null;
+  readonly payoutBatchId?: string | null;
   readonly q?: string;
   readonly queue?: string | null;
   readonly range: AdminDateRange;
@@ -230,6 +248,7 @@ export function payoutHref(input: {
   readonly sort?: string;
   readonly status?: string | null;
   readonly view?: PayoutView;
+  readonly withdrawalId?: string | null;
   readonly withdrawalStatus?: AdminProviderWalletWithdrawalRequestStatus | null;
   readonly withdrawalPage?: number;
   readonly withdrawalPartnerId?: string | null;
@@ -248,6 +267,7 @@ export function payoutHref(input: {
   if (input.status) params.set('status', input.status);
   if (input.evidence) params.set('evidence', input.evidence);
   if (input.period) params.set('period', input.period);
+  if (input.payoutBatchId) params.set('payoutBatchId', input.payoutBatchId);
   if (input.returnTo) params.set('returnTo', input.returnTo);
   if (input.sort && input.sort !== 'newest') params.set('sort', input.sort);
   if (input.editPayoutBatchId) params.set('editPayoutBatchId', input.editPayoutBatchId);
@@ -255,6 +275,7 @@ export function payoutHref(input: {
     params.set('reverseWithdrawalRequestId', input.reverseWithdrawalRequestId);
   }
   if (input.withdrawalStatus) params.set('withdrawalStatus', input.withdrawalStatus);
+  if (input.withdrawalId) params.set('withdrawalId', input.withdrawalId);
   if (input.withdrawalPartnerId) params.set('withdrawalPartnerId', input.withdrawalPartnerId);
   if (input.withdrawalReconciliation) {
     params.set('withdrawalReconciliation', input.withdrawalReconciliation);

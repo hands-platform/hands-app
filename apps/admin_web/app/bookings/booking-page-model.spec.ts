@@ -35,6 +35,19 @@ describe('buildBookingsPageModel', () => {
     expect(model.initialView).toBe('attention');
     expect(model.liveOperationsPolicy).toBeTruthy();
   });
+
+  it('uses the route-selected date fallback for missing and invalid values', () => {
+    for (const dateRange of [undefined, '', 'not-a-range']) {
+      const model = buildBookingsPageModel({
+        auditLogs: [],
+        dateRangeFallback: '30d',
+        params: { dateRange },
+        policySettings: [],
+      });
+
+      expect(model.initialDateRangeFilter).toBe('30d');
+    }
+  });
 });
 
 function auditLogFixture(input: { readonly action: string; readonly id: string }): AdminAuditLog {

@@ -11,6 +11,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminRefundQueueAge } from '../../lib/admin-api';
+import { shortId } from '../../lib/admin-format';
 import type { AdminQueueSlaFilter, AdminQueueSlaSummary } from '../../lib/admin-queue-list';
 import { adminQueueSlaFilterLabel, adminQueueSlaThresholdLabel } from '../../lib/admin-queue-list';
 import type { AdminDateRange } from '../../lib/date-range';
@@ -29,6 +30,7 @@ export type RefundFilterValues = {
 type RefundFilterBoardSectionProps = {
   readonly ageCounts: Record<AdminRefundQueueAge, number>;
   readonly ageHref: (age: AdminRefundQueueAge) => string;
+  readonly clearCustomerScopeHref: string;
   readonly filters: RefundFilterValues;
   readonly queueSla: AdminQueueSlaSummary;
   readonly resetHref: string;
@@ -50,6 +52,7 @@ const REFUND_QUEUE_OPTIONS = [
   { label: 'Approval required', value: 'requested' },
   { label: 'Gateway processing', value: 'processing' },
   { label: 'Reconciliation required', value: 'state-mismatch' },
+  { label: 'Other review', value: 'other' },
   { label: 'Closed', value: 'completed' },
   { label: 'Rejected', value: 'rejected' },
   { label: 'All records', value: 'all' },
@@ -58,6 +61,7 @@ const REFUND_QUEUE_OPTIONS = [
 export function RefundFilterBoardSection({
   ageCounts,
   ageHref,
+  clearCustomerScopeHref,
   filters,
   queueSla,
   resetHref,
@@ -72,7 +76,6 @@ export function RefundFilterBoardSection({
     `Range: ${rangeLabel(filters.range)}`,
     `Order: ${filters.sort === 'oldest' ? 'Oldest first' : 'Newest first'}`,
     ...(filters.q ? [`Search: ${filters.q}`] : []),
-    ...(filters.customerProfileId ? [`Customer: ${filters.customerProfileId}`] : []),
     ...(filters.age !== 'all' ? [`Age: ${optionLabel(REFUND_AGE_OPTIONS, filters.age)}`] : []),
     ...(filters.review === 'open' && filters.sla !== 'all'
       ? [`SLA: ${adminQueueSlaFilterLabel(filters.sla)}`]
@@ -85,7 +88,12 @@ export function RefundFilterBoardSection({
       description="Search and narrow the server-owned refund queue. Scope changes return to page 1."
       title="Refund queue"
     >
-      <AdminDirectoryFilterForm action="/refunds" className="refund-filter-form" method="get">
+      <AdminDirectoryFilterForm
+        action="/refunds"
+        className="refund-filter-form"
+        key={JSON.stringify(filters)}
+        method="get"
+      >
         <AdminFormSearch
           className="refund-filter-search"
           defaultValue={filters.q}
@@ -136,11 +144,20 @@ export function RefundFilterBoardSection({
         className="refund-active-filter-summary admin-mt-12"
         labels={activeLabels}
         tone="info"
-      />
+      >
+        {filters.customerProfileId ? (
+          <>
+            <StatusBadge title={`Customer profile ${filters.customerProfileId}`} tone="info">
+              Customer scope · {shortId(filters.customerProfileId)}
+            </StatusBadge>
+            <AdminTextLink href={clearCustomerScopeHref}>Clear customer scope</AdminTextLink>
+          </>
+        ) : null}
+      </AdminFilterSummary>
 
       <AdminDetails className="refund-more-filters admin-mt-12" open={advancedActive}>
         <summary>
-          <span>More filters · Age and SLA</span>
+          <span>{filters.review === 'open' ? 'More filters · Age and SLA' : 'More filters · Age'}</span>
           {advancedCount > 0 ? <StatusBadge tone="info">{advancedCount} active</StatusBadge> : null}
         </summary>
         <div className="admin-disclosure-content refund-more-filter-content">

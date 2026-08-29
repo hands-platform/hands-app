@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { normalizeNullable, slugify } from './admin-text-helpers';
 
 export const PRICE_STEP_UNIT_VND = 100000;
+export const SERVICE_CATALOG_DISPLAY_ORDER_MAX = 10_000;
 const SERVICE_NAME_TRANSLATION_KEYS = ['en', 'vi', 'ko', 'ja', 'zh'] as const;
 const SUPPORTED_SERVICE_DURATIONS = [60, 90, 120] as const;
 
@@ -212,6 +213,41 @@ export function normalizeServiceCatalogGroupCommand(
     })),
   };
 
+  const displayOrderErrors: Record<string, string> = {};
+  if (
+    !Number.isInteger(normalized.displayOrder) ||
+    normalized.displayOrder < 0 ||
+    normalized.displayOrder > SERVICE_CATALOG_DISPLAY_ORDER_MAX
+  ) {
+    displayOrderErrors.displayOrder =
+      `Display order must be between 0 and ${SERVICE_CATALOG_DISPLAY_ORDER_MAX}.`;
+  }
+  for (const row of normalized.durations) {
+    if (
+      !Number.isInteger(row.displayOrder) ||
+      row.displayOrder < 0 ||
+      row.displayOrder > SERVICE_CATALOG_DISPLAY_ORDER_MAX
+    ) {
+      displayOrderErrors[`duration${row.durationMin}.displayOrder`] =
+        `Display order must be between 0 and ${SERVICE_CATALOG_DISPLAY_ORDER_MAX}.`;
+    }
+  }
+  if (Object.keys(displayOrderErrors).length) {
+    throw new BadRequestException({
+      code: 'SERVICE_CATALOG_VALIDATION_FAILED',
+      fieldErrors: displayOrderErrors,
+    });
+  }
+
+  if (
+    input.intent !== 'SAVE_DRAFT' &&
+    (!normalized.reason || normalized.reason.length < 12)
+  ) {
+    throw new BadRequestException({
+      code: 'SERVICE_CATALOG_VALIDATION_FAILED',
+      fieldErrors: { reason: 'Explain the operational impact in at least 12 characters.' },
+    });
+  }
   if (input.intent === 'PUBLISH') {
     assertServiceCatalogPublishReady(normalized);
   }
@@ -219,7 +255,6 @@ export function normalizeServiceCatalogGroupCommand(
 }
 
 export function assertServiceCatalogPublishReady(input: {
-  reason?: string | null;
   nameTranslations: Record<string, string>;
   priceStep: number;
   durations: Array<{
@@ -232,9 +267,6 @@ export function assertServiceCatalogPublishReady(input: {
   const fieldErrors: Record<string, string> = {};
   if (!input.nameTranslations.en) fieldErrors.nameEn = 'English name is required to publish.';
   if (!input.nameTranslations.vi) fieldErrors.nameVi = 'Vietnamese name is required to publish.';
-  if (!input.reason || input.reason.length < 12) {
-    fieldErrors.reason = 'Explain the publishing impact in at least 12 characters.';
-  }
   if (!input.durations.some((row) => row.enabled)) {
     fieldErrors.durations = 'Enable at least one duration before publishing.';
   }

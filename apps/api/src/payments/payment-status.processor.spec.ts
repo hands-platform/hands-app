@@ -29,12 +29,29 @@ describe('PaymentStatusProcessor', () => {
     );
   });
 
-  it('does not queue recovery when gateway evidence is not ready', async () => {
+  it('queues booking closure recovery when gateway authorization failed', async () => {
     const payments = {
       checkAndSyncStatus: vi.fn().mockResolvedValue({
         paymentId: 'payment-1',
         bookingId: 'booking-1',
         status: PaymentStatus.FAILED,
+        bookingRecoveryReady: false,
+      }),
+    };
+    const recoveryQueue = { add: vi.fn() };
+    const processor = new PaymentStatusProcessor(payments as never, recoveryQueue as never);
+
+    await processor.process({ data: { paymentId: 'payment-1' } } as never);
+
+    expect(recoveryQueue.add).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not queue recovery while gateway authorization is still pending', async () => {
+    const payments = {
+      checkAndSyncStatus: vi.fn().mockResolvedValue({
+        paymentId: 'payment-1',
+        bookingId: 'booking-1',
+        status: PaymentStatus.PENDING,
         bookingRecoveryReady: false,
       }),
     };

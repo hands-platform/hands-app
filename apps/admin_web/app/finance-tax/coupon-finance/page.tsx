@@ -1,14 +1,11 @@
 import { AlertTriangle, BadgeDollarSign, ReceiptText, RotateCcw } from 'lucide-react';
 
-import type {
-  AdminBookingSettlementSnapshot,
-  AdminCouponFinanceSummary,
-} from '../../../lib/admin-api';
-import { adminGet } from '../../../lib/admin-api';
+import type { AdminBookingSettlementSnapshot, AdminCouponFinanceSummary } from '../../../lib/admin-api';
+import { adminGetResult } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminErrorState, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
@@ -26,6 +23,7 @@ import { FinanceTablePanel } from '../finance-table-panel';
 import {
   COUPON_FINANCE_REVIEW_LINKS,
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
+  bookingSettlementReversalDetailHref,
   buildCouponFinanceApiHref,
   buildCouponFinanceExportHref,
   buildCouponFinanceSummaryApiHref,
@@ -48,40 +46,72 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const overviewFilters = { ...filters, page: 1, review: 'all' as const };
-  const currentSummaryPromise = adminGet<AdminCouponFinanceSummary>(
+  const currentSummaryPromise = adminGetResult<AdminCouponFinanceSummary>(
     buildCouponFinanceSummaryApiHref(filters),
     emptyCouponFinanceSummary(),
   );
-  const [summary, overviewSummary, snapshots] = await Promise.all([
+  const [summaryResult, overviewSummaryResult, snapshotsResult] = await Promise.all([
     currentSummaryPromise,
     filters.review === 'all'
       ? currentSummaryPromise
-      : adminGet<AdminCouponFinanceSummary>(
+      : adminGetResult<AdminCouponFinanceSummary>(
           buildCouponFinanceSummaryApiHref(overviewFilters),
           emptyCouponFinanceSummary(),
         ),
-    adminGet<AdminBookingSettlementSnapshot[]>(buildCouponFinanceApiHref(filters), []),
+    adminGetResult<AdminBookingSettlementSnapshot[]>(buildCouponFinanceApiHref(filters), []),
   ]);
-  const pagination = buildTaxSettlementServerPagination(snapshots, filters, summary.couponSettlementCount);
+  const currentHref = couponFinanceHref(filters);
+  const workflowLinks = buildTaxFinanceWorkflowLinks({
+    current: 'coupon-finance',
+    monthlyFilters,
+    settlementFilters: filters,
+    withholdingFilters,
+  });
+  if (!summaryResult.ok || !overviewSummaryResult.ok || !snapshotsResult.ok) {
+    const failedStatus = !summaryResult.ok
+      ? summaryResult.status
+      : !overviewSummaryResult.ok
+        ? overviewSummaryResult.status
+        : snapshotsResult.status;
+    return (
+      <AdminPageTemplate
+        actions={<TaxFinanceWorkflowActions links={workflowLinks} />}
+        description="Coupon accounting data could not be loaded. No zero totals or empty-record conclusion has been inferred."
+        title="Coupon Finance"
+      >
+        <AdminErrorState
+          action={<AdminFormControlLink href={currentHref}>Retry coupon records</AdminFormControlLink>}
+          message={
+            failedStatus === 401 || failedStatus === 403
+              ? 'Finance access was rejected. Sign in again or request the required permission.'
+              : 'Retry before using coupon totals or exporting closeout evidence.'
+          }
+          title="Coupon finance data unavailable"
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const summary = summaryResult.data;
+  const overviewSummary = overviewSummaryResult.data;
+  const snapshots = snapshotsResult.data;
+  const pagination = buildTaxSettlementServerPagination(
+    snapshots,
+    filters,
+    summary.couponActivityCount ?? summary.couponSettlementCount,
+  );
   const tableRows = pagination.rows;
+  const isTrueEmpty = pagination.totalRows === 0 && tableRows.length === 0;
   const csvHref = buildCouponFinanceExportHref(filters);
   const couponRangeScope = dateRangeLabel(filters.range);
   const selectedReviewLabel =
-    COUPON_FINANCE_REVIEW_LINKS.find((item) => item.review === filters.review)?.label ?? 'All records';
+    COUPON_FINANCE_REVIEW_LINKS.find((item) => item.review === filters.review)?.label ?? 'All coupon records';
   const allRecordsHref = `${couponFinanceHref(overviewFilters)}#coupon-finance-records`;
   const totalsHref = `${couponFinanceHref(overviewFilters)}#coupon-finance-period-totals`;
 
   return (
     <AdminPageTemplate
       actions={
-        <TaxFinanceWorkflowActions
-          links={buildTaxFinanceWorkflowLinks({
-            current: 'coupon-finance',
-            monthlyFilters,
-            settlementFilters: filters,
-            withholdingFilters,
-          })}
-        >
+        <TaxFinanceWorkflowActions links={workflowLinks}>
           <StatusBadgeLink
             download={`hands-coupon-finance-${filters.range}-${filters.review}.csv`}
             href={csvHref}
@@ -92,6 +122,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         </TaxFinanceWorkflowActions>
       }
       description="Company-funded coupon expense and coupon settlement policy records from posted booking settlements."
+      contentClassName="coupon-finance-page"
       title="Coupon Finance"
     >
       <FinanceListCommandBoard ariaLabel="Coupon finance command board">
@@ -99,7 +130,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           detail="Settlement rows with an explicit coupon policy or accounting review flag."
           href={couponFinanceHref({ ...overviewFilters, review: 'coupon-review' })}
           icon={AlertTriangle}
-          label="Coupon review flags"
+          label="Needs review"
           scope={overviewSummary.couponReviewFlagCount > 0 ? 'Needs action' : couponRangeScope}
           tone={overviewSummary.couponReviewFlagCount > 0 ? 'danger' : 'success'}
           value={overviewSummary.couponReviewFlagCount}
@@ -111,7 +142,9 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           label="Company coupon expense"
           scope={couponRangeScope}
           tone="info"
-          value={<MoneyText amount={overviewSummary.companyCouponExpense} currency={overviewSummary.currency} />}
+          value={
+            <MoneyText amount={overviewSummary.companyCouponExpense} currency={overviewSummary.currency} />
+          }
         />
         <FinanceListCommandCard
           detail="Coupon value explicitly deducted from platform fee. Review the retained policy before monthly close."
@@ -120,16 +153,21 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           label="Platform fee discount"
           scope={overviewSummary.platformFeeDiscountAmount > 0 ? 'Needs review' : couponRangeScope}
           tone={overviewSummary.platformFeeDiscountAmount > 0 ? 'warning' : 'success'}
-          value={<MoneyText amount={overviewSummary.platformFeeDiscountAmount} currency={overviewSummary.currency} />}
+          value={
+            <MoneyText
+              amount={overviewSummary.platformFeeDiscountAmount}
+              currency={overviewSummary.currency}
+            />
+          }
         />
         <FinanceListCommandCard
           detail="Posted settlement records containing coupon code, discount, or funding metadata."
           href={allRecordsHref}
           icon={ReceiptText}
-          label="Coupon records"
+          label="All coupon records"
           scope={couponRangeScope}
           tone="neutral"
-          value={overviewSummary.couponSettlementCount}
+          value={overviewSummary.couponActivityCount ?? overviewSummary.couponSettlementCount}
         />
       </FinanceListCommandBoard>
 
@@ -143,9 +181,47 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         title="Coupon finance filters"
       >
         <FinanceListFilterLinks
+          compact
           groups={[
             {
-              className: 'admin-mt-12',
+              id: 'review',
+              links: COUPON_FINANCE_REVIEW_LINKS.filter((item) =>
+                ['coupon-review', 'all', 'reversed'].includes(item.review),
+              ).map((item) => ({
+                active: filters.review === item.review,
+                activePillClassName: 'pill-warn',
+                href: couponFinanceHref({ ...filters, page: 1, review: item.review }),
+                id: item.review,
+                label: item.label,
+              })),
+            },
+            {
+              defaultId: 'all',
+              id: 'tax-status',
+              links: COUPON_FINANCE_REVIEW_LINKS.filter((item) =>
+                ['open', 'declared', 'paid', 'posted'].includes(item.review),
+              ).map((item) => ({
+                active: filters.review === item.review,
+                activePillClassName: 'pill-info',
+                href: couponFinanceHref({ ...filters, page: 1, review: item.review }),
+                id: item.review,
+                label: item.label,
+              })),
+            },
+            {
+              defaultId: 'all',
+              id: 'payment-method',
+              links: COUPON_FINANCE_REVIEW_LINKS.filter((item) =>
+                ['cash', 'non-cash'].includes(item.review),
+              ).map((item) => ({
+                active: filters.review === item.review,
+                activePillClassName: 'pill-info',
+                href: couponFinanceHref({ ...filters, page: 1, review: item.review }),
+                id: item.review,
+                label: item.label,
+              })),
+            },
+            {
               id: 'range',
               links: FINANCE_LIST_DATE_RANGE_LINKS.map(([label, range]) => ({
                 active: filters.range === range,
@@ -153,16 +229,6 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                 href: couponFinanceHref({ ...filters, page: 1, range }),
                 id: range,
                 label,
-              })),
-            },
-            {
-              id: 'review',
-              links: COUPON_FINANCE_REVIEW_LINKS.map((item) => ({
-                active: filters.review === item.review,
-                activePillClassName: 'pill-warn',
-                href: couponFinanceHref({ ...filters, page: 1, review: item.review }),
-                id: item.review,
-                label: item.label,
               })),
             },
             {
@@ -179,85 +245,161 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         />
       </AdminFilterPanel>
 
-      <AdminSection
-        className="admin-mb-16"
-        description={`All coupon accounting totals for ${selectedReviewLabel.toLowerCase()} in ${couponRangeScope}.`}
-        id="coupon-finance-period-totals"
-        statusLabel={`${summary.couponSettlementCount} record(s)`}
-        statusTone={summary.couponReviewFlagCount > 0 ? 'warning' : 'info'}
-        title="Current filtered totals"
-      >
-        <FinanceStageList
-          items={[
-            {
-              helper: 'Gross service value before the coupon discount.',
-              key: 'booking-service-amount',
-              label: 'Booking service amount',
-              signal: 'Service',
-              value: <MoneyText amount={summary.bookingServiceAmount} currency={summary.currency} />,
-            },
-            {
-              helper: 'Coupon discount applied to the customer-facing price.',
-              key: 'coupon-discount-amount',
-              label: 'Coupon gross discount',
-              signal: 'Discount',
-              value: <MoneyText amount={summary.couponDiscountAmount} currency={summary.currency} />,
-            },
-            {
-              helper: 'Customer payment after coupon discount. This remains clearing, not company revenue.',
-              key: 'customer-paid-amount',
-              label: 'Customer paid',
-              signal: 'Payment',
-              value: <MoneyText amount={summary.customerPaidAmount} currency={summary.currency} />,
-            },
-            {
-              helper: 'Pre-coupon base retained for Partner tax, payout, and platform fee calculation.',
-              key: 'settlement-base-amount',
-              label: 'Settlement base',
-              signal: 'Settlement',
-              value: (
-                <MoneyText
-                  amount={summary.settlementBaseAmount || summary.bookingServiceAmount}
-                  currency={summary.currency}
-                />
-              ),
-            },
-            {
-              helper: 'Company-funded value recognized as marketing expense.',
-              key: 'company-coupon-expense',
-              label: 'Company coupon expense',
-              signal: 'Expense',
-              value: <MoneyText amount={summary.companyCouponExpense} currency={summary.currency} />,
-            },
-            {
-              helper: 'Partner-funded value retained separately from company coupon expense.',
-              key: 'partner-funded-coupon',
-              label: 'Partner-funded coupon',
-              signal: 'Partner',
-              value: <MoneyText amount={summary.partnerFundedCouponAmount} currency={summary.currency} />,
-            },
-            {
-              helper: 'Discount explicitly applied against platform fee and requiring retained policy evidence.',
-              key: 'platform-fee-discount',
-              label: 'Platform fee discount',
-              signal: summary.platformFeeDiscountAmount > 0 ? 'Review' : 'Clear',
-              value: <MoneyText amount={summary.platformFeeDiscountAmount} currency={summary.currency} />,
-            },
-            {
-              helper: (
-                <>
-                  Company expense reversal{' '}
-                  <MoneyText amount={summary.reversedCompanyCouponExpense} currency={summary.currency} />.
-                </>
-              ),
-              key: 'reversed-coupon',
-              label: 'Reversed coupon discount',
-              signal: 'Reversal',
-              value: <MoneyText amount={summary.reversedCouponDiscountAmount} currency={summary.currency} />,
-            },
-          ]}
-        />
-      </AdminSection>
+      {isTrueEmpty ? (
+        <FinanceTablePanel
+          description={`The server successfully returned zero records for ${selectedReviewLabel.toLowerCase()} in ${couponRangeScope}. This is not an API error.`}
+          resultLabel="0 records"
+          resultTone="success"
+          title="No coupon activity in this scope"
+        >
+          <AdminTextLink
+            href={
+              filters.review === 'all'
+                ? couponFinanceHref({ ...filters, page: 1, review: 'coupon-review' })
+                : allRecordsHref
+            }
+          >
+            {filters.review === 'all' ? 'Open Needs review' : 'Open all coupon records'}
+          </AdminTextLink>
+        </FinanceTablePanel>
+      ) : (
+        <AdminSection
+          className="admin-mb-16 coupon-finance-totals"
+          description={`All coupon accounting totals for ${selectedReviewLabel.toLowerCase()} in ${couponRangeScope}.`}
+          id="coupon-finance-period-totals"
+          statusLabel={`${summary.couponActivityCount ?? summary.couponSettlementCount} activity row(s)`}
+          statusTone={summary.couponReviewFlagCount > 0 ? 'warning' : 'info'}
+          title="Current filtered totals"
+        >
+          <FinanceStageList
+            items={[
+              {
+                helper: 'Gross service value before the coupon discount.',
+                key: 'booking-service-amount',
+                label: 'Booking service amount',
+                signal: 'Service',
+                value: <MoneyText amount={summary.bookingServiceAmount} currency={summary.currency} />,
+              },
+              {
+                helper: 'Coupon discount applied to the customer-facing price.',
+                key: 'coupon-discount-amount',
+                label: 'Coupon gross discount',
+                signal: 'Discount',
+                value: <MoneyText amount={summary.couponDiscountAmount} currency={summary.currency} />,
+              },
+              {
+                helper: 'Customer payment after coupon discount. This remains clearing, not company revenue.',
+                key: 'customer-paid-amount',
+                label: 'Customer paid',
+                signal: 'Payment',
+                value: <MoneyText amount={summary.customerPaidAmount} currency={summary.currency} />,
+              },
+              {
+                helper: 'Pre-coupon base retained for Partner tax, payout, and platform fee calculation.',
+                key: 'settlement-base-amount',
+                label: 'Settlement base',
+                signal: 'Settlement',
+                value: (
+                  <MoneyText
+                    amount={summary.settlementBaseAmount || summary.bookingServiceAmount}
+                    currency={summary.currency}
+                  />
+                ),
+              },
+              {
+                helper: 'Company-funded value recognized as marketing expense.',
+                key: 'company-coupon-expense',
+                label: 'Company coupon expense',
+                signal: 'Expense',
+                value: <MoneyText amount={summary.companyCouponExpense} currency={summary.currency} />,
+              },
+              {
+                helper: 'Partner-funded value retained separately from company coupon expense.',
+                key: 'partner-funded-coupon',
+                label: 'Partner-funded coupon',
+                signal: 'Partner',
+                value: <MoneyText amount={summary.partnerFundedCouponAmount} currency={summary.currency} />,
+              },
+              {
+                helper:
+                  'Discount explicitly applied against platform fee and requiring retained policy evidence.',
+                key: 'platform-fee-discount',
+                label: 'Platform fee discount',
+                signal: summary.platformFeeDiscountAmount > 0 ? 'Review' : 'Clear',
+                value: <MoneyText amount={summary.platformFeeDiscountAmount} currency={summary.currency} />,
+              },
+              {
+                helper: (
+                  <>
+                    Company expense reversal{' '}
+                    <MoneyText amount={summary.reversedCompanyCouponExpense} currency={summary.currency} />.
+                  </>
+                ),
+                key: 'reversed-coupon',
+                label: 'Reversed coupon discount',
+                signal: 'Reversal',
+                value: (
+                  <MoneyText amount={summary.reversedCouponDiscountAmount} currency={summary.currency} />
+                ),
+              },
+              {
+                helper: 'Gross coupon discount less open- and closed-period corrections in this scope.',
+                key: 'net-coupon-discount',
+                label: 'Net coupon discount',
+                signal: 'Net',
+                value: (
+                  <MoneyText
+                    amount={
+                      summary.netCouponDiscountAmount ??
+                      summary.couponDiscountAmount - summary.reversedCouponDiscountAmount
+                    }
+                    currency={summary.currency}
+                  />
+                ),
+              },
+              {
+                helper: 'Gross company marketing expense less coupon reversal corrections.',
+                key: 'net-company-coupon-expense',
+                label: 'Net company coupon expense',
+                signal: 'Net',
+                value: (
+                  <MoneyText
+                    amount={
+                      summary.netCompanyCouponExpense ??
+                      summary.companyCouponExpense - summary.reversedCompanyCouponExpense
+                    }
+                    currency={summary.currency}
+                  />
+                ),
+              },
+              {
+                helper: 'Partner-funded coupon amount after reversal corrections.',
+                key: 'net-partner-funded-coupon',
+                label: 'Net partner-funded coupon',
+                signal: 'Net',
+                value: (
+                  <MoneyText
+                    amount={summary.netPartnerFundedCouponAmount ?? summary.partnerFundedCouponAmount}
+                    currency={summary.currency}
+                  />
+                ),
+              },
+              {
+                helper: 'Platform-fee discount after reversal corrections.',
+                key: 'net-platform-fee-discount',
+                label: 'Net platform fee discount',
+                signal: 'Net',
+                value: (
+                  <MoneyText
+                    amount={summary.netPlatformFeeDiscountAmount ?? summary.platformFeeDiscountAmount}
+                    currency={summary.currency}
+                  />
+                ),
+              },
+            ]}
+          />
+        </AdminSection>
+      )}
 
       <FinanceTablePanel
         grouped
@@ -268,94 +410,106 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         title="Coupon settlement rows"
       >
         <FinanceDataTable
-            emptyMessage="No coupon settlement rows match the current filters."
-            headers={[
-              'Booking',
-              'Completed',
-              'Customer',
-              'Partner',
-              'Payment',
-              'Coupon policy',
-              'Amounts',
-              'Review',
-            ]}
-            rowCount={tableRows.length}
-          >
-            {tableRows.map((snapshot) => {
-              const coupon = couponSettlementInfo(snapshot);
+          emptyMessage="No coupon settlement rows match the current filters."
+          headers={[
+            'Booking',
+            'Completed',
+            'Customer',
+            'Partner',
+            'Payment',
+            'Coupon policy',
+            'Amounts',
+            'Review',
+          ]}
+          rowCount={tableRows.length}
+        >
+          {tableRows.map((snapshot) => {
+            const coupon = couponSettlementInfo(snapshot);
+            const correction = snapshot.couponFinanceScope?.correctionIncluded
+              ? (snapshot.closedPeriodCouponCorrections?.[0] ?? null)
+              : null;
+            const correctionAmounts = couponCorrectionInfo(correction?.metadata);
 
-              return (
-                <tr key={snapshot.id}>
-                  <td>
-                    <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>
-                      {shortId(snapshot.bookingId)}
+            return (
+              <tr key={snapshot.id}>
+                <td>
+                  <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>
+                    {shortId(snapshot.bookingId)}
+                  </AdminTextLink>
+                  <div className="muted">{snapshot.monthlyPeriod}</div>
+                  {correction ? (
+                    <AdminTextLink href={bookingSettlementReversalDetailHref(correction.id)}>
+                      Closed-period correction {correction.monthlyPeriod}
                     </AdminTextLink>
-                    <div className="muted">{snapshot.monthlyPeriod}</div>
-                  </td>
-                  <td>
-                    <strong>
-                      <DateTimeText value={snapshot.closedAt ?? snapshot.booking?.closedAt ?? snapshot.postedAt} />
-                    </strong>
+                  ) : null}
+                </td>
+                <td>
+                  <strong>
+                    <DateTimeText
+                      value={snapshot.closedAt ?? snapshot.booking?.closedAt ?? snapshot.postedAt}
+                    />
+                  </strong>
+                  <div className="muted">
+                    Posted <DateTimeText value={snapshot.postedAt} />
+                  </div>
+                </td>
+                <td>
+                  <strong>{financePersonName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
+                </td>
+                <td>
+                  <AdminTextLink href={`/partners/${snapshot.providerProfileId}?section=full`}>
+                    {snapshot.providerProfile?.displayName ??
+                      financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
+                  </AdminTextLink>
+                </td>
+                <td>
+                  <strong>{snapshot.paymentMethod}</strong>
+                  <div className="muted">
+                    Customer paid <MoneyText amount={coupon.customerPaid} currency={snapshot.currency} />
+                  </div>
+                </td>
+                <td>
+                  <strong>{coupon.code}</strong>
+                  <div className="muted">{coupon.fundingSource}</div>
+                  <div className="muted">{coupon.accountingTreatment}</div>
+                  <div className="muted">Base {coupon.settlementBasePolicy}</div>
+                </td>
+                <td>
+                  <strong>
+                    Discount <MoneyText amount={coupon.discountAmount} currency={snapshot.currency} />
+                  </strong>
+                  <div className="muted">
+                    Service <MoneyText amount={coupon.bookingServiceAmount} currency={snapshot.currency} />
+                  </div>
+                  <div className="muted">
+                    Settlement <MoneyText amount={coupon.settlementBaseAmount} currency={snapshot.currency} />
+                  </div>
+                  <div className="muted">
+                    Company expense <MoneyText amount={coupon.companyExpense} currency={snapshot.currency} />
+                  </div>
+                  {correction ? (
                     <div className="muted">
-                      Posted <DateTimeText value={snapshot.postedAt} />
+                      Corrected discount{' '}
+                      <MoneyText amount={correctionAmounts.discountAmount} currency={correction.currency} /> ·
+                      company{' '}
+                      <MoneyText amount={correctionAmounts.companyExpense} currency={correction.currency} />
                     </div>
-                  </td>
-                  <td>
-                    <strong>{financePersonName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
-                    {snapshot.customerProfile?.user?.phone ? (
-                      <div className="muted">{snapshot.customerProfile.user.phone}</div>
-                    ) : (
-                      <AdminInlineFallback className="admin-mt-6">No customer phone</AdminInlineFallback>
-                    )}
-                  </td>
-                  <td>
-                    <AdminTextLink href={`/partners/${snapshot.providerProfileId}?section=full`}>
-                      {snapshot.providerProfile?.displayName ??
-                        financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
-                    </AdminTextLink>
-                    {snapshot.providerProfile?.user?.phone ? (
-                      <div className="muted">{snapshot.providerProfile.user.phone}</div>
-                    ) : (
-                      <AdminInlineFallback className="admin-mt-6">No partner phone</AdminInlineFallback>
-                    )}
-                  </td>
-                  <td>
-                    <strong>{snapshot.paymentMethod}</strong>
-                    <div className="muted">
-                      Customer paid <MoneyText amount={coupon.customerPaid} currency={snapshot.currency} />
-                    </div>
-                  </td>
-                  <td>
-                    <strong>{coupon.code}</strong>
-                    <div className="muted">{coupon.fundingSource}</div>
-                    <div className="muted">{coupon.accountingTreatment}</div>
-                    <div className="muted">Base {coupon.settlementBasePolicy}</div>
-                  </td>
-                  <td>
-                    <strong>
-                      Discount <MoneyText amount={coupon.discountAmount} currency={snapshot.currency} />
-                    </strong>
-                    <div className="muted">
-                      Service <MoneyText amount={coupon.bookingServiceAmount} currency={snapshot.currency} />
-                    </div>
-                    <div className="muted">
-                      Settlement <MoneyText amount={coupon.settlementBaseAmount} currency={snapshot.currency} />
-                    </div>
-                    <div className="muted">
-                      Company expense <MoneyText amount={coupon.companyExpense} currency={snapshot.currency} />
-                    </div>
-                  </td>
-                  <td>
-                    <StatusBadge tone={coupon.reviewFlag ? 'warning' : 'success'}>
-                      {coupon.reviewFlag ?? 'Policy record OK'}
-                    </StatusBadge>
-                    <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
-                    <div className="muted">{snapshot.taxStatus}</div>
-                  </td>
-                </tr>
-              );
-            })}
-          </FinanceDataTable>
+                  ) : null}
+                  {snapshot.couponFinanceScope?.grossIncluded === false ? (
+                    <div className="muted">Original gross is outside the selected scope.</div>
+                  ) : null}
+                </td>
+                <td>
+                  <StatusBadge tone={coupon.reviewFlag ? 'warning' : 'success'}>
+                    {coupon.reviewFlag ?? 'Policy record OK'}
+                  </StatusBadge>
+                  <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
+                  <div className="muted">{snapshot.taxStatus}</div>
+                </td>
+              </tr>
+            );
+          })}
+        </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Coupon finance settlement pages"
           hrefForPage={(page) => couponFinanceHref({ ...filters, page })}
@@ -370,7 +524,9 @@ function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
   const metadata = jsonRecord(snapshot.metadata);
   const discountAmount = numberValue(metadata?.couponDiscountAmount);
   const bookingServiceAmount =
-    numberValue(metadata?.bookingServiceAmount) || snapshot.partnerTaxableRevenue || snapshot.customerPaymentAmount + discountAmount;
+    numberValue(metadata?.bookingServiceAmount) ||
+    snapshot.partnerTaxableRevenue ||
+    snapshot.customerPaymentAmount + discountAmount;
   return {
     accountingTreatment: stringValue(metadata?.couponAccountingTreatmentSnapshot) ?? 'MANUAL_REVIEW',
     bookingServiceAmount,
@@ -385,6 +541,13 @@ function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
   };
 }
 
+function couponCorrectionInfo(value: unknown) {
+  const metadata = jsonRecord(value);
+  return {
+    companyExpense: numberValue(metadata?.reversedCompanyCouponExpense),
+    discountAmount: numberValue(metadata?.reversedCouponDiscountAmount),
+  };
+}
 
 function jsonRecord(value: unknown) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

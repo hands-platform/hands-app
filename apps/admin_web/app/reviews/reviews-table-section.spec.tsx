@@ -75,6 +75,18 @@ describe('ReviewsTableSection', () => {
     expect(source).not.toContain('className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"');
   });
 
+  it('keeps review filter actions grouped and prevents compact desktop label wrapping', () => {
+    const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminFormActionRow');
+    expect(source).toContain('className="vuexy-review-filter-actions" wide={false}');
+    expect(css).toContain('.reviews-page .vuexy-review-filter-actions > :is(a, button)');
+    expect(css).toContain('white-space: nowrap');
+    expect(css).toContain('@media (max-width: 1399px)');
+    expect(css).toContain('grid-column: 1 / -1');
+  });
+
   it('keeps the five review columns within the page instead of forcing a 1320px table', () => {
     const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
     const reviewCss = css.slice(css.indexOf('.reviews-page .vuexy-review-filter-card'), css.indexOf('.review-edit-drawer'));
@@ -101,7 +113,8 @@ describe('ReviewsTableSection', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 
     expect(rendered).toContain('Review controls');
-    expect(source).toContain('placeholder="Search customer, partner, booking, or review"');
+    expect(source).toContain('placeholder="Search name, booking, review ID"');
+    expect(source).toContain('label="Search reviews"');
     expect(rendered).toContain('All 1 Visible 1 Needs review 0 Hidden 0');
     expect(rendered).toContain('Visible');
     expect(rendered).toContain('Needs review');
@@ -238,6 +251,8 @@ describe('ReviewsTableSection', () => {
 
     expect(normalizedText(section)).toContain('All dates');
     expect(markup).toContain('<option value="all" selected="">All dates</option>');
+    expect(normalizedText(section)).not.toContain('Clear filters');
+    expect(normalizedText(section)).not.toContain('View all reviews');
   });
 
   it('renders the empty state when there are no review rows', () => {
@@ -254,12 +269,12 @@ describe('ReviewsTableSection', () => {
 
     expect(rendered).toContain('No reviews are currently hidden from the customer app. Current date range: All dates.');
     expect(rendered).toContain('3 matching');
-    expect(rendered).toContain('View all reviews');
+    expect(rendered.match(/Clear filters/g)).toHaveLength(1);
+    expect(rendered).not.toContain('View all reviews');
     expect(classNamesIn(section)).toContain(
       'admin-form-control-link button button-secondary admin-directory-filter-button is-ghost',
     );
     expect(rendered).toContain('No hidden reviews');
-    expect(rendered).toContain('View all reviews');
     expect(rendered).not.toContain('Showing 0 to 0 of 0 entries');
     expect(rendered).not.toContain('aria-label="Customer review pages"');
   });

@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
 import {
+  adminNotificationDataScopeValueSql,
   adminNotificationDataScopeWhere,
   adminNotificationPushIntentSql,
   adminNotificationProductionDataWhere,
@@ -44,6 +45,15 @@ describe('admin notification production data', () => {
         notificationNonSyntheticWhere(),
       ],
     });
+  });
+
+  it('classifies every row into one canonical SQL scope', () => {
+    const sql = adminNotificationDataScopeValueSql().strings.join(' ');
+
+    expect(sql).toContain("THEN 'synthetic'");
+    expect(sql).toContain("THEN 'production'");
+    expect(sql).toContain("ELSE 'unknown'");
+    expect(sql).toContain("data->>'smokeFixture'");
   });
 
   it('requires declared push intent or actual legacy push-delivery evidence', () => {

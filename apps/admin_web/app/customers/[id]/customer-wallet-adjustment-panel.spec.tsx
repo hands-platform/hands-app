@@ -26,6 +26,7 @@ describe('CustomerWalletAdjustmentPanel', () => {
         customerLabel="Customer One"
         canCreateRequest={false}
         openPeriods={openPeriods}
+        returnTo="/customers?view=all&page=2&q=mai"
         walletLedger={emptyWalletLedger}
         walletPage={1}
       />,
@@ -51,6 +52,7 @@ describe('CustomerWalletAdjustmentPanel', () => {
         canCreateRequest
         notice="requested"
         openPeriods={openPeriods}
+        returnTo="/customers?view=all&page=2&q=mai"
         walletLedger={emptyWalletLedger}
         walletPage={1}
       />,
@@ -58,6 +60,9 @@ describe('CustomerWalletAdjustmentPanel', () => {
 
     expect(markup).toContain('type="hidden" name="ownerType" value="CUSTOMER"');
     expect(markup).toContain('type="hidden" name="ownerId" value="customer-1"');
+    expect(markup).toContain(
+      'name="redirectTo" value="/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai#customer-wallet-adjustment-request"',
+    );
     expect(markup).toContain('Separate finance approval');
     expect(markup).toContain('Accounting month');
     expect(markup).toContain('Before');
@@ -137,6 +142,7 @@ describe('CustomerWalletAdjustmentPanel', () => {
         customerLabel="Customer One"
         canCreateRequest
         openPeriods={openPeriods}
+        returnTo="/customers?view=all&page=2&q=mai"
         walletLedger={walletLedger}
         walletPage={1}
       />,
@@ -152,5 +158,31 @@ describe('CustomerWalletAdjustmentPanel', () => {
     expect(markup).toContain('/referrals/customers');
     expect(markup).not.toContain('Pending wallet requests');
     expect(markup).not.toContain('Recent manual wallet adjustments');
+  });
+
+  it('preserves the customer-list return in wallet ledger pagination', () => {
+    const markup = renderToStaticMarkup(
+      <CustomerWalletAdjustmentPanel
+        actionHref="/customers/customer-1?action=wallet#customer-wallet-adjustment-request"
+        actionOpen={false}
+        auditHref="/audit-log?q=customer-1"
+        closeHref="/customers/customer-1#customer-wallet-adjustment-request"
+        currentBalance={160000}
+        customerId="customer-1"
+        customerLabel="Customer One"
+        canCreateRequest
+        openPeriods={openPeriods}
+        returnTo="/customers?view=all&page=2&q=mai"
+        walletLedger={{
+          ...emptyWalletLedger,
+          summary: { ...emptyWalletLedger.summary, totalCount: 21 },
+        }}
+        walletPage={1}
+      />,
+    );
+
+    expect(markup).toContain(
+      'href="/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&amp;walletPage=2#customer-wallet-history"',
+    );
   });
 });

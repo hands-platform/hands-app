@@ -60,6 +60,10 @@ export class PublicSiteRouteQueryDto {
 
 export class AdminPublicSitePageListQueryDto {
   @IsOptional()
+  @IsIn(['missing-routes', 'missing-translations'])
+  queue?: 'missing-routes' | 'missing-translations';
+
+  @IsOptional()
   @IsEnum(PublicSiteKey)
   site?: PublicSiteKey;
 
@@ -318,6 +322,12 @@ export class CreatePublicSiteNewsDraftDto {
   @IsString()
   @MaxLength(2_048)
   imageUrl?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => optionalTrimmedString(value))
+  @IsString()
+  @MaxLength(320)
+  imageAlt?: string | null;
 }
 
 export class UpdatePublicSiteNewsDraftDto extends CreatePublicSiteNewsDraftDto {

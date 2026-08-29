@@ -52,9 +52,11 @@ type PaymentFilterBoardSectionProps = {
   readonly paymentStatus: string;
   readonly q: string;
   readonly rangeLabel: string;
+  readonly resetHref?: string;
   readonly review: string;
   readonly reviewLinks: readonly PaymentFilterLink[];
   readonly queueCounts?: Readonly<Record<string, number | undefined>>;
+  readonly historyAliasCounts?: Readonly<Partial<Record<'authorized' | 'callback-verified' | 'all', number>>>;
   readonly totalCount: number;
   readonly sort?: AdminQueueSort;
   readonly sortHref?: (sort: AdminQueueSort) => string;
@@ -106,9 +108,11 @@ export function PaymentFilterBoardSection({
   paymentStatus,
   q,
   rangeLabel,
+  resetHref = '/payments?range=all&review=capture-ready&sort=oldest',
   review,
   reviewLinks,
   queueCounts = {},
+  historyAliasCounts = {},
   totalCount,
   sort = 'oldest',
   sortHref = (value) => `?sort=${value}`,
@@ -125,6 +129,12 @@ export function PaymentFilterBoardSection({
     (item) => item.group !== 'history' && !primaryQueueValues.has(item.review),
   );
   const historyQueues = reviewLinks.filter((item) => item.group === 'history');
+  const queueDisplayCount = (queue: string) =>
+    queue === review ? totalCount : historyAliasCounts[queue as keyof typeof historyAliasCounts] ?? queueCounts[queue] ?? 0;
+  const secondaryWorkCount = secondaryQueues.reduce(
+    (total, item) => total + queueDisplayCount(item.review),
+    0,
+  );
   const activeLabels = [
     `Queue: ${activeFilterLabel ?? 'All payments'}`,
     `Range: ${rangeLabel}`,
@@ -194,7 +204,7 @@ export function PaymentFilterBoardSection({
         {sla !== 'all' ? <input name="sla" type="hidden" value={sla} /> : null}
         {pageSize !== 10 ? <input name="pageSize" type="hidden" value={pageSize} /> : null}
         <AdminFormControlButton className="button-primary" type="submit">Apply</AdminFormControlButton>
-        <AdminTextLink href="/payments?range=all&review=capture-ready&sort=oldest">Reset</AdminTextLink>
+        <AdminTextLink href={resetHref}>Reset</AdminTextLink>
       </AdminDirectoryFilterForm>
 
       {activeFilterLabel && activeFilterDescription ? (
@@ -210,7 +220,7 @@ export function PaymentFilterBoardSection({
         className="payment-primary-queues admin-mt-12"
         options={primaryQueues.map((item) => ({
           href: item.href,
-          label: `${item.label} ${queueCounts[item.review] ?? 0}`,
+          label: `${item.label} ${queueDisplayCount(item.review)}`,
           value: item.review,
         }))}
         semantics="navigation"
@@ -220,7 +230,7 @@ export function PaymentFilterBoardSection({
         className="payment-quick-queues admin-mt-12"
         open={[...secondaryQueues, ...historyQueues].some((item) => item.review === review)}
       >
-        <summary><span>More queues</span><small>Secondary and history</small></summary>
+        <summary><span>More queues</span><small>Secondary work {secondaryWorkCount} · History separate</small></summary>
         <div className="admin-disclosure-content">
           <strong className="admin-section-kicker">Secondary work</strong>
           <AdminSegmentedControl
@@ -228,7 +238,7 @@ export function PaymentFilterBoardSection({
             ariaLabel="Secondary payment work queues"
             options={secondaryQueues.map((item) => ({
               href: item.href,
-              label: `${item.label} ${queueCounts[item.review] ?? 0}`,
+              label: `${item.label} ${queueDisplayCount(item.review)}`,
               value: item.review,
             }))}
             semantics="navigation"
@@ -241,7 +251,7 @@ export function PaymentFilterBoardSection({
                 ariaLabel="Payment history queues"
                 options={historyQueues.map((item) => ({
                   href: item.href,
-                  label: `${item.label} ${queueCounts[item.review] ?? 0}`,
+                  label: `${item.label} ${queueDisplayCount(item.review)}`,
                   value: item.review,
                 }))}
                 semantics="navigation"

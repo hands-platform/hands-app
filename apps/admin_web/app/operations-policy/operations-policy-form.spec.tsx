@@ -9,7 +9,9 @@ const source = readFileSync(new URL('./operations-policy-form.tsx', import.meta.
 
 describe('OperationsPolicyForm', () => {
   it('renders visible confirmation copy, bounded reason guidance, and no native validation contract', () => {
-    const markup = renderToStaticMarkup(<OperationsPolicyForm setting={policySetting()} />);
+    const markup = renderToStaticMarkup(
+      <OperationsPolicyForm returnHref="/operations-policy?group=matching-availability&q=timer" setting={policySetting()} />,
+    );
 
     expect(markup).toContain('<form');
     expect(markup).toContain('noValidate=""');
@@ -22,6 +24,7 @@ describe('OperationsPolicyForm', () => {
     expect(markup).toContain('maxLength="500"');
     expect(markup).not.toContain('Additional approval');
     expect(markup).not.toContain('Not required');
+    expect(markup.match(/href="\/operations-policy\?group=matching-availability&amp;q=timer"/g)).toHaveLength(2);
   });
 
   it('keeps save disabled until value, reason, and confirmation are valid', () => {
@@ -39,10 +42,19 @@ describe('OperationsPolicyForm', () => {
 
   it('includes pending, error focus, success audit link, and double-submit guards', () => {
     expect(source).toContain('useActionState');
+    expect(source).toContain('event.preventDefault()');
+    expect(source).toContain('(event.nativeEvent as SubmitEvent).submitter');
+    expect(source).toContain('formData.append(submitter.name, submitter.value)');
+    expect(source).toContain('startTransition(() => formAction(formData))');
     expect(source).toContain('disabled={!canSubmit}');
     expect(source).toContain("actionState.status === 'error'");
     expect(source).toContain('errorSummaryRef.current?.focus()');
+    expect(source).toContain('Confirm identity');
+    expect(source).toContain("document.getElementById('admin-reauthentication-menu')");
+    expect(source).toContain('menu.open = true');
+    expect(source).toContain("input[name=\"password\"]");
     expect(source).toContain('Open audit record');
+    expect(source).toContain('<DateTimeText fallback="Invalid effective time" value={actionState.success.effectiveAt} />');
     expect(source).toContain('Revert to Before');
     expect(source).toContain('name="intent"');
     expect(source).toContain('hasUnsavedChanges');
@@ -58,6 +70,7 @@ describe('OperationsPolicyForm', () => {
     expect(source).toContain('const restoreTimer = window.setTimeout');
     expect(source).toContain('window.history.forward()');
     expect(source).toContain("event.returnValue = ''");
+    expect(readFileSync('lib/admin-format.ts', 'utf8')).toContain("const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';");
   });
 });
 

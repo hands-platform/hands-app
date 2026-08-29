@@ -8,6 +8,7 @@ import {
   AdminFormGrid,
   AdminFormSearch,
   AdminFormSelect,
+  AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
@@ -21,13 +22,21 @@ import {
   adminGetResult,
   type AdminNotification,
   type AdminNotificationBoardSummary,
+  type AdminNotificationDeliveryIncident,
+  type AdminNotificationDeliveryIncidentPage,
 } from '../../lib/admin-api';
 import { canViewAdminDeveloperSystem } from '../../components/admin-developer-system-section';
 import { formatDateTime } from '../../lib/admin-format';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
 import { readSearchParam } from '../../lib/date-range';
-import { retryNotification } from './actions';
+import {
+  assignNotificationDeliveryIncident,
+  openNotificationDeliveryIncident,
+  reopenNotificationDeliveryIncident,
+  resolveNotificationDeliveryIncident,
+  retryNotification,
+} from './actions';
 import { filterNotificationActionConfirmationSupportingLinks } from './notification-action-confirmation';
 import { notificationFailureCodeLabel } from './notification-failure-copy';
 import {
@@ -39,8 +48,10 @@ import {
   legacyNotificationDestination,
   notificationDeliveryModelParams,
   notificationDeliveryHealthState,
+  NOTIFICATION_RECORD_MAX_PAGE,
   normalizeNotificationFailureCode,
   normalizeNotificationFailureProvider,
+  notificationDeliveryIncidentSourceKey,
   type NotificationDeliveryIssue,
   type NotificationDeliveryView,
 } from './notification-page-model';
@@ -63,14 +74,37 @@ export default async function NotificationsPage({
   if (rawPage && (!/^\d+$/.test(rawPage) || Number(rawPage) < 1)) {
     redirect(buildNotificationDeliveryHref(view, { page: 1 }));
   }
+  if (view.page > NOTIFICATION_RECORD_MAX_PAGE) {
+    redirect(buildNotificationDeliveryHref(view, { page: NOTIFICATION_RECORD_MAX_PAGE }));
+  }
 
   const modelParams = notificationDeliveryModelParams(params, view);
-  const [notificationsResult, summaryResult, operatorAccess] = await Promise.all([
+  const selectedIncidentProvider = normalizeNotificationFailureProvider(readSearchParam(params.incidentProvider));
+  const selectedIncidentFailureCode = normalizeNotificationFailureCode(readSearchParam(params.incidentFailureCode));
+  const selectedIncidentSourceKey = selectedIncidentProvider && selectedIncidentFailureCode
+    ? notificationDeliveryIncidentSourceKey({
+        dataScope: view.dataScope,
+        failureCode: selectedIncidentFailureCode,
+        provider: selectedIncidentProvider,
+      })
+    : null;
+  const [notificationsResult, summaryResult, operatorAccess, incidentResult] = await Promise.all([
     adminGetResult<AdminNotification[]>(buildNotificationApiHref(modelParams), []),
     adminGetResult<AdminNotificationBoardSummary | null>(buildNotificationSummaryApiHref(modelParams), null),
     getCurrentAdminOperatorAccess(),
+    selectedIncidentSourceKey
+      ? adminGetResult<AdminNotificationDeliveryIncidentPage>(
+          `/admin/notification-delivery-incidents?take=1&dataScope=${encodeURIComponent(view.dataScope)}&sourceKey=${encodeURIComponent(selectedIncidentSourceKey)}`,
+          { items: [], skip: 0, take: 1, totalCount: 0 },
+        )
+      : Promise.resolve({
+          data: { items: [], skip: 0, take: 1, totalCount: 0 },
+          ok: true,
+          status: null,
+        }),
   ]);
   const canRetry = hasAdminOperatorCategory(operatorAccess, 'NOTIFICATIONS_RETRY');
+  const canManageIncidents = hasAdminOperatorCategory(operatorAccess, 'NOTIFICATIONS_INCIDENTS');
   const canViewDiagnostics = canViewAdminDeveloperSystem(operatorAccess);
   const model = buildNotificationPageModel({
     canRetry,
@@ -145,6 +179,7 @@ export default async function NotificationsPage({
       ) : null}
 
       <NotificationRetryNotice params={params} />
+      <NotificationIncidentNotice params={params} />
       {invalidFilter ? (
         <AdminInlineNotice role="alert" tone="warning">
           One or more unsupported delivery filters were ignored.{' '}
@@ -170,6 +205,18 @@ export default async function NotificationsPage({
         {view.mode === 'action' ? (
           <>
             <NotificationDeliveryHealthOverview summary={summaryResult.data} />
+            {selectedIncidentSourceKey && selectedIncidentProvider && selectedIncidentFailureCode ? (
+              <NotificationIncidentLifecyclePanel
+                canManage={canManageIncidents}
+                currentOperatorId={operatorAccess?.id ?? null}
+                dataScope={view.dataScope}
+                failureCode={selectedIncidentFailureCode}
+                incident={incidentResult.data.items[0] ?? null}
+                loadFailed={!incidentResult.ok}
+                provider={selectedIncidentProvider}
+                returnHref={currentNotificationHref(params)}
+              />
+            ) : null}
             <NotificationIssueSelector summary={summaryResult.data} view={view} />
                 {view.issue === 'failed' && view.failureProvider && view.failureCode ? (
                   <div className="admin-filter-chip-group" aria-label="Active failure group filter">
@@ -263,6 +310,203 @@ function NotificationResultsSection({
       {children}
     </section>
   );
+}
+
+function NotificationIncidentLifecyclePanel({
+  canManage,
+  currentOperatorId,
+  dataScope,
+  failureCode,
+  incident,
+  loadFailed,
+  provider,
+  returnHref,
+}: {
+  readonly canManage: boolean;
+  readonly currentOperatorId: string | null;
+  readonly dataScope: NotificationDeliveryView['dataScope'];
+  readonly failureCode: string;
+  readonly incident: AdminNotificationDeliveryIncident | null;
+  readonly loadFailed: boolean;
+  readonly provider: string;
+  readonly returnHref: string;
+}) {
+  if (loadFailed) {
+    return (
+      <AdminErrorState
+        action={<AdminTextLink href={returnHref}>Retry incident lifecycle</AdminTextLink>}
+        message="Persistent assignment and resolution state could not be loaded. The failure evidence remains visible."
+        title="Incident lifecycle unavailable"
+      />
+    );
+  }
+  const ownerLabel = incident?.ownerAdmin?.fullName || incident?.ownerAdmin?.email || 'Unassigned';
+  const statusTone: StatusBadgeTone = incident?.state === 'RESOLVED'
+    ? 'success'
+    : incident?.state === 'INVESTIGATING'
+      ? 'info'
+      : 'warning';
+
+  return (
+    <AdminSection
+      actions={<AdminTextLink href={clearIncidentSelectionHref(returnHref)}>Close lifecycle</AdminTextLink>}
+      description={`${provider} · ${notificationFailureCodeLabel(failureCode)} · ${dataScope}`}
+      id="notification-incident-lifecycle"
+      statusLabel={incident ? incident.state : 'Not tracked'}
+      statusTone={statusTone}
+      title="Persistent incident lifecycle"
+    >
+      {!canManage ? (
+        <AdminInlineNotice tone="info">
+          You can inspect delivery evidence, but exact NOTIFICATIONS_INCIDENTS permission is required to change ownership or resolution.
+        </AdminInlineNotice>
+      ) : null}
+
+      {incident ? (
+        <div className="stack">
+          <dl className="admin-detail-grid">
+            <div><dt>Owner</dt><dd>{ownerLabel}</dd></div>
+            <div><dt>Occurrence</dt><dd>{incident.occurrence}</dd></div>
+            <div><dt>Evidence members</dt><dd>{incident._count.members}</dd></div>
+            <div><dt>Revision</dt><dd>{incident.revision}</dd></div>
+            <div><dt>First observed</dt><dd>{formatDateTime(incident.firstObservedAt)}</dd></div>
+            <div><dt>Last observed</dt><dd>{formatDateTime(incident.lastObservedAt)}</dd></div>
+          </dl>
+          {incident.resolutionCode ? (
+            <AdminInlineNotice tone="success">
+              {incident.resolutionCode.replaceAll('_', ' ')} · {incident.resolutionNote}
+            </AdminInlineNotice>
+          ) : null}
+          {canManage && incident.state !== 'RESOLVED' ? (
+            <div className="notification-incident-action-grid">
+              {currentOperatorId ? (
+                <AdminFormGrid action={assignNotificationDeliveryIncident} className="notification-incident-action-form">
+                  <input name="incidentId" type="hidden" value={incident.id} />
+                  <input name="assigneeAdminId" type="hidden" value={currentOperatorId} />
+                  <input name="expectedRevision" type="hidden" value={incident.revision} />
+                  <input name="returnHref" type="hidden" value={returnHref} />
+                  <AdminFormTextarea
+                    label="Assignment reason"
+                    maxLength={500}
+                    minLength={12}
+                    name="reason"
+                    placeholder="Why are you taking ownership?"
+                    required
+                    rows={3}
+                  />
+                  <AdminFormControlButton type="submit">Take ownership</AdminFormControlButton>
+                </AdminFormGrid>
+              ) : null}
+              <AdminFormGrid action={resolveNotificationDeliveryIncident} className="notification-incident-action-form">
+                <input name="incidentId" type="hidden" value={incident.id} />
+                <input name="expectedRevision" type="hidden" value={incident.revision} />
+                <input name="returnHref" type="hidden" value={returnHref} />
+                <AdminFormSelect
+                  label="Resolution"
+                  name="resolutionCode"
+                  options={NOTIFICATION_INCIDENT_RESOLUTION_OPTIONS}
+                  required
+                />
+                <AdminFormTextarea
+                  label="Resolution evidence"
+                  maxLength={500}
+                  minLength={12}
+                  name="reason"
+                  placeholder="What changed, and how was it verified?"
+                  required
+                  rows={3}
+                />
+                <AdminFormControlButton type="submit">Resolve incident</AdminFormControlButton>
+              </AdminFormGrid>
+            </div>
+          ) : null}
+          {canManage && incident.state === 'RESOLVED' ? (
+            <AdminFormGrid action={reopenNotificationDeliveryIncident} className="notification-incident-action-form">
+              <input name="incidentId" type="hidden" value={incident.id} />
+              <input name="expectedRevision" type="hidden" value={incident.revision} />
+              <input name="returnHref" type="hidden" value={returnHref} />
+              <AdminFormTextarea
+                label="Reopen reason"
+                maxLength={500}
+                minLength={12}
+                name="reason"
+                placeholder="What new evidence requires another investigation?"
+                required
+                rows={3}
+              />
+              <AdminFormControlButton type="submit">Reopen incident</AdminFormControlButton>
+            </AdminFormGrid>
+          ) : null}
+        </div>
+      ) : canManage ? (
+        <AdminFormGrid action={openNotificationDeliveryIncident} className="notification-incident-action-form">
+          <input name="dataScope" type="hidden" value={dataScope} />
+          <input name="failureCode" type="hidden" value={failureCode} />
+          <input name="provider" type="hidden" value={provider} />
+          <input name="returnHref" type="hidden" value={returnHref} />
+          <AdminFormTextarea
+            label="Investigation reason"
+            maxLength={500}
+            minLength={12}
+            name="reason"
+            placeholder="Why does this failure group need persistent ownership?"
+            required
+            rows={3}
+          />
+          <AdminFormControlButton type="submit">Start incident lifecycle</AdminFormControlButton>
+        </AdminFormGrid>
+      ) : null}
+    </AdminSection>
+  );
+}
+
+function NotificationIncidentNotice({ params }: { readonly params: Record<string, string | string[] | undefined> }) {
+  const notice = readSearchParam(params.incidentNotice);
+  const copy = notice === 'opened'
+    ? ['Incident lifecycle started.', 'success']
+    : notice === 'assigned'
+      ? ['Incident ownership updated.', 'success']
+      : notice === 'resolved'
+        ? ['Incident resolved with audit evidence.', 'success']
+        : notice === 'reopened'
+          ? ['Incident reopened for another investigation.', 'warning']
+          : notice === 'state-changed'
+            ? ['Incident changed while you were reviewing it. Refresh and try again.', 'warning']
+            : notice === 'permission-denied'
+              ? ['Exact NOTIFICATIONS_INCIDENTS permission is required.', 'warning']
+              : notice === 'failed'
+                ? ['Incident lifecycle action failed. No state was changed.', 'warning']
+                : null;
+  return copy ? <AdminInlineNotice tone={copy[1] as 'success' | 'warning'}>{copy[0]}</AdminInlineNotice> : null;
+}
+
+const NOTIFICATION_INCIDENT_RESOLUTION_OPTIONS = [
+  { label: 'Partner recovered', value: 'PROVIDER_RECOVERED' },
+  { label: 'Device route refreshed', value: 'DEVICE_ROUTE_REFRESHED' },
+  { label: 'Configuration fixed', value: 'CONFIGURATION_FIXED' },
+  { label: 'Retry succeeded', value: 'RETRY_SUCCEEDED' },
+  { label: 'False positive', value: 'FALSE_POSITIVE' },
+  { label: 'Customer contacted', value: 'CUSTOMER_CONTACTED' },
+  { label: 'Other reviewed outcome', value: 'OTHER' },
+] as const;
+
+function currentNotificationHref(params: Record<string, string | string[] | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, rawValue] of Object.entries(params)) {
+    if (key === 'incidentNotice') continue;
+    const value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+    if (value) query.set(key, value);
+  }
+  const value = query.toString();
+  return `/notifications${value ? `?${value}` : ''}`;
+}
+
+function clearIncidentSelectionHref(returnHref: string) {
+  const url = new URL(returnHref, 'http://admin.local');
+  url.searchParams.delete('incidentProvider');
+  url.searchParams.delete('incidentFailureCode');
+  url.searchParams.delete('incidentNotice');
+  return `${url.pathname}${url.search}`;
 }
 
 function NotificationDeliveryToolbar({
@@ -523,7 +767,7 @@ function NotificationDeliveryHealthOverview({
           <NotificationDeliveryHealthMetrics items={history} scope="history" />
           {historyHealth === 'attention' ? (
             <p className="muted notification-history-meta">
-              Oldest failure group: {formatDateTime(summary?.historicalDeliveryOldestAt, 'unavailable')} · lifecycle is read-only because Notification records do not have a persistent assignment or resolution field.
+              Oldest failure group: {formatDateTime(summary?.historicalDeliveryOldestAt, 'unavailable')} · open a failure group to assign, investigate, resolve, or reopen its persistent lifecycle.
             </p>
           ) : null}
         </section>

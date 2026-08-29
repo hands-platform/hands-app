@@ -316,7 +316,7 @@ API 서비스에서도 정책/규칙 mutation transaction이 commit된 뒤 `writ
 2. 법적 정책이 날짜 단위라면 datetime이 아니라 `effectiveDate`와 현지 자정 규칙을 사용한다.
 3. 시각 단위가 필요하면 offset이 포함된 ISO 또는 instant+timezone을 전송한다.
 4. 저장값, 화면값, 제출값에 timezone label을 표시한다.
-5. 브라우저 Bangkok, 서버 UTC 조합과 브라우저 UTC, 서버 Bangkok 조합을 모두 테스트한다.
+5. 브라우저 `Asia/Ho_Chi_Minh`, 서버 UTC 조합과 브라우저 UTC, 서버 `Asia/Ho_Chi_Minh` 조합을 모두 테스트한다.
 6. unchanged form submit이 instant를 바꾸지 않는 회귀 테스트를 추가한다.
 
 관련 코드:

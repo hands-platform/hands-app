@@ -10,6 +10,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminDisclosure } from '../../../components/admin-surface';
+import { AdminReauthenticateOperatorForm } from '../../../components/admin-reauthenticate-operator-form';
 import type { AdminPushCampaignPreview } from '../../../lib/admin-api';
 import type { PushComposerBrowserFixture } from './push-send-browser-fixtures';
 import {
@@ -193,6 +194,7 @@ export function PushCampaignComposer({ fixture }: { fixture?: PushComposerBrowse
               confirmError={confirmState.error}
               confirmFieldErrors={confirmState.fieldErrors}
               confirmPending={confirmPending}
+              requiresReauthentication={confirmState.requiresReauthentication}
               confirmSuccess={confirmState.status === 'success'}
               idempotencyKey={previewState.idempotencyKey ?? ''}
               preview={activePreview}
@@ -251,7 +253,7 @@ function AccountSearchResult({ role, selected, setSelected, state }: {
   );
 }
 
-function ReceiptPanel({ body, confirmAction, confirmError, confirmFieldErrors, confirmPending, confirmSuccess, idempotencyKey, preview, selectedAccount, title }: {
+function ReceiptPanel({ body, confirmAction, confirmError, confirmFieldErrors, confirmPending, confirmSuccess, idempotencyKey, preview, requiresReauthentication, selectedAccount, title }: {
   body: string;
   confirmAction: (payload: FormData) => void;
   confirmError?: string;
@@ -260,6 +262,7 @@ function ReceiptPanel({ body, confirmAction, confirmError, confirmFieldErrors, c
   confirmSuccess: boolean;
   idempotencyKey: string;
   preview: AdminPushCampaignPreview;
+  requiresReauthentication?: boolean;
   selectedAccount: PushAccountCandidate | null;
   title: string;
 }) {
@@ -307,16 +310,23 @@ function ReceiptPanel({ body, confirmAction, confirmError, confirmFieldErrors, c
         </AdminDisclosure>
       ) : null}
       {ready ? (
-        <form action={confirmAction} className="notification-push-confirm-form">
-          <input name="previewId" type="hidden" value={preview.previewId} />
-          <input name="idempotencyKey" type="hidden" value={idempotencyKey} />
-          <AdminFormTextarea ariaInvalid={Boolean(confirmFieldErrors?.reason)} disabled={receiptBlocked || confirmSuccess} label="Operator reason" labelVisibility="visible" maxLength={500} minLength={12} name="reason" onChange={(event) => setReason(event.target.value)} required rows={3} value={reason} />
-          <AdminFormInput ariaInvalid={Boolean(confirmFieldErrors?.confirmationPhrase)} autoComplete="off" disabled={receiptBlocked || confirmSuccess} label={`Type SEND ${preview.eligibleUsers} to confirm`} labelVisibility="visible" name="confirmationPhrase" onChange={(event) => setConfirmationPhrase(event.target.value)} required value={confirmationPhrase} />
-          <ActionMessage error={confirmError} success={confirmSuccess ? 'Campaign queued. Delivery has not completed yet.' : undefined} />
-          <AdminFormControlButton className="button-danger" disabled={confirmPending || confirmSuccess || receiptBlocked || !confirmationReady} type="submit">
-            <Send aria-hidden="true" size={17} />{confirmPending ? 'Queueing once…' : `Queue push campaign for ${preview.eligibleUsers} users`}
-          </AdminFormControlButton>
-        </form>
+        <>
+          {requiresReauthentication ? (
+            <div className="notification-push-reauthentication">
+              <AdminReauthenticateOperatorForm />
+            </div>
+          ) : null}
+          <form action={confirmAction} className="notification-push-confirm-form">
+            <input name="previewId" type="hidden" value={preview.previewId} />
+            <input name="idempotencyKey" type="hidden" value={idempotencyKey} />
+            <AdminFormTextarea ariaInvalid={Boolean(confirmFieldErrors?.reason)} disabled={receiptBlocked || confirmSuccess} label="Operator reason" labelVisibility="visible" maxLength={500} minLength={12} name="reason" onChange={(event) => setReason(event.target.value)} required rows={3} value={reason} />
+            <AdminFormInput ariaInvalid={Boolean(confirmFieldErrors?.confirmationPhrase)} autoComplete="off" disabled={receiptBlocked || confirmSuccess} label={`Type SEND ${preview.eligibleUsers} to confirm`} labelVisibility="visible" name="confirmationPhrase" onChange={(event) => setConfirmationPhrase(event.target.value)} required value={confirmationPhrase} />
+            <ActionMessage error={confirmError} success={confirmSuccess ? 'Campaign queued. Delivery has not completed yet.' : undefined} />
+            <AdminFormControlButton className="button-danger" disabled={confirmPending || confirmSuccess || receiptBlocked || !confirmationReady} type="submit">
+              <Send aria-hidden="true" size={17} />{confirmPending ? 'Queueing once…' : `Queue push campaign for ${preview.eligibleUsers} users`}
+            </AdminFormControlButton>
+          </form>
+        </>
       ) : null}
     </div>
   );

@@ -35,6 +35,7 @@ describe('Start Shift operations command board', () => {
 
     expect(rows[0]).toMatchObject({
       href: '/bookings?view=attention',
+      isLiveBlock: true,
       lane: 'Live booking command',
       tone: 'danger',
     });

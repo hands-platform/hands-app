@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
 describe('Admin form control CSS', () => {
   it('keeps every shared admin design token reference defined', () => {
@@ -183,7 +183,9 @@ describe('Admin form control CSS', () => {
   it('keeps month, year, and quarter picker tiles on the Vuexy template rhythm', () => {
     const tileIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__month-text,');
     const tileBlock = cssRuleBlockAt(tileIndex);
-    const todayIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__month-text--today,');
+    const todayIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker\n  .react-datepicker__month-text--today:not(',
+    );
     const todayBlock = cssRuleBlockAt(todayIndex);
 
     expect(tileIndex).toBeGreaterThan(-1);
@@ -197,6 +199,24 @@ describe('Admin form control CSS', () => {
     expect(todayBlock).toContain('border: 1px solid var(--admin-accent)');
     expect(todayBlock).toContain('color: var(--admin-accent)');
     expect(todayBlock).toContain('font-weight: 400');
+  });
+
+  it('keeps selected month, year, and quarter text readable with visible keyboard focus', () => {
+    const selectedIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__month-text--selected,',
+    );
+    const selectedBlock = cssRuleBlockAt(selectedIndex);
+    const focusIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__day:focus-visible,',
+    );
+    const focusBlock = cssRuleBlockAt(focusIndex);
+
+    expect(selectedIndex).toBeGreaterThan(-1);
+    expect(selectedBlock).toContain('background: var(--admin-text)');
+    expect(selectedBlock).toContain('color: var(--admin-surface)');
+    expect(focusIndex).toBeGreaterThan(selectedIndex);
+    expect(focusBlock).toContain('outline: 2px solid var(--admin-accent-strong)');
+    expect(focusBlock).toContain('outline-offset: 2px');
   });
 
   it('keeps react-datepicker month and year dropdown menus on the Vuexy popover surface', () => {
@@ -228,7 +248,7 @@ describe('Admin form control CSS', () => {
 
   it('keeps selected react-datepicker dates on the Vuexy primary-dark hover treatment', () => {
     const selectedHoverIndex = globalsCss.indexOf(
-      '.calendar-vuexy-datepicker .react-datepicker__day--selected:hover,',
+      '.calendar-vuexy-datepicker .react-datepicker__day--selected:hover {',
     );
     const selectedHoverBlock = cssRuleBlockAt(selectedHoverIndex);
 
@@ -589,7 +609,7 @@ describe('Admin form control CSS', () => {
   });
 
   it('keeps visible shared form labels on the Vuexy text-primary color', () => {
-    const labelIndex = globalsCss.indexOf('.admin-form-label {');
+    const labelIndex = globalsCss.lastIndexOf('.admin-form-label {');
     const labelBlock = cssRuleBlockAt(labelIndex);
     const textareaLabelIndex = globalsCss.indexOf('.admin-form-textarea > span:first-child {');
     const textareaLabelBlock = cssRuleBlockAt(textareaLabelIndex);

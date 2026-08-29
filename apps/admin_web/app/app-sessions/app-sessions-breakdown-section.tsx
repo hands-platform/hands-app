@@ -29,6 +29,7 @@ export type AppSessionVersionRow = {
 type AppSessionsBreakdownSectionProps = {
   readonly platformRows: readonly AppSessionPlatformRow[];
   readonly roleRows: readonly AppSessionRoleRow[];
+  readonly scopeLabel?: 'Current page';
   readonly versionRows: readonly AppSessionVersionRow[];
 };
 
@@ -38,11 +39,12 @@ const APP_SESSION_PLATFORM_VERSION_HEADERS = ['Platform or version', 'Sessions']
 export function AppSessionsBreakdownSection({
   platformRows,
   roleRows,
+  scopeLabel,
   versionRows,
 }: AppSessionsBreakdownSectionProps) {
   return (
     <AdminDetailGrid ariaLabel="App session breakdowns" className="admin-mb-16">
-      <AdminTableSection title="Role split">
+      <AdminTableSection title={scopeLabel ? `${scopeLabel} role split` : 'Role split'}>
         <AdminTableScroll>
           <AdminDataTable emptyMessage={null} headers={APP_SESSION_ROLE_HEADERS} rowCount={roleRows.length}>
             {roleRows.map((row) => (
@@ -57,7 +59,7 @@ export function AppSessionsBreakdownSection({
         </AdminTableScroll>
       </AdminTableSection>
 
-      <AdminTableSection title="Platform and version">
+      <AdminTableSection title={scopeLabel ? `${scopeLabel} platform and version` : 'Platform and version'}>
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={null}

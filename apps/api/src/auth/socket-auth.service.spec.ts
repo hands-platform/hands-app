@@ -36,6 +36,12 @@ describe('SocketAuthService', () => {
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: 'admin_operator.realtime.authorization_denied',
+        actorId: 'admin-user-1',
+        actorType: 'HUMAN',
+        area: 'SECURITY',
+        outcome: 'DENIED',
+        severity: 'REVIEW',
+        source: 'admin_realtime_authorization',
         target: 'booking:booking-1',
       }),
     });

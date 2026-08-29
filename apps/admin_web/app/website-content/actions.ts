@@ -10,7 +10,9 @@ import {
   adminPatchOrThrow,
   adminPostOrThrow,
 } from '../../lib/admin-api';
+import { cmsDestructiveLifecycleEnabled } from '../../lib/launch-features';
 import type {
+  PublicSiteCacheInvalidation,
   PublicSitePageDetail,
   PublicSiteSection,
   PublicSiteSectionKind,
@@ -80,7 +82,31 @@ export async function updatePublicSitePage(formData: FormData) {
   });
 }
 
+export async function updatePublicSitePageState(
+  _previous: WebsiteContentActionState,
+  formData: FormData,
+): Promise<WebsiteContentActionState> {
+  const fieldErrors: Record<string, string> = {};
+  if (!String(formData.get('internalName') ?? '').trim()) fieldErrors.internalName = 'This field is required.';
+  if (Object.keys(fieldErrors).length) return validationState(fieldErrors);
+  const pageId = requiredValue(formData, 'pageId');
+  try {
+    await adminPatchOrThrow<PublicSitePageDetail>(`/admin/site-pages/${pageId}`, {
+      internalName: requiredValue(formData, 'internalName'),
+      seoTitle: optionalValue(formData, 'seoTitle'),
+      seoDescription: optionalValue(formData, 'seoDescription'),
+      canonicalPath: optionalValue(formData, 'canonicalPath'),
+      noIndex: formData.get('noIndex') === 'on',
+      expectedVersion: integerValue(formData, 'expectedVersion'),
+    });
+  } catch (error) {
+    return websiteContentErrorState(error);
+  }
+  finish('draft-saved', pageId, formData);
+}
+
 export async function deletePublicSitePage(formData: FormData) {
+  if (!cmsDestructiveLifecycleEnabled()) return finishCmsManualOnly(formData);
   const pageId = requiredValue(formData, 'pageId');
   await runAction(formData, async () => {
     await adminDeleteWithBodyOrThrow(`/admin/site-pages/${pageId}`, {
@@ -92,9 +118,10 @@ export async function deletePublicSitePage(formData: FormData) {
 }
 
 export async function takePublicSitePageOffline(formData: FormData) {
+  if (!cmsDestructiveLifecycleEnabled()) return finishCmsManualOnly(formData);
   const pageId = requiredValue(formData, 'pageId');
   await runAction(formData, async () => {
-    const result = await adminPostOrThrow<{ visitorOutcome: 'CODE_FALLBACK' | 'NOT_SERVED' }>(
+    const result = await adminPostOrThrow<{ cacheInvalidation: PublicSiteCacheInvalidation; visitorOutcome: 'CODE_FALLBACK' | 'NOT_SERVED' }>(
       `/admin/site-pages/${pageId}/take-offline`,
       {
         confirmationPath: requiredValue(formData, 'confirmationPath'),
@@ -102,7 +129,10 @@ export async function takePublicSitePageOffline(formData: FormData) {
       },
     );
     return {
-      status: result.visitorOutcome === 'CODE_FALLBACK' ? 'offline-fallback' : 'offline-not-served',
+      status: cacheResultStatus(
+        result.cacheInvalidation,
+        result.visitorOutcome === 'CODE_FALLBACK' ? 'offline-fallback' : 'offline-not-served',
+      ),
       pageId,
     };
   });
@@ -141,7 +171,35 @@ export async function updatePublicSiteSection(formData: FormData) {
   });
 }
 
+export async function updatePublicSiteSectionState(
+  _previous: WebsiteContentActionState,
+  formData: FormData,
+): Promise<WebsiteContentActionState> {
+  const pageId = requiredValue(formData, 'pageId');
+  const sectionId = requiredValue(formData, 'sectionId');
+  let content: Record<string, unknown>;
+  try {
+    content = sectionContent(formData);
+  } catch {
+    return validationState({ advancedContentJson: 'Advanced JSON must be a valid object.' });
+  }
+  try {
+    await adminPatchOrThrow<PublicSiteSection>(`/admin/site-pages/sections/${sectionId}`, {
+      key: requiredValue(formData, 'key'),
+      kind: requiredValue(formData, 'kind') as PublicSiteSectionKind,
+      content,
+      sortOrder: nonNegativeIntegerValue(formData, 'sortOrder'),
+      enabled: formData.get('enabled') === 'on',
+      expectedVersion: integerValue(formData, 'expectedVersion'),
+    });
+  } catch (error) {
+    return websiteContentErrorState(error);
+  }
+  finish('section-updated', pageId, formData);
+}
+
 export async function deletePublicSiteSection(formData: FormData) {
+  if (!cmsDestructiveLifecycleEnabled()) return finishCmsManualOnly(formData);
   const pageId = requiredValue(formData, 'pageId');
   const sectionId = requiredValue(formData, 'sectionId');
   if (optionalValue(formData, 'confirmationId') !== sectionId) {
@@ -162,6 +220,7 @@ export async function createPublicSiteNewsArticle(formData: FormData) {
       subtitle: requiredValue(formData, 'subtitle'),
       body: requiredValue(formData, 'body'),
       imageUrl: optionalValue(formData, 'imageUrl'),
+      imageAlt: optionalValue(formData, 'imageAlt'),
     });
     return { status: 'news-draft-created', pageId: page.id };
   });
@@ -182,6 +241,7 @@ export async function createPublicSiteNewsArticleState(
       subtitle: requiredValue(formData, 'subtitle'),
       body: requiredValue(formData, 'body'),
       imageUrl: optionalValue(formData, 'imageUrl'),
+      imageAlt: optionalValue(formData, 'imageAlt'),
     });
   } catch (error) {
     return websiteContentErrorState(error);
@@ -199,11 +259,37 @@ export async function updatePublicSiteNewsArticle(formData: FormData) {
       subtitle: requiredValue(formData, 'subtitle'),
       body: requiredValue(formData, 'body'),
       imageUrl: optionalValue(formData, 'imageUrl'),
+      imageAlt: optionalValue(formData, 'imageAlt'),
       revisionId: requiredValue(formData, 'revisionId'),
       expectedVersion: integerValue(formData, 'expectedVersion'),
     });
     return { status: 'news-draft-saved', pageId };
   });
+}
+
+export async function updatePublicSiteNewsArticleState(
+  _previous: WebsiteContentActionState,
+  formData: FormData,
+): Promise<WebsiteContentActionState> {
+  const fieldErrors = validateNewsForm(formData);
+  if (Object.keys(fieldErrors).length) return validationState(fieldErrors);
+  const pageId = requiredValue(formData, 'pageId');
+  try {
+    await adminPatchOrThrow<PublicSitePageDetail>(`/admin/site-pages/${pageId}/news-draft`, {
+      locale: requiredValue(formData, 'locale'),
+      slug: requiredValue(formData, 'slug'),
+      title: requiredValue(formData, 'title'),
+      subtitle: requiredValue(formData, 'subtitle'),
+      body: requiredValue(formData, 'body'),
+      imageUrl: optionalValue(formData, 'imageUrl'),
+      imageAlt: optionalValue(formData, 'imageAlt'),
+      revisionId: requiredValue(formData, 'revisionId'),
+      expectedVersion: integerValue(formData, 'expectedVersion'),
+    });
+  } catch (error) {
+    return websiteContentErrorState(error);
+  }
+  finish('news-draft-saved', pageId, formData);
 }
 
 export async function openPublicSiteDraft(formData: FormData) {
@@ -215,6 +301,7 @@ export async function openPublicSiteDraft(formData: FormData) {
 }
 
 export async function discardPublicSiteDraft(formData: FormData) {
+  if (!cmsDestructiveLifecycleEnabled()) return finishCmsManualOnly(formData);
   const pageId = requiredValue(formData, 'pageId');
   if (optionalValue(formData, 'confirmationId') !== pageId) {
     return finish('confirmation-required', pageId, formData);
@@ -226,24 +313,37 @@ export async function discardPublicSiteDraft(formData: FormData) {
 }
 
 export async function publishPublicSiteDraft(formData: FormData) {
+  if (!cmsDestructiveLifecycleEnabled()) return finishCmsManualOnly(formData);
   const pageId = requiredValue(formData, 'pageId');
   await runAction(formData, async () => {
-    await adminPostOrThrow(`/admin/site-pages/${pageId}/publish`, {
+    const result = await adminPostOrThrow<PublicSitePageDetail & { cacheInvalidation: PublicSiteCacheInvalidation }>(`/admin/site-pages/${pageId}/publish`, {
       revisionId: requiredValue(formData, 'revisionId'),
       expectedVersion: integerValue(formData, 'expectedVersion'),
     });
-    return { status: 'published', pageId };
+    return { status: cacheResultStatus(result.cacheInvalidation, 'published'), pageId };
   });
 }
 
 export async function rollbackPublicSiteRevision(formData: FormData) {
+  if (!cmsDestructiveLifecycleEnabled()) return finishCmsManualOnly(formData);
   const pageId = requiredValue(formData, 'pageId');
   await runAction(formData, async () => {
-    await adminPostOrThrow(`/admin/site-pages/${pageId}/rollback`, {
+    const result = await adminPostOrThrow<PublicSitePageDetail & { cacheInvalidation: PublicSiteCacheInvalidation }>(`/admin/site-pages/${pageId}/rollback`, {
       revisionId: requiredValue(formData, 'revisionId'),
       reason: requiredValue(formData, 'reason'),
     });
-    return { status: 'rolled-back', pageId };
+    return { status: cacheResultStatus(result.cacheInvalidation, 'rolled-back'), pageId };
+  });
+}
+
+export async function retryPublicSiteCacheInvalidation(formData: FormData) {
+  const pageId = requiredValue(formData, 'pageId');
+  await runAction(formData, async () => {
+    const result = await adminPostOrThrow<PublicSiteCacheInvalidation>(
+      `/admin/site-pages/${pageId}/cache-invalidation`,
+      {},
+    );
+    return { status: result.status === 'SUCCEEDED' ? 'cache-refreshed' : 'cache-refresh-pending', pageId };
   });
 }
 
@@ -266,6 +366,7 @@ function sectionContent(formData: FormData) {
     subtitle: optionalValue(formData, 'subtitle'),
     body: optionalValue(formData, 'body'),
     imageUrl: optionalValue(formData, 'imageUrl'),
+    imageAlt: optionalValue(formData, 'imageAlt'),
     actionLabel: optionalValue(formData, 'actionLabel'),
     actionHref: optionalValue(formData, 'actionHref'),
     ...(faqItems
@@ -361,6 +462,12 @@ function validateNewsForm(formData: FormData) {
   if (slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(slug)) {
     errors.slug = 'Use lowercase letters, numbers, and single hyphens only.';
   }
+  if (String(formData.get('imageUrl') ?? '').trim() && !String(formData.get('imageAlt') ?? '').trim()) {
+    errors.imageAlt = 'Describe the thumbnail image for visitors using assistive technology.';
+  }
+  if (String(formData.get('body') ?? '').length > 50_000) {
+    errors.body = 'Article body must be 50,000 characters or fewer.';
+  }
   return errors;
 }
 
@@ -398,6 +505,18 @@ function finish(status: string, pageId?: string, formData?: FormData): never {
   redirect(`/website-content?${params.toString()}`);
 }
 
+function finishCmsManualOnly(formData: FormData): never {
+  return finish(
+    'lifecycle-manual-only',
+    optionalValue(formData, 'pageId') ?? undefined,
+    formData,
+  );
+}
+
+function cacheResultStatus(result: PublicSiteCacheInvalidation | undefined, successStatus: string) {
+  return result?.status === 'SUCCEEDED' ? successStatus : `${successStatus}-cache-pending`;
+}
+
 function safeReturnParams(formData?: FormData) {
   const params = new URLSearchParams();
   const returnTo = formData ? optionalValue(formData, 'returnTo') : null;
@@ -405,9 +524,13 @@ function safeReturnParams(formData?: FormData) {
   try {
     const url = new URL(returnTo, 'http://admin.local');
     if (url.origin !== 'http://admin.local' || url.pathname !== '/website-content') return params;
-    for (const key of ['view', 'site', 'locale', 'q', 'statusFilter', 'readiness', 'ownership', 'routePage', 'workspace']) {
+    for (const key of ['view', 'site', 'locale', 'q', 'statusFilter', 'readiness', 'ownership', 'queue', 'routePage', 'workspace']) {
       const value = url.searchParams.get(key);
       if (value) params.set(key, value);
+    }
+    if (url.searchParams.get('workspace') === 'content') {
+      const sectionId = url.searchParams.get('sectionId');
+      if (sectionId) params.set('sectionId', sectionId);
     }
   } catch {
     return params;

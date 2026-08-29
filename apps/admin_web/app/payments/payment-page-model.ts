@@ -253,6 +253,21 @@ export function buildPaymentPageHref(filters: PaymentFilters, page?: number): st
   return query ? `/payments?${query}` : '/payments';
 }
 
+export function buildPaymentResetHref(filters: PaymentFilters): string {
+  return buildPaymentPageHref({
+    ...filters,
+    age: 'all',
+    bookingStatus: '',
+    evidence: '',
+    page: 1,
+    paymentMethod: '',
+    paymentStatus: '',
+    q: '',
+    range: 'all',
+    sla: 'all',
+  });
+}
+
 export function buildPaymentServerPagination<T>(
   rows: readonly T[],
   filters: PaymentFilters,

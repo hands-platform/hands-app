@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import { renderToStaticMarkup } from 'react-dom/server';
+import { redirect } from 'next/navigation';
 import { vi } from 'vitest';
 
 import { adminGetResult } from '../../../lib/admin-api';
@@ -27,6 +28,7 @@ vi.mock('../../../lib/admin-operator-access', () => ({
 
 const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
+const mockedRedirect = vi.mocked(redirect);
 const source = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 const requestFormSource = readFileSync(new URL('./company-bank-account-request-form.tsx', import.meta.url), 'utf8');
 const statusDialogSource = readFileSync(new URL('./company-bank-account-status-dialog.tsx', import.meta.url), 'utf8');
@@ -83,7 +85,10 @@ const accounts = [
   },
 ];
 
-type CompanyBankAccountFixture = (typeof accounts)[number] & { metadata?: Record<string, unknown> };
+type CompanyBankAccountFixture = (typeof accounts)[number] & {
+  metadata?: Record<string, unknown>;
+  updatedAt?: string;
+};
 
 function operationsPage(
   items: CompanyBankAccountFixture[] = [accounts[0]],
@@ -91,6 +96,18 @@ function operationsPage(
   summaryOverrides: Record<string, unknown> = {},
 ) {
   return {
+    filterContract: {
+      currency: ['VND'],
+      health: view === 'remediation' ? [] : ['HEALTHY', 'ATTENTION'],
+      purpose: ['COLLECTION', 'REFUND', 'PAYOUT', 'RECONCILIATION', 'ADJUSTMENT'],
+      status: view === 'pending'
+        ? ['PENDING_ACTIVATION', 'PENDING_CHANGE']
+        : view === 'archived'
+          ? ['NEVER_ACTIVATED', 'REJECTED', 'ARCHIVED_WITH_HISTORY', 'DISABLED_BY_SYSTEM']
+          : [],
+      verification: ['UNVERIFIED', 'EVIDENCE_SUBMITTED', 'VERIFIED', 'FAILED'],
+    },
+    filters: { currency: '', health: '', purpose: '', status: '', verification: '' },
     generatedAt: '2026-08-11T10:42:00.000Z',
     items,
     pagination: { skip: 0, take: 25, totalCount: items.length },
@@ -128,6 +145,7 @@ const auditLogs = [
 
 describe('CompanyBankAccountsPage', () => {
   beforeEach(() => {
+    mockedRedirect.mockClear();
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: ['SYSTEM_AUDIT', 'SYSTEM_POLICY'],
       id: 'operator-current',
@@ -171,7 +189,7 @@ describe('CompanyBankAccountsPage', () => {
     );
     expect(mockedAdminGetResult).toHaveBeenCalledWith(
       '/admin/company-bank-accounts/recent-changes?take=20',
-      { accountSnapshots: [], items: [], skip: 0, take: 20, totalCount: 0 },
+      { actionableRequestIds: [], accountSnapshots: [], items: [], skip: 0, take: 20, totalCount: 0 },
     );
     expect(markup).toContain('Company bank accounts');
     expect(markup).toContain('Current production accounts');
@@ -192,15 +210,14 @@ describe('CompanyBankAccountsPage', () => {
     expect(markup).not.toContain('class="form-input"');
   });
 
-  it('shows an operational health strip without repeating raw status totals', async () => {
+  it('shows one compact operational readiness strip without a duplicate KPI grid', async () => {
     const page = await CompanyBankAccountsPage({});
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Usable production accounts');
-    expect(markup).toContain('Pending approval');
-    expect(markup).toContain('Import &amp; reconciliation');
-    expect(markup).toContain('Last statement import');
+    expect(markup).toContain('Operational readiness: READY');
+    expect(markup).toContain('Eligible separate approvers: 2');
     expect(markup).toContain('1 records in this view');
+    expect(markup).not.toContain('admin-metric-grid');
     expect(markup).not.toContain('Inactive accounts are retained');
   });
 
@@ -271,7 +288,7 @@ describe('CompanyBankAccountsPage', () => {
     expect(source).toContain("adminPatchOrThrow<AdminCompanyBankAccount>(`/admin/company-bank-accounts/${encodeURIComponent(accountId)}`");
     expect(statusDialogSource).toContain('useActionState');
     expect(statusDialogSource).toContain("state.status === 'error'");
-    expect(source).not.toContain('adminDelete');
+    expect(source).not.toContain('adminDeleteOrThrow(`/admin/company-bank-accounts');
     expect(source).not.toContain("method: 'DELETE'");
   });
 
@@ -303,7 +320,6 @@ describe('CompanyBankAccountsPage', () => {
 
     const markup = renderToStaticMarkup(await CompanyBankAccountsPage({}));
 
-    expect(markup).toContain('Pending approval');
     expect(markup).toContain('Pending change');
     expect(markup).toContain('Review exact request');
     expect(markup).toContain('/finance-tax/approval-queue?view=bank-accounts#approval-request-1');
@@ -400,7 +416,15 @@ describe('CompanyBankAccountsPage', () => {
   it('distinguishes a filtered empty result from an empty account inventory', async () => {
     mockedAdminGetResult.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/company-bank-accounts/operations-page?')) {
-        return { data: operationsPage([]), ok: true, status: 200 } as never;
+        const data = operationsPage([]);
+        data.filters = {
+          currency: '',
+          health: '',
+          purpose: 'PAYOUT',
+          status: '',
+          verification: 'FAILED',
+        };
+        return { data, ok: true, status: 200 } as never;
       }
       if (href === '/admin/company-bank-accounts/recent-changes?take=20') {
         return { data: { items: [], skip: 0, take: 20, totalCount: 0 }, ok: true, status: 200 } as never;
@@ -457,7 +481,7 @@ describe('CompanyBankAccountsPage', () => {
       searchParams: Promise.resolve({ dialog: 'new' }),
     }));
 
-    expect(markup).toContain('No separate Finance approver is available');
+    expect(markup).toContain('No separate eligible Finance checker is available');
     expect(markup).toContain('Review Finance approvers');
     expect(markup).not.toContain('Submit for approval');
   });
@@ -552,7 +576,18 @@ describe('CompanyBankAccountsPage', () => {
     expect(markup).toContain('Archived account history');
     expect(markup).toContain('Dormant settlement account');
     expect(markup).toContain('Never activated');
+    expect(markup).toContain('value="ARCHIVED_WITH_HISTORY"');
+    expect(markup).not.toContain('value="PENDING_ACTIVATION"');
+    expect(markup).not.toContain('value="UNKNOWN_DATA_SCOPE"');
     expect(markup).not.toContain('Operations VND');
+  });
+
+  it('normalizes an invalid lifecycle deep link without losing the current view', async () => {
+    await CompanyBankAccountsPage({
+      searchParams: Promise.resolve({ status: 'UNKNOWN_DATA_SCOPE', view: 'current' }),
+    });
+
+    expect(mockedRedirect).toHaveBeenCalledWith('/finance-tax/company-bank-accounts?view=current');
   });
 
   it('separates unclassified legacy records into the remediation server view', async () => {
@@ -585,7 +620,8 @@ describe('CompanyBankAccountsPage', () => {
 
     expect(markup).toContain('Account data remediation');
     expect(markup).toContain('Unclassified');
-    expect(markup).toContain('Operational readiness: NOT READY');
+    expect(markup).toContain('Operational readiness: NOT APPLICABLE');
+    expect(markup).toContain('Start classification review');
     expect(mockedAdminGetResult).toHaveBeenCalledWith(
       '/admin/company-bank-accounts/operations-page?view=remediation&amp;skip=0&amp;take=25'.replaceAll('&amp;', '&'),
       expect.objectContaining({ view: 'remediation' }),
@@ -615,8 +651,136 @@ describe('CompanyBankAccountsPage', () => {
 
     expect(markup).toContain('Operational readiness: ATTENTION');
     expect(markup).toContain('4 open reconciliation items, 2 pending approvals, and 3 remediation records');
-    expect(markup).toContain('value="PENDING_ACTIVATION"');
-    expect(markup).toContain('value="ARCHIVED_WITH_HISTORY"');
-    expect(markup).toContain('value="UNKNOWN_DATA_SCOPE"');
+    expect(markup).not.toContain('value="PENDING_ACTIVATION"');
+    expect(markup).not.toContain('value="ARCHIVED_WITH_HISTORY"');
+    expect(markup).not.toContain('value="UNKNOWN_DATA_SCOPE"');
+  });
+
+  it('distinguishes actionable, stale, and orphaned request evidence', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/company-bank-accounts/operations-page?')) {
+        return { data: operationsPage(), ok: true, status: 200 } as never;
+      }
+      if (href === '/admin/company-bank-accounts/recent-changes?take=20') {
+        return {
+          data: {
+            actionableRequestIds: ['request-actionable'],
+            accountSnapshots: [],
+            items: [
+              {
+                ...auditLogs[0],
+                action: 'company_bank_account.approval_requested',
+                id: 'audit-actionable',
+                metadata: { requestId: 'request-actionable' },
+              },
+              {
+                ...auditLogs[0],
+                action: 'company_bank_account.approval_requested',
+                id: 'audit-stale',
+                metadata: { requestId: 'request-stale' },
+              },
+              {
+                ...auditLogs[0],
+                action: 'company_bank_account.approval_requested',
+                id: 'audit-orphan',
+                metadata: { requestId: 'request-orphan' },
+                target: 'company_bank_account:missing-account',
+              },
+            ],
+            skip: 0,
+            take: 20,
+            totalCount: 3,
+          },
+          ok: true,
+          status: 200,
+        } as never;
+      }
+      if (href === '/admin/company-bank-accounts/approver-readiness') {
+        return { data: { eligibleApproverCount: 2, ready: true }, ok: true, status: 200 } as never;
+      }
+      return { data: fallback, ok: true, status: 200 } as never;
+    });
+
+    const markup = renderToStaticMarkup(await CompanyBankAccountsPage({}));
+
+    expect(markup).toContain('Awaiting checker');
+    expect(markup).toContain('No longer actionable');
+    expect(markup).toContain('Orphaned request evidence');
+  });
+
+  it('shows five recent lifecycles by default with a keyboard-native disclosure for the rest', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/company-bank-accounts/operations-page?')) {
+        return { data: operationsPage(), ok: true, status: 200 } as never;
+      }
+      if (href === '/admin/company-bank-accounts/recent-changes?take=20') {
+        return {
+          data: {
+            actionableRequestIds: [],
+            accountSnapshots: [],
+            items: Array.from({ length: 6 }, (_, index) => ({
+              ...auditLogs[0],
+              id: `audit-${index}`,
+              metadata: { requestId: `request-${index}` },
+            })),
+            skip: 0,
+            take: 20,
+            totalCount: 6,
+          },
+          ok: true,
+          status: 200,
+        } as never;
+      }
+      if (href === '/admin/company-bank-accounts/approver-readiness') {
+        return { data: { eligibleApproverCount: 2, ready: true }, ok: true, status: 200 } as never;
+      }
+      return { data: fallback, ok: true, status: 200 } as never;
+    });
+
+    const markup = renderToStaticMarkup(await CompanyBankAccountsPage({}));
+
+    expect(markup).toContain('<summary>Show 1 more</summary>');
+    expect(markup).toContain('Additional company bank account request lifecycles');
+    expect(markup.match(/company-bank-account-lifecycle-item/g)).toHaveLength(6);
+  });
+
+  it('opens a retained ownership evidence drawer from remediation without activating the account', async () => {
+    const remediationAccount = {
+      ...accounts[1],
+      dataScope: 'UNKNOWN',
+      lifecycleStatus: 'UNKNOWN_DATA_SCOPE',
+      updatedAt: '2026-08-28T05:00:00.000Z',
+    } as CompanyBankAccountFixture;
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/company-bank-accounts/operations-page?view=remediation')) {
+        return {
+          data: operationsPage([remediationAccount], 'remediation', {
+            productionCount: 0,
+            unknownDataScopeCount: 1,
+            usableRealAccountCount: 0,
+          }),
+          ok: true,
+          status: 200,
+        } as never;
+      }
+      if (href === '/admin/company-bank-accounts/approver-readiness') {
+        return { data: { eligibleApproverCount: 2, ready: true }, ok: true, status: 200 } as never;
+      }
+      return { data: fallback, ok: true, status: 200 } as never;
+    });
+
+    const markup = renderToStaticMarkup(await CompanyBankAccountsPage({
+      searchParams: Promise.resolve({
+        accountId: remediationAccount.id,
+        dialog: 'classification',
+        view: 'remediation',
+      }),
+    }));
+
+    expect(markup).toContain('Start production classification review');
+    expect(markup).toContain('name="evidenceFile"');
+    expect(markup).toContain('value="company-bank-account-classification"');
+    expect(markup).toContain('It does not activate the account.');
+    expect(markup).not.toContain('name="status" value="ACTIVE"');
   });
 });

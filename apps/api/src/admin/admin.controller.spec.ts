@@ -69,9 +69,13 @@ describe('AdminController notification and push actions', () => {
     listFinanceApproverAccessHistory: vi.fn(),
     createFinanceApproverAccessRequest: vi.fn(),
     decideFinanceApproverAccessRequest: vi.fn(),
+    createFinanceApproverLegacyAttestation: vi.fn(),
+    decideFinanceApproverLegacyAttestation: vi.fn(),
+    revokeFinanceApproverLegacyAttestation: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
     listProviderReports: vi.fn(),
+    getProviderReportAuditHistory: vi.fn(),
     listProviderSanctions: vi.fn(),
     listReviews: vi.fn(),
     getReview: vi.fn(),
@@ -86,6 +90,7 @@ describe('AdminController notification and push actions', () => {
     partnerControlSummary: vi.fn(),
     listPartnerDirectoryProviders: vi.fn(),
     partnerDirectorySummary: vi.fn(),
+    partnerWalletDebtCursorPage: vi.fn(),
     listAdminPushCampaigns: vi.fn(),
     adminPushCampaignSummary: vi.fn(),
     listPaymentCallbackAttempts: vi.fn(),
@@ -111,6 +116,7 @@ describe('AdminController notification and push actions', () => {
     cancelStaleManualWalletAdjustmentRequest: vi.fn(),
     rejectManualWalletAdjustmentRequest: vi.fn(),
     listManualWalletAdjustments: vi.fn(),
+    manualWalletAdjustment: vi.fn(),
     manualWalletAdjustmentSummary: vi.fn(),
     approvePartnerBankDepositFromLegacyRoute: vi.fn(),
     createPartnerBankDepositRequest: vi.fn(),
@@ -160,6 +166,7 @@ describe('AdminController notification and push actions', () => {
     companyBankAccountOperationsPage: vi.fn(),
     companyBankAccountStatusPreflight: vi.fn(),
     createCompanyBankAccount: vi.fn(),
+    createCompanyBankAccountEvidenceReview: vi.fn(),
     updateCompanyBankAccount: vi.fn(),
     decideCompanyBankAccountChange: vi.fn(),
     listBankReconciliationTransactions: vi.fn(),
@@ -188,21 +195,32 @@ describe('AdminController notification and push actions', () => {
     confirmAdminPushCampaign: vi.fn(),
     customerSummary: vi.fn(),
     approveReferralRewardCashout: vi.fn(),
+    approveReferralRewardTaxReview: vi.fn(),
     creditReferralReward: vi.fn(),
     holdReferralReward: vi.fn(),
     listCustomers: vi.fn(),
     markReferralRewardCashoutPaid: vi.fn(),
+    holdReferralRewardTaxReview: vi.fn(),
     releaseAvailableReferralRewards: vi.fn(),
     requireReferralRewardTaxReview: vi.fn(),
+    rejectReferralRewardTaxReview: vi.fn(),
     reverseReferralReward: vi.fn(),
     deleteCoupon: vi.fn(),
     createCouponBatch: vi.fn(),
+    activateCoupon: vi.fn(),
+    pauseCoupon: vi.fn(),
     getCoupon: vi.fn(),
     listCoupons: vi.fn(),
     couponSummary: vi.fn(),
     listCouponUsageBookings: vi.fn(),
     retryNotification: vi.fn(),
     reviewLegacyNotification: vi.fn(),
+    notificationDeliveryIncidents: vi.fn(),
+    notificationDeliveryIncident: vi.fn(),
+    openNotificationDeliveryIncident: vi.fn(),
+    assignNotificationDeliveryIncident: vi.fn(),
+    resolveNotificationDeliveryIncident: vi.fn(),
+    reopenNotificationDeliveryIncident: vi.fn(),
     updateNotificationTemplate: vi.fn(),
     updateReferralPolicy: vi.fn(),
     getMarketingSpendDaily: vi.fn(),
@@ -307,6 +325,56 @@ describe('AdminController notification and push actions', () => {
       'notification-1',
       'Reviewed the retained background job evidence.',
     );
+  });
+
+  it('exposes persistent notification delivery incident lifecycle routes', async () => {
+    const opened = { id: 'incident-1', revision: 1, state: 'OPEN' };
+    const assigned = { ...opened, revision: 2, state: 'INVESTIGATING' };
+    const resolved = { ...assigned, revision: 3, state: 'RESOLVED' };
+    admin.notificationDeliveryIncidents.mockResolvedValue({ items: [opened], totalCount: 1 });
+    admin.notificationDeliveryIncident.mockResolvedValue({ incident: opened });
+    admin.openNotificationDeliveryIncident.mockResolvedValue(opened);
+    admin.assignNotificationDeliveryIncident.mockResolvedValue(assigned);
+    admin.resolveNotificationDeliveryIncident.mockResolvedValue(resolved);
+    admin.reopenNotificationDeliveryIncident.mockResolvedValue(assigned);
+
+    await expect(controller.notificationDeliveryIncidents('20', '0', 'OPEN', 'unknown', undefined, 'source-1'))
+      .resolves.toMatchObject({ totalCount: 1 });
+    await expect(controller.notificationDeliveryIncident('incident-1')).resolves.toEqual({ incident: opened });
+    await expect(controller.openNotificationDeliveryIncident(user, {
+      dataScope: 'unknown', provider: 'FCM', failureCode: 'UNREGISTERED',
+      reason: 'Start a persistent incident review.',
+    })).resolves.toEqual(opened);
+    await expect(controller.assignNotificationDeliveryIncident(user, 'incident-1', {
+      assigneeAdminId: 'admin-1', expectedRevision: 1,
+      reason: 'Take ownership for investigation.',
+    })).resolves.toEqual(assigned);
+    await expect(controller.resolveNotificationDeliveryIncident(user, 'incident-1', {
+      expectedRevision: 2, resolutionCode: 'CONFIGURATION_FIXED',
+      reason: 'Configuration was corrected and verified.',
+    } as never)).resolves.toEqual(resolved);
+    await expect(controller.reopenNotificationDeliveryIncident(user, 'incident-1', {
+      expectedRevision: 3, reason: 'New failure evidence requires investigation.',
+    })).resolves.toEqual(assigned);
+
+    expect(routeMetadata('notificationDeliveryIncidents')).toEqual({
+      method: RequestMethod.GET, path: 'notification-delivery-incidents',
+    });
+    expect(routeMetadata('openNotificationDeliveryIncident')).toEqual({
+      method: RequestMethod.POST, path: 'notification-delivery-incidents',
+    });
+    expect(routeMetadata('assignNotificationDeliveryIncident')).toEqual({
+      method: RequestMethod.POST, path: 'notification-delivery-incidents/:id/assign',
+    });
+    expect(routeMetadata('resolveNotificationDeliveryIncident')).toEqual({
+      method: RequestMethod.POST, path: 'notification-delivery-incidents/:id/resolve',
+    });
+    expect(routeMetadata('reopenNotificationDeliveryIncident')).toEqual({
+      method: RequestMethod.POST, path: 'notification-delivery-incidents/:id/reopen',
+    });
+    expect(admin.openNotificationDeliveryIncident).toHaveBeenCalledWith('admin-1', expect.objectContaining({
+      provider: 'FCM', failureCode: 'UNREGISTERED',
+    }));
   });
 
   it('exposes notifications as a bounded board list', async () => {
@@ -556,14 +624,9 @@ describe('AdminController notification and push actions', () => {
   it('exposes the bounded Finance Approval Queue', async () => {
     admin.financeApprovalQueue.mockResolvedValue({ limit: 10, paymentFeePolicyRequests: [] });
 
-    await expect(controller.financeApprovalQueue(
-      '25',
-      'stale',
-      'refunds',
-      'state-mismatch',
-      '2',
-      'refund-focus-1',
-    )).resolves.toEqual({
+    await expect(
+      controller.financeApprovalQueue('25', 'stale', 'refunds', 'state-mismatch', '2', 'refund-focus-1'),
+    ).resolves.toEqual({
       limit: 10,
       paymentFeePolicyRequests: [],
     });
@@ -621,6 +684,17 @@ describe('AdminController notification and push actions', () => {
       ownerId: 'provider-1',
       ownerType: 'PARTNER',
     });
+  });
+
+  it('exposes a read-only exact manual wallet adjustment record route', async () => {
+    admin.manualWalletAdjustment.mockResolvedValue({ id: 'ledger-1' });
+
+    await expect(controller.manualWalletAdjustment('ledger-1')).resolves.toEqual({ id: 'ledger-1' });
+    expect(routeMetadata('manualWalletAdjustment')).toEqual({
+      method: RequestMethod.GET,
+      path: 'wallet-adjustments/:id',
+    });
+    expect(admin.manualWalletAdjustment).toHaveBeenCalledWith('ledger-1');
   });
 
   it('exposes persistent manual wallet adjustment request actions', async () => {
@@ -728,6 +802,9 @@ describe('AdminController notification and push actions', () => {
         'provider-1',
         undefined,
         '20',
+        undefined,
+        undefined,
+        'withdrawal-exact-1',
       ),
     ).resolves.toEqual([{ id: 'withdrawal-request-1' }]);
 
@@ -737,6 +814,7 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listProviderWalletWithdrawalRequests).toHaveBeenCalledWith(
       {
+        id: 'withdrawal-exact-1',
         providerProfileId: 'provider-1',
         range: 'all',
         reconciliation: undefined,
@@ -754,13 +832,7 @@ describe('AdminController notification and push actions', () => {
     admin.providerWalletWithdrawalRequestSummary.mockResolvedValue({ total: 4 });
 
     await expect(
-      controller.providerWalletWithdrawalRequestSummary(
-        '7d',
-        'provider-1',
-        'unmatched',
-        'PAID',
-        'VCB',
-      ),
+      controller.providerWalletWithdrawalRequestSummary('7d', 'provider-1', 'unmatched', 'PAID', 'VCB'),
     ).resolves.toEqual({ total: 4 });
 
     expect(routeMetadata('providerWalletWithdrawalRequestSummary')).toEqual({
@@ -1221,13 +1293,7 @@ describe('AdminController notification and push actions', () => {
     admin.bookingSettlementGapSummary.mockResolvedValue({ backlog: 12, total: 14 });
 
     await expect(
-      controller.bookingSettlementGapSummary(
-        '7d-plus',
-        'historical-ready',
-        '2026-07',
-        'CARD',
-        'booking-1',
-      ),
+      controller.bookingSettlementGapSummary('7d-plus', 'historical-ready', '2026-07', 'CARD', 'booking-1'),
     ).resolves.toEqual({ backlog: 12, total: 14 });
 
     expect(routeMetadata('bookingSettlementGapSummary')).toEqual({
@@ -1260,9 +1326,7 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.GET,
       path: 'booking-settlement-gaps/preview-batch',
     });
-    expect(admin.previewBookingSettlementGapRepairs).toHaveBeenCalledWith(
-      'booking-gap-1,booking-gap-2',
-    );
+    expect(admin.previewBookingSettlementGapRepairs).toHaveBeenCalledWith('booking-gap-1,booking-gap-2');
   });
 
   it('exposes a read-only settlement repair eligibility preview', async () => {
@@ -1960,16 +2024,18 @@ describe('AdminController notification and push actions', () => {
       pagination: { skip: 25, take: 25, totalCount: 51 },
     });
 
-    await expect(controller.companyBankAccountOperationsPage(
-      'archived',
-      '25',
-      '25',
-      'PAYOUT',
-      'VND',
-      'VERIFIED',
-      'HEALTHY',
-      'ACTIVE',
-    )).resolves.toEqual({
+    await expect(
+      controller.companyBankAccountOperationsPage(
+        'archived',
+        '25',
+        '25',
+        'PAYOUT',
+        'VND',
+        'VERIFIED',
+        'HEALTHY',
+        'ACTIVE',
+      ),
+    ).resolves.toEqual({
       items: [{ id: 'bank-account-1' }],
       pagination: { skip: 25, take: 25, totalCount: 51 },
     });
@@ -2016,7 +2082,7 @@ describe('AdminController notification and push actions', () => {
     );
   });
 
-  it('exposes protected company bank account create and update routes with actor identity', async () => {
+  it('exposes protected company bank account maker and checker routes with actor identity', async () => {
     const createInput = {
       operatorReason: 'Reviewed treasury evidence',
       name: 'Operations VND',
@@ -2033,8 +2099,19 @@ describe('AdminController notification and push actions', () => {
       operatorReason: 'Verified treasury ownership evidence',
       requestId: 'request-1',
     } as never;
+    const evidenceInput = {
+      expectedAccountUpdatedAt: '2026-08-28T05:00:00.000Z',
+      fileAssetId: 'file-1',
+      idempotencyKey: 'evidence-request-1',
+      intent: 'CLASSIFY_PRODUCTION',
+      operatorReason: 'Reviewed corporate ownership evidence',
+    } as never;
     admin.createCompanyBankAccount.mockResolvedValue({ id: 'bank-account-1' });
     admin.updateCompanyBankAccount.mockResolvedValue({ id: 'bank-account-1', status: 'INACTIVE' });
+    admin.createCompanyBankAccountEvidenceReview.mockResolvedValue({
+      id: 'bank-account-1',
+      status: 'INACTIVE',
+    });
     admin.decideCompanyBankAccountChange.mockResolvedValue({ id: 'bank-account-1', status: 'ACTIVE' });
 
     await expect(controller.createCompanyBankAccount(user, createInput)).resolves.toEqual({
@@ -2044,6 +2121,9 @@ describe('AdminController notification and push actions', () => {
       id: 'bank-account-1',
       status: 'INACTIVE',
     });
+    await expect(
+      controller.createCompanyBankAccountEvidenceReview(user, 'bank-account-1', evidenceInput),
+    ).resolves.toEqual({ id: 'bank-account-1', status: 'INACTIVE' });
     await expect(
       controller.decideCompanyBankAccountChange(user, 'bank-account-1', decisionInput),
     ).resolves.toEqual({
@@ -2058,12 +2138,21 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.PATCH,
       path: 'company-bank-accounts/:id',
     });
+    expect(routeMetadata('createCompanyBankAccountEvidenceReview')).toEqual({
+      method: RequestMethod.POST,
+      path: 'company-bank-accounts/:id/evidence-review-requests',
+    });
     expect(routeMetadata('decideCompanyBankAccountChange')).toEqual({
       method: RequestMethod.POST,
       path: 'company-bank-accounts/:id/approval-decision',
     });
     expect(admin.createCompanyBankAccount).toHaveBeenCalledWith('admin-1', createInput);
     expect(admin.updateCompanyBankAccount).toHaveBeenCalledWith('admin-1', 'bank-account-1', updateInput);
+    expect(admin.createCompanyBankAccountEvidenceReview).toHaveBeenCalledWith(
+      'admin-1',
+      'bank-account-1',
+      evidenceInput,
+    );
     expect(admin.decideCompanyBankAccountChange).toHaveBeenCalledWith(
       'admin-1',
       'bank-account-1',
@@ -2707,15 +2796,23 @@ describe('AdminController notification and push actions', () => {
     admin.listCashSettlementEarnings.mockResolvedValue([]);
     admin.cashSettlementSummary.mockResolvedValue({ rowCount: 0, totalDebtAmount: 0 });
 
-    await controller.cashSettlementEarnings(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, '2026-08');
+    await controller.cashSettlementEarnings(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      '2026-08',
+    );
     await controller.cashSettlementSummary(undefined, undefined, undefined, undefined, undefined, '2026-08');
 
     expect(admin.listCashSettlementEarnings).toHaveBeenCalledWith(
       expect.objectContaining({ period: '2026-08' }),
     );
-    expect(admin.cashSettlementSummary).toHaveBeenCalledWith(
-      expect.objectContaining({ period: '2026-08' }),
-    );
+    expect(admin.cashSettlementSummary).toHaveBeenCalledWith(expect.objectContaining({ period: '2026-08' }));
   });
 
   it('exposes payout batches as a bounded filtered finance list', async () => {
@@ -2750,14 +2847,7 @@ describe('AdminController notification and push actions', () => {
     admin.payoutBatchSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', total: 12 });
 
     await expect(
-      controller.payoutBatchSummary(
-        '30d',
-        'needs-review',
-        'missing-transfer-ref',
-        'VCB',
-        'review',
-        'DRAFT',
-      ),
+      controller.payoutBatchSummary('30d', 'needs-review', 'missing-transfer-ref', 'VCB', 'review', 'DRAFT'),
     ).resolves.toEqual({
       generatedAt: '2026-06-27T00:00:00.000Z',
       total: 12,
@@ -3165,6 +3255,7 @@ describe('AdminController notification and push actions', () => {
 
   it('exposes provider controls reports and sanctions as bounded lists', async () => {
     admin.listProviderReports.mockResolvedValue([{ id: 'report-1' }]);
+    admin.getProviderReportAuditHistory.mockResolvedValue({ items: [{ id: 'audit-1' }] });
     admin.listProviderSanctions.mockResolvedValue([{ id: 'sanction-1' }]);
 
     await expect(
@@ -3173,6 +3264,9 @@ describe('AdminController notification and push actions', () => {
     await expect(
       controller.providerSanctions('30', '60', 'hold', 'ACTIVE', 'PAYOUT_HOLD', 'oldest', 'true'),
     ).resolves.toEqual([{ id: 'sanction-1' }]);
+    await expect(controller.providerReportAuditHistory('report-1')).resolves.toEqual({
+      items: [{ id: 'audit-1' }],
+    });
 
     expect(routeMetadata('providerReports')).toEqual({
       method: RequestMethod.GET,
@@ -3182,6 +3276,11 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.GET,
       path: ['provider-sanctions', 'partner-sanctions'],
     });
+    expect(routeMetadata('providerReportAuditHistory')).toEqual({
+      method: RequestMethod.GET,
+      path: ['provider-reports/:id/audit-history', 'partner-reports/:id/audit-history'],
+    });
+    expect(admin.getProviderReportAuditHistory).toHaveBeenCalledWith('report-1');
     expect(admin.listProviderReports).toHaveBeenCalledWith({
       q: 'linh',
       review: 'overdue',
@@ -3249,8 +3348,8 @@ describe('AdminController notification and push actions', () => {
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
     });
-    expect(admin.previewAdminPushCampaign).toHaveBeenCalledWith('admin-1', body);
-    expect(admin.confirmAdminPushCampaign).toHaveBeenCalledWith('admin-1', confirmation);
+    expect(admin.previewAdminPushCampaign).toHaveBeenCalledWith('admin-1', 'admin-session-1', body);
+    expect(admin.confirmAdminPushCampaign).toHaveBeenCalledWith('admin-1', 'admin-session-1', confirmation);
   });
 
   it('exposes manual push campaign summary as a separate aggregate endpoint', async () => {
@@ -3295,10 +3394,27 @@ describe('AdminController notification and push actions', () => {
     expect(admin.deleteCoupon).toHaveBeenCalledWith('admin-1', 'coupon-1');
   });
 
+  it.each([
+    ['activateCoupon', 'activate'],
+    ['pauseCoupon', 'pause'],
+  ] as const)('exposes %s as a reasoned coupon state action', async (methodName, pathSuffix) => {
+    admin[methodName].mockResolvedValue({ active: pathSuffix === 'activate', id: 'coupon-1' });
+    const body = { reason: 'Campaign approved' };
+
+    await expect(controller[methodName](user, 'coupon-1', body)).resolves.toMatchObject({
+      id: 'coupon-1',
+    });
+    expect(routeMetadata(methodName)).toEqual({
+      method: RequestMethod.POST,
+      path: `coupons/:id/${pathSuffix}`,
+    });
+    expect(admin[methodName]).toHaveBeenCalledWith('admin-1', 'coupon-1', body.reason);
+  });
+
   it('passes bounded coupon list filters to the service', async () => {
     admin.listCoupons.mockResolvedValue([]);
 
-    await expect(controller.coupons('10', '20', 'records', 'WELCOME')).resolves.toEqual([]);
+    await expect(controller.coupons('10', '20', 'records', 'WELCOME', 'ending-soon')).resolves.toEqual([]);
 
     expect(routeMetadata('coupons')).toEqual({
       method: RequestMethod.GET,
@@ -3307,6 +3423,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listCoupons).toHaveBeenCalledWith({
       q: 'WELCOME',
       skip: '20',
+      sort: 'ending-soon',
       state: 'records',
       take: '10',
     });
@@ -3599,18 +3716,22 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
-  it('passes customer detail diagnostics intent to the service while preserving default compatibility', async () => {
+  it('only includes customer diagnostics for an explicit true query', async () => {
     admin.getCustomerDetail.mockResolvedValue({ id: 'customer-1' });
 
     await expect(controller.customerDetail('customer-1', undefined)).resolves.toEqual({ id: 'customer-1' });
     await expect(controller.customerDetail('customer-1', 'false')).resolves.toEqual({ id: 'customer-1' });
+    await expect(controller.customerDetail('customer-1', 'TRUE')).resolves.toEqual({ id: 'customer-1' });
+    await expect(controller.customerDetail('customer-1', 'true')).resolves.toEqual({ id: 'customer-1' });
 
     expect(routeMetadata('customerDetail')).toEqual({
       method: RequestMethod.GET,
       path: 'customers/:id',
     });
-    expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(1, 'customer-1', { includeDiagnostics: true });
+    expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(1, 'customer-1', { includeDiagnostics: false });
     expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(2, 'customer-1', { includeDiagnostics: false });
+    expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(3, 'customer-1', { includeDiagnostics: false });
+    expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(4, 'customer-1', { includeDiagnostics: true });
   });
 
   it('exposes a bounded customer wallet ledger endpoint', async () => {
@@ -4109,6 +4230,31 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
+  it.each([
+    ['approveReferralRewardTaxReview', 'tax-review-approve', 'CASHOUT_APPROVED'],
+    ['holdReferralRewardTaxReview', 'tax-review-hold', 'TAX_REVIEW_REQUIRED'],
+    ['rejectReferralRewardTaxReview', 'tax-review-reject', 'CREDITED'],
+  ] as const)('exposes %s as a FINANCE_TAX decision POST action', async (method, path, status) => {
+    admin[method].mockResolvedValue({
+      id: 'reward-1',
+      status,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    const body = {
+      expectedStatus: 'TAX_REVIEW_REQUIRED',
+      expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+      reason: 'reviewed tax evidence',
+    };
+
+    await expect(controller[method](user, 'reward-1', body)).resolves.toMatchObject({ status });
+
+    expect(routeMetadata(method)).toEqual({
+      method: RequestMethod.POST,
+      path: `referrals/rewards/:id/${path}`,
+    });
+    expect(admin[method]).toHaveBeenCalledWith('admin-1', 'reward-1', body);
+  });
+
   it('exposes referral reward cashout paid closeout as a POST action', async () => {
     admin.markReferralRewardCashoutPaid.mockResolvedValue({
       id: 'reward-1',
@@ -4379,6 +4525,69 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.POST,
       path: 'finance-approver-governance/requests/:id/decision',
     });
+    expect(admin.decideFinanceApproverAccessRequest).toHaveBeenCalledWith(
+      'admin-1',
+      'request-1',
+      {
+        decision: 'APPROVE',
+        decisionReason: 'Independent checker approval',
+      },
+      'admin-session-1',
+    );
+
+    admin.decideFinanceApproverLegacyAttestation.mockResolvedValue({
+      event: { id: 'attestation-decision-1' },
+    });
+    await expect(
+      (
+        controller as unknown as {
+          decideFinanceApproverLegacyAttestation: (
+            actor: AuthenticatedUser,
+            requestEventId: string,
+            body: { decision: 'APPROVE'; decisionReason: string },
+          ) => Promise<unknown>;
+        }
+      ).decideFinanceApproverLegacyAttestation(user, 'attestation-request-1', {
+        decision: 'APPROVE',
+        decisionReason: 'Independent legacy evidence review',
+      }),
+    ).resolves.toEqual({ event: { id: 'attestation-decision-1' } });
+    expect(admin.decideFinanceApproverLegacyAttestation).toHaveBeenCalledWith(
+      'admin-1',
+      'attestation-request-1',
+      {
+        decision: 'APPROVE',
+        decisionReason: 'Independent legacy evidence review',
+      },
+      'admin-session-1',
+    );
+
+    admin.revokeFinanceApproverLegacyAttestation.mockResolvedValue({
+      event: { id: 'attestation-revocation-1' },
+    });
+    await expect(
+      (
+        controller as unknown as {
+          revokeFinanceApproverLegacyAttestation: (
+            actor: AuthenticatedUser,
+            attestationEventId: string,
+            body: { reason: string },
+          ) => Promise<unknown>;
+        }
+      ).revokeFinanceApproverLegacyAttestation(user, 'attestation-approved-1', {
+        reason: 'Owner evidence requires immediate independent review',
+      }),
+    ).resolves.toEqual({ event: { id: 'attestation-revocation-1' } });
+    expect(routeMetadata('revokeFinanceApproverLegacyAttestation' as keyof AdminController)).toEqual({
+      method: RequestMethod.POST,
+      path: 'finance-approver-governance/legacy-attestations/:id/revoke',
+    });
+    expect(admin.revokeFinanceApproverLegacyAttestation).toHaveBeenCalledWith(
+      'admin-1',
+      'attestation-approved-1',
+      { reason: 'Owner evidence requires immediate independent review' },
+      'admin-session-1',
+    );
   });
 
   it('exposes master admin operator invitation as an audited POST action', async () => {
@@ -4392,7 +4601,12 @@ describe('AdminController notification and push actions', () => {
         controller as unknown as {
           createAdminOperatorInvitation: (
             actor: AuthenticatedUser,
-            body: { email: string; masterAdminEnabled?: boolean; permissionCategories: string[]; reason: string },
+            body: {
+              email: string;
+              masterAdminEnabled?: boolean;
+              permissionCategories: string[];
+              reason: string;
+            },
           ) => Promise<unknown>;
         }
       ).createAdminOperatorInvitation(user, {
@@ -4429,7 +4643,12 @@ describe('AdminController notification and push actions', () => {
           updateAdminOperatorAccess: (
             actor: AuthenticatedUser,
             userId: string,
-            body: { expectedVersion: number; roles?: string[]; permissionCategories?: string[]; reason: string },
+            body: {
+              expectedVersion: number;
+              roles?: string[];
+              permissionCategories?: string[];
+              reason: string;
+            },
           ) => Promise<unknown>;
         }
       ).updateAdminOperatorAccess(user, 'ops-admin-2', {
@@ -4676,6 +4895,36 @@ describe('AdminController notification and push actions', () => {
       providerStatus: 'ONLINE_AVAILABLE',
       kyc: 'APPROVED',
       bookingFlow: 'completed-work',
+    });
+  });
+
+  it('exposes the additive Partner wallet debt snapshot cursor contract', async () => {
+    admin.partnerWalletDebtCursorPage.mockResolvedValue({
+      generatedAt: '2026-08-24T10:00:00.000Z',
+      items: [],
+      page: {
+        currentCursor: 'snapshot-current',
+        hasNextPage: false,
+        nextCursor: null,
+        offset: 0,
+        returned: 0,
+        snapshotCursor: 'snapshot-current',
+        totalCount: 0,
+      },
+      snapshotAt: '2026-08-24T10:00:00.000Z',
+    });
+
+    await expect(controller.partnerWalletDebtCursorPage('cursor-token', 'linh', '25')).resolves.toMatchObject(
+      { snapshotAt: '2026-08-24T10:00:00.000Z' },
+    );
+    expect(routeMetadata('partnerWalletDebtCursorPage')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partners/wallet-debt-page',
+    });
+    expect(admin.partnerWalletDebtCursorPage).toHaveBeenCalledWith({
+      cursor: 'cursor-token',
+      q: 'linh',
+      take: '25',
     });
   });
 

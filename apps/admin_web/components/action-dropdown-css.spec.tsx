@@ -41,6 +41,9 @@ describe('Action dropdown CSS', () => {
     expect(itemBlock).toContain('margin-inline: 8px');
     expect(itemBlock).toContain('min-height: 38px');
     expect(itemBlock).toContain('padding: 8px 16px');
+    expect(itemBlock).toContain('white-space: nowrap');
+    expect(itemBlock).toContain('width: auto');
+    expect(itemBlock).not.toContain('width: 100%');
   });
 });
 

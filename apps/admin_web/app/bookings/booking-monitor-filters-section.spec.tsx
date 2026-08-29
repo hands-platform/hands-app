@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { normalizedText } from './booking-section-test-utils';
-import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
+import {
+  BookingMonitorAdditionalQueuesSection,
+  BookingMonitorFiltersSection,
+} from './booking-monitor-filters-section';
 import { bookingCustomDateRangeError } from './booking-date-range-filter';
 
 describe('BookingMonitorFiltersSection', () => {
@@ -106,6 +109,43 @@ describe('BookingMonitorFiltersSection', () => {
     );
   });
 
+  it('puts Needs action first and compacts zero-result default filters only', () => {
+    const options = [
+      { description: 'Live.', label: 'Live now', operatorHint: 'Monitor.', view: 'active' as const },
+      { description: 'Act.', label: 'Needs action', operatorHint: 'Start here.', view: 'attention' as const },
+      { description: 'Match.', label: 'Matching now', operatorHint: 'Monitor.', view: 'matching' as const },
+      { description: 'Service.', label: 'In service', operatorHint: 'Monitor.', view: 'in-service' as const },
+    ];
+    const defaultMarkup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: options[1],
+        baseVisibleBookingCount: 0,
+        onViewChange: vi.fn(),
+        view: 'attention',
+        viewCounts: new Map(options.map((option) => [option.view, 0])),
+        viewOptions: options,
+        visibleBookingCount: 0,
+      }),
+    );
+    const filteredMarkup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: options[1],
+        baseVisibleBookingCount: 0,
+        hasActiveFilters: true,
+        onViewChange: vi.fn(),
+        searchQuery: 'missing',
+        view: 'attention',
+        viewCounts: new Map(options.map((option) => [option.view, 0])),
+        viewOptions: options,
+        visibleBookingCount: 0,
+      }),
+    );
+
+    expect(defaultMarkup.indexOf('Needs action 0')).toBeLessThan(defaultMarkup.indexOf('Live now 0'));
+    expect(defaultMarkup).toContain('admin-queue-age-sort-controls is-compact');
+    expect(filteredMarkup).not.toContain('admin-queue-age-sort-controls is-compact');
+  });
+
   it('keeps the active view visible even when its count is zero', () => {
     const rendered = normalizedText(
       renderToStaticMarkup(
@@ -183,9 +223,7 @@ describe('BookingMonitorFiltersSection', () => {
     expect(markup).toContain('admin-form-control-button button button-primary booking-date-apply-button');
     expect(rendered).toContain('All records 0');
     expect(rendered.indexOf('All records 0')).toBeLessThan(rendered.indexOf('Pre-match cancelled 0'));
-    expect(rendered).toContain(
-      'Historical · 2026-06-01 to 2026-06-19 · 7 records · Audit fixtures excluded',
-    );
+    expect(rendered).toContain('Historical · 2026-06-01 to 2026-06-19 · 7 records · Audit fixtures excluded');
     expect(rendered).toContain('Back to live bookings');
     expect(rendered).toContain('Report period');
     expect(rendered).toContain('Order');
@@ -234,6 +272,48 @@ describe('BookingMonitorFiltersSection', () => {
     expect(markup).not.toContain('name="page" value="3"');
   });
 
+  it('preserves active queue filters but resets pagination in search submissions', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[0],
+        baseVisibleBookingCount: 0,
+        dateRangeHiddenInputs: [
+          ['view', 'matching'],
+          ['age', 'under-1h'],
+          ['sort', 'newest'],
+          ['page', '3'],
+        ],
+        onViewChange: vi.fn(),
+        view: 'matching',
+        viewCounts: new Map(),
+        viewOptions,
+        visibleBookingCount: 0,
+      }),
+    );
+
+    expect(markup).toContain('name="view" value="matching"');
+    expect(markup).toContain('name="age" value="under-1h"');
+    expect(markup).toContain('name="sort" value="newest"');
+    expect(markup).not.toContain('name="page" value="3"');
+  });
+
+  it('remounts the search control when the applied query changes', () => {
+    const renderWithQuery = (searchQuery: string) =>
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[0],
+        baseVisibleBookingCount: 0,
+        onViewChange: vi.fn(),
+        searchQuery,
+        view: 'attention',
+        viewCounts: new Map(),
+        viewOptions,
+        visibleBookingCount: 0,
+      });
+
+    expect(elementKeyWithName(renderWithQuery('first query'), 'q')).toBe('first query');
+    expect(elementKeyWithName(renderWithQuery('second query'), 'q')).toBe('second query');
+  });
+
   it('separates completed action queues from history and hides inactive checks', () => {
     const completedOptions = [
       ['payment', 'All payment exceptions'],
@@ -249,39 +329,127 @@ describe('BookingMonitorFiltersSection', () => {
       operatorHint: `${label} hint`,
       view: view as Parameters<typeof BookingMonitorFiltersSection>[0]['view'],
     }));
-    const rendered = normalizedText(
-      renderToStaticMarkup(
-        BookingMonitorFiltersSection({
-          activeView: completedOptions[0],
-          baseVisibleBookingCount: 5,
-          dateRangeFormAction: '/bookings/completed',
-          onViewChange: vi.fn(),
-          showEmptyViewOptions: true,
-          view: 'payment',
-          viewCounts: new Map([
-            ['payment', 5],
-            ['cash-debt', 1],
-            ['refund-review', 2],
-            ['closeout', 0],
-            ['pricing', 0],
-            ['expired', 3],
-            ['all', 9],
-          ]),
-          viewOptions: completedOptions,
-          visibleBookingCount: 5,
-        }),
-      ),
+    const markup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: completedOptions[0],
+        baseVisibleBookingCount: 5,
+        dateRangeFormAction: '/bookings/completed',
+        onViewChange: vi.fn(),
+        showEmptyViewOptions: true,
+        view: 'payment',
+        viewCounts: new Map([
+          ['payment', 5],
+          ['cash-debt', 1],
+          ['refund-review', 2],
+          ['closeout', 0],
+          ['pricing', 0],
+          ['expired', 3],
+          ['all', 9],
+        ]),
+        viewOptions: completedOptions,
+        visibleBookingCount: 5,
+      }),
     );
+    const rendered = normalizedText(markup);
+    const css = readFileSync('app/globals.css', 'utf8');
 
     expect(rendered).toContain('Needs action');
     expect(rendered).toContain('History');
-    expect(rendered).toContain('Show 2 empty checks');
-    expect(rendered).toContain(
-      'Counts overlap: All payment exceptions includes the cash and refund queues.',
+    expect(rendered).toContain('Resolve payment and closeout exceptions.');
+    expect(rendered).toContain('Browse expired and terminal records by closed period.');
+    expect(rendered).toContain('2 empty checks');
+    expect(rendered).not.toContain('Show 2 empty checks');
+    expect(rendered).toContain('Counts overlap: All payment exceptions includes the cash and refund queues.');
+    expect(markup.indexOf('>Refund mismatch</span>')).toBeLessThan(
+      markup.indexOf('>Expired records</span>'),
     );
-    expect(rendered.indexOf('Refund mismatch 2')).toBeLessThan(rendered.indexOf('Expired records 3'));
     expect(rendered.match(/Counts overlap:/g)).toHaveLength(1);
     expect(rendered).not.toContain('Additional queues');
+    expect(rendered).toContain('booking-completed-disclosure-chevron');
+    expect(markup).toContain('booking-completed-queue-group is-action');
+    expect(markup).toContain('booking-completed-queue-group is-history');
+    expect(markup.indexOf('2 empty checks')).toBeLessThan(markup.indexOf('>History</h3>'));
+    expect(markup.match(/booking-completed-queue-count/g)).toHaveLength(5);
+    expect(css).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(css).toMatch(
+      /booking-completed-queue-group[\s\S]*> \.booking-date-filter-button \{\s*min-height: 44px;/,
+    );
+    expect(css).toContain('grid-template-columns: minmax(150px, 0.24fr) minmax(0, 1fr);');
+    expect(css).toContain('@media (min-width: 1600px)');
+  });
+
+  it('expands only the completed search row when reset actions are visible', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+    const completedMarkup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[2],
+        baseVisibleBookingCount: 0,
+        dateRangeFormAction: '/bookings/completed',
+        hasActiveFilters: true,
+        onViewChange: vi.fn(),
+        searchQuery: 'missing',
+        view: 'closeout',
+        viewCounts: new Map([['closeout', 0]]),
+        viewOptions: [viewOptions[2]],
+        visibleBookingCount: 0,
+      }),
+    );
+    const liveMarkup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[0],
+        baseVisibleBookingCount: 0,
+        hasActiveFilters: true,
+        onViewChange: vi.fn(),
+        searchQuery: 'missing',
+        view: 'active',
+        viewCounts: new Map([['active', 0]]),
+        viewOptions: [viewOptions[0]],
+        visibleBookingCount: 0,
+      }),
+    );
+
+    expect(completedMarkup).toContain('booking-completed-search-form-expanded');
+    expect(liveMarkup).not.toContain('booking-completed-search-form-expanded');
+    expect(css).toContain('@media (min-width: 1101px) and (max-width: 1599px)');
+    expect(css).toContain('.booking-completed-filter-panel .booking-monitor-search-form > :is(button, a)');
+  });
+
+  it('shows the payment queue overlap note only in related action contexts', () => {
+    const options = [
+      ['payment', 'All payment exceptions'],
+      ['cash-debt', 'Cash commission'],
+      ['refund-review', 'Refund mismatch'],
+      ['expired', 'Expired records'],
+      ['all', 'Terminal records'],
+    ].map(([view, label]) => ({
+      description: `${label} description`,
+      label,
+      operatorHint: `${label} hint`,
+      view: view as Parameters<typeof BookingMonitorFiltersSection>[0]['view'],
+    }));
+    const renderFor = (view: Parameters<typeof BookingMonitorFiltersSection>[0]['view']) =>
+      normalizedText(
+        renderToStaticMarkup(
+          BookingMonitorFiltersSection({
+            activeView: options.find((option) => option.view === view) ?? options[0],
+            baseVisibleBookingCount: 1,
+            dateRangeFormAction: '/bookings/completed',
+            onViewChange: vi.fn(),
+            view,
+            viewCounts: new Map(options.map((option) => [option.view, 1])),
+            viewOptions: options,
+            visibleBookingCount: 1,
+          }),
+        ),
+      );
+
+    for (const view of ['payment', 'cash-debt', 'refund-review'] as const) {
+      expect(renderFor(view).match(/Counts overlap:/g)).toHaveLength(1);
+    }
+    for (const view of ['expired', 'all'] as const) {
+      expect(renderFor(view)).not.toContain('Counts overlap:');
+    }
   });
 
   it('renders only the provided route workspace categories', () => {
@@ -445,6 +613,211 @@ describe('BookingMonitorFiltersSection', () => {
   });
 });
 
+describe('BookingMonitorAdditionalQueuesSection', () => {
+  const directoryViewOptions = [
+    {
+      description: 'Needs action.',
+      label: 'Needs action',
+      operatorHint: 'Review.',
+      view: 'attention' as const,
+    },
+    {
+      description: 'Preferred pending.',
+      label: 'Preferred pending',
+      operatorHint: 'Monitor.',
+      view: 'first-pick' as const,
+    },
+    {
+      description: 'Open matching.',
+      label: 'Open matching',
+      operatorHint: 'Monitor.',
+      view: 'marketplace' as const,
+    },
+    {
+      description: 'Customer choice.',
+      label: 'Customer choice',
+      operatorHint: 'Monitor.',
+      view: 'customer-choice' as const,
+    },
+    {
+      description: 'Matched handoff.',
+      label: 'Matched / handoff',
+      operatorHint: 'Monitor.',
+      view: 'matched' as const,
+    },
+    {
+      description: 'Matching delays.',
+      label: 'Matching delays',
+      operatorHint: 'Intervene.',
+      view: 'matching-delays' as const,
+    },
+    {
+      description: 'Supply intervention.',
+      label: 'Supply intervention',
+      operatorHint: 'Intervene.',
+      view: 'no-supply' as const,
+    },
+    {
+      description: 'Handoff repair.',
+      label: 'Handoff repair',
+      operatorHint: 'Intervene.',
+      view: 'handoff-repair' as const,
+    },
+    {
+      description: 'Data anomaly.',
+      label: 'Data anomaly',
+      operatorHint: 'Intervene.',
+      view: 'data-anomaly' as const,
+    },
+  ];
+
+  it.each(['first-pick', 'marketplace', 'customer-choice', 'matched'] as const)(
+    'opens the native directory and exposes the active %s queue',
+    (view) => {
+      const markup = renderToStaticMarkup(
+        BookingMonitorAdditionalQueuesSection({
+          onViewChange: vi.fn(),
+          view,
+          viewCounts: new Map(),
+          viewHrefFor: (nextView) => `/bookings?view=${nextView}`,
+          viewOptions: directoryViewOptions,
+        }),
+      );
+
+      expect(markup).toMatch(/<details[^>]*aria-label="Browse booking queue directory"[^>]*open=""[^>]*>/);
+      expect(markup).toContain('<summary class="booking-monitor-queue-directory-summary">');
+      expect(markup).toContain('aria-current="page"');
+      expect(markup).toContain(`href="/bookings?view=${view}"`);
+    },
+  );
+
+  it('keeps the directory closed for the default Needs action queue', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorAdditionalQueuesSection({
+        onViewChange: vi.fn(),
+        view: 'attention',
+        viewCounts: new Map(),
+        viewHrefFor: (nextView) => `/bookings?view=${nextView}`,
+        viewOptions: directoryViewOptions,
+      }),
+    );
+
+    expect(markup).not.toMatch(/<details[^>]*aria-label="Browse booking queue directory"[^>]*open=""[^>]*>/);
+    expect(markup).toContain('<summary class="booking-monitor-queue-directory-summary">');
+  });
+
+  it('keeps the clear exception state compact and explains the decision order', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorAdditionalQueuesSection({
+        onViewChange: vi.fn(),
+        view: 'attention',
+        viewCounts: new Map(),
+        viewHrefFor: (nextView) => `/bookings?view=${nextView}`,
+        viewOptions: directoryViewOptions,
+      }),
+    );
+
+    expect(markup).toContain('Stage &amp; exception queues');
+    expect(markup).toContain('Exception queues needing review appear first.');
+    expect(markup).toContain('Exceptions clear');
+    expect(markup).toContain('booking-monitor-queue-directory-disclosure');
+    expect(markup).not.toContain('No additional exceptions.');
+  });
+
+  it('still promotes an active zero-count exception above the directory', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorAdditionalQueuesSection({
+        onViewChange: vi.fn(),
+        view: 'matching-delays',
+        viewCounts: new Map([['matching-delays', 0]]),
+        viewHrefFor: (nextView) => `/bookings?view=${nextView}`,
+        viewOptions: directoryViewOptions,
+      }),
+    );
+
+    expect(markup).toContain('aria-label="Additional booking exceptions"');
+    expect(markup).toContain('Matching delays 0');
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).not.toContain('>Matching delays</strong>');
+  });
+
+  it('promotes non-zero exception queues once and reports how many need review', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorAdditionalQueuesSection({
+        onViewChange: vi.fn(),
+        view: 'attention',
+        viewCounts: new Map([
+          ['matching-delays', 2],
+          ['no-supply', 1],
+        ]),
+        viewHrefFor: (nextView) => `/bookings?view=${nextView}`,
+        viewOptions: directoryViewOptions,
+      }),
+    );
+
+    expect(markup).toContain('2 queues need review');
+    expect(markup).toContain('Matching delays 2');
+    expect(markup).toContain('Supply intervention 1');
+    expect(markup).not.toContain('>Matching delays</strong>');
+    expect(markup).not.toContain('>Supply intervention</strong>');
+    expect(normalizedText(markup)).toContain('6 views');
+  });
+
+  it('groups stage and intervention queues once in visual keyboard order', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorAdditionalQueuesSection({
+        onViewChange: vi.fn(),
+        view: 'marketplace',
+        viewCounts: new Map(),
+        viewHrefFor: (nextView) => `/bookings?view=${nextView}`,
+        viewOptions: directoryViewOptions,
+      }),
+    );
+    const monitorStart = markup.indexOf('id="booking-queue-directory-group-live-flow"');
+    const interventionStart = markup.indexOf('id="booking-queue-directory-group-exceptions"');
+    const monitorGroup = markup.slice(monitorStart, interventionStart);
+    const interventionGroup = markup.slice(interventionStart);
+
+    expect(normalizedText(markup)).toContain('Monitor stages');
+    expect(markup).toContain('Intervention &amp; repair');
+    expect(normalizedText(markup)).toContain(
+      'Follow bookings through matching, customer choice, and handoff.',
+    );
+    expect(normalizedText(markup)).toContain('Investigate delayed, missing, or inconsistent booking states.');
+    expect(normalizedText(markup)).toContain('8 views');
+    expect(normalizedText(markup)).toContain('Current');
+    for (const label of ['Preferred pending', 'Open matching', 'Customer choice', 'Matched / handoff']) {
+      expect(monitorGroup).toContain(label);
+      expect(interventionGroup).not.toContain(label);
+      expect(markup.match(new RegExp(`>${label}</strong>`, 'g'))).toHaveLength(1);
+    }
+    for (const label of ['Matching delays', 'Supply intervention', 'Handoff repair', 'Data anomaly']) {
+      expect(interventionGroup).toContain(label);
+      expect(monitorGroup).not.toContain(label);
+      expect(markup.match(new RegExp(`>${label}</strong>`, 'g'))).toHaveLength(1);
+    }
+    expect(markup.indexOf('>Preferred pending</strong>')).toBeLessThan(
+      markup.indexOf('>Open matching</strong>'),
+    );
+    expect(markup.indexOf('>Open matching</strong>')).toBeLessThan(
+      markup.indexOf('>Customer choice</strong>'),
+    );
+    expect(markup.indexOf('>Customer choice</strong>')).toBeLessThan(
+      markup.indexOf('>Matched / handoff</strong>'),
+    );
+    expect(markup.indexOf('>Matching delays</strong>')).toBeLessThan(
+      markup.indexOf('>Supply intervention</strong>'),
+    );
+    expect(markup.indexOf('>Supply intervention</strong>')).toBeLessThan(
+      markup.indexOf('>Handoff repair</strong>'),
+    );
+    expect(markup.indexOf('>Handoff repair</strong>')).toBeLessThan(markup.indexOf('>Data anomaly</strong>'));
+    expect(markup.match(/>0 bookings<\/strong>/g)).toHaveLength(8);
+    expect(markup).toContain('href="/bookings?view=marketplace"');
+    expect(markup).toContain('aria-current="page"');
+  });
+});
+
 function classNamesIn(value: unknown): string[] {
   value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
@@ -471,4 +844,20 @@ function readRecord(value: unknown): Record<string, unknown> | null {
     return value as Record<string, unknown>;
   }
   return null;
+}
+
+function elementKeyWithName(value: unknown, name: string): string | null {
+  if (value === null || value === undefined || typeof value !== 'object') return null;
+  if (Array.isArray(value)) {
+    for (const child of value) {
+      const key = elementKeyWithName(child, name);
+      if (key !== null) return key;
+    }
+    return null;
+  }
+
+  const element = readRecord(value);
+  const props = readRecord(element?.props);
+  if (props?.name === name && typeof element?.key === 'string') return element.key;
+  return elementKeyWithName(props?.children, name);
 }

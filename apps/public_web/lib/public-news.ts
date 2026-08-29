@@ -1,3 +1,4 @@
+import { publicSiteNewsCacheTag } from './site-content';
 import type {
   PublicSiteKey,
   PublicSiteLocale,
@@ -71,7 +72,7 @@ export async function fetchPublicNews(
   const query = new URLSearchParams({ site, locale });
   try {
     const response = await fetch(`${API_BASE_URL}/public/site-pages/news?${query}`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 300, tags: [publicSiteNewsCacheTag(site, locale)] },
     });
     if (!response.ok) return [fallbackNewsArticle(locale)];
     const rows = (await response.json()) as PublicNewsRow[];

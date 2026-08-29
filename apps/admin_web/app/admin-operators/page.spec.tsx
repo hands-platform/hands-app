@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 
 import { adminGetResult } from '../../lib/admin-api';
 import { getCurrentAdminOperatorAccessResult } from '../../lib/admin-operator-access';
+import { adminOperatorPermissionCategoryDefinitions } from '../../lib/admin-operator-permissions';
 import AdminOperatorsPage from './page';
 
 vi.mock('../../lib/admin-api', async () => ({
@@ -75,6 +76,9 @@ describe('AdminOperatorsPage', () => {
     );
     mockedAdminGetResult.mockImplementation(async (path, fallback) => {
       const value = String(path);
+      if (value === '/admin/admin-operators/me/mfa') {
+        return ok({ enrolledAt: '2026-08-17T01:00:00.000Z', recoveryCodesRemaining: 2, state: 'VERIFIED' }) as never;
+      }
       if (value.startsWith('/admin/users/admin-operators?')) {
         return ok({
           items: [operator],
@@ -111,27 +115,34 @@ describe('AdminOperatorsPage', () => {
     expect(markup).toContain('Admin operators');
     expect(markup).toContain('Master Operator');
     expect(markup).toContain('MFA required');
+    expect(markup).toContain('Your MFA is verified');
+    expect(markup).toContain('Operators missing MFA 1');
     expect(markup).toContain('Invite operator');
     expect(markup).toContain('Operator Access directory');
     expect(markup).not.toContain('Temporary password');
     expect(markup).not.toContain('Delete operator');
     expect(markup).not.toContain('Remove operator');
+    for (const definition of adminOperatorPermissionCategoryDefinitions) {
+      expect(markup).toContain(`value="${definition.key}"`);
+      expect(markup).toContain(`${definition.group.replaceAll('&', '&amp;')} — ${definition.label}`);
+    }
   });
 
   it('passes search, status, role, and leaf permission filters to the server directory', async () => {
-    await AdminOperatorsPage({
+    const markup = renderToStaticMarkup(await AdminOperatorsPage({
       searchParams: Promise.resolve({
         category: 'BOOKINGS_REALTIME',
         q: 'ops@hands.vn',
         role: 'ADMIN',
         status: 'active',
       }),
-    });
+    }));
 
     expect(mockedAdminGetResult).toHaveBeenCalledWith(
       '/admin/users/admin-operators?q=ops%40hands.vn&status=active&role=ADMIN&category=BOOKINGS_REALTIME&take=25',
       expect.any(Object),
     );
+    expect(markup).toContain('<option value="BOOKINGS_REALTIME" selected="">Bookings — Realtime bookings</option>');
   });
 
   it('keeps missing permission records deny-by-default and visible to operators', async () => {
@@ -173,6 +184,8 @@ describe('AdminOperatorsPage', () => {
   it('uses scoped desktop table, drawer, and permission-group contracts', () => {
     const pageSource = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
     const formSource = readFileSync(join(process.cwd(), 'app/admin-operators/operator-access-forms.tsx'), 'utf8');
+    const invitationDisclosureSource = readFileSync(join(process.cwd(), 'app/admin-operators/operator-invitations-disclosure.tsx'), 'utf8');
+    const drawerSource = readFileSync(join(process.cwd(), 'app/admin-operators/operator-access-drawer.tsx'), 'utf8');
     const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
     expect(pageSource).toContain('AdminTableScroll ariaLabel="Operator Access directory"');
@@ -182,9 +195,22 @@ describe('AdminOperatorsPage', () => {
     expect(formSource).toContain('<details key={group}');
     expect(formSource).toContain('<dialog');
     expect(formSource).toContain('Confirm access change for {operatorName}');
-    expect(formSource).toContain('active session(s) remain active');
+    expect(formSource).toContain("formatOperatorCount(activeSessionCount, 'active session')");
+    expect(formSource).not.toContain('active session(s)');
+    expect(formSource).toContain('labelVisibility="visible"');
+    expect(formSource).toContain('ariaDescribedBy={helpId}');
     expect(formSource).toContain('This setup token is shown only in this receipt.');
     expect(pageSource).toContain('previousPageHref(params)');
+    expect(pageSource).toContain('previousHistoryPageHref(params)');
+    expect(pageSource).toContain('Grant existing user Admin access');
+    expect(pageSource).toContain('label: `${definition.group} — ${definition.label}`');
+    expect(invitationDisclosureSource).toContain("window.location.hash === '#invitations'");
+    expect(invitationDisclosureSource).toContain('detailsRef.current.open = true');
+    expect(invitationDisclosureSource).toContain('detailsRef.current.open = false');
+    expect(invitationDisclosureSource).toContain('summaryRef.current?.focus');
+    expect(drawerSource).toContain('const closeLabel = `Close ${title}`');
+    expect(drawerSource).toContain('aria-hidden="true"');
+    expect(drawerSource).toContain('tabIndex={-1}');
     expect(css).toContain('.operator-access-table :is(th, td):first-child');
     expect(css).toContain('.operator-access-drawer');
     expect(css).toContain('.operator-access-permission-groups');

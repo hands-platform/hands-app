@@ -30,6 +30,42 @@ type ActionMatcher = {
 
 type ClassificationRule<T extends string> = ActionMatcher & { readonly value: T };
 
+const ADMIN_SECURITY_DENIED_ACTIONS = [
+  'admin_operator.authorization.denied',
+  'admin_operator.login.blocked',
+  'admin_operator.login.lock',
+  'admin_operator.realtime.authentication_denied',
+  'admin_operator.realtime.authorization_denied',
+  'admin_operator.reauthenticate.blocked',
+  'admin_operator.reauthenticate.lock',
+  'admin_operator.rest.authentication_denied',
+] as const;
+
+const ADMIN_SECURITY_FAILED_ACTIONS = [
+  'admin_operator.login.failed',
+  'admin_operator.login.failed_unknown_identity',
+  'admin_operator.mfa.enrollment_failed',
+  'admin_operator.reauthenticate.failed',
+] as const;
+
+const ADMIN_SECURITY_SUCCEEDED_ACTIONS = [
+  'admin_operator.invitation.accept',
+  'admin_operator.login.success',
+  'admin_operator.mfa.enrollment_verified',
+  'admin_operator.reauthenticate.success',
+  'admin_operator.session.logout',
+  'admin_operator.session.revoke',
+] as const;
+
+const ADMIN_SECURITY_NOTICE_ACTIONS = [
+  'admin_operator.mfa.enrollment_started',
+  'admin_operator.mfa.enrollment_verified',
+  'admin_operator.mfa.reset',
+  'admin_operator.reauthenticate.success',
+  'admin_operator.session.logout',
+  'admin_operator.session.revoke',
+] as const;
+
 const AREA_RULES: readonly ClassificationRule<AdminAuditAreaValue>[] = [
   {
     value: 'SECURITY',
@@ -112,14 +148,15 @@ const AREA_RULES: readonly ClassificationRule<AdminAuditAreaValue>[] = [
 ];
 
 const OUTCOME_RULES: readonly ClassificationRule<AdminAuditOutcomeValue>[] = [
-  { value: 'DENIED', contains: ['denied'], suffixes: ['.blocked', '.reject', '.rejected'] },
-  { value: 'FAILED', contains: ['failure', 'failed', 'error'] },
+  { value: 'DENIED', exact: ADMIN_SECURITY_DENIED_ACTIONS, contains: ['denied'], suffixes: ['.blocked', '.reject', '.rejected'] },
+  { value: 'FAILED', exact: ADMIN_SECURITY_FAILED_ACTIONS, contains: ['failure', 'failed', 'error'] },
   { value: 'ACKNOWLEDGED', suffixes: ['.acknowledge', '.acknowledged'] },
   { value: 'RESOLVED', contains: ['recovered'], suffixes: ['.resolve', '.resolved'] },
   { value: 'SKIPPED', suffixes: ['.skip', '.skipped'] },
   { value: 'OPENED', contains: ['alerted', 'registered'], suffixes: ['.open', '.opened', '.requested'] },
   {
     value: 'SUCCEEDED',
+    exact: ADMIN_SECURITY_SUCCEEDED_ACTIONS,
     suffixes: [
       '.approve',
       '.approved',
@@ -159,11 +196,13 @@ const SEVERITY_RULES: readonly ClassificationRule<AdminAuditSeverityValue>[] = [
   },
   {
     value: 'REVIEW',
+    exact: [...ADMIN_SECURITY_DENIED_ACTIONS, ...ADMIN_SECURITY_FAILED_ACTIONS],
     contains: ['access_denied', 'action_denied', 'alerted', 'failure', 'failed', 'no_show', 'stale'],
     suffixes: ['.blocked', '.hold', '.reject', '.rejected', '.reverse', '.reversed'],
   },
   {
     value: 'NOTICE',
+    exact: ADMIN_SECURITY_NOTICE_ACTIONS,
     prefixes: [
       'accounting.',
       'admin_user.finance_approver.',
@@ -238,6 +277,36 @@ export function classifyAdminAuditAction(action: string) {
   } as const;
 }
 
+export function adminAuditCanonicalCreateData(input: {
+  readonly action: string;
+  readonly actorId?: string | null;
+  readonly actorType?: AdminAuditActorTypeValue;
+  readonly correctionOfEventId?: string;
+  readonly metadata?: Prisma.InputJsonValue;
+  readonly objectLabelSnapshot?: string;
+  readonly source: string;
+  readonly target: string;
+}) {
+  const classification = classifyAdminAuditAction(input.action);
+  const actorType = input.actorType ?? (input.actorId ? 'HUMAN' : 'SERVICE');
+  const actorId = actorType === 'HUMAN' ? (input.actorId ?? null) : null;
+  const separator = input.target.indexOf(':');
+  return {
+    action: input.action,
+    actorId,
+    actorKey: actorType === 'HUMAN' ? actorId : input.source,
+    actorType,
+    ...classification,
+    ...(input.correctionOfEventId ? { correctionOfEventId: input.correctionOfEventId } : {}),
+    ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
+    objectId: separator > 0 ? input.target.slice(separator + 1) : input.target,
+    ...(input.objectLabelSnapshot ? { objectLabelSnapshot: input.objectLabelSnapshot } : {}),
+    objectType: separator > 0 ? input.target.slice(0, separator) : 'unknown',
+    source: input.source,
+    target: input.target,
+  } satisfies Prisma.AdminAuditLogUncheckedCreateInput;
+}
+
 export function classifyAdminAuditActorType(
   action: string,
   storedActorType: string | null | undefined,
@@ -295,7 +364,7 @@ export function adminAuditEventReadModel(
     ...(before !== undefined || after !== undefined || changedFields.length > 0
       ? { change: { ...(before !== undefined ? { before } : {}), ...(after !== undefined ? { after } : {}), ...(changedFields.length > 0 ? { changedFields } : {}) } }
       : {}),
-    changeSummary: auditChangeSummary(row.action, metadata, changedFields, reasonText),
+    changeSummary: auditChangeSummary(metadata, changedFields, reasonText),
     context: {
       correlationId: row.correlationId ?? jsonString(metadata.correlationId),
       requestId: row.requestId ?? jsonString(metadata.requestId),
@@ -474,16 +543,23 @@ function adminAuditRelatedObject(type: string, id: string) {
 }
 
 function auditChangeSummary(
-  action: string,
   metadata: Record<string, unknown>,
   changedFields: readonly string[],
   reason: string | null,
 ) {
   if (changedFields.length > 0) return `Changed ${changedFields.slice(0, 4).join(', ')}`;
-  if (reason) return reason;
+  const details: string[] = [];
+  if (reason) {
+    details.push(`Reason ${reason}`);
+  } else {
+    const reasonCode = firstJsonString(metadata, ['reasonCode', 'failureCode', 'errorCode']);
+    if (reasonCode) details.push(`Reason ${reasonCode}`);
+  }
+  const routeTemplate = firstJsonString(metadata, ['routeTemplate']);
+  if (routeTemplate) details.push(`Route ${routeTemplate}`);
   const status = firstJsonString(metadata, ['status', 'outcome', 'decision', 'result']);
-  if (status) return `${humanizeAuditAction(action)} · ${status}`;
-  return humanizeAuditAction(action);
+  if (status) details.push(`Result ${status}`);
+  return details.length > 0 ? details.join(' · ') : 'No change details recorded';
 }
 
 function humanizeAuditAction(action: string) {

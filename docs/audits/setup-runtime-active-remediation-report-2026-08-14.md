@@ -1,6 +1,6 @@
 # Setup Runtime Active Remediation Report
 
-Date: 2026-08-15 (Asia/Bangkok)
+Date: 2026-08-15 (Asia/Ho_Chi_Minh)
 Target: `http://localhost:3101/setup?mode=runtime&view=active`
 
 ## 1. Verdict and P1 status

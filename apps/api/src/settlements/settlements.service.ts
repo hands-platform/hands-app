@@ -1,8 +1,11 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import {
   AccountingJournalEntrySide,
+  BookingSettlementReversalEntry,
+  BookingSettlementSnapshot,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  CouponRedemptionState,
   EarningStatus,
   MonthlyTaxClosingStatus,
   PaymentFeePayer,
@@ -11,6 +14,10 @@ import {
   PayoutBatchStatus,
   Prisma,
 } from '@prisma/client';
+import {
+  COUPON_REVERSAL_REASON,
+  recordCouponRedemptionReversal,
+} from '../bookings/bookings.coupon-redemption';
 import { PrismaService } from '../prisma/prisma.service';
 import { customerWalletPaymentSourceKey as walletPaymentSourceKey } from '../payments/customer-wallet-payment';
 import { calculateBookingSettlementAmounts, SettlementPaymentMethod } from './settlement-calculator';
@@ -120,7 +127,8 @@ export class SettlementsService {
     client: SettlementPrismaClient = this.prisma,
   ) {
     const preview = this.previewBookingSettlementSnapshot(input);
-    const { amounts, currency, metadata, monthlyPeriod, paymentFeeFixedAmount, paymentFeeRateBps } = preview;
+    const { amounts, currency, monthlyPeriod, paymentFeeFixedAmount, paymentFeeRateBps } = preview;
+    const metadata = await settlementCouponEvidenceMetadata(client, input.bookingId, preview.metadata);
     if (client !== this.prisma) {
       await lockSettlementMonthlyPeriodsInTransaction(client as Prisma.TransactionClient, [
         { period: monthlyPeriod, currency },
@@ -184,9 +192,7 @@ export class SettlementsService {
       create: createData,
     });
     if (!immutableFinancialReplayMatches(snapshot, createData, BOOKING_SETTLEMENT_REPLAY_FIELDS)) {
-      throw new ConflictException(
-        'A settlement snapshot already exists with different financial evidence.',
-      );
+      throw new ConflictException('A settlement snapshot already exists with different financial evidence.');
     }
 
     await this.upsertBookingSettlementAccountingRecords(input, amounts, snapshot, client);
@@ -239,10 +245,10 @@ export class SettlementsService {
 
     const monthlyTaxClosing = client.monthlyTaxClosing as unknown as
       | {
-      findUnique?: (args: {
-        where: { period_currency: { period: string; currency: string } };
-        select: { status: true };
-      }) => Promise<{ status: MonthlyTaxClosingStatus } | null>;
+          findUnique?: (args: {
+            where: { period_currency: { period: string; currency: string } };
+            select: { status: true };
+          }) => Promise<{ status: MonthlyTaxClosingStatus } | null>;
         }
       | undefined;
     if (!monthlyTaxClosing?.findUnique) {
@@ -271,7 +277,10 @@ export class SettlementsService {
   async reverseBookingSettlementSnapshotForRefund(
     input: ReverseBookingSettlementSnapshotInput,
     client: SettlementPrismaClient = this.prisma,
-  ) {
+  ): Promise<BookingSettlementReversalEntry | BookingSettlementSnapshot | { skipped: true; reason: string }> {
+    if (client === this.prisma && typeof this.prisma.$transaction === 'function') {
+      return this.prisma.$transaction((tx) => this.reverseBookingSettlementSnapshotForRefund(input, tx));
+    }
     let existing = await client.bookingSettlementSnapshot.findUnique({
       include: {
         providerEarning: {
@@ -328,19 +337,30 @@ export class SettlementsService {
       settlementMonthlyPeriod(input.occurredAt),
       existing.currency,
     );
+    const couponMetadata = await settlementCouponEvidenceMetadata(
+      client,
+      existing.bookingId,
+      existing.metadata,
+      [CouponRedemptionState.CONSUMED, CouponRedemptionState.REVERSED],
+    );
     if (existing.monthlyClosingId) {
       return this.upsertClosedSettlementReversalEntry(
-        { ...existing, monthlyClosingId: existing.monthlyClosingId },
+        {
+          ...existing,
+          metadata: couponMetadata ?? null,
+          monthlyClosingId: existing.monthlyClosingId,
+        },
         input,
         client,
       );
     }
 
+    const reversalMetadata = settlementRefundReversalMetadata(couponMetadata, input.occurredAt);
     const reversedSnapshot = await client.bookingSettlementSnapshot.update({
       where: { bookingId: input.bookingId },
       data: {
         closedAt: input.occurredAt,
-        metadata: settlementRefundReversalMetadata(existing.metadata, input.occurredAt),
+        metadata: reversalMetadata,
         reversalReason: input.reason?.trim() || 'Payment refund',
         reversedById: input.actorId,
         settlementStatus: BookingSettlementStatus.REVERSED,
@@ -348,6 +368,13 @@ export class SettlementsService {
       },
     });
     await this.upsertBookingSettlementReversalAccountingRecords(existing, input, client);
+    await recordSettlementCouponReversal(client, {
+      bookingId: existing.bookingId,
+      metadata: reversalMetadata,
+      occurredAt: input.occurredAt,
+      sourceKey: couponRedemptionSettlementReversalSourceKey(existing.id),
+      sourceReference: `booking-settlement-snapshot:${existing.id}`,
+    });
     return reversedSnapshot;
   }
 
@@ -395,6 +422,13 @@ export class SettlementsService {
       },
     });
     await this.upsertBookingSettlementReversalAccountingRecords(snapshot, input, client, reversalEntry.id);
+    await recordSettlementCouponReversal(client, {
+      bookingId: snapshot.bookingId,
+      metadata,
+      occurredAt: input.occurredAt,
+      sourceKey: couponRedemptionSettlementReversalSourceKey(snapshot.id),
+      sourceReference: `booking-settlement-reversal-entry:${reversalEntry.id}`,
+    });
     return reversalEntry;
   }
 
@@ -433,12 +467,8 @@ export class SettlementsService {
       }
 
       return {
-        accountCode: movesPaidPayoutToReceivable
-          ? 'partner_receivable_negative_wallet'
-          : entry.accountCode,
-        accountName: movesPaidPayoutToReceivable
-          ? 'Partner receivable / negative wallet'
-          : entry.accountName,
+        accountCode: movesPaidPayoutToReceivable ? 'partner_receivable_negative_wallet' : entry.accountCode,
+        accountName: movesPaidPayoutToReceivable ? 'Partner receivable / negative wallet' : entry.accountName,
         amount: entry.amount,
         currency: entry.currency,
         memo: movesPaidPayoutToReceivable
@@ -530,11 +560,7 @@ export class SettlementsService {
       create: clearingData,
     });
     if (
-      !immutableFinancialReplayMatches(
-        clearingEntry,
-        clearingData,
-        BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS,
-      )
+      !immutableFinancialReplayMatches(clearingEntry, clearingData, BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS)
     ) {
       throw new ConflictException(
         'A payment clearing refund reversal already exists with different financial evidence.',
@@ -615,9 +641,7 @@ export class SettlementsService {
     });
     const journalReplay = await accountingJournalReplayRecord(client, journalSourceKey, journalBatch);
     if (!accountingJournalReplayMatches(journalReplay, journalData, journalEntries)) {
-      throw new ConflictException(
-        'A settlement journal already exists with different financial evidence.',
-      );
+      throw new ConflictException('A settlement journal already exists with different financial evidence.');
     }
 
     if (input.paymentMethod === 'CASH' || input.paymentMethod === PaymentMethod.CUSTOMER_WALLET) {
@@ -647,11 +671,7 @@ export class SettlementsService {
       create: clearingData,
     });
     if (
-      !immutableFinancialReplayMatches(
-        clearingEntry,
-        clearingData,
-        BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS,
-      )
+      !immutableFinancialReplayMatches(clearingEntry, clearingData, BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS)
     ) {
       throw new ConflictException(
         'A payment clearing entry already exists with different financial evidence.',
@@ -731,9 +751,7 @@ async function assertSettlementReversalTargetPeriodOpen(
     targetClosing?.status === MonthlyTaxClosingStatus.PAID ||
     targetClosing?.status === MonthlyTaxClosingStatus.CLOSED
   ) {
-    throw new BadRequestException(
-      'Refund settlement reversals require an open monthly period.',
-    );
+    throw new BadRequestException('Refund settlement reversals require an open monthly period.');
   }
 }
 
@@ -895,6 +913,10 @@ export function accountingJournalReversalSourceKey(snapshotId: string) {
   return `accounting-journal:booking-settlement-reversal:${snapshotId}`;
 }
 
+export function couponRedemptionSettlementReversalSourceKey(snapshotId: string) {
+  return `coupon-redemption:booking-settlement-reversal:${snapshotId}`;
+}
+
 export function bookingPaymentClearingSourceKey(bookingId: string) {
   return `booking-payment-clearing:${bookingId}:settlement`;
 }
@@ -932,7 +954,10 @@ export function settlementMonthlyPeriod(date: Date, timeZone = VIETNAM_TIME_ZONE
   return `${year}-${month}`;
 }
 
-function settlementRefundReversalMetadata(metadata: Prisma.JsonValue | null, occurredAt: Date) {
+function settlementRefundReversalMetadata(
+  metadata: Prisma.JsonValue | Prisma.InputJsonObject | null | undefined,
+  occurredAt: Date,
+) {
   const record = jsonRecord(metadata);
   const couponDiscountAmount = numberValue(record.couponDiscountAmount);
   const companyCouponExpense = numberValue(record.companyCouponExpense);
@@ -952,6 +977,92 @@ function settlementRefundReversalMetadata(metadata: Prisma.JsonValue | null, occ
     reversalAffectsPartnerTaxPayable: true,
     reversalAffectsPlatformFeeRevenue: true,
   } satisfies Prisma.InputJsonObject;
+}
+
+async function settlementCouponEvidenceMetadata(
+  client: SettlementPrismaClient,
+  bookingId: string,
+  metadata: Prisma.JsonValue | Prisma.InputJsonObject | null | undefined,
+  allowedStates: readonly CouponRedemptionState[] = [CouponRedemptionState.CONSUMED],
+) {
+  const record = jsonRecord(metadata);
+  const originalMetadata = metadata === null || metadata === undefined ? undefined : record;
+  const delegate = client.couponRedemption as unknown as
+    | {
+        findUnique?: (args: {
+          where: { bookingId: string };
+          select: {
+            couponId: true;
+            currency: true;
+            discountAmount: true;
+            id: true;
+            state: true;
+          };
+        }) => Promise<{
+          couponId: string;
+          currency: string;
+          discountAmount: number;
+          id: string;
+          state: CouponRedemptionState;
+        } | null>;
+      }
+    | undefined;
+  if (!delegate?.findUnique) {
+    return originalMetadata;
+  }
+
+  const redemption = await delegate.findUnique({
+    where: { bookingId },
+    select: { couponId: true, currency: true, discountAmount: true, id: true, state: true },
+  });
+  if (!redemption) {
+    return originalMetadata;
+  }
+
+  const metadataCouponId = stringValue(record?.couponId);
+  const discountAmount = numberValue(record?.couponDiscountAmount);
+  if (
+    redemption.currency !== 'VND' ||
+    !allowedStates.includes(redemption.state) ||
+    discountAmount !== redemption.discountAmount ||
+    metadataCouponId !== redemption.couponId
+  ) {
+    throw new ConflictException('Settlement coupon evidence does not match the consumed booking redemption.');
+  }
+
+  return {
+    ...record,
+    couponId: redemption.couponId,
+    couponRedemptionId: redemption.id,
+  } satisfies Prisma.InputJsonObject;
+}
+
+async function recordSettlementCouponReversal(
+  client: SettlementPrismaClient,
+  input: {
+    bookingId: string;
+    metadata: Prisma.InputJsonObject;
+    occurredAt: Date;
+    sourceKey: string;
+    sourceReference: string;
+  },
+) {
+  const couponRedemptionId = stringValue(input.metadata.couponRedemptionId);
+  const couponId = stringValue(input.metadata.couponId);
+  const amount = numberValue(input.metadata.reversedCouponDiscountAmount);
+  if (!couponRedemptionId || !couponId || amount <= 0) {
+    return;
+  }
+  await recordCouponRedemptionReversal(client as Prisma.TransactionClient, {
+    amount,
+    bookingId: input.bookingId,
+    expectedCouponId: couponId,
+    expectedCouponRedemptionId: couponRedemptionId,
+    occurredAt: input.occurredAt,
+    reason: COUPON_REVERSAL_REASON.SETTLEMENT_REFUND,
+    sourceKey: input.sourceKey,
+    sourceReference: input.sourceReference,
+  });
 }
 
 function customerWalletLedgerType(value: string): Prisma.CustomerWalletLedgerEntryCreateInput['type'] {
@@ -1041,14 +1152,17 @@ type SettlementSnapshotWithPartnerPayoutState = SettlementSnapshotForReversal & 
 
 function settlementSnapshotHasPaidPartnerPayout(snapshot: SettlementSnapshotForReversal) {
   const providerEarning = (snapshot as SettlementSnapshotWithPartnerPayoutState).providerEarning;
-  return providerEarning?.status === EarningStatus.PAID || providerEarning?.payoutBatch?.status === PayoutBatchStatus.PAID;
+  return (
+    providerEarning?.status === EarningStatus.PAID ||
+    providerEarning?.payoutBatch?.status === PayoutBatchStatus.PAID
+  );
 }
 
 function reverseJournalSide(side: 'DEBIT' | 'CREDIT') {
   return side === 'DEBIT' ? AccountingJournalEntrySide.CREDIT : AccountingJournalEntrySide.DEBIT;
 }
 
-function jsonRecord(value: Prisma.JsonValue | null | undefined) {
+function jsonRecord(value: Prisma.JsonValue | Prisma.InputJsonObject | null | undefined) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }
@@ -1058,4 +1172,8 @@ function jsonRecord(value: Prisma.JsonValue | null | undefined) {
 function numberValue(value: unknown) {
   const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : 0;
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }

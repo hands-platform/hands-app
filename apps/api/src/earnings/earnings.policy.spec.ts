@@ -487,6 +487,31 @@ describe('earnings policy', () => {
     });
   });
 
+  it.each([
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+    ProviderWalletWithdrawalRequestStatus.FAILED,
+  ])('prevents bank transfer pending withdrawals from moving to %s', (requestedStatus) => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+        requestedStatus,
+      }),
+    ).toThrow(`Withdrawal request cannot move from BANK_TRANSFER_PENDING to ${requestedStatus}`);
+  });
+
+  it.each([
+    ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+    ProviderWalletWithdrawalRequestStatus.HOLD,
+  ])('keeps the safe bank transfer pending review transition to %s', (requestedStatus) => {
+    expect(
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+        requestedStatus,
+      }),
+    ).toMatchObject({ status: requestedStatus });
+  });
+
   it('prevents held or review-required withdrawals from being marked paid directly', () => {
     for (const currentStatus of [
       ProviderWalletWithdrawalRequestStatus.HOLD,

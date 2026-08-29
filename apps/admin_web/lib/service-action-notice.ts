@@ -112,8 +112,8 @@ export function serviceActionNotice(params: ServiceActionNoticeParams): ServiceA
       ...(savedMessages[reason] ?? savedMessages['service-updated']),
       ...(group
         ? {
-            actionHref: `/audit-log?target=${encodeURIComponent(`service_group:${group}`)}`,
-            actionLabel: 'Open audit change set',
+            actionHref: `/services?evidence=${encodeURIComponent(group)}`,
+            actionLabel: 'Open service change evidence',
           }
         : {}),
     };

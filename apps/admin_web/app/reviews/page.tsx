@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { AdminReview, AdminReviewSummary } from '../../lib/admin-api';
 import { adminGetResult } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -25,6 +26,10 @@ import {
 import { ReviewsTableSection } from './reviews-table-section';
 
 type ReviewsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export const metadata: Metadata = {
+  title: 'Customer Reviews',
+};
 
 export default async function ReviewsPage({ searchParams }: { searchParams?: ReviewsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};

@@ -61,6 +61,16 @@ export type AdminBookingListWhereOptions = {
   readonly now?: Date;
 };
 
+export type AdminBookingMatchingDelaySnapshot = {
+  readonly expiresAt: Date | null;
+  readonly openedAt: Date | null;
+  readonly participants: readonly {
+    readonly respondedAt: Date | null;
+    readonly status: ParticipantStatus;
+  }[];
+  readonly status: BookingStatus;
+};
+
 const ADMIN_POST_MATCH_CANCELLATION_REASON_CODE_SET = new Set<string>(
   [...ADMIN_POST_MATCH_CANCELLATION_REASON_CODES, 'LEGACY'],
 );
@@ -140,8 +150,21 @@ export function adminBookingListFreshnessWhere(
     : undefined;
 }
 
+function adminBookingProductionUserWhere(): Prisma.UserWhereInput {
+  return {
+    NOT: {
+      OR: ['smoke', 'seed-', 'audit_'].map((prefix) => ({
+        id: { startsWith: prefix, mode: Prisma.QueryMode.insensitive },
+      })),
+    },
+    fixtureExpiresAt: null,
+    fixtureKind: null,
+    fixtureRunId: null,
+  };
+}
+
 export function adminBookingProductionDataWhere(): Prisma.BookingWhereInput {
-  const fixtureIds: Prisma.BookingWhereInput[] = ['smoke', 'seed-'].flatMap((prefix) => [
+  const fixtureIds: Prisma.BookingWhereInput[] = ['smoke', 'seed-', 'audit_'].flatMap((prefix) => [
     { id: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
     { customerProfileId: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
   ]);
@@ -153,7 +176,7 @@ export function adminBookingProductionDataWhere(): Prisma.BookingWhereInput {
       { [field]: null },
       {
         NOT: {
-          OR: ['smoke', 'seed-'].map((prefix) => ({
+          OR: ['smoke', 'seed-', 'audit_'].map((prefix) => ({
             [field]: { startsWith: prefix, mode: Prisma.QueryMode.insensitive },
           })),
         },
@@ -165,6 +188,43 @@ export function adminBookingProductionDataWhere(): Prisma.BookingWhereInput {
     AND: [
       { NOT: { OR: fixtureIds } },
       ...optionalFixtureIds,
+      {
+        customerProfile: {
+          is: {
+            user: {
+              is: adminBookingProductionUserWhere(),
+            },
+          },
+        },
+      },
+      {
+        OR: [
+          { preferredProviderId: null },
+          {
+            preferredProvider: {
+              is: {
+                user: {
+                  is: adminBookingProductionUserWhere(),
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        OR: [
+          { selectedProviderId: null },
+          {
+            selectedProvider: {
+              is: {
+                user: {
+                  is: adminBookingProductionUserWhere(),
+                },
+              },
+            },
+          },
+        ],
+      },
       adminBookingJsonValueIsNot({ path: ['smokeFixture'], equals: true }),
       { metadata: { path: ['auditFixture'], equals: Prisma.AnyNull } },
       adminBookingJsonValueIsNot({ path: ['smoke'], equals: true }),
@@ -174,16 +234,30 @@ export function adminBookingProductionDataWhere(): Prisma.BookingWhereInput {
   };
 }
 
-export function adminBookingProductionDataSql(booking = Prisma.sql`booking`) {
+export function adminBookingProductionDataSql(
+  booking = Prisma.sql`booking`,
+  ownerSql: {
+    fixture?: Prisma.Sql;
+    legacyFixture?: Prisma.Sql;
+  } = {},
+) {
+  const fixtureOwner = ownerSql.fixture ?? adminBookingFixtureOwnerSql(booking);
+  const legacyFixtureOwner = ownerSql.legacyFixture ?? adminBookingLegacyFixtureOwnerSql(booking);
   return Prisma.sql`
     LOWER(${booking}.id) NOT LIKE 'smoke%'
     AND LOWER(${booking}.id) NOT LIKE 'seed-%'
+    AND LOWER(${booking}.id) NOT LIKE 'audit\\_%' ESCAPE '\\'
     AND LOWER(${booking}."customerProfileId") NOT LIKE 'smoke%'
     AND LOWER(${booking}."customerProfileId") NOT LIKE 'seed-%'
+    AND LOWER(${booking}."customerProfileId") NOT LIKE 'audit\\_%' ESCAPE '\\'
     AND LOWER(COALESCE(${booking}."preferredProviderId", '')) NOT LIKE 'smoke%'
     AND LOWER(COALESCE(${booking}."preferredProviderId", '')) NOT LIKE 'seed-%'
+    AND LOWER(COALESCE(${booking}."preferredProviderId", '')) NOT LIKE 'audit\\_%' ESCAPE '\\'
     AND LOWER(COALESCE(${booking}."selectedProviderId", '')) NOT LIKE 'smoke%'
     AND LOWER(COALESCE(${booking}."selectedProviderId", '')) NOT LIKE 'seed-%'
+    AND LOWER(COALESCE(${booking}."selectedProviderId", '')) NOT LIKE 'audit\\_%' ESCAPE '\\'
+    AND NOT (${fixtureOwner})
+    AND NOT (${legacyFixtureOwner})
     AND LOWER(COALESCE(${booking}.metadata #>> '{smokeFixture}', 'false')) <> 'true'
     AND ${booking}.metadata #>> '{auditFixture}' IS NULL
     AND LOWER(COALESCE(${booking}.metadata #>> '{smoke}', 'false')) <> 'true'
@@ -218,17 +292,35 @@ export function adminBookingVerifiedProductionWhere(): Prisma.BookingWhereInput 
       { metadata: { path: ['auditFixture'], equals: Prisma.AnyNull } },
       { metadata: { path: ['smoke'], equals: Prisma.AnyNull } },
       { metadata: { path: ['fixture'], equals: Prisma.AnyNull } },
-      { customerProfile: { is: { user: { is: { fixtureKind: null } } } } },
+      {
+        customerProfile: {
+          is: {
+            user: { is: { fixtureExpiresAt: null, fixtureKind: null, fixtureRunId: null } },
+          },
+        },
+      },
       {
         OR: [
           { preferredProviderId: null },
-          { preferredProvider: { is: { user: { is: { fixtureKind: null } } } } },
+          {
+            preferredProvider: {
+              is: {
+                user: { is: { fixtureExpiresAt: null, fixtureKind: null, fixtureRunId: null } },
+              },
+            },
+          },
         ],
       },
       {
         OR: [
           { selectedProviderId: null },
-          { selectedProvider: { is: { user: { is: { fixtureKind: null } } } } },
+          {
+            selectedProvider: {
+              is: {
+                user: { is: { fixtureExpiresAt: null, fixtureKind: null, fixtureRunId: null } },
+              },
+            },
+          },
         ],
       },
     ],
@@ -267,14 +359,49 @@ function adminBookingFixtureOwnerSql(booking: Prisma.Sql) {
       FROM "CustomerProfile" booking_customer
       INNER JOIN "User" booking_customer_user ON booking_customer_user.id = booking_customer."userId"
       WHERE booking_customer.id = ${booking}."customerProfileId"
-        AND booking_customer_user."fixtureKind" IS NOT NULL
+        AND (
+          booking_customer_user."fixtureKind" IS NOT NULL
+          OR booking_customer_user."fixtureRunId" IS NOT NULL
+          OR booking_customer_user."fixtureExpiresAt" IS NOT NULL
+        )
     )
     OR EXISTS (
       SELECT 1
       FROM "ProviderProfile" booking_partner
       INNER JOIN "User" booking_partner_user ON booking_partner_user.id = booking_partner."userId"
       WHERE booking_partner.id IN (${booking}."preferredProviderId", ${booking}."selectedProviderId")
-        AND booking_partner_user."fixtureKind" IS NOT NULL
+        AND (
+          booking_partner_user."fixtureKind" IS NOT NULL
+          OR booking_partner_user."fixtureRunId" IS NOT NULL
+          OR booking_partner_user."fixtureExpiresAt" IS NOT NULL
+        )
+    )
+  `;
+}
+
+function adminBookingLegacyFixtureOwnerSql(booking: Prisma.Sql) {
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM "CustomerProfile" booking_customer
+      INNER JOIN "User" booking_customer_user ON booking_customer_user.id = booking_customer."userId"
+      WHERE booking_customer.id = ${booking}."customerProfileId"
+        AND (
+          LOWER(booking_customer_user.id) LIKE 'smoke%'
+          OR LOWER(booking_customer_user.id) LIKE 'seed-%'
+          OR LOWER(booking_customer_user.id) LIKE 'audit\\_%' ESCAPE '\\'
+        )
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM "ProviderProfile" booking_partner
+      INNER JOIN "User" booking_partner_user ON booking_partner_user.id = booking_partner."userId"
+      WHERE booking_partner.id IN (${booking}."preferredProviderId", ${booking}."selectedProviderId")
+        AND (
+          LOWER(booking_partner_user.id) LIKE 'smoke%'
+          OR LOWER(booking_partner_user.id) LIKE 'seed-%'
+          OR LOWER(booking_partner_user.id) LIKE 'audit\\_%' ESCAPE '\\'
+        )
     )
   `;
 }
@@ -490,6 +617,23 @@ export function adminBookingListStatusGroupWhere(
     default:
       return undefined;
   }
+}
+
+export function adminBookingIsMatchingDelay(
+  booking: AdminBookingMatchingDelaySnapshot,
+  options: AdminBookingListWhereOptions = {},
+) {
+  if (booking.status !== BookingStatus.OPEN_MATCHING) return false;
+  const now = options.now ?? new Date();
+  if (booking.expiresAt && booking.expiresAt <= now) return true;
+  if (!booking.openedAt || booking.openedAt > adminBookingMatchingDelayBefore(options)) return false;
+
+  return !booking.participants.some(
+    (participant) =>
+      participant.respondedAt !== null &&
+      (participant.status === ParticipantStatus.JOINED ||
+        participant.status === ParticipantStatus.ACCEPTED),
+  );
 }
 
 export function adminBookingListDefaultSort(statusGroup?: string | null) {

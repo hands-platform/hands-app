@@ -8,9 +8,10 @@ import {
 } from './admin-refund-queue';
 
 describe('admin refund queue contract', () => {
-  it('keeps requested, processing, mismatch, and closed queues mutually explicit', () => {
+  it('keeps requested, processing, other, mismatch, and closed queues mutually explicit', () => {
     const requested = JSON.stringify(adminRefundReviewWhere('requested'));
     const processing = JSON.stringify(adminRefundReviewWhere('processing'));
+    const other = JSON.stringify(adminRefundReviewWhere('other'));
     const mismatch = JSON.stringify(adminRefundReviewWhere('state-mismatch'));
     const completed = JSON.stringify(adminRefundReviewWhere('completed'));
 
@@ -20,10 +21,32 @@ describe('admin refund queue contract', () => {
       '"in":["APPROVAL_PROCESSING","PROVIDER_PROCESSING","GATEWAY_CONFIRMED"]',
     );
     expect(processing).toContain('"NOT":{"OR"');
+    expect(other).toContain('"NOT":{"OR"');
+    expect(other).toContain(
+      '"notIn":["REQUESTED","APPROVAL_PROCESSING","PROVIDER_PROCESSING","GATEWAY_CONFIRMED","COMPLETED","REJECTED"]',
+    );
     expect(mismatch).toContain('"status":"COMPLETED"');
     expect(mismatch).toContain('"status":{"not":"COMPLETED"}');
     expect(completed).toContain('"status":"COMPLETED"');
     expect(completed).toContain('"NOT":{"OR"');
+  });
+
+  it('uses the same aligned unknown-status predicate for Other review metadata totals', () => {
+    const query = adminRefundQueueMetaQuery({ review: 'other' }) as {
+      strings: readonly string[];
+      values: readonly unknown[];
+    };
+    const sql = query.strings.join('?');
+
+    expect(sql).toContain('NOT IN');
+    expect(sql).toContain("'REQUESTED'");
+    expect(sql).toContain("'COMPLETED'");
+    expect(sql).toContain("'REJECTED'");
+    expect(query.values).toEqual(expect.arrayContaining([
+      'APPROVAL_PROCESSING',
+      'PROVIDER_PROCESSING',
+      'GATEWAY_CONFIRMED',
+    ]));
   });
 
   it.each([

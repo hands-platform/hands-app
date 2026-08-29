@@ -2,7 +2,14 @@ import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { AdminApiRequestError, adminPostOrThrow } from '../../lib/admin-api';
-import { retryNotification, reviewLegacyNotification } from './actions';
+import {
+  assignNotificationDeliveryIncident,
+  openNotificationDeliveryIncident,
+  reopenNotificationDeliveryIncident,
+  resolveNotificationDeliveryIncident,
+  retryNotification,
+  reviewLegacyNotification,
+} from './actions';
 import { notificationActionReturnHref, sanitizeNotificationReturnHref } from './notification-action-return-href';
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
@@ -95,6 +102,48 @@ describe('notification server actions', () => {
     );
   });
 
+  it('sends incident lifecycle changes with exact revision and reason evidence', async () => {
+    const openForm = incidentForm();
+    openForm.set('dataScope', 'unknown');
+    openForm.set('provider', 'FCM');
+    openForm.set('failureCode', 'UNREGISTERED');
+    await openNotificationDeliveryIncident(openForm);
+    expect(mockedAdminPostOrThrow).toHaveBeenLastCalledWith('/admin/notification-delivery-incidents', {
+      dataScope: 'unknown', failureCode: 'UNREGISTERED', provider: 'FCM',
+      reason: 'Verified persistent delivery failure evidence.',
+    });
+
+    const assignForm = incidentForm();
+    assignForm.set('incidentId', 'incident-1');
+    assignForm.set('assigneeAdminId', 'admin-1');
+    assignForm.set('expectedRevision', '3');
+    await assignNotificationDeliveryIncident(assignForm);
+    expect(mockedAdminPostOrThrow).toHaveBeenLastCalledWith(
+      '/admin/notification-delivery-incidents/incident-1/assign',
+      expect.objectContaining({ assigneeAdminId: 'admin-1', expectedRevision: 3 }),
+    );
+
+    const resolveForm = incidentForm();
+    resolveForm.set('incidentId', 'incident-1');
+    resolveForm.set('expectedRevision', '4');
+    resolveForm.set('resolutionCode', 'CONFIGURATION_FIXED');
+    await resolveNotificationDeliveryIncident(resolveForm);
+    expect(mockedAdminPostOrThrow).toHaveBeenLastCalledWith(
+      '/admin/notification-delivery-incidents/incident-1/resolve',
+      expect.objectContaining({ expectedRevision: 4, resolutionCode: 'CONFIGURATION_FIXED' }),
+    );
+
+    const reopenForm = incidentForm();
+    reopenForm.set('incidentId', 'incident-1');
+    reopenForm.set('expectedRevision', '5');
+    await reopenNotificationDeliveryIncident(reopenForm);
+    expect(mockedAdminPostOrThrow).toHaveBeenLastCalledWith(
+      '/admin/notification-delivery-incidents/incident-1/reopen',
+      expect.objectContaining({ expectedRevision: 5 }),
+    );
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/audit-log');
+  });
+
   it('reads only safe notification return URLs', () => {
     const formData = new FormData();
     formData.set('returnHref', '/notifications?issue=failed&booking=booking-1');
@@ -110,5 +159,15 @@ function retryForm(returnHref: string) {
   formData.set('notificationId', ' notification-1 ');
   formData.set('reason', ' Confirmed unresolved FCM path. ');
   formData.set('returnHref', returnHref);
+  return formData;
+}
+
+function incidentForm() {
+  const formData = new FormData();
+  formData.set('reason', 'Verified persistent delivery failure evidence.');
+  formData.set(
+    'returnHref',
+    '/notifications?issue=groups&incidentProvider=FCM&incidentFailureCode=UNREGISTERED',
+  );
   return formData;
 }

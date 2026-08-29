@@ -39,6 +39,7 @@ import {
   publicSiteRouteManifest,
   type PublicSiteOwnership,
 } from './public-site-route-manifest';
+import { siteContentPreviewConfigState } from './site-content-preview-config';
 
 const revisionSections = {
   orderBy: [{ sortOrder: 'asc' as const }, { key: 'asc' as const }],
@@ -124,6 +125,9 @@ export class SiteContentService {
         : {}),
       ...(ownershipWhere ? { AND: [ownershipWhere] } : {}),
     };
+    if (contentType === 'pages' && query.queue) {
+      return this.listManifestQueue(query, where, page, take);
+    }
     if (contentType === 'news') {
       const [rows, total, resolvedSummary] = await Promise.all([
         this.prisma.publicSitePage.findMany({
@@ -181,8 +185,17 @@ export class SiteContentService {
         include: { actor: { select: { id: true, fullName: true, email: true } } },
       }),
     ]);
+    const publisherLabels = new Map(activity.flatMap((event) => {
+      const revisionId = jsonMetadataString(event.metadata, 'revisionId');
+      const label = event.actor?.fullName ?? event.actor?.email ?? null;
+      return revisionId && label ? [[revisionId, label] as const] : [];
+    }));
     return {
       ...page,
+      revisions: page.revisions.map((revision) => ({
+        ...revision,
+        publishedByLabel: publisherLabels.get(revision.id) ?? null,
+      })),
       ownership: publicSiteOwnership(page.site, page.path, Boolean(page.activeRevisionId)),
       manifestLabel: publicSiteManifestEntry(page.site, page.path)?.label ?? null,
       offlineVisitorOutcome: publicSiteManifestEntry(page.site, page.path)?.codeFallback
@@ -602,7 +615,7 @@ export class SiteContentService {
   }
 
   async publishDraft(actorId: string, pageId: string, input: PublishPublicSiteDraftDto) {
-    return this.prisma.$transaction(
+    const page = await this.prisma.$transaction(
       async (tx) => {
         const page = await this.findPageWithTx(tx, pageId);
         if (!page) throw new NotFoundException('Public site page not found');
@@ -666,6 +679,11 @@ export class SiteContentService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    if (!page) throw new NotFoundException('Public site page not found after publishing');
+    return {
+      ...page,
+      cacheInvalidation: await this.invalidatePublicCache(actorId, page, 'PUBLISH'),
+    };
   }
 
   async rollbackRevision(
@@ -673,7 +691,7 @@ export class SiteContentService {
     pageId: string,
     input: RollbackPublicSiteRevisionDto,
   ) {
-    return this.prisma.$transaction(
+    const page = await this.prisma.$transaction(
       async (tx) => {
         const page = await this.findPageWithTx(tx, pageId);
         if (!page) throw new NotFoundException('Public site page not found');
@@ -720,10 +738,15 @@ export class SiteContentService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    if (!page) throw new NotFoundException('Public site page not found after rollback');
+    return {
+      ...page,
+      cacheInvalidation: await this.invalidatePublicCache(actorId, page, 'ROLLBACK'),
+    };
   }
 
   async takeOffline(actorId: string, pageId: string, input: TakePublicSitePageOfflineDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const page = await this.findPageWithTx(tx, pageId);
       if (!page) throw new NotFoundException('Public site page not found');
       assertConfirmedPath(page.path, input.confirmationPath);
@@ -756,6 +779,16 @@ export class SiteContentService {
       });
       return { page: await this.findPageWithTx(tx, pageId), idempotent: false, visitorOutcome };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    if (!result.page) throw new NotFoundException('Public site page not found after taking offline');
+    return {
+      ...result,
+      cacheInvalidation: await this.invalidatePublicCache(actorId, result.page, 'TAKE_OFFLINE'),
+    };
+  }
+
+  async retryPublicCacheInvalidation(actorId: string, pageId: string) {
+    const page = await this.assertPageExists(pageId);
+    return this.invalidatePublicCache(actorId, page, 'RETRY');
   }
 
   async createPreviewToken(pageId: string) {
@@ -874,21 +907,6 @@ export class SiteContentService {
     scopedWhere: Prisma.PublicSitePageWhereInput,
   ) {
     const contentType = query.contentType ?? 'pages';
-    const includeCompleteness = contentType === 'pages' &&
-      !query.readiness &&
-      !query.ownership &&
-      (!query.status || query.status === 'all');
-    const manifestRoutes = !includeCompleteness
-      ? []
-      : publicSiteRouteManifest.filter((entry) =>
-          (!query.site || entry.site === query.site) &&
-          (!query.q || `${entry.label} ${entry.path}`.toLowerCase().includes(query.q.toLowerCase())),
-        );
-    const requiredManifestRows = manifestRoutes.flatMap((entry) =>
-      entry.requiredLocales
-        .filter((locale) => !query.locale || locale === query.locale)
-        .map((locale) => ({ site: entry.site, path: entry.path, locale })),
-    );
     const [routeGroups, live, draftChanges, ready, needsAttention, existingManifestRows, recentlyPublished] = await Promise.all([
       this.prisma.publicSitePage.groupBy({ by: ['site', 'path'], where: scopedWhere }),
       this.prisma.publicSitePage.count({ where: { AND: [scopedWhere, { activeRevisionId: { not: null } }] } }),
@@ -903,12 +921,7 @@ export class SiteContentService {
           AND: [scopedWhere, { draftRevision: { is: { readinessState: PublicSiteRevisionReadinessState.BLOCKED } } }],
         },
       }),
-      requiredManifestRows.length
-        ? this.prisma.publicSitePage.findMany({
-            where: { OR: requiredManifestRows.map((row) => row) },
-            select: { site: true, path: true, locale: true },
-          })
-        : Promise.resolve([]),
+      this.manifestRows(),
       this.prisma.publicSitePage.count({
         where: {
           AND: [
@@ -918,23 +931,52 @@ export class SiteContentService {
         },
       }),
     ]);
-    const existingKeys = new Set(existingManifestRows.map((row) => `${row.site}:${row.path}:${row.locale}`));
-    const missingRows = requiredManifestRows.filter((row) => !existingKeys.has(`${row.site}:${row.path}:${row.locale}`));
-    const existingRouteKeys = new Set(existingManifestRows.map((row) => `${row.site}:${row.path}`));
-    const missingRoutes = manifestRoutes.filter((entry) => !existingRouteKeys.has(`${entry.site}:${entry.path}`)).length;
+    const manifestHealth = publicSiteManifestHealth(existingManifestRows);
     return {
-      routes: contentType === 'news' ? routeGroups.length : routeGroups.length,
-      live,
-      draftChanges,
-      ready,
-      needsAttention,
-      missingRoutes,
-      missingTranslations: missingRows.length,
-      staleTranslations: 0,
-      recentlyPublished,
-      scope: { contentType, site: query.site ?? null, locale: query.locale ?? null, q: query.q ?? null, status: query.status ?? 'all' },
+      viewScope: {
+        routes: routeGroups.length,
+        live,
+        draftChanges,
+        ready,
+        needsAttention,
+        recentlyPublished,
+        scope: {
+          contentType,
+          site: query.site ?? null,
+          locale: query.locale ?? null,
+          q: query.q ?? null,
+          status: query.status ?? 'all',
+          readiness: query.readiness ?? null,
+          ownership: query.ownership ?? null,
+        },
+      },
+      manifestHealth,
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  private manifestRows() {
+    const expected = publicSiteRouteManifest.flatMap((entry) =>
+      entry.requiredLocales.map((locale) => ({ site: entry.site, path: entry.path, locale })),
+    );
+    return this.prisma.publicSitePage.findMany({
+      where: { OR: expected },
+      select: { site: true, path: true, locale: true },
+    });
+  }
+
+  private async listManifestQueue(
+    query: AdminPublicSitePageListQueryDto,
+    scopedWhere: Prisma.PublicSitePageWhereInput,
+    page: number,
+    take: number,
+  ) {
+    const [existingManifestRows, summary] = await Promise.all([
+      this.manifestRows(),
+      this.adminSummary(query, scopedWhere).catch(() => null),
+    ]);
+    const rows = publicSiteManifestQueue(existingManifestRows, query.queue!);
+    return pageResult(rows.slice((page - 1) * take, page * take), page, take, rows.length, summary);
   }
 
   private async assertPageExists(pageId: string) {
@@ -1056,11 +1098,100 @@ export class SiteContentService {
     const secret =
       this.config?.get<string>('SITE_CONTENT_PREVIEW_SECRET') ??
       process.env.SITE_CONTENT_PREVIEW_SECRET;
-    if (!secret || secret.length < 32) {
-      throw new ServiceUnavailableException('Draft preview signing is not configured');
+    if (!secret || siteContentPreviewConfigState(secret) !== 'valid') {
+      throw new ServiceUnavailableException({
+        code: 'SITE_CONTENT_PREVIEW_NOT_CONFIGURED',
+        message: 'Draft preview signing is not configured',
+      });
     }
     return secret;
   }
+
+  private async invalidatePublicCache(
+    actorId: string,
+    page: { id: string; site: PublicSiteKey; locale: string; path: string },
+    trigger: 'PUBLISH' | 'RETRY' | 'ROLLBACK' | 'TAKE_OFFLINE',
+  ) {
+    const requestId = randomUUID();
+    const secret = this.config?.get<string>('SITE_CONTENT_CACHE_INVALIDATION_SECRET') ??
+      process.env.SITE_CONTENT_CACHE_INVALIDATION_SECRET;
+    const targetConfig = this.config?.get<string>('SITE_CONTENT_CACHE_INVALIDATION_URLS') ??
+      process.env.SITE_CONTENT_CACHE_INVALIDATION_URLS;
+    const targets = publicSiteCacheInvalidationTargets(
+      targetConfig,
+      this.config?.get<string>('NODE_ENV') ?? process.env.NODE_ENV,
+    );
+    let result: PublicSiteCacheInvalidationResult;
+    if (!secret || secret.length < 32 || !targets.length) {
+      result = { status: 'NOT_CONFIGURED', requestId, hostCount: targets.length, succeededHostCount: 0 };
+    } else {
+      const attempts = await Promise.all(targets.map(async (target) => {
+        try {
+          const response = await fetch(target, {
+            method: 'POST',
+            headers: {
+              authorization: `Bearer ${secret}`,
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({ site: page.site, locale: page.locale, path: page.path }),
+            cache: 'no-store',
+            signal: AbortSignal.timeout(5_000),
+          });
+          return response.ok;
+        } catch {
+          return false;
+        }
+      }));
+      const succeededHostCount = attempts.filter(Boolean).length;
+      result = {
+        status: succeededHostCount === targets.length ? 'SUCCEEDED' : 'FAILED',
+        requestId,
+        hostCount: targets.length,
+        succeededHostCount,
+      };
+    }
+    try {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'PUBLIC_SITE_CACHE_INVALIDATION',
+          target: `public_site_page:${page.id}`,
+          metadata: {
+            requestId,
+            trigger,
+            status: result.status,
+            hostCount: result.hostCount,
+            succeededHostCount: result.succeededHostCount,
+          },
+        },
+      });
+    } catch {
+      // Cache state is returned truthfully even if secondary audit persistence is unavailable.
+    }
+    return result;
+  }
+}
+
+export type PublicSiteCacheInvalidationResult = {
+  status: 'FAILED' | 'NOT_CONFIGURED' | 'SUCCEEDED';
+  requestId: string;
+  hostCount: number;
+  succeededHostCount: number;
+};
+
+export function publicSiteCacheInvalidationTargets(value: string | undefined, nodeEnv?: string) {
+  if (!value) return [];
+  const targets = value.split(',').flatMap((item) => {
+    try {
+      const url = new URL(item.trim());
+      const localHttp = url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+      if (url.protocol !== 'https:' && !(nodeEnv !== 'production' && localHttp)) return [];
+      return [new URL('/api/site-content-cache', url.origin).toString()];
+    } catch {
+      return [];
+    }
+  });
+  return [...new Set(targets)];
 }
 
 const adminPageSummarySelect = {
@@ -1132,6 +1263,77 @@ function groupPageRoutes(rows: AdminPageSummaryWithOwnership[]) {
     groups.set(key, group);
   }
   return [...groups.values()];
+}
+
+type ManifestRowIdentity = { site: PublicSiteKey; path: string; locale: string };
+type ManifestQueueRow = {
+  key: string;
+  kind: 'MISSING_ROUTE' | 'MISSING_TRANSLATION';
+  site: PublicSiteKey;
+  path: string;
+  locale: string;
+  label: string;
+  ownership: PublicSiteOwnership;
+  reason: string;
+  recommendedAction: string;
+};
+
+export function publicSiteManifestHealth(rows: ManifestRowIdentity[]) {
+  const existingKeys = new Set(rows.map((row) => `${row.site}:${row.path}:${row.locale}`));
+  const existingRouteKeys = new Set(rows.map((row) => `${row.site}:${row.path}`));
+  const expectedRows = publicSiteRouteManifest.reduce((count, entry) => count + entry.requiredLocales.length, 0);
+  return {
+    scope: 'GLOBAL_CANONICAL' as const,
+    expectedRoutes: publicSiteRouteManifest.length,
+    expectedRows,
+    missingRoutes: publicSiteRouteManifest.filter((entry) => !existingRouteKeys.has(`${entry.site}:${entry.path}`)).length,
+    missingTranslations: publicSiteRouteManifest.reduce(
+      (count, entry) => count + entry.requiredLocales.filter((locale) => !existingKeys.has(`${entry.site}:${entry.path}:${locale}`)).length,
+      0,
+    ),
+    staleTranslations: null,
+    staleTranslationsApplicable: false,
+  };
+}
+
+export function publicSiteManifestQueue(
+  rows: ManifestRowIdentity[],
+  queue: NonNullable<AdminPublicSitePageListQueryDto['queue']>,
+): ManifestQueueRow[] {
+  const existingKeys = new Set(rows.map((row) => `${row.site}:${row.path}:${row.locale}`));
+  const existingRouteKeys = new Set(rows.map((row) => `${row.site}:${row.path}`));
+  if (queue === 'missing-routes') {
+    return publicSiteRouteManifest.flatMap((entry) => {
+      if (existingRouteKeys.has(`${entry.site}:${entry.path}`)) return [];
+      const ownership = publicSiteOwnership(entry.site, entry.path, false);
+      return [{
+        key: `route:${entry.site}:${entry.path}`,
+        kind: 'MISSING_ROUTE' as const,
+        site: entry.site,
+        path: entry.path,
+        locale: entry.requiredLocales.join(', ').toUpperCase(),
+        label: entry.label,
+        ownership,
+        reason: 'No managed language page exists for this canonical route.',
+        recommendedAction: 'Include this route in the checksum-approved canonical rollout, then complete each Draft before publishing.',
+      }];
+    });
+  }
+  return publicSiteRouteManifest.flatMap((entry) => entry.requiredLocales.flatMap((locale) => {
+    if (existingKeys.has(`${entry.site}:${entry.path}:${locale}`)) return [];
+    const ownership = publicSiteOwnership(entry.site, entry.path, false);
+    return [{
+      key: `translation:${entry.site}:${entry.path}:${locale}`,
+      kind: 'MISSING_TRANSLATION' as const,
+      site: entry.site,
+      path: entry.path,
+      locale: locale.toUpperCase(),
+      label: entry.label,
+      ownership,
+      reason: `No managed ${locale.toUpperCase()} Draft exists for this canonical route.`,
+      recommendedAction: 'Create the missing language Draft through the approved canonical rollout, then add and validate localized content.',
+    }];
+  }));
 }
 
 function pageResult<T>(items: T[], page: number, take: number, total: number, summary: unknown) {
@@ -1217,6 +1419,7 @@ function newsContent(input: CreatePublicSiteNewsDraftDto) {
     subtitle: input.subtitle,
     body: input.body,
     imageUrl: input.imageUrl ?? null,
+    imageAlt: input.imageAlt ?? null,
   } satisfies Prisma.InputJsonObject;
 }
 
@@ -1257,44 +1460,53 @@ export function normalizePublicSiteSection(kind: string, content: unknown) {
   const title = textValue(content.title);
   const subtitle = textValue(content.subtitle);
   const body = textValue(content.body);
+  const rawImageUrl = textValue(content.imageUrl);
   const imageUrl = safePublicHref(content.imageUrl);
+  const imageAlt = textValue(content.imageAlt);
   const actionLabel = textValue(content.actionLabel);
+  const rawActionHref = textValue(content.actionHref);
   const actionHref = safePublicHref(content.actionHref);
+  if ((rawImageUrl && !imageUrl) || (imageUrl && !imageAlt)) return null;
+  if (Boolean(actionLabel) !== Boolean(rawActionHref) || (rawActionHref && !actionHref)) return null;
+  let invalidItemHref = false;
   const items = Array.isArray(content.items)
     ? content.items.flatMap((item) => {
         if (!isObject(item)) return [];
         const itemTitle = textValue(item.title) ?? textValue(item.question);
         const itemBody = textValue(item.body) ?? textValue(item.answer);
+        const rawHref = textValue(item.href);
         const href = safePublicHref(item.href);
         const label = textValue(item.label);
+        if (rawHref && !href) invalidItemHref = true;
         return itemTitle || itemBody || (href && label)
           ? [{ title: itemTitle, body: itemBody, href, label }]
           : [];
       })
     : [];
+  if (invalidItemHref) return null;
 
   if (kind === 'HERO') {
-    return title ? { variant: 'hero' as const, eyebrow, title, subtitle, body, imageUrl, actionLabel, actionHref, items: [] } : null;
+    return title ? { variant: 'hero' as const, eyebrow, title, subtitle, body, imageUrl, imageAlt, actionLabel, actionHref, items: [] } : null;
   }
   if (kind === 'FAQ') {
     return items.some((item) => item.title && item.body)
-      ? { variant: 'faq' as const, eyebrow, title, subtitle, body, imageUrl, actionLabel, actionHref, items }
+      ? { variant: 'faq' as const, eyebrow, title, subtitle, body, imageUrl, imageAlt, actionLabel, actionHref, items }
       : null;
   }
   if (kind === 'LEGAL_DOCUMENT') {
     return title && body
-      ? { variant: 'document' as const, eyebrow, title, subtitle, body, imageUrl, actionLabel, actionHref, items }
+      ? { variant: 'document' as const, eyebrow, title, subtitle, body, imageUrl, imageAlt, actionLabel, actionHref, items }
       : null;
   }
   if (kind === 'CTA') {
     return title && actionLabel && actionHref
-      ? { variant: 'cta' as const, eyebrow, title, subtitle, body, imageUrl, actionLabel, actionHref, items }
+      ? { variant: 'cta' as const, eyebrow, title, subtitle, body, imageUrl, imageAlt, actionLabel, actionHref, items }
       : null;
   }
   if (!eyebrow && !title && !subtitle && !body && !imageUrl && !items.length && !(actionLabel && actionHref)) {
     return null;
   }
-  return { variant: 'content' as const, eyebrow, title, subtitle, body, imageUrl, actionLabel, actionHref, items };
+  return { variant: 'content' as const, eyebrow, title, subtitle, body, imageUrl, imageAlt, actionLabel, actionHref, items };
 }
 
 function publicPageResponse(
@@ -1331,6 +1543,11 @@ function textValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function jsonMetadataString(value: unknown, key: string) {
+  if (!isObject(value)) return null;
+  return textValue(value[key]);
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -1361,6 +1578,7 @@ function assertPublicSiteContentContract(kind: string, content?: Record<string, 
     'subtitle',
     'body',
     'imageUrl',
+    'imageAlt',
     'actionLabel',
     'actionHref',
     'items',

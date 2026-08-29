@@ -12,10 +12,15 @@ describe('ServicesPage source', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">{payoutRuleCount} payout rule(s)</span>');
     expect(managerSource).toContain('service-catalog-health-strip');
     expect(managerSource).toContain('service-catalog-table');
+    expect(managerSource).toContain('ServiceCatalogRefreshButton');
+    expect(managerSource).not.toContain('<RefreshCw');
     expect(managerSource).not.toContain('service-menu-card-grid');
     expect(source).toContain("'/admin/services/groups?scope=operational'");
     expect(source).toContain("'/admin/services/health'");
+    expect(source).toContain('/audit-evidence`');
+    expect(source).toContain("hasAdminOperatorCategory(operatorAccess, 'SYSTEM_AUDIT')");
     expect(source).toContain('groupsResult.ok');
+    expect(source).toContain('revalidateSeconds: 300');
   });
 
   it('scopes service catalog page section headers to direct cards', () => {

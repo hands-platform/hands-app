@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { redirect } from 'next/navigation';
 
 import { adminGet, adminGetResult } from '../../../lib/admin-api';
-import FinanceApprovalQueuePage from './page';
+import FinanceApprovalQueuePage, { metadata } from './page';
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((href: string) => {
@@ -37,6 +37,10 @@ describe('FinanceApprovalQueuePage', () => {
       status: 200,
     }));
     mockedRedirect.mockClear();
+  });
+
+  it('uses the root layout title contract without repeating the HANDS Admin suffix', () => {
+    expect(metadata).toEqual({ title: 'Finance Approval Queue' });
   });
 
   it('merges open finance work into an oldest-first priority queue without rendering every detailed table', async () => {
@@ -174,6 +178,11 @@ describe('FinanceApprovalQueuePage', () => {
 
     expect(markup).toContain('Finance Approval Queue');
     expect(markup).toContain('finance-list-command-board admin-mb-16 finance-approval-command-board');
+    expect(markup).toContain('class="admin-page-header-actions" data-empty="true"');
+    expect(markup).toContain('class="finance-approval-workspace-navigation"');
+    expect(markup.indexOf('admin-page-header admin-page-header-toolbar')).toBeLessThan(
+      markup.indexOf('finance-approval-workspace-navigation'),
+    );
     expect(markup).toContain('Other approvals');
     expect(markup).toContain('1 policies · 1 bank changes · 1 deposits');
     expect(markup).toContain('Withdrawal review');
@@ -182,6 +191,10 @@ describe('FinanceApprovalQueuePage', () => {
     expect(markup).toContain('Post-approval bank matching');
     expect(markup).toContain('Ready decisions');
     expect(markup).toContain('Repair exceptions');
+    expect(markup).toContain('Risk / Work');
+    expect(markup).toContain('Amount / Age');
+    expect(markup).toContain('Control / Owner');
+    expect(markup).not.toContain('<th scope="col">Work type</th>');
     expect(markup).toContain('Rows shown');
     expect(markup).toContain('7 total open');
     expect(markup).toContain('Primary settlement account');
@@ -374,7 +387,7 @@ describe('FinanceApprovalQueuePage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Wallet adjustments');
-    expect(markup).toContain('There is no work in this approval queue');
+    expect(markup).toContain('The current approval scope is empty.');
     expect(markup).not.toContain('name="walletReview"');
     expect(markup).not.toContain('Wallet adjustment approval queue');
     expect(mockedAdminGet).toHaveBeenCalledWith(
@@ -388,11 +401,78 @@ describe('FinanceApprovalQueuePage', () => {
       searchParams: Promise.resolve({ view: 'priority' }),
     }));
 
-    expect(markup.match(/>Clear</g)).toHaveLength(5);
+    expect(markup.match(/>Clear</g)).toHaveLength(3);
+    expect(markup.match(/>No ready decisions</g)).toHaveLength(2);
     expect(markup).not.toContain('Needs review');
     expect(markup).not.toContain('Bank action');
     expect(markup).toContain('Post-approval bank matching');
     expect(markup).toContain('0 follow-up');
+  });
+
+  it('uses actual Ready counts as the Refund and Payout card primary values', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => href.startsWith('/admin/finance-approval-queue')
+      ? {
+          generatedAt: '2026-08-25T02:00:00.000Z',
+          limit: 10,
+          summary: {
+            refundPendingCount: 112,
+            refundReadyCount: 0,
+            refundBlockedCount: 3,
+            refundStateMismatchCount: 109,
+            payoutBatchPendingCount: 4,
+            payoutBatchReadyCount: 0,
+            payoutBatchBlockedCount: 4,
+          },
+        } as never
+      : fallback,
+    );
+
+    const markup = renderToStaticMarkup(await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({ view: 'priority' }),
+    }));
+    const refundCard = markup.slice(markup.indexOf('Refund approvals'), markup.indexOf('Payout approvals'));
+    const payoutCard = markup.slice(markup.indexOf('Payout approvals'), markup.indexOf('Withdrawal review'));
+
+    expect(markup.match(/>No ready decisions</g)).toHaveLength(2);
+    expect(refundCard).toContain('<span class="sr-only">Refund approvals: </span>0');
+    expect(refundCard).toContain('0 ready now · 3 blocked · 109 repairs');
+    expect(refundCard).not.toContain('>112<');
+    expect(payoutCard).toContain('<span class="sr-only">Payout approvals: </span>0');
+    expect(payoutCard).toContain('0 ready now · 4 blocked');
+  });
+
+  it('keeps Ready review controls visible when Refund and Payout Ready counts are zero', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => href.startsWith('/admin/finance-approval-queue')
+      ? {
+          generatedAt: '2026-08-25T02:00:00.000Z',
+          limit: 10,
+          summary: {
+            refundPendingCount: 112,
+            refundReadyCount: 0,
+            refundBlockedCount: 3,
+            refundStateMismatchCount: 109,
+            payoutBatchPendingCount: 4,
+            payoutBatchReadyCount: 0,
+            payoutBatchBlockedCount: 4,
+          },
+        } as never
+      : fallback,
+    );
+
+    const refundsMarkup = renderToStaticMarkup(await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({ review: 'ready', view: 'refunds' }),
+    }));
+    const payoutsMarkup = renderToStaticMarkup(await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({ review: 'ready', view: 'payouts' }),
+    }));
+
+    expect(refundsMarkup).toContain('aria-label="Refund review state"');
+    expect(refundsMarkup).toContain('No refund decisions are ready for this operator.');
+    expect(refundsMarkup).toContain('Refund repairs 109');
+    expect(refundsMarkup).toContain('Refunds blocked 3');
+    expect(payoutsMarkup).toContain('aria-label="Payout review state"');
+    expect(payoutsMarkup).toContain('No payout decisions are ready for this operator.');
+    expect(payoutsMarkup).toContain('Payouts blocked 4');
   });
 
   it('puts ready payout and withdrawal paid closeouts in the oldest-first approval flow', async () => {
@@ -425,7 +505,16 @@ describe('FinanceApprovalQueuePage', () => {
         amount: 400000,
         currency: 'VND',
         status: 'BANK_TRANSFER_PENDING',
+        transferRef: 'VCB-WITHDRAWAL-1',
         hasBankAccount: true,
+        bankName: 'Vietcombank',
+        bankAccountLast4: '4321',
+        requestedByAdminId: 'withdrawal-maker-1',
+        requestedBy: { id: 'withdrawal-maker-1', fullName: 'Withdrawal Maker' },
+        requestedAt: '2026-07-13T06:45:00.000Z',
+        walletBefore: 1000000,
+        walletAfter: 600000,
+        approvalEvidenceMissing: [],
         reviewState: 'READY',
         createdAt: '2026-07-13T07:00:00.000Z',
         updatedAt: '2026-07-13T08:00:00.000Z',
@@ -439,6 +528,15 @@ describe('FinanceApprovalQueuePage', () => {
         currency: 'VND',
         status: 'PROCESSING',
         transferRef: 'VCB-PAYOUT-1',
+        bankName: 'Vietcombank',
+        bankAccountLast4: '9876',
+        earningCount: 2,
+        withholdingCount: 1,
+        withholdingApplied: true,
+        requestedAt: '2026-07-13T07:20:00.000Z',
+        walletBefore: 1500000,
+        walletAfter: 600000,
+        approvalEvidenceMissing: [],
         reviewState: 'READY',
         createdAt: '2026-07-13T07:30:00.000Z',
         paidCloseoutRequestedByAdminId: 'finance-maker-1',
@@ -464,6 +562,13 @@ describe('FinanceApprovalQueuePage', () => {
         view: 'payouts',
       }),
     }));
+    const withdrawalConfirmationMarkup = renderToStaticMarkup(await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({
+        confirm: 'approve-withdrawal-paid',
+        requestId: 'withdrawal-ready-1',
+        view: 'withdrawals',
+      }),
+    }));
 
     expect(priorityMarkup).toContain('Partner Withdrawal');
     expect(priorityMarkup).toContain('Partner Payout');
@@ -472,7 +577,124 @@ describe('FinanceApprovalQueuePage', () => {
     expect(priorityMarkup).toContain('confirm=approve-payout-paid');
     expect(payoutConfirmationMarkup).toContain('Approve payout batch paid closeout?');
     expect(payoutConfirmationMarkup).toContain('900.000 VND');
+    expect(payoutConfirmationMarkup).toContain('Vietcombank · •••• 9876');
+    expect(payoutConfirmationMarkup).toContain('2 earnings');
+    expect(payoutConfirmationMarkup).toContain('1 linked deduction record');
+    expect(payoutConfirmationMarkup).toContain('1.500.000 VND → 600.000 VND');
+    expect(withdrawalConfirmationMarkup).toContain('Withdrawal Maker');
+    expect(withdrawalConfirmationMarkup).toContain('Vietcombank · •••• 4321');
+    expect(withdrawalConfirmationMarkup).toContain('1.000.000 VND → 600.000 VND');
+    expect(`${payoutConfirmationMarkup}${withdrawalConfirmationMarkup}`).not.toContain('123456789');
     expect(payoutConfirmationMarkup).not.toContain('name="approvalAdminId"');
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => href.startsWith('/admin/finance-approval-queue')
+      ? {
+          ...queue,
+          payoutBatchRequests: [{
+            ...queue.payoutBatchRequests[0],
+            approvalEvidenceMissing: ['Account last4'],
+            bankAccountLast4: null,
+          }],
+        } as never
+      : fallback,
+    );
+    const missingEvidenceMarkup = renderToStaticMarkup(await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({
+        confirm: 'approve-payout-paid',
+        requestId: 'payout-ready-1',
+        view: 'payouts',
+      }),
+    }));
+    expect(missingEvidenceMarkup).toContain('Finance request is no longer available');
+    expect(missingEvidenceMarkup).not.toContain('Approve payout batch paid closeout?');
+  });
+
+  it('keeps a bank-linked blocked withdrawal out of Ready decisions', async () => {
+    const queue = {
+      generatedAt: '2026-07-13T09:00:00.000Z',
+      limit: 10,
+      summary: {
+        withdrawalOpenCount: 2,
+        withdrawalRequestedCount: 0,
+        withdrawalReviewRequiredCount: 0,
+        withdrawalBankTransferPendingCount: 2,
+        withdrawalPaidCloseoutPendingCount: 1,
+        withdrawalOpenAmount: 800000,
+        withdrawalCurrency: 'VND',
+        payoutBatchPendingCount: 1,
+        payoutBatchBlockedCount: 1,
+      },
+      withdrawalRequests: [{
+        id: 'withdrawal-blocked-linked-bank',
+        providerProfileId: 'provider-blocked-very-long-token-1234567890',
+        partnerName: 'Blocked Bank Linked Partner',
+        amount: 400000,
+        currency: 'VND',
+        status: 'BANK_TRANSFER_PENDING',
+        hasBankAccount: true,
+        reviewState: 'BLOCKED',
+        createdAt: '2026-07-13T06:00:00.000Z',
+        updatedAt: '2026-07-13T08:00:00.000Z',
+        preflight: { canMarkPaid: false },
+      }, {
+        id: 'withdrawal-ready-linked-bank',
+        providerProfileId: 'provider-ready',
+        partnerName: 'Ready Bank Linked Partner',
+        amount: 400000,
+        currency: 'VND',
+        status: 'BANK_TRANSFER_PENDING',
+        hasBankAccount: true,
+        reviewState: 'READY',
+        createdAt: '2026-07-13T07:00:00.000Z',
+        updatedAt: '2026-07-13T08:00:00.000Z',
+        preflight: { canMarkPaid: true },
+      }],
+      payoutBatchRequests: [{
+        id: 'payout-blocked-exact-link',
+        providerProfileId: 'provider-payout-blocked',
+        partnerName: 'Blocked Payout Exact Partner',
+        totalNetAmount: 510000,
+        currency: 'VND',
+        status: 'PROCESSING',
+        transferRef: 'VCB-BLOCKED-PAYOUT',
+        reviewState: 'BLOCKED',
+        createdAt: '2026-07-13T05:00:00.000Z',
+        preflight: { canMarkPaid: false },
+      }],
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href.startsWith('/admin/finance-approval-queue') ? queue as never : fallback,
+    );
+
+    const priorityMarkup = renderToStaticMarkup(await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({}),
+    }));
+    const withdrawalMarkup = renderToStaticMarkup(await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({ view: 'withdrawals' }),
+    }));
+    const readyMarkup = priorityMarkup.slice(
+      priorityMarkup.indexOf('Ready decisions'),
+      priorityMarkup.indexOf('Repair exceptions'),
+    );
+    const repairMarkup = priorityMarkup.slice(priorityMarkup.indexOf('Repair exceptions'));
+
+    expect(readyMarkup).toContain('Ready Bank Linked Partner');
+    expect(readyMarkup).not.toContain('Blocked Bank Linked Partner');
+    expect(repairMarkup).toContain('Blocked Bank Linked Partner');
+    expect(repairMarkup).toContain('Blocked Payout Exact Partner');
+    expect(repairMarkup).toContain('aria-label="provider-blocked-very-long-token-1234567890"');
+    expect(repairMarkup).toContain('title="provider-blocked-very-long-token-1234567890"');
+    expect(repairMarkup).not.toContain('Ready Bank Linked Partner');
+    expect(withdrawalMarkup).toContain('Blocked Bank Linked Partner');
+    expect(withdrawalMarkup).toContain('Approval blocked');
+    expect(withdrawalMarkup).toContain('Ready Bank Linked Partner');
+    expect(withdrawalMarkup).toContain('Approve paid closeout');
+    expect(priorityMarkup).toContain(
+      'withdrawalId=withdrawal-blocked-linked-bank&amp;withdrawalStatus=BANK_TRANSFER_PENDING#withdrawal-withdrawal-blocked-linked-bank',
+    );
+    expect(priorityMarkup).toContain(
+      'payoutBatchId=payout-blocked-exact-link&amp;review=in-progress&amp;workspace=operations#payout-batch-payout-blocked-exact-link',
+    );
   });
 
   it('renders refund state mismatches as evidence-only rows without decision actions', async () => {
@@ -512,7 +734,7 @@ describe('FinanceApprovalQueuePage', () => {
       : fallback);
 
     const markup = renderToStaticMarkup(await FinanceApprovalQueuePage({
-      searchParams: Promise.resolve({ view: 'refunds' }),
+      searchParams: Promise.resolve({ review: 'state-mismatch', view: 'refunds' }),
     }));
 
     expect(markup).toContain('State mismatch');

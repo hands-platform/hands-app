@@ -14,12 +14,14 @@ import {
   isAdminOperatorPermissionCategory,
 } from '../../lib/admin-operator-permissions';
 import type { AdminOperatorActionState } from './action-state';
+import { formatOperatorCount } from './operator-copy';
 
 export async function inviteAdminOperator(
   _previousState: AdminOperatorActionState,
   formData: FormData,
 ): Promise<AdminOperatorActionState> {
   const email = readString(formData, 'email').toLowerCase();
+  const targetUserId = readString(formData, 'targetUserId');
   const reason = normalizeReason(readString(formData, 'reason'));
   const fieldErrors = reasonAndEmailErrors(email, reason);
   if (Object.keys(fieldErrors).length) return validationFailure(fieldErrors);
@@ -36,7 +38,7 @@ export async function inviteAdminOperator(
       masterAdminEnabled: formData.get('masterAdminEnabled') === 'true',
       permissionCategories: permissionValues(formData),
       reason,
-      targetUserId: null,
+      targetUserId: targetUserId || null,
     });
     revalidateOperatorAccess();
     return {
@@ -138,7 +140,7 @@ export async function resetAdminMfa(
       status: 'success',
       receipt: {
         auditId: result.auditLogId,
-        message: `MFA was reset and ${result.revokedSessionCount} session(s) were revoked.`,
+        message: `MFA was reset and ${formatOperatorCount(result.revokedSessionCount, 'session')} ${result.revokedSessionCount === 1 ? 'was' : 'were'} revoked.`,
       },
     };
   } catch (error) {
@@ -283,7 +285,7 @@ export async function setAdminOperatorStatus(
       receipt: {
         auditId: result.auditLogId,
         message: mode === 'suspend'
-          ? `Admin Web access was suspended and ${result.revokedSessionCount} active session(s) were revoked.`
+          ? `Admin Web access was suspended and ${formatOperatorCount(result.revokedSessionCount, 'active session')} ${result.revokedSessionCount === 1 ? 'was' : 'were'} revoked.`
           : 'Admin Web access was reactivated. Existing permissions were preserved.',
       },
     };
@@ -383,7 +385,9 @@ function actionFailure(error: unknown): AdminOperatorActionState {
   const code = typeof payload?.code === 'string' ? payload.code : '';
   const knownMessage: Record<string, string> = {
     ADMIN_OPERATOR_CREDENTIAL_EXISTS: 'This email already has operator credentials.',
-    ADMIN_OPERATOR_EXISTING_USER_SELECTION_REQUIRED: 'An existing user has this email. Enter its exact user ID.',
+    ADMIN_OPERATOR_EXISTING_USER_SELECTION_REQUIRED: 'An existing user has this email. Use “Grant existing user Admin access” and verify the exact match.',
+    ADMIN_OPERATOR_FIXTURE_TARGET_FORBIDDEN: 'Fixture users cannot receive production Admin access.',
+    ADMIN_OPERATOR_IDENTITY_AMBIGUOUS: 'The exact email no longer resolves to one verified User. Search again.',
     ADMIN_OPERATOR_INVITATION_PENDING: 'A pending invitation already exists for this email.',
     ADMIN_OPERATOR_PERMISSION_MIGRATION_REQUIRED: 'This operator needs a permission migration before access can be edited.',
     ADMIN_OPERATOR_PERMISSION_ALREADY_INITIALIZED: 'The permission policy was initialized elsewhere. Reload and review it.',

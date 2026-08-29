@@ -111,7 +111,7 @@ export default async function PartnerCustomerEvaluationsPage({
     <AdminPageTemplate
       actions={<StatusBadge tone="info">Internal · Not customer-visible</StatusBadge>}
       contentClassName="reviews-page partner-notes-page"
-      description="Internal notes Partners submit about customers after completed bookings. These notes are not customer-visible."
+      description="Internal notes Partners submit when they mark a service complete. These notes are not customer-visible."
       title="Partner Notes About Customers"
     >
       {notice ? (
@@ -183,7 +183,7 @@ export default async function PartnerCustomerEvaluationsPage({
             confirmation.reasonOptions
               ? [
                   {
-                    label: 'Review-state reason',
+                    label: 'Reason for this change',
                     name: 'reason',
                     options: confirmation.reasonOptions,
                     required: true,

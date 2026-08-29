@@ -14,6 +14,7 @@ import {
   type PaymentConfirmationAction,
 } from './payment-action-confirmation';
 import type { PaymentOperationsTableRow } from './payment-operations-table-section';
+import { paymentProviderReferenceCopy } from './payment-method-copy';
 
 export function buildPaymentOperationsTableRows(
   payments: readonly AdminPayment[],
@@ -62,7 +63,7 @@ export function buildPaymentOperationsTableRows(
       paymentHref: paymentDetailHref(payment.id, returnTo),
       paymentIdLabel: shortId(payment.id),
       primaryAction,
-      providerRef: payment.providerRef ?? 'No gateway reference',
+      providerRef: paymentProviderReferenceCopy(payment.method, payment.providerRef),
       status: payment.status,
     };
   });

@@ -82,6 +82,8 @@ describe('PayoutBatchListSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">Payout record</span>');
     expect(source).not.toContain('<span className="pill pill-warn">Reconciliation</span>');
     expect(source).not.toContain('<a className="pill" href="/earnings">');
+    expect(source).toContain('amountLabel: formatMoney(selectedRow.totalAmount, selectedRow.currency)');
+    expect(source).not.toContain("toLocaleString('en-US')");
   });
 
   it('reuses the shared Admin table pagination footer atom', () => {

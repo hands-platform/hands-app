@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../../lib/admin-api';
+import type { AdminMonthlyTaxClosingSummary } from '../../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { emptyMonthlyTaxClosingSummary } from '../tax-settlement-page-model';
 import MonthlyTaxClosingPage from './page';
@@ -15,6 +16,7 @@ vi.mock('../../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 
@@ -23,12 +25,22 @@ vi.mock('../../../lib/admin-operator-access', () => ({
 }));
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 
 describe('MonthlyTaxClosingPage', () => {
   beforeEach(() => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({ id: 'operator-current', roles: ['ADMIN'] } as never);
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href.startsWith('/admin/monthly-tax-closings/summary?')
+        ? { ...(fallback as AdminMonthlyTaxClosingSummary), hasActivity: true }
+        : fallback,
+    );
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: await mockedAdminGet(href, fallback),
+      ok: true,
+      status: 200,
+    }));
   });
 
   it('uses shared badge atoms for stored closing status pills', () => {
@@ -151,6 +163,100 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).not.toContain('Current DRAFT');
   });
 
+  it.each([
+    [
+      '2026-09',
+      'FUTURE_PERIOD',
+      'Future period — monitoring not started.',
+    ],
+    [
+      '2025-01',
+      'NOT_STARTED',
+      'No activity — no close record.',
+    ],
+  ])('renders %s as an ineligible neutral period without closeout actions', async (period, periodState, copy) => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === `/admin/monthly-tax-closings/summary?period=${period}`) {
+        return {
+          ...(fallback as AdminMonthlyTaxClosingSummary),
+          hasActivity: false,
+          id: null,
+          periodState,
+          preflight: {
+            blockers: [],
+            nextStatus: periodState === 'FUTURE_PERIOD' ? null : 'REVIEWED',
+            ready: false,
+          },
+        } as AdminMonthlyTaxClosingSummary;
+      }
+      return fallback;
+    });
+
+    const markup = renderToStaticMarkup(await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period }),
+    }));
+
+    expect(markup).toContain(copy);
+    expect(markup).toContain('No close transition, financial result export, or verified-clear control');
+    expect(markup).not.toContain('Export summary CSV');
+    expect(markup).not.toContain('Export rows CSV');
+    expect(markup).not.toContain('Export accounting journal CSV');
+    expect(markup).not.toContain('Close blockers');
+    expect(markup).not.toContain('Review flags');
+    expect(markup).not.toContain('Tax payable');
+    expect(markup).not.toContain('Review totals');
+    expect(markup).not.toContain('Review transition');
+    expect(markup).not.toContain('Ready');
+    expect(markup).not.toContain('Clear');
+    expect(markup).not.toContain('name="confirmationStatus"');
+    expect(markup).not.toContain('name="status"');
+  });
+
+  it.each([401, 403, 500, null])('fails closed when the monthly summary returns %s', async (status) => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) =>
+      href.includes('/summary?')
+        ? { data: fallback, ok: false, status }
+        : { data: fallback, ok: true, status: 200 },
+    );
+
+    const markup = renderToStaticMarkup(await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    }));
+
+    expect(markup).toContain('Monthly closing data unavailable');
+    expect(markup).toContain(status ? `API ${status}` : 'API unavailable');
+    expect(markup).toContain('Retry monthly closing');
+    expect(markup).not.toContain('0 VND');
+    expect(markup).not.toContain('Ready');
+    expect(markup).not.toContain('Clear');
+    expect(markup).not.toContain('Review totals');
+    expect(markup).not.toContain('Export summary CSV');
+  });
+
+  it('keeps current totals but marks only closing history unavailable on a partial failure', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href.includes('/summary?')) {
+        return {
+          data: { ...(fallback as AdminMonthlyTaxClosingSummary), hasActivity: true },
+          ok: true,
+          status: 200,
+        };
+      }
+      return { data: fallback, ok: false, status: 503 };
+    });
+
+    const markup = renderToStaticMarkup(await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    }));
+
+    expect(markup).toContain('Monthly reconciliation');
+    expect(markup).toContain('Closing history unavailable');
+    expect(markup).toContain('API 503');
+    expect(markup).toContain('Export summary CSV');
+    expect(markup).not.toContain('Export rows CSV');
+    expect(markup).not.toContain('No stored monthly tax closing record exists yet.');
+  });
+
   it('shows required remittance evidence fields only for the paid transition', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
@@ -267,7 +373,7 @@ describe('MonthlyTaxClosingPage', () => {
           ...emptyMonthlyTaxClosingSummary('2026-06'),
           hasActivity: true,
           id: 'closing-2026-06',
-          journalReconciliationIssueCount: 1,
+          journalReconciliationIssueCount: 12,
           monthlyClosingHistoryCount: 26,
           periodState: 'REVIEWED',
           status: 'REVIEWED',
@@ -310,6 +416,8 @@ describe('MonthlyTaxClosingPage', () => {
     expect(requests).toContain('/admin/monthly-tax-closings/summary?period=2026-06');
     expect(requests).toContain('/admin/monthly-tax-closings?take=25&skip=25');
     expect(markup).toContain('Journal reconciliation');
+    expect(markup).toContain('1 blocker control · 12 affected records');
+    expect(markup).toContain('Blocks before REVIEWED.');
     expect(markup).toContain('/finance-tax/general-ledger?q=2026-06&amp;range=all&amp;review=unbalanced');
     expect(markup).toContain('button-primary" disabled=""');
     expect(markup).toContain('Closing history');
@@ -317,7 +425,7 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-04&amp;take=25');
   });
 
-  it('disables closeout advancement while formula or payment fee evidence gates remain open', async () => {
+  it('disables declaration while payment fee or unexplained platform VAT evidence remains open', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
         return {
@@ -327,6 +435,7 @@ describe('MonthlyTaxClosingPage', () => {
           periodState: 'REVIEWED',
           status: 'REVIEWED',
           paymentFeeReviewFlagCount: 2,
+          platformVatReviewFlagCount: 3,
         };
       }
       return fallback;
@@ -344,6 +453,15 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).toContain('Payment fee evidence');
     expect(markup).toContain(
       '/finance-tax/booking-settlement-audit?range=all&amp;review=payment-fee-evidence&amp;period=2026-06',
+    );
+    expect(markup).toContain(
+      '3 settlement(s) have unexplained or unavailable platform VAT evidence.',
+    );
+    expect(markup).toContain('Platform VAT evidence');
+    expect(markup).toContain('2 blocker controls · 5 affected records');
+    expect(markup).toContain('Blocks before DECLARED.');
+    expect(markup).toContain(
+      '/finance-tax/booking-settlement-audit?range=all&amp;review=platform-vat-evidence&amp;period=2026-06',
     );
   });
 

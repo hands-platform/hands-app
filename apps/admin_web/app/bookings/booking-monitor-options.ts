@@ -7,6 +7,8 @@ export type BookingMonitorViewOption = {
   readonly view: BookingPageView;
 };
 
+export const COMPLETED_BOOKING_DEFAULT_VIEW = 'payment' satisfies BookingPageView;
+
 export const bookingEvidenceFilterOptions: readonly {
   readonly label: string;
   readonly value: BookingEvidenceFilter;

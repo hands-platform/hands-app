@@ -10,6 +10,9 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).toContain('reverseHrefForRequest');
     expect(sectionSource).not.toContain('Separate Finance approver for');
     expect(sectionSource).not.toContain('Bank reversal evidence URL for');
+    expect(sectionSource).toContain('Review request for ${partnerLabel(request)} (${shortRecordId(request.id)})');
+    expect(sectionSource).toContain('Match bank evidence for ${partnerLabel(request)} (${shortRecordId(request.id)})');
+    expect(sectionSource).toContain('Open withdrawal journal for ${partnerLabel(request)} (${shortRecordId(request.id)})');
   });
 
   it('renders withdrawal requests with partner, bank, status, and finance actions', () => {
@@ -161,6 +164,57 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(rendered).not.toContain('Bank pending');
     expect(rendered).not.toContain('Mark paid');
     expect(rendered).toContain('Reject');
+  });
+
+  it('never offers reject after a withdrawal enters bank transfer pending', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 500000,
+          bankAccount: {
+            accountHolderName: 'Smoke Partner',
+            accountNumberMasked: '****1234',
+            bankName: 'VCB',
+            id: 'bank-pending',
+            isPrimary: true,
+            status: 'APPROVED',
+          },
+          bankAccountId: 'bank-pending',
+          createdAt: '2026-07-26T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-request-bank-pending',
+          preflight: {
+            availableBalance: 500000,
+            bankAccountApproved: true,
+            blockers: [],
+            canApprove: false,
+            canMarkBankTransferPending: false,
+            canMarkPaid: false,
+            canReject: true,
+            independentApproverAvailable: true,
+            lockJournalPosted: true,
+            paidJournalPosted: false,
+            paidLedgerRecorded: false,
+            ready: false,
+            walletBalance: 500000,
+            warnings: [],
+          },
+          providerProfile: {
+            displayName: 'Smoke Partner',
+            user: { phone: '+84900003333' },
+          },
+          providerProfileId: 'provider-bank-pending',
+          status: 'BANK_TRANSFER_PENDING',
+        },
+      ] satisfies AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Paid closeout approval pending');
+    expect(rendered).not.toContain('Reject note');
+    expect(rendered).not.toContain('Reject');
   });
 
   it('renders withdrawal status-change audit evidence for released locked amounts', () => {
@@ -337,6 +391,12 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
       approvalAdmin: { id: 'finance-approver-2', fullName: 'Finance Approver' },
       providerProfileId: 'provider-paid',
       reconciliationState: 'UNMATCHED',
+      bankReconciliationCandidate: {
+        id: 'bank-transaction-paid-500',
+        occurredAt: '2026-07-15T10:00:00.000Z',
+        transferRef: 'VCB-PAID-500',
+      },
+      bankReconciliationCandidateCount: 1,
       status: 'PAID',
       transferRef: 'VCB-PAID-500',
     } satisfies AdminProviderWalletWithdrawalRequest;
@@ -389,12 +449,101 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
       '/payouts?range=30d&withdrawalReconciliation=unmatched&withdrawalStatus=PAID#partner-wallet-withdrawal-requests',
     );
     expect(hrefs).toContain(
-      '/finance-tax/bank-reconciliation?range=30d&review=unmatched&q=VCB-PAID-500',
+      '/finance-tax/bank-reconciliation/bank-transaction-paid-500',
     );
     expect(hrefs).toContain(
       '/finance-tax/general-ledger?q=withdrawal-paid-unmatched',
     );
     expect(hrefs).toContain('/payouts?withdrawalPage=2');
+  });
+
+  it('blocks broad bank matching when a paid withdrawal has no exact transfer reference', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 500000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-05-01T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-paid-without-reference',
+          paidAt: '2026-05-01T10:00:00.000Z',
+          providerProfileId: 'provider-paid',
+          reconciliationState: 'UNMATCHED',
+          status: 'PAID',
+          transferRef: null,
+        },
+      ] satisfies AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Transfer reference missing');
+    expect(rendered).not.toContain('Match bank evidence');
+    expect(hrefsIn(section).some((href) => href.startsWith('/finance-tax/bank-reconciliation?'))).toBe(false);
+  });
+
+  it('blocks bank matching when a transfer reference has no unique exact bank transaction', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 120000,
+          bankAccount: null,
+          bankAccountId: null,
+          bankReconciliationCandidate: null,
+          bankReconciliationCandidateCount: 0,
+          createdAt: '2026-07-03T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-paid-no-candidate',
+          paidAt: '2026-07-03T10:00:00.000Z',
+          providerProfileId: 'provider-paid',
+          reconciliationState: 'UNMATCHED',
+          status: 'PAID',
+          transferRef: 'BANK-OUT-NO-CANDIDATE',
+        },
+      ] satisfies AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Exact bank transaction not identified');
+    expect(rendered).toContain('Open statement imports');
+    expect(rendered).not.toContain('Match bank evidence');
+    expect(hrefsIn(section)).toContain(
+      '/finance-tax/bank-reconciliation?workspace=imports&importRange=all',
+    );
+  });
+
+  it('routes ambiguous exact-reference candidates to an all-date outflow review', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 120000,
+          bankAccount: null,
+          bankAccountId: null,
+          bankReconciliationCandidate: null,
+          bankReconciliationCandidateCount: 2,
+          createdAt: '2026-07-03T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-paid-ambiguous',
+          paidAt: '2026-07-03T10:00:00.000Z',
+          providerProfileId: 'provider-paid',
+          reconciliationState: 'UNMATCHED',
+          status: 'PAID',
+          transferRef: 'BANK OUT / 120',
+        },
+      ] satisfies AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+    expect(rendered).toContain('Multiple bank transactions share this reference');
+    expect(rendered).toContain('Review candidate transactions');
+    expect(hrefsIn(section)).toContain(
+      '/finance-tax/bank-reconciliation?q=BANK+OUT+%2F+120&range=all&review=unmatched&type=OUTFLOW',
+    );
   });
 
   it('announces an explicit saved view and exposes a clear action without raw status copy', () => {

@@ -7,6 +7,7 @@ import {
   AdminTaxPolicyCapabilities,
   AdminTaxPolicyApprovalRequest,
   AdminTaxPolicyApprovalRequestPage,
+  AdminTaxPolicyActivationEvidence,
   AdminTaxPolicyAuditLogPage,
   AdminTaxPolicyIntegritySummary,
   AdminTaxPolicyIntegrityRecordPage,
@@ -58,11 +59,25 @@ import { TaxPolicyHashFocus } from './tax-policy-hash-focus';
 
 const EMPTY_POLICY_PAGE: AdminTaxPolicyVersionPage = { items: [], total: 0, skip: 0, take: 25 };
 const EMPTY_APPROVAL_PAGE: AdminTaxPolicyApprovalRequestPage = { items: [], total: 0, skip: 0, take: 25 };
+const EMPTY_ACTIVATION_EVIDENCE: AdminTaxPolicyActivationEvidence = {
+  activationAuditAt: null,
+  activationAuditId: null,
+  activatedAt: null,
+  approvalRequestId: null,
+  approvedAt: null,
+  checker: null,
+  maker: null,
+  payloadHash: null,
+  policyVersionId: '',
+  revision: 0,
+};
 const EMPTY_AUDIT_PAGE: AdminTaxPolicyAuditLogPage = { items: [], total: 0, skip: 0, take: 25 };
 const EMPTY_INTEGRITY_SUMMARY: AdminTaxPolicyIntegritySummary = {
   generatedAt: '',
   range: '30d',
   rangeStart: '',
+  source: 'production',
+  sourceTotals: { legacy: 0, production: 0, test: 0, unknown: 0 },
   total: 0,
   recordIntegrity: {
     healthy: 0,
@@ -100,9 +115,10 @@ const EMPTY_WORKSPACE_SUMMARY: AdminTaxPolicyWorkspaceSummary = {
   drafts: { needsAuthor: 0, awaitingChecker: 0, approved: 0, scheduled: 0 },
   history: { production: 0, testOrLegacy: 0 },
   nextScheduled: null,
+  nonProductionScheduledCount: 0,
 };
 const EMPTY_INTEGRITY_RECORDS: AdminTaxPolicyIntegrityRecordPage = {
-  generatedAt: '', issue: '', items: [], skip: 0, sort: 'oldest', source: 'all', take: 25, total: 0,
+  generatedAt: '', issue: '', items: [], skip: 0, sort: 'oldest', source: 'production', take: 25, total: 0,
 };
 const scopeOptions = [
   { label: 'Fallback — all services', value: 'DEFAULT' },
@@ -123,6 +139,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
   const params = (await searchParams) ?? {};
   const plan = buildTaxPolicyLoadPlan(params);
   const requestedPolicyId = readParam(params, 'policyId') ?? readParam(params, 'clonePolicyId');
+  const draftSource = readParam(params, 'source') === 'test-legacy' ? 'test-legacy' : 'production';
 
   const [
     currentResult,
@@ -331,6 +348,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           simulationUnavailable={!currentSimulationResult.ok || !proposedSimulationResult.ok || !servicesResult.ok}
           workspaceSummary={workspaceSummaryResult.data}
           workspaceSummaryAvailable={workspaceSummaryResult.ok}
+          source={draftSource}
         />
       ) : null}
 
@@ -430,6 +448,15 @@ function CurrentPolicyView({
         title="Current policy"
       >
         <PolicyMetadata policy={currentPolicy} />
+        <ActivationEvidence
+          available
+          evidence={currentPolicy.activationEvidence ?? {
+            ...EMPTY_ACTIVATION_EVIDENCE,
+            policyVersionId: currentPolicy.id,
+            revision: currentPolicy.revision ?? 0,
+          }}
+          policy={currentPolicy}
+        />
         <PolicyRulesTable policy={currentPolicy} readOnly />
       </AdminSection>
       <AdminSection
@@ -465,6 +492,7 @@ function DraftsView({
   simulationUnavailable,
   workspaceSummary,
   workspaceSummaryAvailable,
+  source,
 }: {
   approvalRequests: AdminTaxPolicyApprovalRequest[];
   approvalEvidenceAvailable: boolean;
@@ -485,26 +513,48 @@ function DraftsView({
   simulationUnavailable: boolean;
   workspaceSummary: AdminTaxPolicyWorkspaceSummary;
   workspaceSummaryAvailable: boolean;
+  source: 'production' | 'test-legacy';
 }) {
   const cloneSource = cloneRequested ? selectedPolicy : null;
   return (
     <>
       <AdminSection
         className="admin-mb-16"
-        description="Author work, checker review, and scheduled activation are counted from the full server result."
+        description={source === 'production'
+          ? 'Production author work, checker review, and scheduled activation are counted from OPERATOR policies only.'
+          : 'Test and legacy work is isolated from the production operating queue.'}
         title="Policy work queue"
       >
+        <div className="tax-policy-source-tabs" role="group" aria-label="Draft evidence source">
+          <AdminFormControlLink className={source === 'production' ? 'button-primary' : 'button-outline'} href="/tax-policy?view=drafts&source=production">
+            Production work
+          </AdminFormControlLink>
+          <AdminFormControlLink className={source === 'test-legacy' ? 'button-primary' : 'button-outline'} href="/tax-policy?view=drafts&source=test-legacy">
+            Test / legacy work
+          </AdminFormControlLink>
+        </div>
+        {workspaceSummaryAvailable && workspaceSummary.nonProductionScheduledCount > 0 ? (
+          <AdminNoticeCard className="admin-mt-12 admin-mb-12" role="alert" tone="danger">
+            <strong>Non-production scheduled policies block release</strong>
+            <p className="muted">{workspaceSummary.nonProductionScheduledCount} scheduled test or legacy policies require review. They are excluded from Production counts and Next scheduled.</p>
+            <AdminFormControlLink className="button-outline" href="/tax-policy?view=drafts&source=test-legacy">Review test / legacy work</AdminFormControlLink>
+          </AdminNoticeCard>
+        ) : null}
         {workspaceSummaryAvailable ? (
           <div className="tax-policy-command-grid tax-policy-queue-counts">
-            <CommandFact label="Needs author" value={String(workspaceSummary.drafts.needsAuthor)} />
-            <CommandFact label="Awaiting checker" value={String(workspaceSummary.drafts.awaitingChecker)} />
-            <CommandFact label="Approved" value={String(workspaceSummary.drafts.approved)} />
-            <CommandFact label="Scheduled" value={String(workspaceSummary.drafts.scheduled)} />
+            {source === 'production' ? (
+              <>
+                <CommandFact label="Needs author" value={String(workspaceSummary.drafts.needsAuthor)} />
+                <CommandFact label="Awaiting checker" value={String(workspaceSummary.drafts.awaitingChecker)} />
+                <CommandFact label="Approved" value={String(workspaceSummary.drafts.approved)} />
+                <CommandFact label="Scheduled" value={String(workspaceSummary.drafts.scheduled)} />
+              </>
+            ) : <CommandFact label="Test / legacy work" value={String(policyPage.total)} />}
           </div>
         ) : <AdminEmptyState message="Queue counts could not be verified." title="Draft queue unavailable" />}
         <CapabilityNotice capabilities={capabilities} available={capabilitiesAvailable} />
-        <PolicyListTable policies={policies} />
-        <PolicyPagination page={page} policyPage={policyPage} view="drafts" />
+        <PolicyListTable policies={policies} source={source} />
+        <PolicyPagination page={page} policyPage={policyPage} queryState={{ source }} view="drafts" />
       </AdminSection>
 
       {requestedPolicyId && !selectedPolicy ? (
@@ -559,7 +609,11 @@ function DraftsView({
         </AdminSection>
       ) : null}
 
-      <CreateDraftForm canDraft={capabilitiesAvailable && capabilities.canDraft} cloneSource={cloneSource} />
+      <CreateDraftForm
+        canDraft={capabilitiesAvailable && capabilities.canDraft}
+        cloneSource={cloneSource}
+        blockers={capabilitiesAvailable ? capabilities.draftBlockers : EMPTY_CAPABILITIES.draftBlockers}
+      />
     </>
   );
 }
@@ -614,6 +668,7 @@ function HistoryView({
           : 'No test or legacy evidence matches the selected server filters.'}
         policies={policies}
         history
+        source={filters.source}
       />
       <PolicyPagination page={page} policyPage={policyPage} queryState={filters} view="history" />
     </AdminSection>
@@ -660,25 +715,77 @@ function IntegrityView({
   const audit = buildTaxPolicyAuditSummary(auditLogs);
   const selectedAudit = auditEvent ? buildTaxPolicyAuditSummary([auditEvent]).rows[0] ?? null : null;
   const integrity = buildTaxPolicySnapshotConsistency(earnings);
+  const sourceContractAvailable = Boolean(integritySummary.source && integritySummary.sourceTotals);
+  const selectedSource = integritySourceParam(integritySummary.source ?? issueFilters.source);
+  const sourceTotals = integritySummary.sourceTotals ?? {
+    legacy: 0,
+    production: 0,
+    test: 0,
+    unknown: 0,
+  };
+  const sourceTabs = [
+    { count: sourceTotals.production, label: 'Production', value: 'production' },
+    { count: sourceTotals.test, label: 'Test / smoke', value: 'test' },
+    { count: sourceTotals.legacy, label: 'Legacy / migration', value: 'legacy' },
+    { count: sourceTotals.unknown, label: 'Unknown', value: 'unknown' },
+  ] as const;
   return (
     <>
       <AdminSection
-        actions={<StatusBadge tone={integritySummaryUnavailable ? 'danger' : 'info'}>{integritySummaryUnavailable ? 'Unavailable' : `${integritySummary.total} earnings`}</StatusBadge>}
+        actions={<StatusBadge tone={integritySummaryUnavailable || !sourceContractAvailable ? 'danger' : 'info'}>{integritySummaryUnavailable ? 'Unavailable' : !sourceContractAvailable ? 'Source contract unavailable' : `${integritySummary.total} earnings`}</StatusBadge>}
         className="admin-mb-16"
         description="Full Partner earning population created in the last 30 days. Record integrity and tax applicability are reported independently."
         title="30-day integrity summary"
       >
         {integritySummaryUnavailable ? (
           <AdminEmptyState message="Retry before using this workspace for withholding closeout." title="Integrity summary unavailable" />
+        ) : !sourceContractAvailable ? (
+          <AdminNoticeCard role="alert" tone="danger">
+            <strong>Source-classified integrity unavailable</strong>
+            <p className="muted">The API response does not contain the source totals contract. No all-source count is being represented as production; refresh after the API is updated.</p>
+          </AdminNoticeCard>
         ) : (
-          <div className="tax-policy-integrity-grid">
-            <IntegrityMetricCard count={integritySummary.recordIntegrity.amountMismatch} issue="amount-mismatch" label="Amount mismatch" oldestAt={integritySummary.recordIntegrity.oldestAmountMismatch} severity="danger" total={integritySummary.total} />
-            <IntegrityMetricCard count={integritySummary.recordIntegrity.missingTaxLog} issue="missing-tax-log" label="Missing tax log" oldestAt={integritySummary.recordIntegrity.oldestMissingTaxLog} severity="danger" total={integritySummary.total} />
-            <IntegrityMetricCard count={integritySummary.recordIntegrity.missingSnapshot} issue="missing-snapshot" label="Missing immutable snapshot" oldestAt={integritySummary.recordIntegrity.oldestMissingSnapshot} severity="danger" total={integritySummary.total} />
-            <IntegrityMetricCard count={integritySummary.taxApplicability.noActivePolicy} issue="no-active-policy" label="No active policy at earning time" oldestAt={integritySummary.taxApplicability.oldestNoActivePolicy} severity="warning" total={integritySummary.total} />
-            <IntegrityMetricCard count={integritySummary.taxApplicability.noApprovedTaxProfile} issue="no-approved-tax-profile" label="Tax profile not approved — applicability evidence missing" oldestAt={integritySummary.taxApplicability.oldestNoApprovedTaxProfile} severity="warning" total={integritySummary.total} />
-            <IntegrityMetricCard count={integritySummary.taxApplicability.noMatchingRule} issue="no-matching-rule" label="No matching rule" oldestAt={integritySummary.taxApplicability.oldestNoMatchingRule} severity="warning" total={integritySummary.total} />
-          </div>
+          <>
+            <div className="tax-policy-source-tabs" role="group" aria-label="Integrity evidence source">
+              {sourceTabs.map((sourceTab) => (
+                <AdminFormControlLink
+                  className={selectedSource === sourceTab.value ? 'button-primary' : 'button-outline'}
+                  href={buildTaxPolicyPageHref('integrity', 1, {
+                    auditAction: auditFilters.action,
+                    auditActorId: auditFilters.actorId,
+                    auditFrom: auditFilters.from,
+                    auditPolicyId: auditFilters.policyId,
+                    auditSource: auditFilters.source,
+                    auditTo: auditFilters.to,
+                    issue: issue ?? undefined,
+                    issueFrom: issueFilters.from,
+                    issuePage: '1',
+                    issueSort: issueFilters.sort,
+                    issueSource: sourceTab.value,
+                    issueTo: issueFilters.to,
+                  })}
+                  key={sourceTab.value}
+                >
+                  {sourceTab.label} · {sourceTab.count}
+                </AdminFormControlLink>
+              ))}
+            </div>
+            {sourceTotals.unknown > 0 ? (
+              <AdminNoticeCard className="admin-mb-12" role="alert" tone="danger">
+                <strong>{sourceTotals.unknown} earning(s) have unknown provenance</strong>
+                <p className="muted">These records are excluded from the production summary. Classify their source before treating production integrity as complete.</p>
+                <AdminFormControlLink className="button-outline" href="/tax-policy?view=integrity&issueSource=unknown">Review unknown evidence</AdminFormControlLink>
+              </AdminNoticeCard>
+            ) : null}
+            <div className="tax-policy-integrity-grid">
+              <IntegrityMetricCard count={integritySummary.recordIntegrity.amountMismatch} issue="amount-mismatch" label="Amount mismatch" oldestAt={integritySummary.recordIntegrity.oldestAmountMismatch} severity="danger" source={selectedSource} total={integritySummary.total} />
+              <IntegrityMetricCard count={integritySummary.recordIntegrity.missingTaxLog} issue="missing-tax-log" label="Missing tax log" oldestAt={integritySummary.recordIntegrity.oldestMissingTaxLog} severity="danger" source={selectedSource} total={integritySummary.total} />
+              <IntegrityMetricCard count={integritySummary.recordIntegrity.missingSnapshot} issue="missing-snapshot" label="Missing immutable snapshot" oldestAt={integritySummary.recordIntegrity.oldestMissingSnapshot} severity="danger" source={selectedSource} total={integritySummary.total} />
+              <IntegrityMetricCard count={integritySummary.taxApplicability.noActivePolicy} issue="no-active-policy" label="No active policy at earning time" oldestAt={integritySummary.taxApplicability.oldestNoActivePolicy} severity="warning" source={selectedSource} total={integritySummary.total} />
+              <IntegrityMetricCard count={integritySummary.taxApplicability.noApprovedTaxProfile} issue="no-approved-tax-profile" label="Tax profile not approved — applicability evidence missing" oldestAt={integritySummary.taxApplicability.oldestNoApprovedTaxProfile} severity="warning" source={selectedSource} total={integritySummary.total} />
+              <IntegrityMetricCard count={integritySummary.taxApplicability.noMatchingRule} issue="no-matching-rule" label="No matching rule" oldestAt={integritySummary.taxApplicability.oldestNoMatchingRule} severity="warning" source={selectedSource} total={integritySummary.total} />
+            </div>
+          </>
         )}
       </AdminSection>
 
@@ -687,6 +794,7 @@ function IntegrityView({
           actions={<StatusBadge tone={issueRecordsUnavailable ? 'danger' : 'warning'}>{issueRecordsUnavailable ? 'Unavailable' : `${issueRecords.total} records`}</StatusBadge>}
           className="admin-mb-16 tax-policy-integrity-queue"
           description="This queue is filtered on the server from the same 30-day evidence contract as the summary."
+          id="tax-policy-integrity-queue"
           title={`Integrity queue · ${integrityIssueLabel(issue)}`}
         >
           {issueRecordsUnavailable ? (
@@ -776,7 +884,22 @@ function IntegrityView({
             { label: 'Legacy / migration', value: 'legacy' },
             { label: 'Unknown provenance', value: 'unknown' },
           ]} />
-          <AdminFormInput defaultValue={auditFilters.action} label="Exact action" labelVisibility="visible" name="auditAction" />
+          <AdminFormInput
+            defaultValue={auditFilters.action}
+            label="Action preset or exact action"
+            labelVisibility="visible"
+            list="tax-policy-audit-action-presets"
+            name="auditAction"
+          />
+          <datalist id="tax-policy-audit-action-presets">
+            <option value="tax_policy.draft_created" />
+            <option value="tax_policy.approval_requested" />
+            <option value="tax_policy.approval_approved" />
+            <option value="tax_policy.approval_rejected" />
+            <option value="tax_policy.approval_scheduled" />
+            <option value="tax_policy.activated" />
+            <option value="tax_policy.activation_blocked" />
+          </datalist>
           <AdminFormInput defaultValue={auditFilters.actorId} label="Actor ID" labelVisibility="visible" name="auditActorId" />
           <AdminFormInput defaultValue={auditFilters.policyId} label="Policy ID" labelVisibility="visible" name="auditPolicyId" />
           <AdminFormDate defaultValue={auditFilters.from} label="From" labelVisibility="visible" mode="date" name="auditFrom" />
@@ -915,9 +1038,38 @@ function IntegrityView({
   );
 }
 
-function CreateDraftForm({ canDraft, cloneSource }: { canDraft: boolean; cloneSource: AdminTaxPolicyVersion | null }) {
+function CreateDraftForm({
+  blockers,
+  canDraft,
+  cloneSource,
+}: {
+  blockers: AdminTaxPolicyCapabilities['draftBlockers'];
+  canDraft: boolean;
+  cloneSource: AdminTaxPolicyVersion | null;
+}) {
   const productionSource = cloneSource?.provenance === 'OPERATOR' ? cloneSource : null;
   const formId = 'tax-policy-create-form';
+  if (!canDraft) {
+    return (
+      <AdminSection
+        className="admin-mb-16"
+        description="No draft fields are opened or preserved while production write capability is blocked."
+        id="create-tax-policy"
+        title="Production draft unavailable"
+      >
+        <AdminNoticeCard role="alert" tone="danger">
+          <strong>Resolve access before entering policy evidence</strong>
+          <ul>
+            {blockers.map((blocker) => <li key={blocker.code}>{blocker.message}</li>)}
+          </ul>
+          <div className="actions">
+            <AdminFormControlLink className="button-outline" href="/finance-tax/finance-approvers">Review Finance Approvers</AdminFormControlLink>
+            <AdminFormControlLink className="button-outline" href="/tax-policy?view=drafts#create-tax-policy">Re-check capability</AdminFormControlLink>
+          </div>
+        </AdminNoticeCard>
+      </AdminSection>
+    );
+  }
   return (
     <AdminSection
       className="admin-mb-16"
@@ -935,12 +1087,6 @@ function CreateDraftForm({ canDraft, cloneSource }: { canDraft: boolean; cloneSo
           <p className="muted">Name, notes, legal evidence, and rates were intentionally cleared. Source lineage remains linked to <code>{cloneSource.id}</code>.</p>
         </AdminNoticeCard>
       ) : null}
-      {!canDraft ? (
-        <AdminNoticeCard className="admin-mb-12" role="alert" tone="danger">
-          <strong>Draft creation is blocked</strong>
-          <p className="muted">Resolve the operator capability blockers before attempting a write.</p>
-        </AdminNoticeCard>
-      ) : null}
       <TaxPolicyActionForm action={createTaxPolicyVersion} className="tax-policy-form-grid" id={formId}>
         <div className="tax-policy-field-group"><AdminFormInput defaultValue={productionSource ? `${productionSource.name} — new revision` : ''} label="Policy name" labelVisibility="visible" maxLength={160} name="name" required /><TaxPolicyFieldMessage helper="Use the governed policy title operators will recognize in approvals and history." name="name" /></div>
         <div className="tax-policy-field-group"><AdminFormDateTime defaultValue="" label="Effective from · Vietnam time" labelVisibility="visible" name="effectiveFrom" required /><TaxPolicyFieldMessage helper="Choose the approved Vietnam activation time. Creating this draft does not activate it." name="effectiveFrom" /></div>
@@ -953,7 +1099,7 @@ function CreateDraftForm({ canDraft, cloneSource }: { canDraft: boolean; cloneSo
         <div className="tax-policy-field-group is-wide"><AdminFormTextarea defaultValue={productionSource?.notes ?? ''} label="Notes" labelVisibility="visible" maxLength={1000} name="notes" rows={3} /></div>
         <div className="tax-policy-field-group is-wide"><AdminFormTextarea label="Preparation rationale" labelVisibility="visible" maxLength={500} minLength={10} name="operatorReason" required rows={3} /><TaxPolicyFieldMessage helper="Record the independent review performed and the source used to prepare this draft." name="operatorReason" /></div>
         {cloneSource ? <input name="supersedesPolicyVersionId" type="hidden" value={cloneSource.id} /> : null}
-        <AdminFormControlButton className="button-primary" disabled={!canDraft} type="submit">Prepare production draft</AdminFormControlButton>
+        <AdminFormControlButton className="button-primary" type="submit">Prepare production draft</AdminFormControlButton>
       </TaxPolicyActionForm>
     </AdminSection>
   );
@@ -1238,10 +1384,12 @@ function PolicyListTable({
   emptyMessage,
   policies,
   history = false,
+  source = 'production',
 }: {
   emptyMessage?: string;
   policies: AdminTaxPolicyVersion[];
   history?: boolean;
+  source?: string;
 }) {
   if (history) {
     return (
@@ -1253,7 +1401,18 @@ function PolicyListTable({
         >
           {policies.map((policy) => (
             <tr key={policy.id}>
-              <th scope="row"><strong>{policy.name}</strong><small>Revision {policy.revision ?? 1} · {provenanceLabel(policy.provenance)} · <code>{policy.id}</code></small></th>
+              <th scope="row">
+                <strong>{policy.name}</strong>
+                <small>
+                  Revision {policy.revision ?? 1} · {provenanceLabel(policy.provenance)} ·{' '}
+                  {source === 'test-legacy' ? (
+                    <span className="tax-policy-copy-id">
+                      <code title={policy.id}>{middleTruncatedId(policy.id)}</code>
+                      <CommandCopyButton copiedLabel="Policy ID copied" failedLabel="Copy policy ID failed" label={`Copy full policy ID ${policy.id}`} value={policy.id} />
+                    </span>
+                  ) : <code>{policy.id}</code>}
+                </small>
+              </th>
               <td><StatusBadge tone={lifecycleTone(policy.lifecycleStatus)}>{lifecycleLabel(policy.lifecycleStatus)}</StatusBadge><small>{vietnamDateTimeLabel(policy.effectiveFrom)}</small></td>
               <td><strong>{policy.rules?.length ?? 0} rules</strong><small>{policyRateSummary(policy)}</small></td>
               <td><strong>{policy.legalSourceTitle ?? 'Legal source missing'}</strong><small>{policy.approvedAt ? `Approved ${vietnamDateTimeLabel(policy.approvedAt)}` : 'Approval receipt not recorded'}</small></td>
@@ -1280,7 +1439,7 @@ function PolicyListTable({
             <td>{policy.rules?.length ?? 0}</td>
             <td>{policy.legalSourceTitle ?? 'Missing'}</td>
             <td>
-              <AdminFormControlLink className="button-outline" href={buildTaxPolicyEditorHref(policy.id)}>Open</AdminFormControlLink>
+              <AdminFormControlLink className="button-outline" href={buildTaxPolicyEditorHref(policy.id, source)}>Open</AdminFormControlLink>
             </td>
           </tr>
         ))}
@@ -1322,10 +1481,77 @@ function PolicyMetadata({ policy }: { policy: AdminTaxPolicyVersion }) {
       <div><dt>Tax subject</dt><dd>{policy.taxSubject ?? 'Missing'}</dd></div>
       <div><dt>Legal source</dt><dd>{policy.legalSourceUrl ? <a className="text-link" href={policy.legalSourceUrl} rel="noreferrer" target="_blank">{policy.legalSourceTitle ?? 'Open source'}</a> : 'Missing'}</dd></div>
       <div><dt>Change summary</dt><dd>{policy.changeSummary ?? 'Missing'}</dd></div>
-      <div><dt>Created by</dt><dd>{operatorLabel(policy.createdBy ?? undefined)} · {provenanceLabel(policy.provenance)}</dd></div>
-      <div><dt>Source lineage</dt><dd>{policy.supersedesPolicyVersion ? `${policy.supersedesPolicyVersion.name} · ${provenanceLabel(policy.supersedesPolicyVersion.provenance)}` : 'New production source'}</dd></div>
+      <div><dt>Created by</dt><dd>{operatorLabel(policy.createdBy ?? undefined)}</dd></div>
+      <div><dt>Candidate provenance</dt><dd>{provenanceLabel(policy.provenance)}</dd></div>
+      <div><dt>Superseded source lineage</dt><dd>{policy.supersedesPolicyVersion ? `${policy.supersedesPolicyVersion.name} · ${provenanceLabel(policy.supersedesPolicyVersion.provenance)}` : 'No predecessor recorded'}</dd></div>
       <div><dt>Policy ID</dt><dd><code>{policy.id}</code></dd></div>
     </dl>
+  );
+}
+
+function ActivationEvidence({
+  available,
+  evidence,
+  policy,
+}: {
+  available: boolean;
+  evidence: AdminTaxPolicyActivationEvidence;
+  policy: AdminTaxPolicyVersion;
+}) {
+  if (!available) {
+    return (
+      <AdminNoticeCard className="admin-mt-16" role="alert" tone="danger">
+        <strong>Activation evidence unavailable</strong>
+        <p className="muted">Retry before using this policy as cutover or audit handoff evidence.</p>
+      </AdminNoticeCard>
+    );
+  }
+  const copyValue = JSON.stringify({
+    activationAuditId: evidence.activationAuditId,
+    activatedAt: evidence.activatedAt,
+    approvalRequestId: evidence.approvalRequestId,
+    approvedAt: evidence.approvedAt,
+    checkerId: evidence.checker?.id ?? null,
+    makerId: evidence.maker?.id ?? null,
+    payloadHash: evidence.payloadHash,
+    policyVersionId: evidence.policyVersionId,
+    provenance: policy.provenance ?? 'UNKNOWN',
+    revision: evidence.revision,
+  });
+  const auditSource = policy.provenance === 'OPERATOR'
+    ? 'production'
+    : policy.provenance === 'MIGRATION'
+      ? 'legacy'
+      : policy.provenance === 'SEED' || policy.provenance === 'SMOKE_TEST'
+        ? 'test'
+        : 'unknown';
+  return (
+    <div className="tax-policy-activation-evidence admin-mt-16">
+      <AdminSectionHeader
+        actions={<CommandCopyButton copiedLabel="Activation evidence copied" failedLabel="Copy activation evidence failed" label="Copy activation evidence" value={copyValue} />}
+        description="Immutable identifiers used to prove which payload was approved and activated. Missing values remain explicit."
+        title="Activation evidence"
+      />
+      <dl className="tax-policy-audit-evidence">
+        <div><dt>Policy ID</dt><dd><code>{evidence.policyVersionId || 'Missing'}</code></dd></div>
+        <div><dt>Revision</dt><dd>{evidence.revision || 'Missing'}</dd></div>
+        <div><dt>Provenance</dt><dd>{provenanceLabel(policy.provenance)}</dd></div>
+        <div><dt>Content hash</dt><dd><code>{evidence.payloadHash ?? 'Missing'}</code></dd></div>
+        <div><dt>Approval request ID</dt><dd><code>{evidence.approvalRequestId ?? 'Missing'}</code></dd></div>
+        <div><dt>Maker</dt><dd>{evidence.maker ? `${operatorLabel(evidence.maker)} · ${evidence.maker.id}` : 'Missing'}</dd></div>
+        <div><dt>Checker</dt><dd>{evidence.checker ? `${operatorLabel(evidence.checker)} · ${evidence.checker.id}` : 'Missing'}</dd></div>
+        <div><dt>Approved at · Vietnam</dt><dd>{evidence.approvedAt ? vietnamDateTimeLabel(evidence.approvedAt) : 'Missing'}</dd></div>
+        <div><dt>Activated at · Vietnam</dt><dd>{evidence.activatedAt ? vietnamDateTimeLabel(evidence.activatedAt) : 'Missing'}</dd></div>
+        <div>
+          <dt>Activation audit ID</dt>
+          <dd>{evidence.activationAuditId ? (
+            <AdminFormControlLink className="button-outline" href={`/tax-policy?view=integrity&auditSource=${auditSource}&auditEventId=${encodeURIComponent(evidence.activationAuditId)}#tax-policy-audit-event`}>
+              {evidence.activationAuditId}
+            </AdminFormControlLink>
+          ) : 'Missing'}</dd>
+        </div>
+      </dl>
+    </div>
   );
 }
 
@@ -1370,6 +1596,7 @@ function IntegrityMetricCard({
   label,
   oldestAt,
   severity,
+  source,
   total,
 }: {
   count: number;
@@ -1377,16 +1604,25 @@ function IntegrityMetricCard({
   label: string;
   oldestAt: string | null;
   severity: 'danger' | 'warning';
+  source: NonNullable<AdminTaxPolicyIntegritySummary['source']>;
   total: number;
 }) {
   const rate = total ? `${((count / total) * 100).toFixed(1)}%` : 'No denominator';
+  if (count === 0) {
+    return (
+      <AdminInsightCard className="tax-policy-integrity-card is-clear">
+        <div><span>{label}</span><StatusBadge tone="neutral">Clear</StatusBadge></div>
+        <p>0 / {total} · no matching 30-day evidence</p>
+      </AdminInsightCard>
+    );
+  }
   return (
     <AdminInsightCard className="tax-policy-integrity-card">
       <div><span>{label}</span><StatusBadge tone={count ? severity : 'neutral'}>{count ? severity === 'danger' ? 'Integrity' : 'Readiness' : 'Clear'}</StatusBadge></div>
       <strong>{count} / {total}</strong>
       <p>{rate} of 30-day earnings · oldest {oldestAt ? ageLabel(oldestAt) : 'none'}</p>
       <small>Owner not assigned · SLA not configured</small>
-      <AdminFormControlLink className="button-outline" href={`/tax-policy?view=integrity&issue=${encodeURIComponent(issue)}&issuePage=1`}>Review exact evidence</AdminFormControlLink>
+      <AdminFormControlLink className="button-outline" href={`/tax-policy?view=integrity&issue=${encodeURIComponent(issue)}&issueSource=${encodeURIComponent(source)}&issuePage=1#tax-policy-integrity-queue`}>Review exact evidence</AdminFormControlLink>
     </AdminInsightCard>
   );
 }
@@ -1405,6 +1641,10 @@ function integrityIssueLabel(issue: string) {
 function ageLabel(value: string) {
   const days = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 86_400_000));
   return days === 0 ? 'today' : `${days}d`;
+}
+
+function middleTruncatedId(value: string) {
+  return value.length > 28 ? `${value.slice(0, 12)}…${value.slice(-10)}` : value;
 }
 
 function auditPolicyId(log?: AdminAuditLog) {
@@ -1468,9 +1708,9 @@ function auditSourceParam(value: string | null) {
 }
 
 function integritySourceParam(value: string | null) {
-  return value === 'production' || value === 'test' || value === 'legacy' || value === 'unknown'
+  return value === 'all' || value === 'production' || value === 'test' || value === 'legacy' || value === 'unknown'
     ? value
-    : 'all';
+    : 'production';
 }
 
 function integritySourceLabel(value: AdminTaxPolicyIntegrityRecordPage['items'][number]['evidenceSource']) {
@@ -1486,6 +1726,7 @@ function integrityClassificationLabel(value: AdminTaxPolicyIntegrityRecordPage['
     APPLICABILITY_READINESS: 'Applicability / readiness',
     CURRENT_REGRESSION: 'Current production regression',
     LEGACY_MIGRATION_DEBT: 'Legacy / migration debt',
+    TEST_RESIDUE: 'Test / smoke residue',
     UNKNOWN: 'Classification unknown',
   })[value];
 }

@@ -59,10 +59,21 @@ describe('partner detail activity model', () => {
     expect(digest[0]?.highlights.map((record) => record.id)).toEqual(['device', 'earning', 'chat']);
     expect(oldestDigest.map((day) => day.key)).toEqual(['2026-06-09', '2026-06-10']);
     expect(oldestDigest[1]?.highlights.map((record) => record.id)).toEqual(['chat', 'earning', 'device']);
-    expect(partnerActivityRecordHref(records[0])).toBe('#booking-chat-records');
-    expect(partnerActivityRecordHref(records[2])).toBe('#payout');
-    expect(partnerActivityRecordHref(records[3])).toBe('#app-activity');
-    expect(partnerActivityRecordHref(activity({ type: 'VERIFY' }))).toBe('#documents');
+    expect(partnerActivityRecordHref('partner-1', records[0])).toBe(
+      '/partners/partner-1?section=bookings&bookings=evidence#booking-chat-records',
+    );
+    expect(partnerActivityRecordHref('partner-1', records[2])).toBe(
+      '/partners/partner-1?section=dossier&dossier=finance#payout-operations',
+    );
+    expect(partnerActivityRecordHref('partner-1', records[3])).toBe(
+      '/partners/partner-1?section=access',
+    );
+    expect(partnerActivityRecordHref('partner-1', records[3], true)).toBe(
+      '/partners/partner-1?section=access&access=diagnostics#app-activity',
+    );
+    expect(partnerActivityRecordHref('partner-1', activity({ type: 'VERIFY' }))).toBe(
+      '/partners/partner-1?section=dossier&dossier=evidence#documents',
+    );
   });
 });
 

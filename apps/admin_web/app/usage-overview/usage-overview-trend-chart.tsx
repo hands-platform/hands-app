@@ -18,9 +18,13 @@ import { AdminDisclosure } from '../../components/admin-surface';
 import type { AdminUsageOverviewTrendRow } from '../../lib/admin-api';
 
 export function UsageOverviewTrendChart({
+  bookingAvailable = true,
+  bookingExcludedCount = 0,
   rows,
   usageAvailable = true,
 }: {
+  readonly bookingAvailable?: boolean;
+  readonly bookingExcludedCount?: number;
   readonly rows: readonly AdminUsageOverviewTrendRow[];
   readonly usageAvailable?: boolean;
 }) {
@@ -29,8 +33,14 @@ export function UsageOverviewTrendChart({
   if (rows.length === 0 || total === 0) {
     return (
       <div className="usage-overview-chart-empty" role="status">
-        <strong>No activity in this period</strong>
-        <span>No customer usage or booking activity was recorded for the applied dates.</span>
+        <strong>
+          {bookingAvailable ? 'No activity in this period' : 'No verified production booking activity in this period'}
+        </strong>
+        <span>
+          {bookingAvailable
+            ? 'No customer usage or booking activity was recorded for the applied dates.'
+            : `Source incomplete · ${bookingExcludedCount.toLocaleString()} unverified records excluded.`}
+        </span>
       </div>
     );
   }
@@ -80,8 +90,10 @@ export function UsageOverviewTrendChart({
           { dataKey: 'completedBookingCount', name: 'Completed during period', color: '#28c76f' },
         ]}
         rows={rows}
-        summary={`Total booking signals ${bookingTotal.toLocaleString()} · Peak ${bookingPeak.label}`}
-        title="Booking activity"
+        summary={bookingAvailable
+          ? `Total booking signals ${bookingTotal.toLocaleString()} · Peak ${bookingPeak.label}`
+          : `Verified booking signals ${bookingTotal.toLocaleString()} · Source incomplete · ${bookingExcludedCount.toLocaleString()} excluded`}
+        title={bookingAvailable ? 'Booking activity' : 'Booking activity · Verified cohort only'}
       />
     </div>
   );

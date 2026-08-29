@@ -89,10 +89,11 @@ export class ChatService {
     }
 
     if (user.roles.includes(Role.ADMIN)) {
-      return adminOperatorHasRequiredCategory(
-        user.adminPermissionCategories ?? [],
-        AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
-      );
+      return user.roles.includes(Role.MASTER_ADMIN) ||
+        adminOperatorHasRequiredCategory(
+          user.adminPermissionCategories ?? [],
+          AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
+        );
     }
 
     if (user.roles.includes(Role.CUSTOMER)) {

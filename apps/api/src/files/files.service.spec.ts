@@ -13,6 +13,9 @@ describe('FilesService upload security', () => {
 
   function createService() {
     const prisma = {
+      companyBankAccountEvidence: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
       fileAsset: {
         create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'file-1', ...data })),
         delete: vi.fn().mockResolvedValue({ id: 'file-1' }),
@@ -34,6 +37,7 @@ describe('FilesService upload security', () => {
         visibility === FileVisibility.PUBLIC ? 'hands-public' : 'hands-private'),
       configurationNote: vi.fn().mockReturnValue('Upload with PUT before the presigned URL expires.'),
       copyObject: vi.fn().mockResolvedValue({ copied: true }),
+      contentSha256: vi.fn().mockResolvedValue({ contentSha256: 'a'.repeat(64), sizeBytes: 1024 }),
       deleteObject: vi.fn().mockResolvedValue({ deleted: true }),
       inspectObject: vi.fn(),
       isConfigured: vi.fn().mockReturnValue(false),
@@ -624,6 +628,55 @@ describe('FilesService upload security', () => {
 
     expect(s3.deleteObject).toHaveBeenCalledWith('public/provider-user-1/file-1.jpg', FileVisibility.PUBLIC);
     expect(prisma.fileAsset.delete).toHaveBeenCalledWith({ where: { id: 'file-1' } });
+  });
+
+  it('retains company bank account evidence before touching object storage', async () => {
+    const { prisma, s3, service } = createService();
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      id: 'file-1',
+      key: 'private/finance-evidence/file-1.pdf',
+      ownerUserId: providerUser.id,
+      purpose: FilePurpose.FINANCE_EVIDENCE,
+      providerVerification: null,
+      visibility: FileVisibility.PRIVATE,
+    });
+    prisma.companyBankAccountEvidence.findUnique.mockResolvedValue({ id: 'evidence-1' });
+
+    await expect(service.deleteFile(providerUser, 'file-1')).rejects.toThrow(
+      'Retained company bank account evidence cannot be deleted',
+    );
+    expect(s3.deleteObject).not.toHaveBeenCalled();
+    expect(prisma.fileAsset.delete).not.toHaveBeenCalled();
+  });
+
+  it('computes server-side integrity for completed private finance evidence', async () => {
+    const { prisma, s3, service } = createService();
+    const uploadedAt = new Date('2026-08-28T05:00:00.000Z');
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      contentType: 'application/pdf',
+      id: 'file-1',
+      key: 'private/finance-evidence/file-1.pdf',
+      ownerUserId: 'admin-1',
+      purpose: FilePurpose.FINANCE_EVIDENCE,
+      sizeBytes: 1024,
+      uploadedAt,
+      uploadStatus: FileUploadStatus.UPLOADED,
+      visibility: FileVisibility.PRIVATE,
+    });
+    s3.isConfigured.mockReturnValue(true);
+
+    await expect(service.companyBankAccountEvidenceIntegrity('file-1')).resolves.toEqual({
+      contentSha256: 'a'.repeat(64),
+      contentType: 'application/pdf',
+      fileAssetId: 'file-1',
+      ownerUserId: 'admin-1',
+      sizeBytes: 1024,
+      uploadedAt,
+    });
+    expect(s3.contentSha256).toHaveBeenCalledWith(
+      'private/finance-evidence/file-1.pdf',
+      FileVisibility.PRIVATE,
+    );
   });
 
   it('preserves file metadata when production object storage is unavailable during deletion', async () => {

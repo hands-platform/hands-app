@@ -259,6 +259,11 @@ describe('BookingDetailPage data loading', () => {
 describe('BookingDetailPage section visibility', () => {
   const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
 
+  it('uses Partner note terminology for the internal evaluation record', () => {
+    expect(source).toContain('Customer review and internal Partner note attached to this booking.');
+    expect(source).not.toContain('Customer review and Partner evaluation attached to this booking.');
+  });
+
   it('hides the captured extended sections while retaining the operator booking record', () => {
     const hiddenSectionFlags = [
       'addressRadiusContract',

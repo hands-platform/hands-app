@@ -5,9 +5,11 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { formatDateTime } from '../../lib/admin-format';
 import { dateRangeLabel } from '../../lib/date-range';
 import {
   type AdminQueueAgeCounts,
@@ -21,9 +23,13 @@ import {
   cashSettlementQueueOptions,
   type CashSettlementFilters,
 } from './cash-settlement-page-types';
+import {
+  cashSettlementEmptyTitle,
+} from './cash-settlement-open-debt-table-section';
 
 type CashSettlementFilterSectionProps = {
   readonly ageCounts?: AdminQueueAgeCounts;
+  readonly allOpenRowCount: number;
   readonly queueSla?: AdminQueueSlaSummary;
   readonly filters: CashSettlementFilters;
   readonly generatedAt?: string;
@@ -40,6 +46,7 @@ type CashSettlementFilterSectionProps = {
 
 export function CashSettlementFilterSection({
   ageCounts,
+  allOpenRowCount,
   filters,
   generatedAt,
   queueCounts,
@@ -48,17 +55,42 @@ export function CashSettlementFilterSection({
   visibleRowCount,
 }: CashSettlementFilterSectionProps) {
   const activeFilterLabels = buildCashSettlementActiveFilterLabels(filters);
+  const emptyRecovery = totalRowCount === 0;
 
   return (
     <AdminFilterPanel
       className="admin-mt-16 admin-mb-16 cash-settlement-filter-panel"
       description={
         <>
-          Counts ignore the selected queue and use the current search, date, age and SLA scope.
-          {generatedAt ? ` Generated ${new Date(generatedAt).toLocaleString('en-GB')}.` : ''}
+          Queue counts ignore only the selected queue and keep search, date, age and SLA scope. Age and
+          SLA counts describe the selected queue.
+          {generatedAt ? ` Generated ${formatDateTime(generatedAt)} ICT.` : ''}
         </>
       }
-      footer={activeFilterLabels.length ? (
+      footer={emptyRecovery ? (
+        <div className="cash-settlement-filter-empty-recovery">
+          {activeFilterLabels.length ? (
+            <AdminFilterSummary
+              ariaLabel="Cash settlement scope"
+              labels={activeFilterLabels}
+              tone="info"
+            />
+          ) : null}
+          <div className="cash-settlement-filter-empty-copy">
+            <strong>{cashSettlementEmptyTitle(filters)}</strong>
+            <span className="muted">
+              Filtered: 0 rows · {filters.period ? `Accounting month ${filters.period}` : 'All dates'}:{' '}
+              {allOpenRowCount} all open.
+            </span>
+          </div>
+          <AdminFilterChipGroup ariaLabel="Cash settlement empty state actions">
+            <AdminTextLink href={cashSettlementHref({ ...filters, page: 1, queue: 'all' })}>
+              Return to All open ({allOpenRowCount})
+            </AdminTextLink>
+            <AdminTextLink href="/cash-settlements">Clear filters</AdminTextLink>
+          </AdminFilterChipGroup>
+        </div>
+      ) : activeFilterLabels.length ? (
         <AdminFilterSummary
           ariaLabel="Cash settlement scope"
           labels={activeFilterLabels}
@@ -91,16 +123,38 @@ export function CashSettlementFilterSection({
           ariaLabel="Additional cash settlement queues"
           className="cash-settlement-filter-buttons"
           options={cashSettlementQueueOptions.slice(3).map((option) => ({
-            ariaLabel: `${option.label}, ${cashSettlementQueueCount(queueCounts, option.value)}${filters.queue === option.value ? ', selected' : ''}`,
+            ariaLabel: `${option.value === 'high-debt' ? 'High exposure, at least 500,000 VND' : option.label}, ${cashSettlementQueueCount(queueCounts, option.value)}${filters.queue === option.value ? ', selected' : ''}`,
             href: cashSettlementHref({ ...filters, page: 1, queue: option.value }),
-            label: <>{option.label} <span className="cash-settlement-queue-count">{cashSettlementQueueCount(queueCounts, option.value)}</span></>,
+            label: <>{option.value === 'high-debt' ? 'High exposure ≥ 500k' : option.label} <span className="cash-settlement-queue-count">{cashSettlementQueueCount(queueCounts, option.value)}</span></>,
             title: option.value === 'high-debt' ? 'Remaining exposure of at least 500,000 VND' : undefined,
             value: option.value,
           }))}
           semantics="navigation"
         />
       </div>
-      <AdminFormGrid action="/cash-settlements" className="admin-mt-12">
+      <AdminFormGrid
+        action="/cash-settlements"
+        canonicalDefaults={{
+          age: 'all',
+          pageSize: '10',
+          queue: 'all',
+          range: 'all',
+          sla: 'all',
+          sort: 'oldest',
+        }}
+        className="admin-mt-12"
+        key={JSON.stringify([
+          filters.period,
+          filters.range,
+          filters.queue,
+          filters.q,
+          filters.sort,
+          filters.age,
+          filters.sla,
+          filters.pageSize,
+        ])}
+        method="get"
+      >
         <input type="hidden" name="queue" value={filters.queue} />
         {filters.period ? <input type="hidden" name="period" value={filters.period} /> : null}
         {filters.returnTo ? <input type="hidden" name="returnTo" value={filters.returnTo} /> : null}

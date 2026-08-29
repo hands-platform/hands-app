@@ -8,6 +8,8 @@ import {
   BANK_STATEMENT_ESCALATION_JOB_NAME,
   BANK_STATEMENT_ESCALATION_QUEUE_NAME,
   BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
+  PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME,
+  PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_SCHEDULER_ID,
 } from './bank-statement-escalation.queue';
 
 const SCHEDULER_REGISTRATION_RETRY_MS = 5_000;
@@ -52,13 +54,14 @@ export class BankStatementEscalationScheduler implements OnApplicationBootstrap,
   private async registerSchedulers() {
     try {
       await Promise.all([
-        this.upsertScheduler(
-          BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
-          BANK_STATEMENT_ESCALATION_JOB_NAME,
-        ),
+        this.upsertScheduler(BANK_STATEMENT_ESCALATION_SCHEDULER_ID, BANK_STATEMENT_ESCALATION_JOB_NAME),
         this.upsertScheduler(
           BACKGROUND_JOB_FAILURE_MONITOR_SCHEDULER_ID,
           BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME,
+        ),
+        this.upsertScheduler(
+          PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_SCHEDULER_ID,
+          PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_JOB_NAME,
         ),
       ]);
       if (this.registrationRetry) {

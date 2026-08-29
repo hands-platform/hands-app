@@ -564,16 +564,16 @@ function checkAdminPeopleManagementIsFactual() {
 
 function checkAdminDashboardOperationsCoverage() {
   const dashboard = read('apps/admin_web/app/page.tsx');
+  const dashboardModel = read('apps/admin_web/app/dashboard-page-model.ts');
   const dashboardDoc = read('docs/architecture/operations-dashboard.md');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
   const requiredDashboardMarkers = [
     'Shift Command',
     'Next action',
-    'Open queues',
+    'Remaining queues',
     'Money status',
     'Additional work',
     'Today result',
-    'Customer and Partner leaders',
     'Demand and supply',
     'Customer choice',
     'In service',
@@ -581,6 +581,9 @@ function checkAdminDashboardOperationsCoverage() {
   ];
 
   requireMarkers('apps/admin_web/app/page.tsx', dashboard, requiredDashboardMarkers);
+  requireMarkers('apps/admin_web/app/dashboard-page-model.ts', dashboardModel, [
+    'Customer and Partner leaders',
+  ]);
   requireMarkers('docs/architecture/operations-dashboard.md', dashboardDoc, [
     'Admin home page is the first shift screen',
     'Total booking volume',
@@ -596,7 +599,7 @@ function checkAdminDashboardOperationsCoverage() {
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
     'Shift Command',
     'Next action',
-    'Open queues',
+    'Remaining queues',
     'Money status',
     'Today result',
     'In service',

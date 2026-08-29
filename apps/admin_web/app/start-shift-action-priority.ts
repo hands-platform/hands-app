@@ -30,6 +30,7 @@ export type StartShiftActionAgeingChip = {
 type StartShiftCommandPrioritySignals = {
   readonly impactAmount?: number;
   readonly isLiveBlock?: boolean;
+  readonly isServiceBlock?: boolean;
   readonly mineCount?: number;
   readonly oldestAt?: string | null;
   readonly overdueCount?: number;
@@ -315,12 +316,12 @@ function scopedStartShiftAction(
 function commandItemPriority(item: StartShiftCommandPrioritySignals) {
   const status = item.status.toLowerCase();
   if (status.includes('unavailable') || status.includes('failed')) return 0;
-  if ((item.overdueCount ?? 0) > 0 || status.includes('sla overdue')) return 1;
-  if ((item.unassignedCount ?? 0) > 0 || status.includes('needs owner')) return 2;
-  if ((item.mineCount ?? 0) > 0 || status.includes('my queue')) return 3;
-  if (item.isLiveBlock || item.tone === 'danger') return 4;
-  if ((item.impactAmount ?? 0) > 0) return 5;
-  if (item.tone === 'warn') return 6;
+  if (item.isLiveBlock) return 1;
+  if (item.isServiceBlock) return 2;
+  if ((item.overdueCount ?? 0) > 0 || status.includes('sla overdue')) return 3;
+  if ((item.unassignedCount ?? 0) > 0 || status.includes('needs owner')) return 4;
+  if ((item.mineCount ?? 0) > 0 || status.includes('my queue')) return 5;
+  if (item.tone === 'danger' || item.tone === 'warn' || (item.impactAmount ?? 0) > 0) return 6;
   return 7;
 }
 

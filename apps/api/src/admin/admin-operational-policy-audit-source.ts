@@ -41,6 +41,9 @@ export function operationalPolicyAuditContextFromHeaders(
   if (!hasAutomationHeader) {
     return { environment: currentEnvironment, source: 'operator' };
   }
+  if (currentEnvironment === 'production') {
+    throw new ForbiddenException('Operational policy smoke automation is disabled in production');
+  }
 
   const restoration = restorationValue === 'true';
   const normalizedRunId = runId?.trim() ?? '';

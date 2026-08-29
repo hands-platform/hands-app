@@ -10,6 +10,7 @@ import {
   buildReviewDataHrefs,
   buildReviewExportRows,
   buildReviewFilters,
+  reviewDateRangeError,
   reviewMatchingCount,
 } from '../review-page-model';
 
@@ -26,6 +27,10 @@ export async function GET(request: NextRequest) {
   }
 
   const filters = buildReviewFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
+  const dateError = reviewDateRangeError(filters);
+  if (dateError) {
+    return exportError(dateError, 400);
+  }
   const summaryHref = buildReviewDataHrefs({ ...filters, page: 1, pageSize: 100 }).summaryHref;
   const summaryResult = await adminGetResult<AdminReviewSummary>(summaryHref, { totalCount: 0 });
   if (!summaryResult.ok) {

@@ -9,6 +9,7 @@ import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormCheckbox,
   AdminFormGrid,
   AdminFormInput,
   AdminFormSearch,
@@ -34,7 +35,10 @@ import { readSearchParam } from '../../lib/date-range';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
 import {
   approveReferralRewardCashout,
+  approveReferralRewardTaxReview,
+  holdReferralRewardTaxReview,
   markReferralRewardCashoutPaid,
+  rejectReferralRewardTaxReview,
   requestReferralCashoutBankCorrection,
   requireReferralRewardTaxReview,
 } from './actions';
@@ -49,8 +53,12 @@ export type ReferralCashoutFilters = {
 };
 
 type ReferralCashoutQueuePageProps = {
+  readonly canReviewTax?: boolean;
   readonly currentPage: number;
   readonly filters: ReferralCashoutFilters;
+  readonly mutationsEnabled?: boolean;
+  readonly partialReadError?: string;
+  readonly readError?: string;
   readonly rows: readonly AdminReferralCashoutQueueRow[];
   readonly summary: AdminReferralCashoutQueueSummary;
 };
@@ -86,15 +94,21 @@ const emptyReferralCashoutSummary: AdminReferralCashoutQueueSummary = {
 };
 
 export function ReferralCashoutQueuePage({
+  canReviewTax = false,
   currentPage,
   filters,
+  mutationsEnabled = true,
+  partialReadError,
+  readError,
   rows,
   summary,
 }: ReferralCashoutQueuePageProps) {
-  const totalPages = Math.max(1, Math.ceil(summary.totalCount / referralCashoutPageSize));
+  const totalRows = partialReadError ? rows.length : summary.totalCount;
+  const totalPages = Math.max(1, Math.ceil(totalRows / referralCashoutPageSize));
   const activePage = Math.min(Math.max(1, currentPage), totalPages);
   const startItem = rows.length === 0 ? 0 : (activePage - 1) * referralCashoutPageSize + 1;
   const endItem = rows.length === 0 ? 0 : startItem + rows.length - 1;
+  const returnTo = buildReferralCashoutListHref(filters, {}, activePage);
   const statusSummaryOptions = referralCashoutStatusSummaryOptions(summary);
   const metrics: AdminPageMetric[] = [
     {
@@ -118,17 +132,42 @@ export function ReferralCashoutQueuePage({
     <AdminPageTemplate
       title="Referral Cashouts"
       description="Finance queue for referral wallet cashout requests, tax-review holds, and manual paid closeout."
-      metrics={metrics}
+      metrics={readError || partialReadError ? undefined : metrics}
       actions={
         <AdminFormControlLink className="button-secondary" href="/referrals/customers">
           Customer referrals
         </AdminFormControlLink>
       }
     >
+      {readError ? (
+        <AdminTableSection
+          className="admin-mt-16"
+          statusLabel="Unavailable"
+          statusTone="danger"
+          title="Referral cashout data unavailable"
+        >
+          <AdminInlineNotice role="alert" tone="danger">
+            {readError}
+          </AdminInlineNotice>
+          <AdminTextLink className="admin-mt-8" href={returnTo}>
+            Retry
+          </AdminTextLink>
+        </AdminTableSection>
+      ) : (
+        <>
+      {partialReadError ? (
+        <AdminInlineNotice className="admin-mt-16" role="alert" tone="warning">
+          {partialReadError}
+        </AdminInlineNotice>
+      ) : null}
       <AdminFilterPanel
         className="referral-cashout-filter-panel admin-mt-16"
-        resultLabel={`${summary.totalCount} cashout(s)`}
-        resultTone="info"
+        resultLabel={
+          partialReadError
+            ? `${rows.length} cashout ${rows.length === 1 ? 'row' : 'rows'} loaded · summary unavailable`
+            : `${summary.totalCount} cashout(s)`
+        }
+        resultTone={partialReadError ? 'warning' : 'info'}
         title="Referral cashout filters"
       >
         <AdminFormGrid method="get">
@@ -163,7 +202,7 @@ export function ReferralCashoutQueuePage({
             Reset
           </AdminFormControlLink>
         </AdminFormGrid>
-        <AdminSegmentedControl
+        {!partialReadError ? <AdminSegmentedControl
           activeValue={filters.status}
           ariaLabel="Referral cashout queue summary"
           className="referral-reward-queue"
@@ -179,7 +218,7 @@ export function ReferralCashoutQueuePage({
             ),
             value: item.status,
           }))}
-        />
+        /> : null}
         <AdminFilterSummary
           ariaLabel="Active referral cashout filters"
           labels={referralCashoutActiveFilterLabels(filters)}
@@ -202,7 +241,13 @@ export function ReferralCashoutQueuePage({
               rowCount={rows.length}
             >
               {rows.map((row) => (
-              <ReferralCashoutTableRow key={row.id} row={row} />
+              <ReferralCashoutTableRow
+                actionsEnabled={mutationsEnabled && !partialReadError}
+                canReviewTax={canReviewTax}
+                key={row.id}
+                returnTo={returnTo}
+                row={row}
+              />
               ))}
             </AdminDataTable>
           </AdminTableScroll>
@@ -213,14 +258,26 @@ export function ReferralCashoutQueuePage({
             hrefForPage={(page) => buildReferralCashoutListHref(filters, {}, page)}
             to={endItem}
             totalPages={totalPages}
-            totalRows={summary.totalCount}
+            totalRows={totalRows}
           />
       </AdminTableSection>
+        </>
+      )}
     </AdminPageTemplate>
   );
 }
 
-function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQueueRow }) {
+function ReferralCashoutTableRow({
+  actionsEnabled,
+  canReviewTax,
+  returnTo,
+  row,
+}: {
+  readonly actionsEnabled: boolean;
+  readonly canReviewTax: boolean;
+  readonly returnTo: string;
+  readonly row: AdminReferralCashoutQueueRow;
+}) {
   const creditState = referralRewardCreditState(row);
 
   return (
@@ -276,7 +333,12 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
         )}
       </td>
       <td>
-        <ReferralCashoutActions row={row} />
+        <ReferralCashoutActions
+          canReviewTax={canReviewTax}
+          enabled={actionsEnabled}
+          returnTo={returnTo}
+          row={row}
+        />
       </td>
     </tr>
   );
@@ -330,7 +392,40 @@ function referralCashoutPayoutProfileTone(status: AdminReferralCashoutPayoutProf
   return 'warning';
 }
 
-function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQueueRow }) {
+function ReferralCashoutActions({
+  canReviewTax,
+  enabled,
+  returnTo,
+  row,
+}: {
+  readonly canReviewTax: boolean;
+  readonly enabled: boolean;
+  readonly returnTo: string;
+  readonly row: AdminReferralCashoutQueueRow;
+}) {
+  if (row.audience === 'CUSTOMER' && row.status !== 'TAX_REVIEW_REQUIRED') {
+    return (
+      <AdminInlineNotice tone="warning">
+        <strong>Unavailable in wallet-only MVP</strong>
+        <span>Legacy cashout row · read-only investigation</span>
+      </AdminInlineNotice>
+    );
+  }
+  if (row.status === 'TAX_REVIEW_REQUIRED' && !canReviewTax) {
+    return (
+      <AdminInlineNotice tone="warning">
+        <strong>FINANCE_TAX access required</strong>
+        <span>Tax approval, hold, and cashout rejection are read-only for your access.</span>
+      </AdminInlineNotice>
+    );
+  }
+  if (!enabled) {
+    return (
+      <AdminInlineNotice tone="warning">
+        Actions unavailable until the list and summary reload successfully.
+      </AdminInlineNotice>
+    );
+  }
   const actions = referralCashoutActionsForRow(row);
   if (actions.length === 0) {
     return <span className="muted">Closed</span>;
@@ -346,7 +441,10 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
     >
       <ActionMenuDropdownForm action={actions[0]?.action} className="referral-reward-action-form">
         <input name="audience" type="hidden" value={row.audience === 'PARTNER' ? 'partner' : 'customer'} />
+        <input name="expectedStatus" type="hidden" value={row.status} />
+        <input name="expectedUpdatedAt" type="hidden" value={row.updatedAt} />
         <input name="parentId" type="hidden" value={row.parent.id} />
+        <input name="returnTo" type="hidden" value={returnTo} />
         <input name="rewardId" type="hidden" value={row.id} />
         {bankAccountId ? <input name="bankAccountId" type="hidden" value={bankAccountId} /> : null}
         <div className="referral-reward-action-reason">
@@ -354,15 +452,26 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
           <AdminFormInput
             className="referral-reward-action-reason-input"
             label="Cashout decision reason"
+            maxLength={500}
+            minLength={12}
             name="reason"
-            placeholder="Operator decision reason"
+            placeholder="12-500 characters describing the evidence and decision"
+            required
           />
         </div>
+        {row.status === 'TAX_REVIEW_REQUIRED' ? (
+          <AdminInlineNotice tone="info">
+            {row.audience === 'CUSTOMER'
+              ? 'Customer cash payout remains unavailable after tax approval. Rejecting cashout returns the reward to CREDITED and keeps the existing wallet ledger.'
+              : 'Tax approval captures the current approved Partner bank destination. Rejecting cashout returns the reward to CREDITED and keeps the existing wallet ledger.'}
+          </AdminInlineNotice>
+        ) : null}
         {row.status === 'CASHOUT_APPROVED' ? (
           <>
             <AdminInlineNotice tone="info">
-              The signed-in Finance operator is recorded as the paid closeout approver. The API enforces separation
-              from the cashout request approver.
+              {referralCashoutPayoutDestinationSummary(row)} The API revalidates this exact account before wallet
+              debit. The signed-in Finance operator is recorded as the paid closeout approver. The API enforces
+              separation from the cashout request approver.
             </AdminInlineNotice>
             <div className="referral-reward-action-reason">
               <span>Transfer reference</span>
@@ -376,6 +485,16 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
             </div>
           </>
         ) : null}
+        <AdminFormCheckbox
+          label={row.status === 'TAX_REVIEW_REQUIRED' ? 'Confirm tax decision' : 'Confirm cashout decision'}
+          name="confirmation"
+          required
+          value="confirmed"
+        >
+          {row.status === 'TAX_REVIEW_REQUIRED'
+            ? 'I reviewed the current state, tax evidence, reason, and wallet impact.'
+            : 'I reviewed the current state, payout destination, reason, and wallet impact.'}
+        </AdminFormCheckbox>
         <div className="referral-reward-action-button-list">
           {actions.map((item) => (
             <AdminFormControlButton
@@ -393,6 +512,13 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
       </ActionMenuDropdownForm>
     </ActionMenuDropdownSurface>
   );
+}
+
+function referralCashoutPayoutDestinationSummary(row: AdminReferralCashoutQueueRow) {
+  const account = row.payoutProfile.account;
+  if (!account) return 'Payout destination evidence is unavailable.';
+  const last4 = account.accountNumberLast4 ?? account.accountNumberMasked?.replace(/\D/g, '').slice(-4);
+  return `Payout destination: ${account.bankName} · •••• ${last4 || 'unknown'} · ${account.accountHolderName}.`;
 }
 
 function referralCashoutActionsForRow(row: AdminReferralCashoutQueueRow) {
@@ -418,6 +544,13 @@ function referralCashoutActionsForStatus(status: AdminReferralRewardStatus): Ref
     return [
       { action: markReferralRewardCashoutPaid, label: 'Mark paid' },
       { action: requireReferralRewardTaxReview, formNoValidate: true, label: 'Require tax review' },
+    ];
+  }
+  if (status === 'TAX_REVIEW_REQUIRED') {
+    return [
+      { action: approveReferralRewardTaxReview, label: 'Approve tax review' },
+      { action: holdReferralRewardTaxReview, label: 'Keep in tax review' },
+      { action: rejectReferralRewardTaxReview, label: 'Reject cashout; retain wallet reward' },
     ];
   }
   return [];
@@ -525,14 +658,15 @@ function referralCashoutStatusFilterLabel(status: ReferralCashoutStatusFilter | 
 
 function referralCashoutStatusSummaryOptions(summary: AdminReferralCashoutQueueSummary) {
   const needsActionItems = summary.statusSummaries.filter((item) => item.status !== 'paid');
+  const allItems = summary.statusSummaries;
   const needsAction = {
     amount: needsActionItems.reduce((total, item) => total + item.amount, 0),
     count: needsActionItems.reduce((total, item) => total + item.count, 0),
     status: 'needs-action' as const,
   };
   const all = {
-    amount: summary.totalAmount,
-    count: summary.totalCount,
+    amount: allItems.reduce((total, item) => total + item.amount, 0),
+    count: allItems.reduce((total, item) => total + item.count, 0),
     status: 'all' as const,
   };
 

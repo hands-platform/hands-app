@@ -199,6 +199,11 @@ export class AdminWalletRoutes extends AdminBankRoutes {
     return this.admin.searchManualWalletAdjustmentOwners({ ownerType, q, take });
   }
 
+  @Get('wallet-adjustments/:id')
+  manualWalletAdjustment(@Param('id') id: string) {
+    return this.admin.manualWalletAdjustment(id);
+  }
+
   @Post('wallet-adjustments/preview')
   previewManualWalletAdjustment(
     @CurrentUser() user: AuthenticatedUser,

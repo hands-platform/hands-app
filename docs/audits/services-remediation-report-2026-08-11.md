@@ -165,7 +165,7 @@ The two existing Admin failures are:
 `npm.cmd run verify:local` was attempted and completed with failures outside this Service Catalog scope:
 
 - Operations Policy final-authority markers are out of sync with its current refactor.
-- Vietnam scope guard flags Bangkok timezone examples in Tax Policy audit/prompt documents.
+- Vietnam scope guard flags noncanonical timezone examples in Tax Policy audit/prompt documents.
 - Supabase schema alignment is missing the existing `FINANCE_EVIDENCE` enum value.
 - API domain smoke has a pre-existing assertion failure.
 - The same two unrelated Admin tests above fail.

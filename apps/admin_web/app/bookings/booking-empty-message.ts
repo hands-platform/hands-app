@@ -6,15 +6,31 @@ export function emptyBookingMessage(
   view: BookingPageView,
   filters?: {
     readonly age?: AdminQueueAge;
+    readonly completedWorkspace?: boolean;
     readonly dateRangeFilter?: BookingDateRangeFilter;
+    readonly hasActiveFilters?: boolean;
+    readonly queueLabel?: string;
     readonly searchQuery?: string;
   },
 ) {
   const query = filters?.searchQuery?.trim();
+  if (query && filters?.queueLabel) {
+    return `No bookings match “${query}” in ${filters.queueLabel}. Reset filters or change the queue.`;
+  }
   if (query) {
     return `No records match “${query}” in ${bookingEmptyPeriodLabel(filters?.dateRangeFilter)}. Clear the search or change the period.`;
   }
-  if (filters && (filters.age !== 'all' || filters.dateRangeFilter !== 'all')) {
+  if (filters?.queueLabel && (filters.hasActiveFilters || filters.age !== 'all')) {
+    return `No bookings match the current filters in ${filters.queueLabel}. Reset filters or change the queue.`;
+  }
+  if (filters?.completedWorkspace) {
+    return completedBookingEmptyMessage(view, filters.age, filters.dateRangeFilter);
+  }
+  if (
+    filters &&
+    ((filters.age !== undefined && filters.age !== 'all') ||
+      (filters.dateRangeFilter !== undefined && filters.dateRangeFilter !== 'all'))
+  ) {
     return 'No records match the current closed-period and waiting-time filters.';
   }
   if (view === 'active') {
@@ -107,8 +123,32 @@ export function emptyBookingMessage(
   return 'No booking records are available yet.';
 }
 
+function completedBookingEmptyMessage(
+  view: BookingPageView,
+  age?: AdminQueueAge,
+  range?: BookingDateRangeFilter,
+) {
+  const descriptions: Partial<Record<BookingPageView, readonly [string, string]>> = {
+    payment: ['payment exceptions', 'found'],
+    'cash-debt': ['cash commission cases', 'found'],
+    'refund-review': ['refund mismatch cases', 'found'],
+    closeout: ['closeout records', 'found'],
+    pricing: ['pricing exceptions', 'found'],
+    expired: ['expired records', 'closed'],
+    all: ['terminal records', 'closed'],
+  };
+  const [subject, outcome] = descriptions[view] ?? ['booking records', 'found'];
+  const period = bookingEmptyPeriodSuffix(range);
+
+  return age && age !== 'all'
+    ? `No ${subject} match the selected waiting-time filter ${period}.`
+    : `No ${subject} were ${outcome} ${period}.`;
+}
+
 function bookingEmptyPeriodLabel(range?: BookingDateRangeFilter) {
   switch (range) {
+    case 'all':
+      return 'All dates';
     case 'yesterday':
       return 'Yesterday';
     case '7d':
@@ -120,5 +160,23 @@ function bookingEmptyPeriodLabel(range?: BookingDateRangeFilter) {
     case 'today':
     default:
       return 'Today';
+  }
+}
+
+function bookingEmptyPeriodSuffix(range?: BookingDateRangeFilter) {
+  switch (range) {
+    case 'yesterday':
+      return 'yesterday';
+    case '7d':
+      return 'in the last 7 days';
+    case '30d':
+      return 'in the last 30 days';
+    case 'custom':
+      return 'in the selected custom period';
+    case 'all':
+      return 'in the selected period';
+    case 'today':
+    default:
+      return 'today';
   }
 }

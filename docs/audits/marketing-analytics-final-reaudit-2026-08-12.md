@@ -1,6 +1,6 @@
 # Marketing Analytics Today 3개 뷰 최종 재감사 보고서
 
-- 감사일: 2026-08-12 (Asia/Bangkok)
+- 감사일: 2026-08-12 (Asia/Ho_Chi_Minh)
 - 대상:
   - `/marketing-analytics?range=today&view=campaigns`
   - `/marketing-analytics?range=today&view=attribution`

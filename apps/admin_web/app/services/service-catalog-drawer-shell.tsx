@@ -81,6 +81,7 @@ export function ServiceCatalogDrawerShell({
       >
         <ServiceCatalogDrawerContext.Provider value={contextValue}>
         <div
+          className="service-menu-dialog-shell"
           onChangeCapture={() => {
             dirtyRef.current = true;
           }}

@@ -31,6 +31,7 @@ type PartnerAccountActionMetadata = {
   readonly confirmLabel: string;
   readonly description: (provider: AdminProvider) => string;
   readonly disabledReason?: (provider: AdminProvider) => string;
+  readonly reasonLabel?: string;
   readonly reasonPlaceholder?: string;
   readonly title: (provider: AdminProvider) => string;
   readonly tone: StatusBadgeTone;
@@ -84,6 +85,8 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
     confirmLabel: 'Release hold',
     description: (provider) =>
       `Release Partner ${partnerLabel(provider)} only after the recorded identity, safety, payout, or policy issue is resolved.`,
+    reasonLabel: 'Lift reason and evidence',
+    reasonPlaceholder: 'State what was resolved and which evidence was verified',
     title: (provider) => `Release hold for Partner ${partnerLabel(provider)}?`,
     tone: 'warning',
   },
@@ -148,7 +151,7 @@ export function buildPartnerAccountActionConfirmation(
     textInputs: metadata.reasonPlaceholder
       ? [
           {
-            label: 'Reason',
+            label: metadata.reasonLabel ?? 'Reason',
             maxLength: REVIEW_REASON_LIMITS.maxLength,
             minLength: REVIEW_REASON_LIMITS.minLength,
             name: 'reason',

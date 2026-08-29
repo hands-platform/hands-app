@@ -13,6 +13,23 @@ vi.mock('../../lib/admin-api', async () => {
 const mockedPost = vi.mocked(adminPostOrThrow);
 
 describe('operations handoff server actions', () => {
+  it('rejects send and acknowledgement before the Admin API when the launch gate is off', async () => {
+    vi.stubEnv('SHIFT_HANDOFF_LAUNCH_ENABLED', 'false');
+    try {
+      await expect(createOperationsShiftHandoff(new FormData())).resolves.toEqual({
+        message: 'Shift Handoff is not active for the current launch.',
+        status: 'error',
+      });
+      await expect(acknowledgeOperationsShiftHandoff(new FormData())).resolves.toEqual({
+        message: 'Shift Handoff is not active for the current launch.',
+        status: 'error',
+      });
+      expect(mockedPost).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('sends structured open-case references and reports success', async () => {
     mockedPost.mockResolvedValueOnce({ handoffId: 'handoff-1', ok: true });
     const formData = new FormData();

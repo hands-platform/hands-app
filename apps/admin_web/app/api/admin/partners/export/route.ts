@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type { AdminOperationalPolicySetting, AdminProvider } from '../../../../../lib/admin-api';
+import type {
+  AdminOperationalPolicySetting,
+  AdminPartnerWalletDebtPage,
+  AdminProvider,
+} from '../../../../../lib/admin-api';
 import { adminGetResult } from '../../../../../lib/admin-api';
 import { requireAdminWebAccess } from '../../../../../lib/admin-session';
 import { buildCsvContent } from '../../../../../lib/csv-export';
@@ -48,8 +52,25 @@ export async function GET(request: NextRequest) {
 
   const filters = buildProviderFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
   const dataHrefs = buildPartnerDataHrefs(filters);
+  const snapshotCursorFallback: AdminPartnerWalletDebtPage = {
+    generatedAt: '',
+    items: [],
+    page: {
+      currentCursor: '',
+      hasNextPage: false,
+      nextCursor: null,
+      offset: 0,
+      returned: 0,
+      snapshotCursor: '',
+      totalCount: 0,
+    },
+    snapshotAt: '',
+  };
   const [providersResult, policiesResult] = await Promise.all([
-    adminGetResult<AdminProvider[]>(dataHrefs.listHref, []),
+    adminGetResult<AdminProvider[] | AdminPartnerWalletDebtPage>(
+      dataHrefs.listHref,
+      dataHrefs.listUsesSnapshotCursor ? snapshotCursorFallback : [],
+    ),
     adminGetResult<AdminOperationalPolicySetting[]>(buildProviderOpsPolicyApiHref(), []),
   ]);
   if (!providersResult.ok) {
@@ -58,7 +79,9 @@ export async function GET(request: NextRequest) {
   if (!policiesResult.ok) {
     return exportError('Partner export policy data could not be loaded. Retry the export.');
   }
-  const rawProviders = providersResult.data;
+  const rawProviders = dataHrefs.listUsesSnapshotCursor
+    ? (providersResult.data as AdminPartnerWalletDebtPage).items
+    : (providersResult.data as AdminProvider[]);
   const operationalPolicies = policiesResult.data;
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const allProviders = dataHrefs.listIsServerPaginated

@@ -1,6 +1,6 @@
 # Audit Log post-remediation implementation report
 
-검증 실행일: 2026-08-15 (Asia/Bangkok)  
+검증 실행일: 2026-08-15 (Asia/Ho_Chi_Minh)
 대상: HANDS Admin `/audit-log`  
 저장소: `C:\dev\massage-on-demand-vn`
 

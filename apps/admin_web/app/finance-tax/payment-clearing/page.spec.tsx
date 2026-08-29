@@ -100,8 +100,16 @@ describe('PaymentClearingPage Vuexy links', () => {
       title: 'Partial Matches',
     });
     await expect(generateMetadata({ searchParams: Promise.resolve({ review: 'terminal' }) })).resolves.toEqual({
-      title: 'Payment Matching History',
+      title: 'Cleared & Reversed History',
     });
+  });
+
+  it('remounts only the Payment Clearing filter form when its URL-owned values change', () => {
+    expect(source).toContain('key={JSON.stringify([');
+    expect(source).toContain('filters.review,');
+    expect(source).toContain('filters.sort,');
+    expect(source).toContain('filters.q,');
+    expect(source).toContain('reviewOwner,');
   });
 
   it('renders an actionable error instead of zero-value queue data when a list read fails', async () => {
@@ -284,6 +292,7 @@ describe('PaymentClearingPage Vuexy links', () => {
     expect(markup).toContain('0 selected');
     expect(markup).not.toContain('Assign selected to');
     expect(source).toContain('loadOwnerOptions={loadPaymentClearingReviewOwnerOptions}');
+    expect(source).not.toContain('actions={\n          showBulkReviewAssignment');
     expect(selectionSource).toContain('loadOwnerOptionsRef.current()');
     expect(selectionSource).toContain('const shouldSelect = selectedCount === 0');
     expect(selectionSource).toContain('Assign selected to');
@@ -354,6 +363,42 @@ describe('PaymentClearingPage Vuexy links', () => {
     expect(
       mockedAdminGet.mock.calls.some(([href]) => href.includes('/review-owner-summary')),
     ).toBe(false);
+  });
+
+  it('renders terminal evidence with one outcome and explicitly labelled times', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/booking-payment-clearing?')) {
+        return [{
+          _count: { bankReconciliationMatches: 1 },
+          amount: -300000,
+          bookingId: 'booking-reversed-1',
+          clearedAt: '2026-08-03T14:50:00.000Z',
+          createdAt: '2026-08-03T14:45:22.291Z',
+          currency: 'VND',
+          id: 'clearing-reversed-1',
+          matchedAmount: 300000,
+          occurredAt: '2026-08-03T14:45:22.291Z',
+          paymentId: 'payment-reversed-1',
+          remainingAmount: 300000,
+          sourceKey: 'payment:reversed:1',
+          status: 'REVERSED',
+          type: 'CUSTOMER_PAYMENT_CAPTURED',
+          updatedAt: '2026-08-03T14:50:00.000Z',
+        }] as never;
+      }
+      return fallback as never;
+    });
+
+    const markup = renderToStaticMarkup(await PaymentClearingPage({
+      searchParams: Promise.resolve({ range: 'all', review: 'terminal', sort: 'recent' }),
+    }));
+
+    expect(markup).toContain('Outcome &amp; time');
+    expect(markup).toContain('>Occurred <time');
+    expect(markup).toContain('>Closed at <time');
+    expect(markup).toContain('>View evidence<');
+    expect(markup).not.toContain('<span class="muted">Closed</span>');
+    expect(markup).not.toContain('Owner &amp; SLA');
   });
 
   it('keeps the 48h SLA scope on list, summary, owner workload, and pagination links', async () => {

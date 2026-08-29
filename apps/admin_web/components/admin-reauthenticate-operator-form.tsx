@@ -8,7 +8,7 @@ import { INITIAL_ADMIN_OPERATOR_ACTION_STATE } from '../app/admin-operators/acti
 import { AdminFormControlButton, AdminFormInput } from './admin-form-light-controls';
 import { AdminInlineNotice } from './admin-inline-notice';
 
-export function AdminReauthenticateOperatorForm() {
+export function AdminReauthenticateOperatorForm({ onSuccess }: { readonly onSuccess?: () => void } = {}) {
   const [state, action, pending] = useActionState(reauthenticateAdminOperator, INITIAL_ADMIN_OPERATOR_ACTION_STATE);
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -16,11 +16,15 @@ export function AdminReauthenticateOperatorForm() {
     if (state.status !== 'idle') resultRef.current?.focus();
   }, [state.status]);
 
+  useEffect(() => {
+    if (state.status === 'success') onSuccess?.();
+  }, [onSuccess, state.status]);
+
   return (
     <form action={action} className="operator-access-reauth-form">
       <div>
-        <strong><KeyRound aria-hidden="true" size={16} /> Confirm high-risk changes</strong>
-        <p className="muted">Password confirmation unlocks operator access changes for 10 minutes.</p>
+        <strong><KeyRound aria-hidden="true" size={16} /> Confirm high-risk action</strong>
+        <p className="muted">Password confirmation unlocks high-risk Admin actions for 10 minutes.</p>
       </div>
       <AdminFormInput
         aria-invalid={Boolean(state.fieldErrors?.password)}

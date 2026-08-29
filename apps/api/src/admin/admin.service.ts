@@ -10,6 +10,8 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  HttpException,
+  HttpStatus,
   Logger,
   NotFoundException,
   Optional,
@@ -29,6 +31,8 @@ import {
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
   CompanyBankAccountDataScope,
+  CompanyBankAccountEvidenceKind,
+  CompanyBankAccountEvidenceStatus,
   CompanyBankAccountStatus,
   CompanyBankTransactionType,
   BookingStatus,
@@ -99,11 +103,9 @@ import {
 } from '../auth/admin-mfa';
 import { appUsageDay } from '../app-usage/app-usage-daily-aggregate';
 import * as adminOperatorPermissionManifest from './admin-operator-permission-manifest.json';
+import * as financeApproverGovernanceContract from './finance-approver-governance-contract.json';
 import { EarningsService } from '../earnings/earnings.service';
-import {
-  cashSettlementDebtCteSql,
-  cashSettlementDebtFilterSql,
-} from '../earnings/cash-settlement-query';
+import { cashSettlementDebtCteSql, cashSettlementDebtFilterSql } from '../earnings/cash-settlement-query';
 import { FilesService } from '../files/files.service';
 import { allocatePartnerBankDeposit, normalizePartnerBankDepositInput } from '../earnings/earnings.policy';
 import {
@@ -149,11 +151,13 @@ import {
 import { notificationRetryAuditMetadata } from '../notifications/notification-retry-audit';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  ACCOUNTING_JOURNAL_MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES,
   buildAccountingJournalIntegrity,
   type AccountingJournalIntegrity,
 } from './admin-accounting-journal-integrity';
 import {
   ADMIN_AUDIT_SAVED_VIEWS,
+  adminAuditCanonicalCreateData,
   adminAuditActorTypeWhere,
   adminAuditAreaWhere,
   adminAuditDefaultWhere,
@@ -167,6 +171,7 @@ import {
   type AdminAuditActorTypeValue,
   type AdminAuditAreaValue,
   type AdminAuditOutcomeValue,
+  type AdminAuditRegistryRow,
   type AdminAuditSavedView,
   type AdminAuditSeverityValue,
 } from './admin-audit-event-registry';
@@ -210,6 +215,7 @@ import { bpsAmount } from '../settlements/settlement-calculator';
 import {
   settlementAllocationIdentity,
   settlementAuditHealth,
+  settlementReversalEvidenceDecision,
   type SettlementAuditHealthInput,
 } from '../settlements/settlement-audit-health';
 import {
@@ -257,6 +263,10 @@ import {
 } from '../bookings/post-match-cancellation';
 import { isCustomerSelectableParticipantForFinalChoice } from '../bookings/bookings.policy';
 import {
+  COUPON_RELEASE_REASON,
+  releaseCouponRedemptionForBooking,
+} from '../bookings/bookings.coupon-redemption';
+import {
   withAdminBookingMatchingEvidence,
   withAdminBookingMatchingEvidenceList,
 } from './admin-booking-matching-evidence';
@@ -272,6 +282,7 @@ import {
   ADMIN_POST_MATCH_CANCELLATION_REASON_CODES,
   type AdminBookingListQuery,
   addLocalDays,
+  adminBookingIsMatchingDelay,
   adminBookingListDefaultSort,
   adminBookingListDateBounds,
   adminBookingListDateWhere,
@@ -290,7 +301,10 @@ import {
   adminStartShiftOpenCaseCtes,
   type AdminOpenOperationsCaseQueueKey,
 } from './admin-start-shift-open-cases';
-import { adminOperatorHasRequiredCategory } from './admin-operator-category.guard';
+import {
+  adminOperatorHasRequiredCategory,
+  FINANCE_MONEY_MOVEMENT_PERMISSION_CATEGORIES,
+} from './admin-operator-category.guard';
 import {
   assertVerifiedFinanceApprover,
   evaluateFinanceApproverPolicy,
@@ -298,6 +312,11 @@ import {
   FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
   FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION,
   FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_VALIDITY_DAYS,
+  financeApproverLegacyAttestationEventLifecycle,
+  financeApproverLegacyAttestationState,
   financeApproverPolicySnapshot,
   financeApproverPolicyUserSelect,
   financeApproverKnownTestRunId,
@@ -376,6 +395,19 @@ import {
   adminNotificationProductionDataSql,
 } from './admin-notification-production-data';
 import {
+  assignNotificationDeliveryIncident,
+  listNotificationDeliveryIncidents,
+  notificationDeliveryIncidentDetail,
+  openNotificationDeliveryIncident,
+  reopenNotificationDeliveryIncident,
+  resolveNotificationDeliveryIncident,
+  type AssignNotificationDeliveryIncidentInput,
+  type NotificationDeliveryIncidentListOptions,
+  type OpenNotificationDeliveryIncidentInput,
+  type ReopenNotificationDeliveryIncidentInput,
+  type ResolveNotificationDeliveryIncidentInput,
+} from './admin-notification-delivery-incident';
+import {
   adminRefundOperationalStage,
   adminRefundQueueAgeDateWhere,
   adminRefundQueueMetaQuery,
@@ -392,9 +424,7 @@ import {
   adminPaymentEvidenceSelect,
   adminRefundListSelect,
 } from './admin-payment-selects';
-import {
-  paymentOperationDecision,
-} from '../payments/payment-action-decision';
+import { paymentOperationDecision } from '../payments/payment-action-decision';
 import {
   adminCustomerDirectorySelect,
   adminCustomerDetailSelect,
@@ -494,6 +524,7 @@ import {
   buildMarketingSpendCoverage,
   canonicalMarketingCampaignKey,
   emptyMarketingStats,
+  marketingPaidScopeExpected,
   normalizeAdminMarketingRange,
   normalizeMarketingPlatform,
   normalizeMarketingPlatformFilter,
@@ -522,6 +553,7 @@ import type {
   CreateFinanceApproverLegacyAttestationDto,
   CreateBankReconciliationMatchDto,
   CreateCompanyBankAccountDto,
+  CreateCompanyBankAccountEvidenceReviewDto,
   CreateCompanyBankTransactionDto,
   DecideCompanyBankAccountChangeDto,
   CompanyBankTransactionBatchRowDto,
@@ -541,6 +573,7 @@ import type {
   RepairBookingSettlementGapDto,
   ReauthenticateAdminOperatorDto,
   ResetAdminMfaDto,
+  RevokeFinanceApproverLegacyAttestationDto,
   ReorderPartnerPublicMediaDto,
   ReverseBankReconciliationMatchDto,
   UpdateAdminCalendarEventDto,
@@ -804,7 +837,6 @@ const ADMIN_VIETNAM_REALTIME_POINT_MAX_LIMIT = 50;
 const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 100;
 const ADMIN_PARTNER_OVERVIEW_PARTNER_SCAN_LIMIT = 500;
-const ADMIN_PARTNER_OVERVIEW_BOOKING_SCAN_LIMIT = 150;
 const ADMIN_PARTNER_OVERVIEW_SERVICE_LIMIT = 80;
 const ADMIN_PARTNER_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_OPERATIONAL_SERVICE_DURATIONS = new Set([60, 90, 120]);
@@ -882,6 +914,7 @@ const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 25;
 const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 20;
 const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 20;
+const ADMIN_NOTIFICATION_BOARD_MAX_SKIP = 10000;
 const ADMIN_NOTIFICATION_TEMPLATE_LIST_LIMIT = 50;
 const ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES = [
   'booking.requested',
@@ -903,6 +936,10 @@ const ADMIN_PARTNER_OVERVIEW_DETAIL_DURATION_EVENT_SCAN_LIMIT = 2000;
 const ADMIN_PARTNER_OVERVIEW_RESPONSE_EVENT_SCAN_LIMIT = 2000;
 const ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT = 100;
 const ADMIN_PUSH_CAMPAIGN_PREVIEW_TTL_MS = 15 * 60 * 1000;
+const ADMIN_PUSH_CAMPAIGN_PREVIEW_RATE_LIMIT = 30;
+const ADMIN_PUSH_CAMPAIGN_PREVIEW_RATE_WINDOW_MS = 60_000;
+const ADMIN_PUSH_CAMPAIGN_CONFIRM_RATE_LIMIT = 5;
+const ADMIN_PUSH_CAMPAIGN_CONFIRM_RATE_WINDOW_MS = 15 * 60_000;
 const ADMIN_PUSH_SEGMENT_ALL = 'all';
 const ADMIN_PUSH_CUSTOMER_SEGMENTS = new Set([
   ADMIN_PUSH_SEGMENT_ALL,
@@ -926,6 +963,7 @@ const ADMIN_PUSH_SEGMENT_WINDOWS = {
 };
 const ADMIN_PUSH_CAMPAIGN_HISTORY_DEFAULT_LIMIT = 20;
 const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 50;
+const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_SKIP = 10000;
 const adminPushCampaignOperatorSelect = {
   appDestination: true,
   body: true,
@@ -1046,6 +1084,12 @@ const FINANCE_APPROVAL_QUEUE_WITHDRAWAL_STATUSES = [
   ProviderWalletWithdrawalRequestStatus.HOLD,
 ] as const;
 const ADMIN_ACTIVE_WITHDRAWAL_REQUEST_STATUSES = FINANCE_APPROVAL_QUEUE_WITHDRAWAL_STATUSES;
+const ADMIN_REJECTABLE_WITHDRAWAL_REQUEST_STATUSES = [
+  ProviderWalletWithdrawalRequestStatus.REQUESTED,
+  ProviderWalletWithdrawalRequestStatus.APPROVED,
+  ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+  ProviderWalletWithdrawalRequestStatus.HOLD,
+] as const;
 
 type AdminAppSessionListQuery = {
   readonly platform?: string | null;
@@ -1066,6 +1110,7 @@ type AdminChatArchiveListQuery = {
   readonly status?: string | null;
   readonly take?: number | string | null;
 };
+const ADMIN_CHAT_ARCHIVE_QUERY_MAX_LENGTH = 120;
 type AdminReferralParentListQuery = {
   readonly fraud?: string | null;
   readonly q?: string | null;
@@ -1094,6 +1139,7 @@ type AdminPaymentOperationsQuery = {
   readonly customerProfileId?: string | null;
   readonly cursor?: string | null;
   readonly evidence?: string | null;
+  readonly id?: string | null;
   readonly paymentMethod?: string | null;
   readonly paymentStatus?: string | null;
   readonly period?: string | null;
@@ -1307,6 +1353,9 @@ const adminBookingSettlementSnapshotListSelect = {
   platformFeeGross: true,
   platformFeeNetRevenue: true,
   companyOutputVat: true,
+  platformFeePolicyVersionId: true,
+  platformFeeRuleSnapshot: true,
+  platformVatRateBps: true,
   paymentFeePolicyVersionId: true,
   paymentFeeRuleSnapshot: true,
   paymentProcessingFee: true,
@@ -1476,12 +1525,26 @@ const adminBookingSettlementGapPreviewSelect = {
       amount: true,
       currency: true,
       method: true,
+      rawMeta: true,
       status: true,
+    },
+  },
+  services: {
+    orderBy: { id: 'asc' },
+    select: {
+      id: true,
+      payoutRuleIdSnapshot: true,
+      payoutRuleSnapshot: true,
+      price: true,
+      providerPayoutAmountSnapshot: true,
+      quantity: true,
+      serviceId: true,
     },
   },
   earning: {
     select: {
       id: true,
+      providerProfileId: true,
       status: true,
       grossAmount: true,
       platformFee: true,
@@ -1490,6 +1553,7 @@ const adminBookingSettlementGapPreviewSelect = {
       currency: true,
       paidAt: true,
       payoutBatchId: true,
+      updatedAt: true,
     },
   },
   settlementSnapshot: { select: { id: true } },
@@ -1628,6 +1692,9 @@ const adminBookingSettlementReversalEntryListSelect = {
       amount: true,
       currency: true,
       occurredAt: true,
+      bankReconciliationMatches: {
+        select: { amount: true, status: true },
+      },
     },
   },
   originalSettlementSnapshot: {
@@ -1636,14 +1703,14 @@ const adminBookingSettlementReversalEntryListSelect = {
       customerProfile: {
         select: {
           id: true,
-          user: { select: { fullName: true, phone: true } },
+          user: { select: { fullName: true } },
         },
       },
       providerProfile: {
         select: {
           id: true,
           displayName: true,
-          user: { select: { fullName: true, phone: true } },
+          user: { select: { fullName: true } },
         },
       },
     },
@@ -1651,6 +1718,7 @@ const adminBookingSettlementReversalEntryListSelect = {
 } satisfies Prisma.BookingSettlementReversalEntrySelect;
 const adminBookingSettlementReversalEntryDetailSelect = {
   ...adminBookingSettlementReversalEntryListSelect,
+  metadata: true,
   accountingJournalBatches: {
     orderBy: { postedAt: 'desc' },
     take: 1,
@@ -1714,14 +1782,14 @@ const adminBookingSettlementReversalEntryDetailSelect = {
       customerProfile: {
         select: {
           id: true,
-          user: { select: { id: true, fullName: true, phone: true } },
+          user: { select: { id: true, fullName: true } },
         },
       },
       providerProfile: {
         select: {
           id: true,
           displayName: true,
-          user: { select: { id: true, fullName: true, phone: true } },
+          user: { select: { id: true, fullName: true } },
         },
       },
     },
@@ -1763,6 +1831,7 @@ const adminAccountingJournalBatchListSelect = {
 } satisfies Prisma.AccountingJournalBatchSelect;
 const adminAccountingJournalBatchDetailSelect = {
   ...adminAccountingJournalBatchListSelect,
+  createdById: true,
   metadata: true,
   payment: { select: { id: true, method: true, status: true, amount: true, currency: true } },
   settlementSnapshot: {
@@ -1787,6 +1856,7 @@ const adminAccountingJournalBatchDetailSelect = {
       monthlyPeriod: true,
       postedAt: true,
       closedAt: true,
+      reversedById: true,
     },
   },
   settlementReversalEntry: {
@@ -2090,6 +2160,25 @@ const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.ARRIVED,
   BookingStatus.IN_SERVICE,
 ]);
+const ADMIN_CUSTOMER_ACTIVE_BOOKING_LIMIT = 10;
+
+function adminCustomerActiveBookingPriority(status: BookingStatus) {
+  switch (status) {
+    case BookingStatus.IN_SERVICE:
+      return 5;
+    case BookingStatus.ARRIVED:
+      return 4;
+    case BookingStatus.PROVIDER_ON_THE_WAY:
+      return 3;
+    case BookingStatus.MATCHED:
+      return 2;
+    case BookingStatus.OPEN_MATCHING:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 const ADMIN_VIETNAM_ASSIGNED_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.MATCHED,
   BookingStatus.PROVIDER_ON_THE_WAY,
@@ -2212,6 +2301,10 @@ const adminOperatorDirectorySelect = {
   roles: true,
   createdAt: true,
   updatedAt: true,
+  adminUserProvenance: true,
+  fixtureKind: true,
+  fixtureRunId: true,
+  fixtureExpiresAt: true,
   adminOperatorPermission: {
     select: {
       id: true,
@@ -2270,6 +2363,7 @@ const financeApproverAccessRequestSelect = {
   operatorReason: true,
   requestedAt: true,
   expectedTargetUpdatedAt: true,
+  expectedPermissionVersion: true,
   status: true,
   decidedByAdminId: true,
   decisionReason: true,
@@ -2413,6 +2507,9 @@ const REFERRAL_REWARD_DECISION_ACTIONS = [
   'referral_reward.reverse',
   'referral_reward.cashout_approve',
   'referral_reward.tax_review_required',
+  'referral_reward.tax_review_approve',
+  'referral_reward.tax_review_hold',
+  'referral_reward.tax_review_reject',
   'referral_reward.cashout_paid',
 ] as const;
 
@@ -2428,7 +2525,10 @@ const adminCustomerReferralParentSelect = {
   id: true,
   user: { select: adminUserSummarySelect },
   referralCodes: {
-    where: { audience: ReferralAudience.CUSTOMER, NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } } },
+    where: {
+      audience: ReferralAudience.CUSTOMER,
+      NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } },
+    },
     orderBy: { createdAt: 'desc' },
     take: 1,
     select: adminReferralCodeSelect,
@@ -2460,7 +2560,10 @@ const adminCustomerReferralParentListSelect = {
   id: true,
   user: { select: adminUserSummarySelect },
   referralCodes: {
-    where: { audience: ReferralAudience.CUSTOMER, NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } } },
+    where: {
+      audience: ReferralAudience.CUSTOMER,
+      NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } },
+    },
     orderBy: { createdAt: 'desc' },
     take: 1,
     select: adminReferralCodeSelect,
@@ -2519,7 +2622,10 @@ const adminPartnerReferralParentSelect = {
   status: true,
   user: { select: adminUserSummarySelect },
   referralCodes: {
-    where: { audience: ReferralAudience.PARTNER, NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } } },
+    where: {
+      audience: ReferralAudience.PARTNER,
+      NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } },
+    },
     orderBy: { createdAt: 'desc' },
     take: 1,
     select: adminReferralCodeSelect,
@@ -2607,6 +2713,22 @@ function financeApprovalAdminIdFromMetadata(metadata: unknown) {
 function payoutBatchAuditStatus(metadata: unknown) {
   const record = recordFromUnknown(metadata);
   return typeof record?.status === 'string' ? normalizeNullable(record.status) : null;
+}
+
+function adminMaskedPartnerBankAccount(account: unknown) {
+  const record = recordFromUnknown(account);
+  const bankName = typeof record?.bankName === 'string' ? normalizeNullable(record.bankName) : null;
+  const explicitLast4 =
+    typeof record?.accountNumberLast4 === 'string' ? normalizeNullable(record.accountNumberLast4) : null;
+  const maskedDigits =
+    typeof record?.accountNumberMasked === 'string' ? record.accountNumberMasked.replace(/\D/gu, '') : '';
+  const accountLast4 =
+    explicitLast4 && /^\d{4}$/u.test(explicitLast4)
+      ? explicitLast4
+      : maskedDigits.length >= 4
+        ? maskedDigits.slice(-4)
+        : null;
+  return { accountLast4, bankName };
 }
 
 function partnerBankDepositRequestWithOperators<
@@ -2737,6 +2859,30 @@ type AdminPartnerDirectoryQueryOptions = AdminPartnerDirectorySummaryOptions & {
   sort?: string | null;
   take?: number | string | null;
 };
+
+type AdminPartnerWalletDebtCursorQueryOptions = {
+  cursor?: string | null;
+  q?: string | null;
+  take?: number | string | null;
+};
+
+type AdminPartnerWalletDebtPageRow = {
+  activityNickname: string | null;
+  balance: bigint | null;
+  city: string | null;
+  displayName: string | null;
+  legalName: string | null;
+  providerProfileId: string | null;
+  snapshotAt: Date;
+  totalCount: bigint | number;
+  userEmail: string | null;
+  userFullName: string | null;
+  userPhone: string | null;
+};
+
+type AdminProviderDirectoryRow = Prisma.ProviderProfileGetPayload<{
+  select: typeof adminProviderDirectorySelect;
+}>;
 
 type AdminOperationsHandoffProviderListOptions = {
   review?: string | null;
@@ -3376,6 +3522,7 @@ type AdminManualWalletAdjustmentPreview = ManualWalletAdjustmentPreview & {
 const OPERATIONS_SHIFT_HANDOFF_CREATE_ACTION = 'operations.shift_handoff.create';
 const OPERATIONS_SHIFT_HANDOFF_ACKNOWLEDGE_ACTION = 'operations.shift_handoff.acknowledge';
 const OPERATIONS_SHIFT_HANDOFF_TARGET_PREFIX = 'operations:shift_handoff:';
+const OPERATIONS_HANDOFF_OPEN_CASE_REVISION_KEY = 'open-cases';
 
 function operationsShiftHandoffMetadata(metadata: Prisma.JsonValue | null | undefined) {
   if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return null;
@@ -3543,6 +3690,12 @@ type AdminOperationsHandoffCaseInput = {
   queueKey?: string;
 };
 
+type FinanceOverviewPaymentSummaryPhaseDurations = {
+  aggregateAndCountMs: number;
+  ageAndSlaMs: number;
+  durationMs: number;
+};
+
 function operationsShiftHandoffOperatorLabel(operator: {
   email: string | null;
   fullName: string | null;
@@ -3550,6 +3703,20 @@ function operationsShiftHandoffOperatorLabel(operator: {
   phone: string;
 }) {
   return normalizeNullable(operator.fullName) ?? operator.email ?? operator.phone ?? operator.id;
+}
+
+async function timedFinanceOverviewSummary<T>(
+  name: string,
+  durations: Record<string, number>,
+  operation: () => T | Promise<T>,
+) {
+  const startedAt = Date.now();
+  try {
+    const result = await operation();
+    return result;
+  } finally {
+    durations[name] = Date.now() - startedAt;
+  }
 }
 
 @Injectable()
@@ -3601,7 +3768,8 @@ export class AdminService {
             lastError instanceof Error ? lastError.stack : undefined,
           );
           const notificationRecoveries = notificationRecoveryAuditPayloads(lastError);
-          await this.prisma.adminAuditLog.create({
+          await this.prisma.adminAuditLog
+            .create({
             data: {
               actorId: null,
               actorKey: 'admin-booking-post-commit-effects',
@@ -3618,24 +3786,22 @@ export class AdminService {
                 bookingId,
                 effect: effect.label,
                 attempts: 3,
-                error: lastError instanceof Error
+                  error:
+                    lastError instanceof Error
                   ? lastError.message.slice(0, 500)
                   : String(lastError).slice(0, 500),
                 ...(notificationRecoveries ? { notificationRecoveries } : {}),
               },
             },
-          }).catch(() => undefined);
+            })
+            .catch(() => undefined);
         }
       }),
     );
   }
 
   matchingPreview(referenceBookingId?: string) {
-    return buildAdminMatchingPreview(
-      this.prisma,
-      this.config ?? new ConfigService(),
-      referenceBookingId,
-    );
+    return buildAdminMatchingPreview(this.prisma, this.config ?? new ConfigService(), referenceBookingId);
   }
 
   listUsers(options: AdminUserListOptions = {}) {
@@ -3679,8 +3845,7 @@ export class AdminService {
           securityIncompleteDistinct,
           actor,
           activeMasterCount,
-        ] =
-          await Promise.all([
+        ] = await Promise.all([
             tx.user.findMany({
               where,
               orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -3714,22 +3879,13 @@ export class AdminService {
             }),
             tx.user.count({
               where: {
-                AND: [
-                  operatorWhere,
-                  adminOperatorSecurityIncompleteWhere(now),
-                ],
+              AND: [operatorWhere, adminOperatorSecurityIncompleteWhere(now)],
               },
             }),
             actorId
               ? tx.user.findUnique({ where: { id: actorId }, select: { id: true, roles: true } })
               : Promise.resolve(null),
-            tx.user.count({
-              where: {
-                ...operatorWhere,
-                roles: { has: Role.MASTER_ADMIN },
-                adminOperatorCredential: { is: { disabledAt: null } },
-              },
-            }),
+            tx.user.count({ where: adminOperatorOperationalMasterWhere(now) }),
           ]);
         const hasNextPage = rows.length > take;
         const items = hasNextPage ? rows.slice(0, take) : rows;
@@ -3744,17 +3900,16 @@ export class AdminService {
               _count: { _all: true },
             })
           : [];
-        const activeSessionCounts = new Map(
-          activeSessionRows.map((row) => [row.userId, row._count._all]),
-        );
+        const activeSessionCounts = new Map(activeSessionRows.map((row) => [row.userId, row._count._all]));
 
         return {
-          items: items.map((row) => adminOperatorDirectoryRow(
-            row,
-            activeSessionCounts.get(row.id) ?? 0,
-            now,
-            { activeMasterCount, actorId: actor?.id ?? null, actorRoles: actor?.roles ?? [] },
-          )),
+          items: items.map((row) =>
+            adminOperatorDirectoryRow(row, activeSessionCounts.get(row.id) ?? 0, now, {
+              activeMasterCount,
+              actorId: actor?.id ?? null,
+              actorRoles: actor?.roles ?? [],
+            }),
+          ),
           page: {
             filteredTotal,
             hasNextPage,
@@ -3795,12 +3950,7 @@ export class AdminService {
         select: adminOperatorDirectorySelect,
       }),
       this.prisma.user.findUnique({ where: { id: actorId }, select: { id: true, roles: true } }),
-      this.prisma.user.count({
-        where: {
-          roles: { has: Role.MASTER_ADMIN },
-          adminOperatorCredential: { is: { disabledAt: null } },
-        },
-      }),
+      this.prisma.user.count({ where: adminOperatorOperationalMasterWhere(now) }),
     ]);
     if (!row) throw new NotFoundException('Admin operator not found');
     const activeSessionCount = await this.prisma.adminWebSession.count({
@@ -3815,9 +3965,13 @@ export class AdminService {
 
   async listAdminOperatorInvitations(actorId: string) {
     const now = new Date();
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
-      const baseWhere = { acceptedAt: null, revokedAt: null } satisfies Prisma.AdminOperatorInvitationWhereInput;
+        const baseWhere = {
+          acceptedAt: null,
+          revokedAt: null,
+        } satisfies Prisma.AdminOperatorInvitationWhereInput;
       const [invitations, totalCount, pendingCount, expiredCount] = await Promise.all([
         tx.adminOperatorInvitation.findMany({
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -3863,8 +4017,84 @@ export class AdminService {
         pendingCount,
         expiredCount,
       };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
     return updated;
+  }
+
+  async findAdminOperatorInvitationCandidate(actorId: string, emailInput?: string | null) {
+    await this.assertMasterAdminAccess(this.prisma, actorId);
+    const email = normalizeAdminOperatorEmail(emailInput);
+    if (!email || email.length > 160 || !/^\S+@\S+\.\S+$/u.test(email)) {
+      throw new BadRequestException({
+        code: 'ADMIN_OPERATOR_EMAIL_INVALID',
+        message: 'Enter one exact valid email address',
+      });
+    }
+    const [matches, pendingInvitation] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { email: { equals: email, mode: 'insensitive' } },
+        orderBy: { id: 'asc' },
+        take: 3,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          roles: true,
+          adminUserProvenance: true,
+          fixtureKind: true,
+          fixtureRunId: true,
+          fixtureExpiresAt: true,
+          adminOperatorCredential: { select: { id: true } },
+          adminOperatorPermission: { select: { id: true } },
+        },
+      }),
+      this.prisma.adminOperatorInvitation.findUnique({
+        where: { pendingKey: email },
+        select: { id: true, expiresAt: true },
+      }),
+    ]);
+    if (matches.length === 0) {
+      return { candidate: null, matchCount: 0, normalizedEmail: email, status: 'NO_MATCH' as const };
+    }
+    if (matches.length > 1) {
+      return {
+        candidate: null,
+        matchCount: matches.length,
+        normalizedEmail: email,
+        status: 'AMBIGUOUS' as const,
+      };
+    }
+    const match = matches[0]!;
+    const fixture =
+      match.adminUserProvenance === AdminUserProvenance.FIXTURE ||
+      Boolean(match.fixtureKind || match.fixtureRunId || match.fixtureExpiresAt);
+    const blockers = [
+      ...(fixture
+        ? [{ code: 'ADMIN_OPERATOR_FIXTURE_TARGET_FORBIDDEN', message: 'Fixture users cannot receive production Admin access.' }]
+        : []),
+      ...(match.adminOperatorCredential
+        ? [{ code: 'ADMIN_OPERATOR_CREDENTIAL_EXISTS', message: 'This user already has Admin operator credentials.' }]
+        : []),
+      ...(pendingInvitation
+        ? [{ code: 'ADMIN_OPERATOR_INVITATION_PENDING', message: 'A pending invitation already exists for this email.' }]
+        : []),
+    ];
+    return {
+      candidate: {
+        email: match.email,
+        fullName: match.fullName,
+        id: match.id,
+        permissionPresent: Boolean(match.adminOperatorPermission),
+        provenance: match.adminUserProvenance,
+        roles: match.roles,
+      },
+      matchCount: 1,
+      normalizedEmail: email,
+      status: blockers.length ? 'INELIGIBLE' as const : 'ELIGIBLE' as const,
+      blockers,
+    };
   }
 
   async createAdminOperatorInvitation(
@@ -3881,7 +4111,8 @@ export class AdminService {
     const rawToken = randomBytes(32).toString('base64url');
     const tokenHash = createHash('sha256').update(rawToken).digest('base64url');
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const existingCredential = await tx.adminOperatorCredential.findUnique({
@@ -3909,11 +4140,23 @@ export class AdminService {
       const targetUser = targetUserId
         ? await tx.user.findUnique({
             where: { id: targetUserId },
-            select: { id: true, email: true, roles: true, adminOperatorCredential: { select: { id: true } } },
+              select: {
+                id: true,
+                email: true,
+                roles: true,
+                adminUserProvenance: true,
+                fixtureKind: true,
+                fixtureRunId: true,
+                fixtureExpiresAt: true,
+                adminOperatorCredential: { select: { id: true } },
+              },
           })
         : null;
       if (targetUserId && !targetUser) {
-        throw new NotFoundException({ code: 'ADMIN_OPERATOR_TARGET_NOT_FOUND', message: 'Existing user not found' });
+          throw new NotFoundException({
+            code: 'ADMIN_OPERATOR_TARGET_NOT_FOUND',
+            message: 'Existing user not found',
+          });
       }
       if (targetUser?.adminOperatorCredential) {
         throw new ConflictException({
@@ -3921,11 +4164,36 @@ export class AdminService {
           message: 'The selected user already has operator credentials',
         });
       }
+      if (
+        targetUser?.adminUserProvenance === AdminUserProvenance.FIXTURE ||
+        targetUser?.fixtureKind ||
+        targetUser?.fixtureRunId ||
+        targetUser?.fixtureExpiresAt
+      ) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_FIXTURE_TARGET_FORBIDDEN',
+          message: 'Fixture users cannot receive production Admin access',
+        });
+      }
       if (targetUser?.email && targetUser.email.trim().toLowerCase() !== email) {
         throw new ConflictException({
           code: 'ADMIN_OPERATOR_TARGET_EMAIL_MISMATCH',
           message: 'The invitation email does not match the selected existing user',
         });
+      }
+      if (targetUserId) {
+        const exactMatches = await tx.user.findMany({
+          where: { email: { equals: email, mode: 'insensitive' } },
+          orderBy: { id: 'asc' },
+          select: { id: true },
+          take: 2,
+        });
+        if (exactMatches.length !== 1 || exactMatches[0]?.id !== targetUserId) {
+          throw new ConflictException({
+            code: 'ADMIN_OPERATOR_IDENTITY_AMBIGUOUS',
+            message: 'The exact email no longer resolves to one verified existing user',
+          });
+        }
       }
       if (!targetUserId) {
         const matchingUsers = await tx.user.findMany({
@@ -3936,7 +4204,8 @@ export class AdminService {
         if (matchingUsers.length > 0) {
           throw new ConflictException({
             code: 'ADMIN_OPERATOR_EXISTING_USER_SELECTION_REQUIRED',
-            message: 'An existing user has this email. Select that user explicitly instead of auto-linking.',
+              message:
+                'An existing user has this email. Select that user explicitly instead of auto-linking.',
           });
         }
       }
@@ -3980,7 +4249,9 @@ export class AdminService {
         setupToken: rawToken,
         auditLogId: auditLog.id,
       };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async revokeAdminOperatorInvitation(
@@ -3990,7 +4261,8 @@ export class AdminService {
     input: ManageAdminOperatorInvitationDto,
   ) {
     const reason = normalizeAdminOperatorReason(input.reason);
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const invitation = await tx.adminOperatorInvitation.findUnique({ where: { id: invitationId } });
@@ -4032,7 +4304,9 @@ export class AdminService {
         },
       });
       return { auditLogId: auditLog.id, ok: true, revokedAt };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async resendAdminOperatorInvitation(
@@ -4047,7 +4321,8 @@ export class AdminService {
     const tokenHash = createHash('sha256').update(rawToken).digest('base64url');
     const now = new Date();
     const expiresAt = new Date(now.getTime() + expiresInHours * 60 * 60_000);
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const invitation = await tx.adminOperatorInvitation.findUnique({ where: { id: invitationId } });
@@ -4108,7 +4383,9 @@ export class AdminService {
         invitation: { id: replacement.id, expiresAt },
         setupToken: rawToken,
       };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async reauthenticateAdminOperator(
@@ -4172,17 +4449,19 @@ export class AdminService {
           ).count;
         } catch {
           await this.prisma.adminAuditLog.create({
-            data: {
+            data: adminAuditCanonicalCreateData({
               actorId,
               action: 'admin_operator.reauthenticate.blocked',
+              source: 'admin_api',
               target: `admin_web_session:${sessionId}`,
               metadata: { rateLimiterUnavailable: true, sessionId },
-            },
+            }),
           });
           throw new ServiceUnavailableException('Admin reauthentication is temporarily unavailable');
         }
         const sessionRevoked = failedReauthenticationCount >= ADMIN_OPERATOR_MAX_FAILED_LOGINS;
-        await this.prisma.$transaction(async (tx) => {
+        await this.prisma.$transaction(
+          async (tx) => {
           if (sessionRevoked) {
             await tx.adminWebSession.updateMany({
               where: { id: sessionId, userId: actorId, revokedAt: null },
@@ -4194,43 +4473,46 @@ export class AdminService {
             });
           }
           await tx.adminAuditLog.create({
-            data: {
+            data: adminAuditCanonicalCreateData({
               actorId,
               action: sessionRevoked
                 ? 'admin_operator.reauthenticate.lock'
                 : 'admin_operator.reauthenticate.failed',
+              source: 'admin_api',
               target: `admin_web_session:${sessionId}`,
               metadata: {
                 failedReauthenticationCount,
                 sessionRevoked,
               },
-            },
+            }),
           });
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
         if (sessionRevoked) this.socketAuth?.disconnectAdminSession(sessionId);
       } else if (credential) {
         await this.prisma.adminAuditLog.create({
-          data: {
+          data: adminAuditCanonicalCreateData({
             actorId,
             action: 'admin_operator.reauthenticate.blocked',
+            source: 'admin_api',
             target: `admin_web_session:${sessionId}`,
             metadata: {
               disabled: Boolean(credential.disabledAt),
               locked: (credential.lockedUntil?.getTime() ?? 0) > now.getTime(),
             },
-          },
+          }),
         });
       }
       throw new UnauthorizedException('Invalid admin operator credentials');
     }
     try {
-      await this.redisState.clearRateLimit(
-        adminOperatorReauthenticationRateLimitKey(actorId, sessionId),
-      );
+      await this.redisState.clearRateLimit(adminOperatorReauthenticationRateLimitKey(actorId, sessionId));
     } catch {
       throw new ServiceUnavailableException('Admin reauthentication is temporarily unavailable');
     }
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       const result = await tx.adminWebSession.updateMany({
         where: { id: sessionId, userId: actorId, revokedAt: null, expiresAt: { gt: now } },
         data: {
@@ -4247,12 +4529,13 @@ export class AdminService {
         });
       }
       const auditLog = await tx.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId,
           action: 'admin_operator.reauthenticate.success',
+          source: 'admin_api',
           target: `admin_web_session:${sessionId}`,
           metadata: { sessionId },
-        },
+        }),
       });
       return {
         auditLogId: auditLog.id,
@@ -4260,7 +4543,9 @@ export class AdminService {
         reauthenticated: true,
         reauthenticatedAt: now,
       };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async beginAdminMfaEnrollment(
@@ -4284,7 +4569,8 @@ export class AdminService {
     } catch {
       throw new ServiceUnavailableException('Admin MFA enrollment is unavailable');
     }
-    const auditLog = await this.prisma.$transaction(async (tx) => {
+    const auditLog = await this.prisma.$transaction(
+      async (tx) => {
       const update = await tx.adminOperatorCredential.updateMany({
         where: { userId: actorId, mfaState: { not: 'VERIFIED' } },
         data: {
@@ -4296,14 +4582,17 @@ export class AdminService {
       });
       if (update.count !== 1) throw new ConflictException('Admin MFA enrollment state changed');
       return tx.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId,
           action: 'admin_operator.mfa.enrollment_started',
+          source: 'admin_api',
           target: `user:${actorId}`,
           metadata: { recoveryCodeCount: enrollment.recoveryCodes.length, sessionId },
-        },
+        }),
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     return {
       auditLogId: auditLog.id,
       otpAuthUri: enrollment.otpAuthUri,
@@ -4344,30 +4633,28 @@ export class AdminService {
     }
     let verified = false;
     try {
-      const secret = decryptAdminMfaSecret(
-        credential.mfaSecretEncrypted,
-        this.adminMfaEncryptionSecret(),
-      );
+      const secret = decryptAdminMfaSecret(credential.mfaSecretEncrypted, this.adminMfaEncryptionSecret());
       const totpCounter = matchingTotpCounter(secret, input.code);
       verified =
-        totpCounter !== null &&
-        (await this.redisState.consumeAdminMfaTotp(credential.id, totpCounter));
+        totpCounter !== null && (await this.redisState.consumeAdminMfaTotp(credential.id, totpCounter));
     } catch {
       throw new ServiceUnavailableException('Admin MFA verification is unavailable');
     }
     if (!verified) {
       await this.prisma.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId,
           action: 'admin_operator.mfa.enrollment_failed',
+          source: 'admin_api',
           target: `user:${actorId}`,
           metadata: { sessionId },
-        },
+        }),
       });
       throw new UnauthorizedException('Invalid authenticator code');
     }
     const now = new Date();
-    const auditLog = await this.prisma.$transaction(async (tx) => {
+    const auditLog = await this.prisma.$transaction(
+      async (tx) => {
       const session = await tx.adminWebSession.updateMany({
         where: { id: sessionId, userId: actorId, revokedAt: null, expiresAt: { gt: now } },
         data: { lastSeenAt: now, mfaVerifiedAt: now },
@@ -4378,14 +4665,17 @@ export class AdminService {
         data: { mfaEnrolledAt: now, mfaState: 'VERIFIED' },
       });
       return tx.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId,
           action: 'admin_operator.mfa.enrollment_verified',
+          source: 'admin_api',
           target: `user:${actorId}`,
           metadata: { sessionId },
-        },
+        }),
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     return { auditLogId: auditLog.id, mfaVerifiedAt: now, verified: true };
   }
 
@@ -4399,7 +4689,8 @@ export class AdminService {
       throw new BadRequestException('Use a recovery code or another Master Admin for MFA recovery');
     }
     const reason = normalizeAdminOperatorReason(input.reason);
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, currentSessionId);
       const credential = await tx.adminOperatorCredential.findUnique({
@@ -4421,15 +4712,18 @@ export class AdminService {
         data: { revokedAt: new Date(), revokedByAdminId: actorId, revocationReason: reason },
       });
       const auditLog = await tx.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId,
           action: 'admin_operator.mfa.reset',
+          source: 'admin_api',
           target: `user:${targetUserId}`,
           metadata: { previousState: credential.mfaState, reason, revokedSessionCount: revoked.count },
-        },
+        }),
       });
       return { auditLogId: auditLog.id, revokedSessionCount: revoked.count };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     this.socketAuth?.disconnectAdminUser(targetUserId);
     return result;
   }
@@ -4473,33 +4767,30 @@ export class AdminService {
   ) {
     const reason = normalizeAdminOperatorReason(input.reason);
     if (actorId === targetUserId) {
-      throw new BadRequestException({ code: 'ADMIN_OPERATOR_SELF_SUSPEND_FORBIDDEN', message: 'You cannot suspend your own access' });
+      throw new BadRequestException({
+        code: 'ADMIN_OPERATOR_SELF_SUSPEND_FORBIDDEN',
+        message: 'You cannot suspend your own access',
+      });
     }
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const target = await tx.user.findUnique({
         where: { id: targetUserId },
-        select: { id: true, roles: true, adminOperatorCredential: { select: { id: true, disabledAt: true } } },
+          select: {
+            id: true,
+            roles: true,
+            adminOperatorCredential: { select: { id: true, disabledAt: true } },
+          },
       });
       if (!target?.roles.includes(Role.ADMIN) || !target.adminOperatorCredential) {
         throw new NotFoundException('Admin operator not found');
       }
-      if (suspended && target.roles.includes(Role.MASTER_ADMIN)) {
-        const masterCount = await tx.user.count({
-          where: {
-            roles: { has: Role.MASTER_ADMIN },
-            adminOperatorCredential: { is: { disabledAt: null } },
-          },
-        });
-        if (masterCount <= 1) {
-          throw new ConflictException({
-            code: 'LAST_MASTER_ADMIN_REQUIRED',
-            message: 'The last active Master Admin cannot be suspended',
-          });
-        }
-      }
       const now = new Date();
+      if (suspended && target.roles.includes(Role.MASTER_ADMIN)) {
+        await assertAdminOperatorOperationalMasterRemains(tx, targetUserId, now);
+      }
       const correlationId = randomUUID();
       await tx.adminOperatorCredential.update({
         where: { id: target.adminOperatorCredential.id },
@@ -4538,7 +4829,9 @@ export class AdminService {
         roleRemovalRequired: suspended && target.roles.includes(Role.FINANCE_APPROVER),
         suspended,
       };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     if (suspended) {
       this.socketAuth?.disconnectAdminUser(targetUserId);
     }
@@ -4565,32 +4858,58 @@ export class AdminService {
     return sessions.map((session) => ({ ...session, current: session.id === currentSessionId }));
   }
 
-  async listAdminOperatorHistory(actorId: string, targetUserId?: string | null, takeInput?: string | number | null) {
+  async listAdminOperatorHistory(
+    actorId: string,
+    targetUserId?: string | null,
+    takeInput?: string | number | null,
+    cursorInput?: string | null,
+  ) {
     await this.assertMasterAdminAccess(this.prisma, actorId);
     const targetId = normalizeNullable(targetUserId);
     const take = Math.min(Math.max(Number.parseInt(String(takeInput ?? '30'), 10) || 30, 1), 50);
     const targetFilter = targetId
       ? {
-          OR: [
-            { target: `user:${targetId}` },
-            { metadata: { path: ['targetUserId'], equals: targetId } },
-          ],
+          OR: [{ target: `user:${targetId}` }, { metadata: { path: ['targetUserId'], equals: targetId } }],
         }
       : {};
-    const where = {
+    const baseWhere = {
       action: { in: ADMIN_OPERATOR_LIFECYCLE_ACTIONS },
       ...targetFilter,
     } satisfies Prisma.AdminAuditLogWhereInput;
-    const [items, totalCount] = await this.prisma.$transaction([
+    const cursor = adminOperatorHistoryCursor(cursorInput);
+    const where = cursor
+      ? {
+          AND: [
+            baseWhere,
+            {
+              OR: [
+                { createdAt: { lt: cursor.createdAt } },
+                { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+              ],
+            },
+          ],
+        } satisfies Prisma.AdminAuditLogWhereInput
+      : baseWhere;
+    const [rows, totalCount] = await this.prisma.$transaction([
       this.prisma.adminAuditLog.findMany({
         where,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take,
+        take: take + 1,
         include: { actor: { select: { id: true, email: true, fullName: true } } },
       }),
-      this.prisma.adminAuditLog.count({ where }),
-    ]);
-    return { items, totalCount };
+      this.prisma.adminAuditLog.count({ where: baseWhere }),
+    ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+    const hasNextPage = rows.length > take;
+    const items = hasNextPage ? rows.slice(0, take) : rows;
+    return {
+      items,
+      page: {
+        hasNextPage,
+        nextCursor: hasNextPage ? adminOperatorHistoryCursorValue(items.at(-1)) : null,
+        returned: items.length,
+      },
+      totalCount,
+    };
   }
 
   async revokeAdminOperatorSession(
@@ -4601,7 +4920,8 @@ export class AdminService {
     input: SuspendAdminOperatorDto,
   ) {
     const reason = normalizeAdminOperatorReason(input.reason);
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, currentSessionId);
       const result = await tx.adminWebSession.updateMany({
@@ -4610,15 +4930,18 @@ export class AdminService {
       });
       if (result.count !== 1) throw new ConflictException('Session is already revoked or no longer exists');
       const auditLog = await tx.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId,
           action: 'admin_operator.session.revoke',
+          source: 'admin_api',
           target: `admin_web_session:${targetSessionId}`,
           metadata: { targetUserId, reason },
-        },
+        }),
       });
       return { ok: true, auditLogId: auditLog.id };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     this.socketAuth?.disconnectAdminSession(targetSessionId);
     return result;
   }
@@ -4627,7 +4950,8 @@ export class AdminService {
     if (!sessionId) {
       throw new ForbiddenException('Admin Web session is required');
     }
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(
+      async (tx) => {
       const revokedAt = new Date();
       const result = await tx.adminWebSession.updateMany({
         where: { id: sessionId, userId: actorId, revokedAt: null, expiresAt: { gt: revokedAt } },
@@ -4641,15 +4965,18 @@ export class AdminService {
         throw new ConflictException('Admin Web session is already revoked or expired');
       }
       const auditLog = await tx.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId,
           action: 'admin_operator.session.logout',
+          source: 'admin_api',
           target: `admin_web_session:${sessionId}`,
           metadata: { sessionId },
-        },
+        }),
       });
       return { ok: true, auditLogId: auditLog.id, revokedAt };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     this.socketAuth?.disconnectAdminSession(sessionId);
     return result;
   }
@@ -4676,16 +5003,17 @@ export class AdminService {
     const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, input.operatorIdentity);
     const operatorIdentity = normalizeNullable(input.operatorIdentity);
     const auditLog = await this.prisma.adminAuditLog.create({
-      data: {
+      data: adminAuditCanonicalCreateData({
         actorId: operator?.id ?? actorId,
         action,
+        source: 'admin_web_activity',
         target,
         metadata: {
           ...adminOperatorActivityMetadata(input.metadata),
           ...(operatorIdentity ? { operatorIdentity } : {}),
           requestedByAdminId: actorId,
         },
-      },
+      }),
     });
 
     return { ok: true, auditLog };
@@ -4839,7 +5167,8 @@ export class AdminService {
       });
     }
     const reason = normalizeAdminOperatorReason(input.reason);
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const targetUser = await tx.user.findUnique({
@@ -4894,7 +5223,9 @@ export class AdminService {
         },
       });
       return { auditLogId: auditLog.id, permission };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async updateAdminOperatorAccess(
@@ -4911,7 +5242,8 @@ export class AdminService {
       throw new BadRequestException('Master Admin access changes cannot target the acting admin');
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const targetUser = await tx.user.findUnique({
@@ -4928,7 +5260,8 @@ export class AdminService {
       if (!targetUser.adminOperatorPermission) {
         throw new ConflictException({
           code: 'ADMIN_OPERATOR_PERMISSION_MIGRATION_REQUIRED',
-          message: 'This operator has no persisted permission record. Complete the access migration before editing.',
+            message:
+              'This operator has no persisted permission record. Complete the access migration before editing.',
         });
       }
       if (targetUser.adminOperatorPermission.version !== input.expectedVersion) {
@@ -4940,10 +5273,7 @@ export class AdminService {
 
       const previousRoles = [...targetUser.roles];
       const nextRoles = mergeAdminOperatorRoles(previousRoles, input.roles ?? previousRoles);
-      if (
-        previousRoles.includes(Role.FINANCE_APPROVER) !==
-        nextRoles.includes(Role.FINANCE_APPROVER)
-      ) {
+        if (previousRoles.includes(Role.FINANCE_APPROVER) !== nextRoles.includes(Role.FINANCE_APPROVER)) {
         throw new BadRequestException({
           code: 'FINANCE_APPROVER_GOVERNANCE_REQUIRED',
           message: 'Finance approver access must be changed through Finance approval access',
@@ -4995,7 +5325,9 @@ export class AdminService {
       });
 
       return { user: hydratedUser ?? user, auditLog };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     this.socketAuth?.disconnectAdminUser(targetUserId);
     return updated;
   }
@@ -5014,7 +5346,8 @@ export class AdminService {
       throw new BadRequestException('Master Admin access revocation cannot target the acting admin');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
       await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const targetUser = await tx.user.findUnique({
@@ -5032,7 +5365,8 @@ export class AdminService {
       if (targetUser.roles.includes(Role.FINANCE_APPROVER)) {
         throw new BadRequestException({
           code: 'FINANCE_APPROVER_GOVERNANCE_REQUIRED',
-          message: 'Remove Finance approver access through Finance approval access before revoking this operator',
+            message:
+              'Remove Finance approver access through Finance approval access before revoking this operator',
         });
       }
       if (!targetUser.adminOperatorCredential?.disabledAt) {
@@ -5055,7 +5389,9 @@ export class AdminService {
       const nextRoles = previousRoles.filter((role) => !isAdminOperatorRole(role));
       await assertAdminOperatorProtectedRoleRemoval(tx, targetUserId, previousRoles, nextRoles);
       await tx.adminOperatorPermission.deleteMany({ where: { userId: targetUserId } });
-      const credentialDelete = await tx.adminOperatorCredential.deleteMany({ where: { userId: targetUserId } });
+        const credentialDelete = await tx.adminOperatorCredential.deleteMany({
+          where: { userId: targetUserId },
+        });
       const invitationRevoke = await tx.adminOperatorInvitation.updateMany({
         where: { targetUserId, acceptedAt: null, revokedAt: null },
         data: { pendingKey: null, revokedAt: new Date() },
@@ -5083,7 +5419,9 @@ export class AdminService {
       });
 
       return { ok: true, user, auditLog };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   private async assertMasterAdminAccess(db: AdminOperatorAccessDb, actorId: string) {
@@ -5142,7 +5480,22 @@ export class AdminService {
 
   async getFinanceApproverGovernanceSummary(actorId: string) {
     const actor = await assertFinanceApproverGovernanceAccess(this.prisma, actorId, 'read');
-    const [approverSnapshots, candidateSnapshots, pendingRequestCount] = await Promise.all([
+    const highPrivilegeWhere = {
+      roles: { hasSome: financeApproverGovernanceContract.highPrivilegeRoles as Role[] },
+    } satisfies Prisma.UserWhereInput;
+    const releaseBlockingWhere = {
+      ...highPrivilegeWhere,
+      OR: financeApproverGovernanceContract.releaseBlockingProvenances.map((provenance) => ({
+        adminUserProvenance: provenance as AdminUserProvenance | null,
+      })),
+    } satisfies Prisma.UserWhereInput;
+    const [
+      approverSnapshots,
+      candidateSnapshots,
+      pendingRequestCount,
+      unknownHighPrivilegeCount,
+      releaseBlockingAccountCount,
+    ] = await Promise.all([
       listFinanceApproverPolicySnapshots(this.prisma, {
         requireAttestation: true,
         requireFinanceRole: true,
@@ -5167,6 +5520,10 @@ export class AdminService {
           },
         },
       }),
+      this.prisma.user.count({
+        where: { ...highPrivilegeWhere, adminUserProvenance: null },
+      }),
+      this.prisma.user.count({ where: releaseBlockingWhere }),
     ]);
     const verifiedRealApproverCount = approverSnapshots.filter((snapshot) => snapshot.ready).length;
     const eligibleCandidateCount = candidateSnapshots.filter(
@@ -5181,6 +5538,22 @@ export class AdminService {
       (snapshot) => snapshot.source === 'LEGACY' && snapshot.attestationStatus === 'UNATTESTED',
     ).length;
     const requiredApproverCount = FINANCE_APPROVER_REQUIRED_REAL_COUNT;
+    const categoryCoverage = FINANCE_MONEY_MOVEMENT_PERMISSION_CATEGORIES.map((category) => {
+      const checkerCount = approverSnapshots.filter(
+        (snapshot) =>
+          snapshot.ready &&
+          adminOperatorHasRequiredCategory(
+            snapshot.user.adminOperatorPermission?.categories ?? [],
+            category,
+          ),
+      ).length;
+      return {
+        category,
+        checkerCount,
+        requiredCheckerCount: requiredApproverCount,
+        ready: checkerCount >= requiredApproverCount,
+      };
+    });
     const blockers: Array<{ code: string; message: string }> = [];
     if (verifiedRealApproverCount < requiredApproverCount) {
       blockers.push({
@@ -5190,16 +5563,28 @@ export class AdminService {
         } through independent review.`,
       });
     }
+    const uncoveredCategories = categoryCoverage.filter((coverage) => !coverage.ready);
+    if (uncoveredCategories.length > 0) {
+      blockers.push({
+        code: 'CATEGORY_BACKUP_COVERAGE_REQUIRED',
+        message: `${uncoveredCategories.length} Finance money-movement categor${
+          uncoveredCategories.length === 1 ? 'y needs' : 'ies need'
+        } independent checker backup.`,
+      });
+    }
 
     return {
       readiness: blockers.length === 0 ? ('READY' as const) : ('BLOCKED' as const),
       requiredApproverCount,
       verifiedRealApproverCount,
-      primaryReady: verifiedRealApproverCount >= 1,
-      backupReady: verifiedRealApproverCount >= requiredApproverCount,
+      primaryReady: categoryCoverage.every((coverage) => coverage.checkerCount >= 1),
+      backupReady: categoryCoverage.every((coverage) => coverage.ready),
+      categoryCoverage,
       eligibleCandidateCount,
       pendingRequestCount,
       fixtureExcludedCount,
+      unknownHighPrivilegeCount,
+      releaseBlockingAccountCount,
       unattestedLegacyCount,
       lastEvaluatedAt: new Date().toISOString(),
       blockers,
@@ -5209,7 +5594,14 @@ export class AdminService {
 
   async listFinanceApproverGovernanceOperators(
     actorId: string,
-    options: { access?: string; status?: string; q?: string; readiness?: string; take?: string; skip?: string } = {},
+    options: {
+      access?: string;
+      status?: string;
+      q?: string;
+      readiness?: string;
+      take?: string;
+      skip?: string;
+    } = {},
   ) {
     const actor = await assertFinanceApproverGovernanceAccess(this.prisma, actorId, 'read');
     const where = financeApproverGovernanceOperatorWhere(options);
@@ -5235,7 +5627,8 @@ export class AdminService {
         (accountStatus === 'production' || accountStatus === 'active') &&
         source !== 'PRODUCTION' &&
         source !== 'LEGACY'
-      ) return false;
+      )
+        return false;
       if (accountStatus === 'fixture' && source !== 'FIXTURE' && source !== 'TEST_RUN') return false;
       if (accountStatus === 'unknown' && source !== 'UNKNOWN') return false;
       if (readiness !== 'ready' && readiness !== 'needs') return true;
@@ -5290,7 +5683,9 @@ export class AdminService {
           availableCheckerCount,
           lastChangedAt: lastChangedByTarget.get(item.id) ?? null,
           pendingRequest: pendingByTarget.get(item.id) ?? null,
-          policy: snapshotsById.get(item.id) ?? evaluateFinanceApproverPolicy(item, {
+          policy:
+            snapshotsById.get(item.id) ??
+            evaluateFinanceApproverPolicy(item, {
             requireAttestation: item.roles.includes(Role.FINANCE_APPROVER),
             requireFinanceRole: item.roles.includes(Role.FINANCE_APPROVER),
           }),
@@ -5322,8 +5717,9 @@ export class AdminService {
       normalizeNullable(options.targetUserId),
     );
     const requestIds = page.items.map((request) => request.id);
-    const events = requestIds.length
-      ? await this.prisma.adminAuditLog.findMany({
+    const [events, legacyEvents] = await Promise.all([
+      requestIds.length
+        ? this.prisma.adminAuditLog.findMany({
           where: {
             action: { in: [...FINANCE_APPROVER_AUDIT_ACTIONS] },
             target: { in: requestIds.map((id) => `finance_approver_request:${id}`) },
@@ -5338,7 +5734,33 @@ export class AdminService {
             actor: { select: { id: true, email: true, fullName: true } },
           },
         })
-      : [];
+        : [],
+      this.prisma.adminAuditLog.findMany({
+        where: {
+          action: {
+            in: [
+              FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+            ],
+          },
+          target: { startsWith: 'finance_approver_attestation:' },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: {
+          id: true,
+          action: true,
+          actorId: true,
+          createdAt: true,
+          metadata: true,
+          target: true,
+          actor: { select: { id: true, email: true, fullName: true } },
+        },
+      }),
+    ]);
     const eventsByRequest = new Map<string, typeof events>();
     for (const event of events) {
       const requestId = event.target.replace(/^finance_approver_request:/u, '');
@@ -5346,12 +5768,65 @@ export class AdminService {
       requestEvents.push(event);
       eventsByRequest.set(requestId, requestEvents);
     }
+    const legacyTargetIds = [
+      ...new Set(
+        legacyEvents
+          .map((event) => event.target.split(':')[1])
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const legacyTargets = legacyTargetIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: legacyTargetIds } },
+          select: financeApproverPolicyUserSelect,
+        })
+      : [];
+    const legacyTargetById = new Map(legacyTargets.map((target) => [target.id, target]));
+    const sourceFilter = normalizeNullable(options.source)?.toLowerCase() ?? 'production';
+    const legacyAttestations = legacyEvents.flatMap((event) => {
+      const targetUserId = event.target.split(':')[1];
+      const targetUser = targetUserId ? legacyTargetById.get(targetUserId) : null;
+      if (!targetUser) return [];
+      const source = evaluateFinanceApproverPolicy(targetUser, {
+        legacyAttested: false,
+        requireAttestation: false,
+        requireFinanceRole: targetUser.roles.includes(Role.FINANCE_APPROVER),
+      }).source;
+      if (!financeApproverHistorySourceMatches(source, sourceFilter)) return [];
+      const lifecycle =
+        event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION
+          ? 'PENDING'
+          : event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION
+            ? 'REJECTED'
+            : event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION
+              ? 'REVOKED'
+              : event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION
+                ? 'SUPERSEDED'
+                : financeApproverLegacyAttestationEventLifecycle(
+                    legacyEvents,
+                    event.id,
+                    new Date(),
+                  );
+      return [
+        {
+          ...event,
+          auditHref: `/audit-log?range=all&sort=oldest&targetPrefix=${encodeURIComponent(event.target)}`,
+          expiresAt: financeApproverLegacyHistoryDate(event.metadata, 'expiresAt'),
+          lifecycle,
+          source,
+          targetUser,
+          targetUserId,
+        },
+      ];
+    });
     return {
       ...page,
       items: page.items.map((request) => ({
         ...request,
-        events: eventsByRequest.get(request.id) ?? [],
-      })),
+          events: eventsByRequest.get(request.id) ?? [],
+        })),
+      legacyAttestationHistoryTruncated: legacyEvents.length === 200,
+      legacyAttestations,
     };
   }
 
@@ -5360,7 +5835,10 @@ export class AdminService {
     const idempotencyKey = normalizeFinanceApproverIdempotencyKey(input.idempotencyKey);
     const operatorReason = normalizeFinanceApproverReason(input.operatorReason, 'operatorReason');
     if (!targetUserId) {
-      throw new BadRequestException({ code: 'TARGET_ADMIN_REQUIRED', message: 'Target admin user is required' });
+      throw new BadRequestException({
+        code: 'TARGET_ADMIN_REQUIRED',
+        message: 'Target admin user is required',
+      });
     }
 
     let lastConflict: unknown = null;
@@ -5397,6 +5875,13 @@ export class AdminService {
             select: financeApproverGovernanceUserSelect,
           });
           assertFinanceApproverTargetEligible(target);
+          const expectedPermissionVersion = target.adminOperatorPermission?.version;
+          if (!expectedPermissionVersion) {
+            throw new ConflictException({
+              code: 'STALE_ROLE_VERSION',
+              message: 'The target permission version is missing or invalid',
+            });
+          }
           const currentlyEnabled = target.roles.includes(Role.FINANCE_APPROVER);
           if (currentlyEnabled === input.requestedEnabled) {
             throw new ConflictException({
@@ -5415,7 +5900,8 @@ export class AdminService {
           if (checkerCount < 1) {
             throw new ConflictException({
               code: 'INDEPENDENT_ROLE_GOVERNOR_REQUIRED',
-              message: 'A different verified role governor is required before this request can be submitted',
+                message:
+                  'A different verified role governor is required before this request can be submitted',
             });
           }
           if (!input.requestedEnabled) {
@@ -5429,7 +5915,8 @@ export class AdminService {
             if (remaining < FINANCE_APPROVER_REQUIRED_REAL_COUNT) {
               throw new ConflictException({
                 code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED',
-                message: 'Removing this approver would leave finance operations without an independent backup.',
+                  message:
+                    'Removing this approver would leave finance operations without an independent backup.',
               });
             }
           }
@@ -5442,6 +5929,7 @@ export class AdminService {
               requestedByAdminId: actorId,
               operatorReason,
               expectedTargetUpdatedAt: target.updatedAt,
+              expectedPermissionVersion,
               idempotencyKey,
               pendingKey: `finance-approver:${targetUserId}`,
             },
@@ -5498,7 +5986,8 @@ export class AdminService {
     }
     const conflict = new ConflictException({
       code: 'APPROVER_SET_CHANGED',
-      message: 'The Finance approver set changed while this request was submitted. Review the latest state and try again.',
+      message:
+        'The Finance approver set changed while this request was submitted. Review the latest state and try again.',
       cause: lastConflict ? 'serializable-conflict' : 'unknown',
     });
     await this.recordFinanceApproverBlockedAttempt(actorId, 'request', targetUserId, null, conflict);
@@ -5509,11 +5998,15 @@ export class AdminService {
     actorId: string,
     requestIdValue: string,
     input: DecideFinanceApproverAccessRequestDto,
+    sessionId?: string,
   ) {
     const requestId = normalizeNullable(requestIdValue);
     const decisionReason = normalizeFinanceApproverReason(input.decisionReason, 'decisionReason');
     if (!requestId) {
-      throw new BadRequestException({ code: 'ACCESS_REQUEST_REQUIRED', message: 'Access request id is required' });
+      throw new BadRequestException({
+        code: 'ACCESS_REQUEST_REQUIRED',
+        message: 'Access request id is required',
+      });
     }
 
     let lastConflict: unknown = null;
@@ -5521,13 +6014,16 @@ export class AdminService {
       try {
         return await this.prisma.$transaction(
           async (tx) => {
-            await assertFinanceApproverGovernanceAccess(tx, actorId, 'decision');
+            await assertFinanceApproverGovernanceAccess(tx, actorId, 'decision', sessionId);
             const request = await tx.financeApproverAccessRequest.findUnique({
               where: { id: requestId },
               select: financeApproverAccessRequestSelect,
             });
             if (!request) {
-              throw new NotFoundException({ code: 'ACCESS_REQUEST_NOT_FOUND', message: 'Access request not found' });
+              throw new NotFoundException({
+                code: 'ACCESS_REQUEST_NOT_FOUND',
+                message: 'Access request not found',
+              });
             }
             if (request.requestedByAdminId === actorId) {
               throw new ForbiddenException({
@@ -5543,8 +6039,10 @@ export class AdminService {
             }
             if (request.status !== FinanceApproverAccessRequestStatus.PENDING) {
               const sameDecision =
-                (input.decision === 'APPROVE' && request.status === FinanceApproverAccessRequestStatus.APPROVED) ||
-                (input.decision === 'REJECT' && request.status === FinanceApproverAccessRequestStatus.REJECTED);
+                (input.decision === 'APPROVE' &&
+                  request.status === FinanceApproverAccessRequestStatus.APPROVED) ||
+                (input.decision === 'REJECT' &&
+                  request.status === FinanceApproverAccessRequestStatus.REJECTED);
               if (sameDecision) return financeApproverAccessRequestReceipt(request, true);
               throw new ConflictException({
                 code: 'ACCESS_REQUEST_ALREADY_DECIDED',
@@ -5555,19 +6053,9 @@ export class AdminService {
               where: { id: request.targetUserId },
               select: financeApproverGovernanceUserSelect,
             });
-            assertFinanceApproverTargetEligible(target);
-            const targetEnabled = target.roles.includes(Role.FINANCE_APPROVER);
-            if (
-              target.updatedAt.getTime() !== request.expectedTargetUpdatedAt.getTime() ||
-              targetEnabled !== request.previousEnabled
-            ) {
-              throw new ConflictException({
-                code: 'APPROVER_SET_CHANGED',
-                message: 'This request is out of date because the operator access changed. Review the latest state and submit again.',
-              });
-            }
             const now = new Date();
             if (input.decision === 'REJECT') {
+              const targetReview = financeApproverRejectionTargetReview(request, target);
               const rejected = await tx.financeApproverAccessRequest.update({
                 where: { id: request.id },
                 data: {
@@ -5588,10 +6076,33 @@ export class AdminService {
                   metadata: financeApproverAuditMetadata(rejected, {
                     actorId,
                     reason: decisionReason,
+                    targetReview,
                   }),
                 },
               });
               return financeApproverAccessRequestReceipt(rejected, false);
+            }
+
+            assertFinanceApproverTargetEligible(target);
+            const targetEnabled = target.roles.includes(Role.FINANCE_APPROVER);
+            const currentPermissionVersion = target.adminOperatorPermission?.version ?? null;
+            if (
+              target.updatedAt.getTime() !== request.expectedTargetUpdatedAt.getTime() ||
+              targetEnabled !== request.previousEnabled ||
+              request.expectedPermissionVersion == null ||
+              currentPermissionVersion !== request.expectedPermissionVersion
+            ) {
+              throw new ConflictException({
+                code:
+                  request.expectedPermissionVersion == null ||
+                  currentPermissionVersion !== request.expectedPermissionVersion
+                    ? 'STALE_ROLE_VERSION'
+                    : 'APPROVER_SET_CHANGED',
+                currentPermissionVersion,
+                message:
+                  'This request is out of date because the operator access or permission changed. Review the latest state and submit again.',
+                requestedPermissionVersion: request.expectedPermissionVersion,
+              });
             }
 
             if (!request.requestedEnabled) {
@@ -5605,10 +6116,12 @@ export class AdminService {
               if (remaining < FINANCE_APPROVER_REQUIRED_REAL_COUNT) {
                 throw new ConflictException({
                   code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED',
-                  message: 'Removing this approver would leave finance operations without an independent backup.',
+                  message:
+                    'Removing this approver would leave finance operations without an independent backup.',
                 });
               }
             }
+            const targetReview = financeApproverRejectionTargetReview(request, target);
             const nextRoles = request.requestedEnabled
               ? Array.from(new Set([...target.roles, Role.FINANCE_APPROVER]))
               : target.roles.filter((role) => role !== Role.FINANCE_APPROVER);
@@ -5639,14 +6152,17 @@ export class AdminService {
                   actorId,
                   reason: decisionReason,
                   nextRoles,
+                  targetReview,
                 }),
               },
             });
             await tx.adminAuditLog.create({
               data: {
-                ...classifyAdminAuditAction(request.requestedEnabled
+                ...classifyAdminAuditAction(
+                  request.requestedEnabled
                   ? 'admin_user.finance_approver.grant'
-                  : 'admin_user.finance_approver.revoke'),
+                    : 'admin_user.finance_approver.revoke',
+                ),
                 actorId,
                 action: request.requestedEnabled
                   ? 'admin_user.finance_approver.grant'
@@ -5656,6 +6172,7 @@ export class AdminService {
                   actorId,
                   reason: decisionReason,
                   nextRoles,
+                  targetReview,
                 }),
               },
             });
@@ -5674,7 +6191,8 @@ export class AdminService {
     }
     const conflict = new ConflictException({
       code: 'APPROVER_SET_CHANGED',
-      message: 'The Finance approver set changed during this decision. Review the latest state and try again.',
+      message:
+        'The Finance approver set changed during this decision. Review the latest state and try again.',
       cause: lastConflict ? 'serializable-conflict' : 'unknown',
     });
     await this.recordFinanceApproverBlockedAttempt(actorId, 'decision', null, requestId, conflict);
@@ -5690,7 +6208,10 @@ export class AdminService {
     const sourceReference = normalizeFinanceApproverSourceReference(input.sourceReference);
     const idempotencyKey = normalizeFinanceApproverIdempotencyKey(input.idempotencyKey);
     if (!targetUserId) {
-      throw new BadRequestException({ code: 'TARGET_ADMIN_REQUIRED', message: 'Target admin user is required' });
+      throw new BadRequestException({
+        code: 'TARGET_ADMIN_REQUIRED',
+        message: 'Target admin user is required',
+      });
     }
     if (actorId === targetUserId) {
       throw new ForbiddenException({
@@ -5699,7 +6220,8 @@ export class AdminService {
       });
     }
     const target = `finance_approver_attestation:${targetUserId}:${idempotencyKey}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       await assertFinanceApproverGovernanceAccess(tx, actorId, 'request');
       const existing = await tx.adminAuditLog.findFirst({
         where: { action: FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION, target },
@@ -5733,7 +6255,9 @@ export class AdminService {
         throw new ConflictException({
           blockers: policy.blockers,
           code: blocker?.code ?? 'UNKNOWN_PROVENANCE',
-          message: blocker?.message ?? 'The legacy owner cannot be attested until account verification is complete',
+            message:
+              blocker?.message ??
+              'The legacy owner cannot be attested until account verification is complete',
         });
       }
       const requestedAt = new Date();
@@ -5746,6 +6270,7 @@ export class AdminService {
           metadata: {
             attestorId: actorId,
             idempotencyKey,
+            permissionVersion: owner.adminOperatorPermission?.version ?? null,
             reason,
             requestedAt: requestedAt.toISOString(),
             sourceReference,
@@ -5756,27 +6281,37 @@ export class AdminService {
         select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
       });
       return financeApproverLegacyAttestationReceipt(requestEvent, false);
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async decideFinanceApproverLegacyAttestation(
     actorId: string,
     requestEventIdValue: string,
     input: DecideFinanceApproverLegacyAttestationDto,
+    sessionId?: string,
   ) {
     const requestEventId = normalizeNullable(requestEventIdValue);
     const decisionReason = normalizeFinanceApproverReason(input.decisionReason, 'decisionReason');
     if (!requestEventId) {
-      throw new BadRequestException({ code: 'ATTESTATION_REQUEST_REQUIRED', message: 'Attestation request id is required' });
+      throw new BadRequestException({
+        code: 'ATTESTATION_REQUEST_REQUIRED',
+        message: 'Attestation request id is required',
+      });
     }
-    return this.prisma.$transaction(async (tx) => {
-      await assertFinanceApproverGovernanceAccess(tx, actorId, 'request');
+    return this.prisma.$transaction(
+      async (tx) => {
+      await assertFinanceApproverGovernanceAccess(tx, actorId, 'decision', sessionId);
       const requestEvent = await tx.adminAuditLog.findUnique({
         where: { id: requestEventId },
         select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
       });
       if (!requestEvent || requestEvent.action !== FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION) {
-        throw new NotFoundException({ code: 'ATTESTATION_REQUEST_NOT_FOUND', message: 'Legacy attestation request not found' });
+          throw new NotFoundException({
+            code: 'ATTESTATION_REQUEST_NOT_FOUND',
+            message: 'Legacy attestation request not found',
+          });
       }
       const requestEvidence = financeApproverLegacyAttestationEvidence(requestEvent);
       if (requestEvidence.attestorId === actorId) {
@@ -5791,12 +6326,18 @@ export class AdminService {
           message: 'The legacy access owner cannot decide their own attestation',
         });
       }
-      const finalAction = input.decision === 'APPROVE'
+        const finalAction =
+          input.decision === 'APPROVE'
         ? FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION
         : FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION;
       const existing = await tx.adminAuditLog.findFirst({
         where: {
-          action: { in: [FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION, FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION] },
+            action: {
+              in: [
+                FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+                FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION,
+              ],
+            },
           target: requestEvent.target,
         },
         orderBy: { createdAt: 'asc' },
@@ -5807,6 +6348,42 @@ export class AdminService {
         throw new ConflictException({
           code: 'ATTESTATION_ALREADY_DECIDED',
           message: 'This legacy attestation already has a different final decision',
+        });
+      }
+      const decidedAt = new Date();
+      if (input.decision === 'REJECT') {
+        const rejected = await tx.adminAuditLog.create({
+          data: {
+            ...classifyAdminAuditAction(finalAction),
+            actorId,
+            action: finalAction,
+            target: requestEvent.target,
+            metadata: {
+              attestationRequestEventId: requestEvent.id,
+              attestorId: requestEvidence.attestorId,
+              decision: input.decision,
+              decisionReason,
+              decidedAt: decidedAt.toISOString(),
+              independentCheckerId: actorId,
+              ...(requestEvidence.permissionVersion != null
+                ? { permissionVersion: requestEvidence.permissionVersion }
+                : {}),
+              reason: requestEvidence.reason,
+              sourceReference: requestEvidence.sourceReference,
+              ...(requestEvidence.targetSnapshot
+                ? { targetSnapshot: requestEvidence.targetSnapshot }
+                : {}),
+              targetUserId: requestEvidence.targetUserId,
+            },
+          },
+          select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+        });
+        return financeApproverLegacyAttestationReceipt(rejected, false);
+      }
+      if (!requestEvidence.targetSnapshot || requestEvidence.permissionVersion == null) {
+        throw new ConflictException({
+          code: 'ATTESTATION_EVIDENCE_INVALID',
+          message: 'The attestation request has no immutable permission snapshot',
         });
       }
       const owner = await tx.user.findUnique({
@@ -5820,18 +6397,51 @@ export class AdminService {
         });
       }
       const currentPolicy = evaluateFinanceApproverPolicy(owner, {
+        expectedPermissionVersion: requestEvidence.permissionVersion,
         requireAttestation: false,
         requireFinanceRole: true,
       });
-      if (input.decision === 'APPROVE' && !currentPolicy.ready) {
+      if (!currentPolicy.ready) {
         const blocker = currentPolicy.blockers[0];
         throw new ConflictException({
           blockers: currentPolicy.blockers,
           code: blocker?.code ?? 'STALE_ROLE_VERSION',
-          message: blocker?.message ?? 'The legacy access owner no longer matches the reviewed account state',
+            message:
+              blocker?.message ?? 'The legacy access owner no longer matches the reviewed account state',
         });
       }
-      const decidedAt = new Date();
+      const currentSnapshot = financeApproverLegacyOwnerSnapshot(owner);
+      if (
+        financeApproverLegacySnapshotHash(currentSnapshot) !==
+        financeApproverLegacySnapshotHash(requestEvidence.targetSnapshot)
+      ) {
+        throw new ConflictException({
+          code: 'STALE_ROLE_VERSION',
+          message: 'The legacy owner evidence changed after the attestation request',
+        });
+      }
+      const lifecycleEvents = await tx.adminAuditLog.findMany({
+        where: {
+          action: {
+            in: [
+              FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+              FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+            ],
+          },
+          target: { startsWith: `finance_approver_attestation:${requestEvidence.targetUserId}:` },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { action: true, actorId: true, createdAt: true, id: true, metadata: true, target: true },
+      });
+      const previousCurrent = financeApproverLegacyAttestationState(
+        lifecycleEvents,
+        requestEvidence.targetUserId,
+        decidedAt,
+      );
+      const expiresAt = new Date(
+        decidedAt.getTime() + FINANCE_APPROVER_LEGACY_ATTESTATION_VALIDITY_DAYS * 24 * 60 * 60_000,
+      );
       const decisionEvent = await tx.adminAuditLog.create({
         data: {
           ...classifyAdminAuditAction(finalAction),
@@ -5844,17 +6454,118 @@ export class AdminService {
             decision: input.decision,
             decisionReason,
             decidedAt: decidedAt.toISOString(),
+            effectiveAt: decidedAt.toISOString(),
+            expiresAt: expiresAt.toISOString(),
             independentCheckerId: actorId,
+            permissionVersion: requestEvidence.permissionVersion,
             reason: requestEvidence.reason,
             sourceReference: requestEvidence.sourceReference,
-            targetSnapshot: financeApproverLegacyOwnerSnapshot(owner),
+            targetSnapshot: currentSnapshot,
             targetUserId: requestEvidence.targetUserId,
           },
         },
         select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
       });
+      if (previousCurrent.lifecycle === 'CURRENT' && previousCurrent.approvalEventId) {
+        await tx.adminAuditLog.create({
+          data: {
+            ...classifyAdminAuditAction(FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION),
+            id: financeApproverLegacyLifecycleEventId(
+              'superseded',
+              previousCurrent.approvalEventId,
+              decisionEvent.id,
+            ),
+            actorId,
+            action: FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+            target: requestEvent.target,
+            metadata: {
+              attestationEventId: previousCurrent.approvalEventId,
+              supersededAt: decidedAt.toISOString(),
+              supersededByEventId: decisionEvent.id,
+              targetUserId: requestEvidence.targetUserId,
+            },
+          },
+          select: { id: true },
+        });
+      }
       return financeApproverLegacyAttestationReceipt(decisionEvent, false);
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
+
+  async revokeFinanceApproverLegacyAttestation(
+    actorId: string,
+    attestationEventIdValue: string,
+    input: RevokeFinanceApproverLegacyAttestationDto,
+    sessionId?: string,
+  ) {
+    const attestationEventId = normalizeNullable(attestationEventIdValue);
+    const reason = normalizeFinanceApproverReason(input.reason, 'reason');
+    if (!attestationEventId) {
+      throw new BadRequestException({
+        code: 'ATTESTATION_REQUIRED',
+        message: 'Approved attestation event id is required',
+      });
+    }
+    const revocationId = financeApproverLegacyLifecycleEventId('revoked', attestationEventId);
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          await assertFinanceApproverGovernanceAccess(tx, actorId, 'decision', sessionId);
+          const existing = await tx.adminAuditLog.findUnique({
+            where: { id: revocationId },
+            select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+          });
+          if (existing) return financeApproverLegacyAttestationReceipt(existing, true);
+          const attestation = await tx.adminAuditLog.findUnique({
+            where: { id: attestationEventId },
+            select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+          });
+          if (!attestation || attestation.action !== FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION) {
+            throw new NotFoundException({
+              code: 'ATTESTATION_NOT_FOUND',
+              message: 'Approved legacy attestation not found',
+            });
+          }
+          const evidence = financeApproverLegacyAttestationEvidence(attestation);
+          if (evidence.targetUserId === actorId) {
+            throw new ForbiddenException({
+              code: 'MAKER_CHECKER_CONFLICT',
+              message: 'The legacy access owner cannot revoke their own attestation',
+            });
+          }
+          const revokedAt = new Date();
+          const revoked = await tx.adminAuditLog.create({
+            data: {
+              ...classifyAdminAuditAction(FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION),
+              id: revocationId,
+              actorId,
+              action: FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+              target: attestation.target,
+              metadata: {
+                attestationEventId: attestation.id,
+                reason,
+                revokedAt: revokedAt.toISOString(),
+                targetUserId: evidence.targetUserId,
+              },
+            },
+            select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+          });
+          return financeApproverLegacyAttestationReceipt(revoked, false);
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const replay = await this.prisma.adminAuditLog.findUnique({
+          where: { id: revocationId },
+          select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+        });
+        if (replay) return financeApproverLegacyAttestationReceipt(replay, true);
+      }
+      throw error;
+    }
   }
 
   private async financeApproverAccessRequestPage(
@@ -5894,8 +6605,13 @@ export class AdminService {
             attestationStatus: policy.attestationStatus,
             blockers: policy.blockers,
             credentialState: policy.credentialState,
+            legacyAttestationLifecycle: policy.legacyAttestationLifecycle,
             mfaVerified: policy.mfaVerified,
             permissionVersion: policy.permissionVersion,
+            permissionVersionMatches:
+              item.expectedPermissionVersion != null &&
+              item.expectedPermissionVersion === policy.permissionVersion,
+            requestedPermissionVersion: item.expectedPermissionVersion,
             ready: policy.ready,
           },
         };
@@ -5999,24 +6715,22 @@ export class AdminService {
       baseWhere,
       adminCustomerLastSeenWindowWhere(todayStart.getTime(), tomorrowStart.getTime()),
     );
+    const scopedView = normalizeNullable(options.view)?.toLowerCase();
+    const hasScopedView = ['needs-action', 'new-today', 'active-today'].includes(scopedView ?? '');
     const [
-      totalCount,
       genderRows,
       todayJoinedRows,
       todaySeenRows,
       monthSeenRows,
-      allViewCount,
-      needsActionViewCount,
-      newTodayViewCount,
-      activeTodayViewCount,
+      allViewCountOverride,
+      needsActionViewCountOverride,
+      newTodayViewCountOverride,
+      activeTodayViewCountOverride,
       needsActionCount,
       pushReachableCount,
       activeBookingCount,
       completedBookingCount,
     ] = await Promise.all([
-      this.prisma.customerProfile.count({
-        ...(where ? { where } : {}),
-      }),
       this.prisma.customerProfile.groupBy({
         by: ['gender'],
         ...(where ? { where } : {}),
@@ -6037,10 +6751,12 @@ export class AdminService {
         where: monthSeenWhere,
         _count: { _all: true },
       }),
-      this.prisma.customerProfile.count({ ...(baseWhere ? { where: baseWhere } : {}) }),
-      this.prisma.customerProfile.count({ where: baseNeedsActionWhere }),
-      this.prisma.customerProfile.count({ where: baseTodayJoinedWhere }),
-      this.prisma.customerProfile.count({ where: baseTodaySeenWhere }),
+      hasScopedView
+        ? this.prisma.customerProfile.count({ ...(baseWhere ? { where: baseWhere } : {}) })
+        : null,
+      hasScopedView ? this.prisma.customerProfile.count({ where: baseNeedsActionWhere }) : null,
+      hasScopedView ? this.prisma.customerProfile.count({ where: baseTodayJoinedWhere }) : null,
+      hasScopedView ? this.prisma.customerProfile.count({ where: baseTodaySeenWhere }) : null,
       this.prisma.customerProfile.count({ where: needsActionWhere }),
       this.prisma.customerProfile.count({ where: pushReachableWhere }),
       this.prisma.booking.count({
@@ -6060,16 +6776,24 @@ export class AdminService {
     const todayJoinedGenderBreakdown = adminCustomerGenderBreakdown(todayJoinedRows);
     const todaySeenGenderBreakdown = adminCustomerGenderBreakdown(todaySeenRows);
     const monthSeenGenderBreakdown = adminCustomerGenderBreakdown(monthSeenRows);
+    const totalCount = adminCustomerGenderBreakdownTotal(genderBreakdown);
+    const todayJoined = adminCustomerGenderBreakdownTotal(todayJoinedGenderBreakdown);
+    const todaySeen = adminCustomerGenderBreakdownTotal(todaySeenGenderBreakdown);
+    const monthSeen = adminCustomerGenderBreakdownTotal(monthSeenGenderBreakdown);
+    const allViewCount = allViewCountOverride ?? totalCount;
+    const needsActionViewCount = needsActionViewCountOverride ?? needsActionCount;
+    const newTodayViewCount = newTodayViewCountOverride ?? todayJoined;
+    const activeTodayViewCount = activeTodayViewCountOverride ?? todaySeen;
 
     return {
       generatedAt: new Date().toISOString(),
       totalCount,
       genderBreakdown,
-      todayJoined: adminCustomerGenderBreakdownTotal(todayJoinedGenderBreakdown),
+      todayJoined,
       todayJoinedGenderBreakdown,
-      todaySeen: adminCustomerGenderBreakdownTotal(todaySeenGenderBreakdown),
+      todaySeen,
       todaySeenGenderBreakdown,
-      monthSeen: adminCustomerGenderBreakdownTotal(monthSeenGenderBreakdown),
+      monthSeen,
       monthSeenGenderBreakdown,
       needsActionCount,
       pushReachableCount,
@@ -6085,19 +6809,20 @@ export class AdminService {
   }
 
   async getCustomerDetail(customerProfileId: string, options: { includeDiagnostics?: boolean } = {}) {
-    const includeDiagnostics = options.includeDiagnostics !== false;
-    const [customer, activitySummaries, activeBooking] = await Promise.all([
+    const includeDiagnostics = options.includeDiagnostics === true;
+    const [customer, activitySummaries, activeBookingRows] = await Promise.all([
       this.prisma.customerProfile.findUnique({
         where: { id: customerProfileId },
         select: includeDiagnostics ? adminCustomerDetailSelect : adminCustomerDetailWithoutDiagnosticsSelect,
       }),
       this.getCustomerListActivitySummaries([customerProfileId]),
-      this.prisma.booking.findFirst({
+      this.prisma.booking.findMany({
         where: {
           customerProfileId,
           status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) },
         },
         orderBy: { createdAt: 'desc' },
+        take: ADMIN_CUSTOMER_ACTIVE_BOOKING_LIMIT,
         select: adminCustomerDetailBookingSelect,
       }),
     ]);
@@ -6133,14 +6858,36 @@ export class AdminService {
           lastSeenAt: customer.user.appSessions[0].lastSeenAt,
         }
       : null;
+    const activeBookings = activeBookingRows.sort((left, right) => {
+      const priorityDelta =
+        adminCustomerActiveBookingPriority(right.status) - adminCustomerActiveBookingPriority(left.status);
+      return priorityDelta || right.createdAt.getTime() - left.createdAt.getTime();
+    });
+    const activeBooking = activeBookings[0] ?? null;
 
     if (includeDiagnostics) {
-      return { ...customer, activeBooking, activitySummary, auditLogs, operatorNotes, sessionSummary };
+      return {
+        ...customer,
+        activeBooking,
+        activeBookings,
+        activitySummary,
+        auditLogs,
+        operatorNotes,
+        sessionSummary,
+      };
     }
 
     const safeUser = { ...customer.user };
     Reflect.deleteProperty(safeUser, 'appSessions');
-    return { ...customer, activeBooking, activitySummary, operatorNotes, sessionSummary, user: safeUser };
+    return {
+      ...customer,
+      activeBooking,
+      activeBookings,
+      activitySummary,
+      operatorNotes,
+      sessionSummary,
+      user: safeUser,
+    };
   }
 
   async getCustomerWalletLedger(customerProfileId: string, options: AdminCustomerWalletLedgerQuery = {}) {
@@ -8198,6 +8945,102 @@ export class AdminService {
     return reward;
   }
 
+  async approveReferralRewardTaxReview(
+    actorId: string,
+    rewardId: string,
+    input: { expectedStatus: ReferralRewardStatus; expectedUpdatedAt: string; reason: string },
+  ) {
+    const reward = await this.referrals.approveRewardTaxReview(rewardId, input);
+
+    const audit = await this.writeAudit(actorId, 'referral_reward.tax_review_approve', `referral_reward:${rewardId}`, {
+      amount: reward.amount,
+      currency: reward.currency,
+      decision: 'APPROVED',
+      decisionAt: reward.updatedAt.toISOString(),
+      nextStatus: reward.status,
+      previousStatus: input.expectedStatus,
+      reason: normalizeAuditReason(input.reason),
+      status: reward.status,
+      taxRule: 'REFERRAL_CASHOUT_TAX_REVIEW_REQUIRED',
+      walletCreditCreated: false,
+      walletLedgerReference: reward.walletLedgerReference,
+      walletRewardRetained: false,
+    });
+
+    return {
+      ...reward,
+      taxDecision: {
+        decisionAt: reward.updatedAt.toISOString(),
+        decisionReference: audit.id,
+        outcome: 'APPROVED' as const,
+      },
+    };
+  }
+
+  async holdReferralRewardTaxReview(
+    actorId: string,
+    rewardId: string,
+    input: { expectedStatus: ReferralRewardStatus; expectedUpdatedAt: string; reason: string },
+  ) {
+    const reward = await this.referrals.holdRewardTaxReview(rewardId, input);
+
+    const audit = await this.writeAudit(actorId, 'referral_reward.tax_review_hold', `referral_reward:${rewardId}`, {
+      amount: reward.amount,
+      currency: reward.currency,
+      decision: 'HELD',
+      decisionAt: reward.updatedAt.toISOString(),
+      nextStatus: reward.status,
+      previousStatus: input.expectedStatus,
+      reason: normalizeAuditReason(input.reason),
+      status: reward.status,
+      taxRule: 'REFERRAL_CASHOUT_TAX_REVIEW_REQUIRED',
+      walletCreditCreated: false,
+      walletLedgerReference: reward.walletLedgerReference,
+      walletRewardRetained: false,
+    });
+
+    return {
+      ...reward,
+      taxDecision: {
+        decisionAt: reward.updatedAt.toISOString(),
+        decisionReference: audit.id,
+        outcome: 'HELD' as const,
+      },
+    };
+  }
+
+  async rejectReferralRewardTaxReview(
+    actorId: string,
+    rewardId: string,
+    input: { expectedStatus: ReferralRewardStatus; expectedUpdatedAt: string; reason: string },
+  ) {
+    const reward = await this.referrals.rejectRewardTaxReview(rewardId, input);
+
+    const audit = await this.writeAudit(actorId, 'referral_reward.tax_review_reject', `referral_reward:${rewardId}`, {
+      amount: reward.amount,
+      currency: reward.currency,
+      decision: 'REJECTED',
+      decisionAt: reward.updatedAt.toISOString(),
+      nextStatus: reward.status,
+      previousStatus: input.expectedStatus,
+      reason: normalizeAuditReason(input.reason),
+      status: reward.status,
+      taxRule: 'REFERRAL_CASHOUT_TAX_REVIEW_REQUIRED',
+      walletCreditCreated: false,
+      walletLedgerReference: reward.walletLedgerReference,
+      walletRewardRetained: true,
+    });
+
+    return {
+      ...reward,
+      taxDecision: {
+        decisionAt: reward.updatedAt.toISOString(),
+        decisionReference: audit.id,
+        outcome: 'REJECTED' as const,
+      },
+    };
+  }
+
   async markReferralRewardCashoutPaid(
     actorId: string,
     rewardId: string,
@@ -8222,7 +9065,7 @@ export class AdminService {
     );
     const approvalRequest = await this.prisma.adminAuditLog.findFirst({
       where: {
-        action: 'referral_reward.cashout_approve',
+        action: { in: ['referral_reward.cashout_approve', 'referral_reward.tax_review_approve'] },
         target: `referral_reward:${rewardId}`,
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -8491,18 +9334,27 @@ export class AdminService {
   }
 
   async referralCashoutQueueSummary(options: AdminReferralCashoutQueueQuery = {}) {
-    const where = adminReferralCashoutWhere(options);
-    const [totalCount, rewardGroups] = await Promise.all([
-      this.prisma.referralReward.count({ where }),
+    const resultWhere = adminReferralCashoutWhere(options);
+    const facetWhere = adminReferralCashoutWhere(options, { includeStatus: false });
+    const [resultSummary, rewardGroups] = await Promise.all([
+      this.prisma.referralReward.aggregate({
+        where: resultWhere,
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
       this.prisma.referralReward.groupBy({
         by: ['status'],
-        where,
+        where: facetWhere,
         _count: { _all: true },
         _sum: { amount: true },
       }),
     ]);
 
-    return adminReferralCashoutQueueSummary(totalCount, rewardGroups);
+    return adminReferralCashoutQueueSummary(
+      resultSummary._count._all,
+      resultSummary._sum.amount ?? 0,
+      rewardGroups,
+    );
   }
 
   async getPartnerReferralParent(providerProfileId: string) {
@@ -8606,7 +9458,9 @@ export class AdminService {
     const now = new Date();
     const window = adminVietnamOverviewRangeWindow(normalizeAdminVietnamOverviewRange(rangeInput), now);
     const dateWhere = adminVietnamOverviewDateWhere(window);
-    const closedBookingWhere: Prisma.BookingWhereInput = dateWhere ? { closedAt: dateWhere } : {};
+    const closedBookingWhere: Prisma.BookingWhereInput = {
+      AND: [adminBookingProductionDataWhere(), ...(dateWhere ? [{ closedAt: dateWhere }] : [])],
+    };
     const activeCustomerSince = new Date(now.getTime() - ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS);
     const activeCustomerSessionWhere: Prisma.AppSessionWhereInput = {
       active: true,
@@ -8616,7 +9470,8 @@ export class AdminService {
     const partnerLocationFreshnessMinutes = await this.partnerLocationFreshnessMinutes();
     const partnerLocationFreshAfter = new Date(now.getTime() - partnerLocationFreshnessMinutes * 60_000);
     const matchingDelayPolicy = adminBookingQueueSlaPolicy('matching-delays');
-    const matchingDelayWindow = matchingDelayPolicy
+    const matchingDelayWindow =
+      options.includeRealtimePoints && matchingDelayPolicy
       ? await this.queueSlaWindow(matchingDelayPolicy.key, matchingDelayPolicy.defaultThresholdMinutes, now)
       : undefined;
     const bookingWhereOptions = {
@@ -8686,9 +9541,13 @@ export class AdminService {
     const sourceListLimit = options.includePeriodMetrics
       ? ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT
       : (options.realtimeListLimit ?? ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT);
+    const customerProductionWhere = adminCustomerProductionDataWhere();
+    const operatingProviderWhere = adminVietnamOverviewOperatingProviderWhere();
 
     const [customers, providers, bookings, realtimeBookings, exactTotals] = await Promise.all([
-      this.prisma.customerProfile.findMany({
+      options.includeRealtimePoints
+        ? this.prisma.customerProfile.findMany({
+            where: customerProductionWhere,
         orderBy: { id: 'desc' },
         take: sourceListLimit,
         select: {
@@ -8721,8 +9580,11 @@ export class AdminService {
             },
           },
         },
-      }),
-      this.prisma.providerProfile.findMany({
+          })
+        : Promise.resolve([]),
+      options.includeRealtimePoints
+        ? this.prisma.providerProfile.findMany({
+            where: operatingProviderWhere,
         orderBy: { updatedAt: 'desc' },
         take: sourceListLimit,
         select: {
@@ -8750,7 +9612,8 @@ export class AdminService {
             },
           },
         },
-      }),
+          })
+        : Promise.resolve([]),
       options.includePeriodMetrics
         ? this.prisma.booking.findMany({
             where: closedOutcomeWhere,
@@ -8782,7 +9645,7 @@ export class AdminService {
             },
           })
         : Promise.resolve([]),
-      options.includePeriodMetrics || options.includeRealtimePoints
+      options.includeRealtimePoints
         ? this.prisma.booking.findMany({
             where: { OR: [liveActiveBookingWhere, dataAnomalyWhere] },
             orderBy: { updatedAt: 'desc' },
@@ -8800,7 +9663,7 @@ export class AdminService {
               closedAt: true,
               expiresAt: true,
               participants: {
-                select: { status: true },
+                select: { respondedAt: true, status: true },
               },
               addressSnapshot: {
                 select: {
@@ -8818,6 +9681,7 @@ export class AdminService {
         assignedOrInServiceWhere,
         closedBookingWhere,
         includePeriodMetrics: options.includePeriodMetrics,
+        includeRealtimeMetrics: options.includeRealtimePoints,
         needsSupplyNowWhere,
         paidVolumeAvailable,
         partnerLocationFreshAfter,
@@ -8830,6 +9694,7 @@ export class AdminService {
             where: {
               AND: [
                 { id: { in: providers.map((provider) => provider.id) } },
+                operatingProviderWhere,
                 adminPartnerReadyNowWhere(partnerLocationFreshAfter),
               ],
             },
@@ -9012,15 +9877,7 @@ export class AdminService {
         }),
       );
       const bookingMetadata = withAdminBookingListMetadata(booking, now);
-      const hasJoinedPartner = booking.participants.some(
-        (participant) =>
-          participant.status === ParticipantStatus.JOINED ||
-          participant.status === ParticipantStatus.ACCEPTED,
-      );
-      const isMatchingDelay =
-        booking.status === BookingStatus.OPEN_MATCHING &&
-        ((booking.expiresAt?.getTime() ?? Number.POSITIVE_INFINITY) <= now.getTime() ||
-          (booking.createdAt <= (matchingDelayWindow?.cutoffAt ?? now) && !hasJoinedPartner));
+      const isMatchingDelay = adminBookingIsMatchingDelay(booking, bookingWhereOptions);
       const isStaleActiveRecord = bookingMetadata.dataClass === 'anomaly' || isMatchingDelay;
       const isAssignedOrInService =
         !isStaleActiveRecord && ADMIN_VIETNAM_ASSIGNED_BOOKING_STATUSES.has(booking.status);
@@ -9065,17 +9922,25 @@ export class AdminService {
       region.supplyShortageCount = Math.max(region.needsSupplyNowCount - region.readyPartnerCount, 0);
     }
     const sampleSources: AdminVietnamOverviewSampleSource[] = [
+      ...(options.includeRealtimePoints
+        ? [
       vietnamOverviewSampleSource('customers', customers.length, sourceListLimit, realtimePoints),
       vietnamOverviewSampleSource('partners', providers.length, sourceListLimit, realtimePoints),
+          ]
+        : []),
       ...(options.includePeriodMetrics
         ? [vietnamOverviewSampleSource('period-bookings', bookings.length, sourceListLimit, realtimePoints)]
         : []),
+      ...(options.includeRealtimePoints
+        ? [
       vietnamOverviewSampleSource(
         'active-bookings',
         realtimeBookings.length,
         sourceListLimit,
         realtimePoints,
       ),
+          ]
+        : []),
     ];
 
     return {
@@ -9106,11 +9971,17 @@ export class AdminService {
     assignedOrInServiceWhere: Prisma.BookingWhereInput;
     closedBookingWhere: Prisma.BookingWhereInput;
     includePeriodMetrics: boolean;
+    includeRealtimeMetrics: boolean;
     needsSupplyNowWhere: Prisma.BookingWhereInput;
     paidVolumeAvailable: boolean;
     partnerLocationFreshAfter: Date;
     staleActiveRecordWhere: Prisma.BookingWhereInput;
   }): Promise<AdminVietnamOverviewTotals> {
+    const customerProductionWhere = adminCustomerProductionDataWhere();
+    const operatingProviderWhere = adminVietnamOverviewOperatingProviderWhere();
+    const providerWhere = (where: Prisma.ProviderProfileWhereInput = {}) => ({
+      AND: [operatingProviderWhere, where],
+    });
     const [
       customerCount,
       activeCustomerCount,
@@ -9126,28 +9997,48 @@ export class AdminService {
       cancellationCount,
       paidVolume,
     ] = await Promise.all([
-      this.prisma.customerProfile.count(),
-      this.prisma.customerProfile.count({
+      input.includeRealtimeMetrics
+        ? this.prisma.customerProfile.count({ where: customerProductionWhere })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.customerProfile.count({
         where: {
+              AND: [
+                customerProductionWhere,
+                {
           user: {
+                    is: {
             appSessions: {
               some: input.activeCustomerSessionWhere,
             },
           },
         },
-      }),
-      this.prisma.providerProfile.count(),
-      this.prisma.providerProfile.count({
-        where: adminPartnerReadyNowWhere(input.partnerLocationFreshAfter),
-      }),
-      this.prisma.providerProfile.count({
-        where: { status: ProviderStatus.ONLINE_BUSY },
-      }),
-      this.prisma.providerProfile.count({
-        where: { status: ProviderStatus.OFFLINE },
-      }),
-      this.prisma.providerProfile.count({
-        where: {
+                },
+              ],
+            },
+          })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.providerProfile.count({ where: operatingProviderWhere })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.providerProfile.count({
+            where: providerWhere(adminPartnerReadyNowWhere(input.partnerLocationFreshAfter)),
+          })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.providerProfile.count({
+            where: providerWhere({ status: ProviderStatus.ONLINE_BUSY }),
+          })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.providerProfile.count({
+            where: providerWhere({ status: ProviderStatus.OFFLINE }),
+          })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.providerProfile.count({
+            where: providerWhere({
           status: {
             in: [ProviderStatus.ONLINE_AVAILABLE, ProviderStatus.ONLINE_AVAILABLE_SOON],
           },
@@ -9157,11 +10048,18 @@ export class AdminService {
             { currentLocationUpdatedAt: null },
             { currentLocationUpdatedAt: { lt: input.partnerLocationFreshAfter } },
           ],
-        },
       }),
-      this.prisma.booking.count({ where: input.needsSupplyNowWhere }),
-      this.prisma.booking.count({ where: input.assignedOrInServiceWhere }),
-      this.prisma.booking.count({ where: input.staleActiveRecordWhere }),
+          })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.booking.count({ where: input.needsSupplyNowWhere })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.booking.count({ where: input.assignedOrInServiceWhere })
+        : Promise.resolve(0),
+      input.includeRealtimeMetrics
+        ? this.prisma.booking.count({ where: input.staleActiveRecordWhere })
+        : Promise.resolve(0),
       input.includePeriodMetrics
         ? this.prisma.booking.count({
             where: { AND: [input.closedBookingWhere, { status: BookingStatus.COMPLETED }] },
@@ -9179,7 +10077,10 @@ export class AdminService {
         : Promise.resolve(0),
       input.includePeriodMetrics && input.paidVolumeAvailable
         ? this.prisma.payment.aggregate({
-            where: { status: { in: Array.from(ADMIN_VIETNAM_REVENUE_STATUSES) } },
+            where: {
+              status: { in: Array.from(ADMIN_VIETNAM_REVENUE_STATUSES) },
+              booking: { is: adminBookingProductionDataWhere() },
+            },
             _sum: { amount: true },
           })
         : Promise.resolve(null),
@@ -10013,6 +10914,13 @@ export class AdminService {
       verificationStatus: verificationStatusFilter,
       walletStatus: walletStatusFilter,
     });
+    const exactSupplyFilters: PartnerOverviewExactSupplyFilters = {
+      city: normalizeOptionalText(query.city),
+      onlineStatuses: onlineStatusesFilter,
+      serviceId: serviceIdFilter,
+      verificationStatus: verificationStatusFilter,
+      walletStatus: walletStatusFilter,
+    };
     const providerStatusCountRowsPromise = this.prisma.providerProfile.groupBy({
       by: ['status'],
       where: baseWhere,
@@ -10106,6 +11014,7 @@ export class AdminService {
     } satisfies Prisma.BookingWhereInput;
     const bookingRequestWhere = {
       preferredProviderId: { not: null },
+      preferredProvider: { is: baseWhere },
       ...(dateWhere ? { createdAt: dateWhere } : {}),
       ...(serviceIdFilter ? { services: { some: { serviceId: serviceIdFilter } } } : {}),
     } satisfies Prisma.BookingWhereInput;
@@ -10131,12 +11040,14 @@ export class AdminService {
       availableBlockedNegativeWalletPartners,
       availableBlockedAccountPartners,
       averageRating,
+      exactAreaSupplyRows,
+      exactServiceSupplyRows,
+      exactAreaOutcomeRows,
       providerRows,
-      openBookingRows,
-      nonCompletedBookingRows,
       serviceCatalogRows,
       openServiceRows,
       completedServiceRows,
+      nonCompletedServiceRows,
       completedByProviderRows,
       cancelledByProviderRows,
       lowReviewRows,
@@ -10291,6 +11202,15 @@ export class AdminService {
         _avg: { rating: true },
         _count: { rating: true },
       }),
+      this.prisma.$queryRaw<PartnerOverviewAreaSupplyAggregateRow[]>(
+        partnerOverviewAreaSupplyAggregateSql(exactSupplyFilters, locationFreshBoundary),
+      ),
+      this.prisma.$queryRaw<PartnerOverviewServiceSupplyAggregateRow[]>(
+        partnerOverviewServiceSupplyAggregateSql(exactSupplyFilters, locationFreshBoundary),
+      ),
+      this.prisma.$queryRaw<PartnerOverviewAreaOutcomeAggregateRow[]>(
+        partnerOverviewAreaOutcomeAggregateSql(exactSupplyFilters, window),
+      ),
       this.prisma.providerProfile.findMany({
         where: baseWhere,
         orderBy: { updatedAt: 'desc' },
@@ -10398,46 +11318,6 @@ export class AdminService {
           },
         },
       }),
-      this.prisma.booking.findMany({
-        where: { ...bookingRequestWhere, status: BookingStatus.OPEN_MATCHING },
-        orderBy: { createdAt: 'desc' },
-        take: ADMIN_PARTNER_OVERVIEW_BOOKING_SCAN_LIMIT,
-        select: {
-          address: true,
-          addressSnapshot: {
-            select: {
-              address: true,
-              addressText: true,
-              latitude: true,
-              longitude: true,
-            },
-          },
-          lat: true,
-          lng: true,
-        },
-      }),
-      this.prisma.booking.findMany({
-        where: {
-          status: { in: cancellationStatuses },
-          ...(dateWhere ? { closedAt: dateWhere } : {}),
-          ...(serviceIdFilter ? { services: { some: { serviceId: serviceIdFilter } } } : {}),
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: ADMIN_PARTNER_OVERVIEW_BOOKING_SCAN_LIMIT,
-        select: {
-          address: true,
-          addressSnapshot: {
-            select: {
-              address: true,
-              addressText: true,
-              latitude: true,
-              longitude: true,
-            },
-          },
-          lat: true,
-          lng: true,
-        },
-      }),
       this.prisma.massageService.findMany({
         where: {
           active: true,
@@ -10463,7 +11343,28 @@ export class AdminService {
         by: ['serviceId'],
         where: {
           ...(serviceIdFilter ? { serviceId: serviceIdFilter } : {}),
-          booking: { is: completedBookingWhere },
+          booking: {
+            is: {
+              ...completedBookingWhere,
+              selectedProviderId: { not: null },
+              selectedProvider: { is: baseWhere },
+            },
+          },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.bookingService.groupBy({
+        by: ['serviceId'],
+        where: {
+          ...(serviceIdFilter ? { serviceId: serviceIdFilter } : {}),
+          booking: {
+            is: {
+              status: { in: cancellationStatuses },
+              closedAt: dateWhere,
+              selectedProviderId: { not: null },
+              selectedProvider: { is: baseWhere },
+            },
+          },
         },
         _count: { _all: true },
       }),
@@ -10642,9 +11543,7 @@ export class AdminService {
       }),
     ]);
 
-    const providerStatusCounts = new Map(
-      providerStatusCountRows.map((row) => [row.status, row._count._all]),
-    );
+    const providerStatusCounts = new Map(providerStatusCountRows.map((row) => [row.status, row._count._all]));
     const approvedProviderStatusCounts = new Map(
       approvedProviderStatusCountRows.map((row) => [row.status, row._count._all]),
     );
@@ -10709,15 +11608,8 @@ export class AdminService {
         : Promise.resolve([[], [], []] as const);
     const [
       boundedAppUsageRows,
-      [
-        exactRangeAppUsageRows,
-        exactPreviousAppUsageRows,
-        exactTrackedApprovedAppUsageRows,
-      ],
-    ] = await Promise.all([
-      boundedAppUsagePromise,
-      exactAppUsagePromise,
-    ]);
+      [exactRangeAppUsageRows, exactPreviousAppUsageRows, exactTrackedApprovedAppUsageRows],
+    ] = await Promise.all([boundedAppUsagePromise, exactAppUsagePromise]);
     const [rangeAppUsageRows, latestAppUsageRows, previousAppUsageRowsRaw] = boundedAppUsageRows;
     const previousAppUsageRows = previousAppUsageRowsRaw ?? [];
     const [periodStatusRowsRaw, previousStatusRowsRaw] = await periodStatusRowsPromise;
@@ -10830,12 +11722,9 @@ export class AdminService {
     const favoriteMap = partnerOverviewFavoriteMap(favoriteProviderRows);
 
     const areaRows = partnerOverviewAreaRows({
+      areaOutcomeRows: exactAreaOutcomeRows,
+      areaSupplyRows: exactAreaSupplyRows,
       averageResponseSecondsByRegion,
-      eligibleProviderIds,
-      nonCompletedBookingRows,
-      locationFreshBoundary,
-      openBookingRows,
-      providerRows,
     });
     const operationalServiceCatalogRows = partnerOverviewOperationalServiceCatalog(serviceCatalogRows);
     const filteredServiceCatalogRows = serviceIdFilter
@@ -10843,9 +11732,9 @@ export class AdminService {
       : operationalServiceCatalogRows;
     const serviceRows = partnerOverviewServiceRows({
       completedServiceRows,
-      eligibleProviderIds,
+      nonCompletedServiceRows,
       openServiceRows,
-      providerRows,
+      serviceSupplyRows: exactServiceSupplyRows,
       serviceCatalogRows: filteredServiceCatalogRows,
     });
     const partnerFacts = providerRows.map((provider) =>
@@ -10930,9 +11819,7 @@ export class AdminService {
       (sum, row) => sum + numberValue(row._sum.sessionStartCount),
       0,
     );
-    const appOpenCount = riskStatusFilter
-      ? boundedAppOpenCount
-      : exactRangeAppUsage.appOpenCount;
+    const appOpenCount = riskStatusFilter ? boundedAppOpenCount : exactRangeAppUsage.appOpenCount;
     const sessionStartCount = riskStatusFilter
       ? boundedSessionStartCount
       : exactRangeAppUsage.sessionStartCount;
@@ -11073,6 +11960,9 @@ export class AdminService {
         actionListCountScope: riskStatusFilter ? 'bounded-risk-filter' : 'full-population',
         appActivityCountScope: riskStatusFilter ? 'bounded-risk-filter' : 'full-population',
         operatingStatusCountScope: riskStatusFilter ? 'bounded-risk-filter' : 'full-population',
+        supplyHealthCountScope: riskStatusFilter
+          ? 'full-population-excluding-risk-filter'
+          : 'full-population',
         providerScanLimit: ADMIN_PARTNER_OVERVIEW_PARTNER_SCAN_LIMIT,
         walletBalancePartnerCount: riskStatusFilter
           ? displayPartnerFacts.length
@@ -11209,7 +12099,7 @@ export class AdminService {
         }),
       },
       supplyHealth: {
-        areas: areaRows.slice(0, previewLimit),
+        areas: areaRows,
         services: serviceRows.slice(0, previewLimit),
       },
       funnel: {
@@ -11431,7 +12321,7 @@ export class AdminService {
                     fact.taxStatus !== ProviderTaxProfileStatus.APPROVED,
                 ).length
               : payoutBlockedPartners,
-            'Policy display only',
+            'Unique Partner count; wallet, bank, and tax block reasons can overlap',
           ),
           partnerOverviewKpi(
             'payoutBankNotApprovedPartners',
@@ -11459,6 +12349,9 @@ export class AdminService {
       actionLists,
       segments: partnerOverviewSegments(displayPartnerFacts),
       dataNotes: [
+        'Area and Service supply counts use the full population for exact filters; the bounded Risk filter is excluded from these aggregates.',
+        'Area non-completed rate is non-completed / completed + non-completed outcomes; open demand is shown separately.',
+        'Service completion rate is completed / completed + non-completed outcomes; open demand is shown separately.',
         'Partner app activity KPIs use full-population APP_OPEN and SESSION_START daily aggregates; ranking tables remain bounded previews.',
         'Partner wallet totals and wallet-status filters use the persistent all-Partner VND balance summary.',
         'Request viewed and detailed are counted from persisted Partner request view events.',
@@ -11509,7 +12402,12 @@ export class AdminService {
       ...(sourceFilter ? { source: sourceFilter } : {}),
       ...(platformFilter ? { platform: platformFilter } : {}),
       ...(campaignIdFilter
-        ? { campaignId: { equals: canonicalMarketingCampaignKey(campaignIdFilter) ?? campaignIdFilter, mode: 'insensitive' } }
+        ? {
+            campaignId: {
+              equals: canonicalMarketingCampaignKey(campaignIdFilter) ?? campaignIdFilter,
+              mode: 'insensitive',
+            },
+          }
         : {}),
     } satisfies Prisma.MarketingSpendDailyWhereInput;
 
@@ -12280,7 +13178,8 @@ export class AdminService {
         if (candidates.length > 1 || (candidates[0] && candidates[0].campaignId !== campaignId)) {
           throw new ConflictException({
             code: 'MARKETING_SPEND_CAMPAIGN_ID_AMBIGUOUS',
-            message: 'This campaign has legacy duplicate or non-canonical spend rows. Resolve them before editing.',
+            message:
+              'This campaign has legacy duplicate or non-canonical spend rows. Resolve them before editing.',
           });
         }
         const previous = candidates[0] ?? null;
@@ -12408,7 +13307,8 @@ export class AdminService {
     return rows[0] ?? null;
   }
 
-  async listMarketingSpendLedger(input: {
+  async listMarketingSpendLedger(
+    input: {
     range?: string;
     source?: string;
     platform?: string;
@@ -12416,7 +13316,8 @@ export class AdminService {
     campaignId?: string;
     take?: number | string;
     skip?: number | string;
-  } = {}) {
+    } = {},
+  ) {
     const window = adminMarketingRangeWindow(normalizeAdminMarketingRange(input.range));
     const source = normalizeMarketingSourceFilter(input.source);
     const platform = normalizeMarketingPlatformFilter(input.platform);
@@ -13398,8 +14299,12 @@ export class AdminService {
       (latest, row) => (!latest || row.updatedAt > latest ? row.updatedAt : latest),
       null,
     );
-    const paidScopeExpected =
-      !sourceFilter || ['meta', 'google', 'tiktok', 'unknown'].includes(sourceFilter);
+    const paidScopeExpected = marketingPaidScopeExpected({
+      attributionRows,
+      campaignIdFilter,
+      sourceFilter,
+      spendRowCount: spendEvidenceRows.length,
+    });
     const spendCoverage = buildMarketingSpendCoverage({
       window,
       recordedDates: spendEvidenceRows.map((row) => marketingSpendDateKey(row.spendDate)),
@@ -13635,6 +14540,8 @@ export class AdminService {
   async listPartnerDirectoryProviders(options: AdminPartnerDirectoryQueryOptions = {}) {
     const locationFreshBoundary = await this.partnerDirectoryLocationFreshBoundary(options.review);
     const approvalQueue = normalizeNullable(options.review) === 'approval-pending';
+    const walletDebtPrioritySort =
+      normalizeNullable(options.review) === 'unsettled' && normalizeNullable(options.sort) === 'wallet-debt';
     const selectedSla = normalizeAdminQueueSlaFilter(options.sla);
     const slaWindow =
       approvalQueue && selectedSla !== 'all'
@@ -13658,6 +14565,8 @@ export class AdminService {
           take,
           where,
         })
+      : walletDebtPrioritySort
+        ? await this.partnerDirectoryWalletDebtProviders({ skip, take, where })
       : await this.prisma.providerProfile.findMany({
           orderBy: adminPartnerDirectoryOrderBy(options.sort),
           ...(skip > 0 ? { skip } : {}),
@@ -13666,9 +14575,289 @@ export class AdminService {
           select: adminProviderDirectorySelect,
         });
 
-    if (providers.length === 0) {
-      return providers;
+    return this.enrichPartnerDirectoryProviders(providers);
     }
+
+  async partnerWalletDebtCursorPage(options: AdminPartnerWalletDebtCursorQueryOptions = {}) {
+    const q = normalizeNullable(options.q);
+    const filterHash = adminPartnerWalletDebtFilterHash(q);
+    const cursor = adminPartnerWalletDebtCursor(options.cursor, filterHash);
+    const snapshotId = cursor?.snapshotId ?? randomUUID();
+    const take = adminPartnerDirectoryTake(options.take);
+    const searchWhere = q
+      ? Prisma.sql`AND (
+          provider."id" ILIKE ${`%${q}%`}
+          OR provider."displayName" ILIKE ${`%${q}%`}
+          OR provider."legalName" ILIKE ${`%${q}%`}
+          OR provider."activityNickname" ILIKE ${`%${q}%`}
+          OR provider."city" ILIKE ${`%${q}%`}
+          OR profile_user."fullName" ILIKE ${`%${q}%`}
+          OR profile_user."phone" ILIKE ${`%${q}%`}
+          OR profile_user."email" ILIKE ${`%${q}%`}
+        )`
+      : Prisma.empty;
+    const cursorWhere =
+      cursor && cursor.position > 0
+        ? Prisma.sql`AND (
+          member."balance" > ${cursor.balance}
+          OR (
+            member."balance" = ${cursor.balance}
+            AND member."providerProfileId" > ${cursor.providerProfileId}
+          )
+        )`
+        : Prisma.empty;
+    const pageRows = cursor
+      ? await this.prisma.$queryRaw<AdminPartnerWalletDebtPageRow[]>(Prisma.sql`
+          WITH live_snapshot AS MATERIALIZED (
+            SELECT snapshot."id", snapshot."snapshotAt", snapshot."totalCount"
+            FROM "PartnerWalletDebtSnapshot" snapshot
+            WHERE snapshot."id" = ${snapshotId}
+              AND snapshot."filterHash" = ${filterHash}
+              AND snapshot."expiresAt" > CURRENT_TIMESTAMP
+          ), page_member AS MATERIALIZED (
+            SELECT member.*
+            FROM "PartnerWalletDebtSnapshotMember" member
+            INNER JOIN live_snapshot snapshot ON snapshot."id" = member."snapshotId"
+            WHERE TRUE
+              ${cursorWhere}
+            ORDER BY member."balance" ASC, member."providerProfileId" ASC
+            LIMIT ${take + 1}
+          )
+          SELECT
+            member."activityNickname",
+            member."balance",
+            member."city",
+            member."displayName",
+            member."legalName",
+            member."providerProfileId",
+            snapshot."snapshotAt",
+            snapshot."totalCount"::bigint AS "totalCount",
+            member."userEmail",
+            member."userFullName",
+            member."userPhone"
+          FROM live_snapshot snapshot
+          LEFT JOIN page_member member ON TRUE
+          ORDER BY member."balance" ASC, member."providerProfileId" ASC
+        `)
+      : await this.prisma.$queryRaw<AdminPartnerWalletDebtPageRow[]>(Prisma.sql`
+      WITH expired_snapshot AS (
+        DELETE FROM "PartnerWalletDebtSnapshot"
+        WHERE "expiresAt" <= CURRENT_TIMESTAMP
+        RETURNING "id"
+      ), eligible_wallet AS MATERIALIZED (
+        SELECT
+          wallet."providerProfileId",
+          wallet."balance",
+          provider."displayName",
+          provider."legalName",
+          provider."activityNickname",
+          provider."city",
+          profile_user."fullName" AS "userFullName",
+          profile_user."phone" AS "userPhone",
+          profile_user."email" AS "userEmail"
+        FROM "ProviderWalletBalanceSummary" wallet
+        INNER JOIN "ProviderProfile" provider
+          ON provider."id" = wallet."providerProfileId"
+        INNER JOIN "User" profile_user
+          ON profile_user."id" = provider."userId"
+        WHERE wallet."currency" = 'VND'
+          AND wallet."balance" < 0
+          ${searchWhere}
+      ), snapshot_meta AS (
+        INSERT INTO "PartnerWalletDebtSnapshot" (
+          "id", "filterHash", "snapshotAt", "expiresAt", "totalCount"
+        )
+        SELECT
+          ${snapshotId},
+          ${filterHash},
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP + INTERVAL '30 minutes',
+          COUNT(*)::integer
+        FROM eligible_wallet
+        RETURNING "id", "snapshotAt", "totalCount"
+      ), inserted_member AS (
+        INSERT INTO "PartnerWalletDebtSnapshotMember" (
+          "snapshotId", "providerProfileId", "balance", "displayName", "legalName",
+          "activityNickname", "city", "userFullName", "userPhone", "userEmail"
+        )
+        SELECT
+          snapshot."id",
+          member."providerProfileId",
+          member."balance",
+          member."displayName",
+          member."legalName",
+          member."activityNickname",
+          member."city",
+          member."userFullName",
+          member."userPhone",
+          member."userEmail"
+        FROM snapshot_meta snapshot
+        CROSS JOIN eligible_wallet member
+        RETURNING *
+      ), page_member AS MATERIALIZED (
+        SELECT *
+        FROM inserted_member
+        ORDER BY "balance" ASC, "providerProfileId" ASC
+        LIMIT ${take + 1}
+      )
+      SELECT
+        member."activityNickname",
+        member."balance",
+        member."city",
+        member."displayName",
+        member."legalName",
+        member."providerProfileId",
+        snapshot."snapshotAt",
+        snapshot."totalCount"::bigint AS "totalCount",
+        member."userEmail",
+        member."userFullName",
+        member."userPhone"
+      FROM snapshot_meta snapshot
+      LEFT JOIN page_member member ON TRUE
+      ORDER BY member."balance" ASC, member."providerProfileId" ASC
+    `);
+    const metadataRow = pageRows[0];
+    if (!metadataRow) {
+      throw new BadRequestException(
+        'Wallet debt snapshot cursor is invalid or expired. Restart the snapshot and retry.',
+      );
+    }
+    const snapshotAt = new Date(metadataRow.snapshotAt);
+    const totalCount = numberValue(metadataRow.totalCount);
+    if (
+      Number.isNaN(snapshotAt.getTime()) ||
+      (cursor && (cursor.snapshotAt.getTime() !== snapshotAt.getTime() || cursor.totalCount !== totalCount))
+    ) {
+      throw new BadRequestException(
+        'Wallet debt snapshot cursor is invalid or expired. Restart the snapshot and retry.',
+      );
+    }
+    const memberRows = pageRows.filter(
+      (
+        row,
+      ): row is AdminPartnerWalletDebtPageRow & {
+        balance: bigint;
+        displayName: string;
+        providerProfileId: string;
+        userPhone: string;
+      } =>
+        typeof row.providerProfileId === 'string' &&
+        typeof row.displayName === 'string' &&
+        typeof row.userPhone === 'string' &&
+        typeof row.balance === 'bigint',
+    );
+    const hasNextPage = memberRows.length > take;
+    const visibleRows = hasNextPage ? memberRows.slice(0, take) : memberRows;
+    const providerIds = visibleRows.map((row) => row.providerProfileId);
+    const providers = providerIds.length
+      ? await this.prisma.providerProfile.findMany({
+          where: { id: { in: providerIds } },
+          select: adminProviderDirectorySelect,
+        })
+      : [];
+    const providerById = new Map(providers.map((provider) => [provider.id, provider]));
+    const frozenProfileById = new Map(visibleRows.map((row) => [row.providerProfileId, row]));
+    const orderedProviders = providerIds.flatMap((providerId) => {
+      const provider = providerById.get(providerId);
+      const frozenProfile = frozenProfileById.get(providerId);
+      return provider && frozenProfile
+        ? [
+            {
+              ...provider,
+              city: frozenProfile.city,
+              displayName: frozenProfile.displayName,
+              legalName: frozenProfile.legalName,
+              user: {
+                ...provider.user,
+                fullName: frozenProfile.userFullName,
+                phone: frozenProfile.userPhone,
+              },
+            },
+          ]
+        : [];
+    });
+    const walletBalanceByProviderId = new Map(
+      visibleRows.map((row) => [row.providerProfileId, numberValue(row.balance)]),
+    );
+    const items = await this.enrichPartnerDirectoryProviders(orderedProviders, walletBalanceByProviderId);
+    const lastRow = visibleRows.at(-1);
+    const snapshotCursor = adminPartnerWalletDebtCursorValue({
+      balance: 0n,
+      filterHash,
+      position: 0,
+      providerProfileId: '',
+      snapshotId,
+      snapshotAt,
+      totalCount,
+    });
+    const currentCursor = cursor
+      ? adminPartnerWalletDebtCursorValue({ ...cursor, snapshotAt, totalCount })
+      : snapshotCursor;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      items,
+      page: {
+        currentCursor,
+        hasNextPage,
+        nextCursor:
+          hasNextPage && lastRow
+            ? adminPartnerWalletDebtCursorValue({
+                balance: lastRow.balance,
+                filterHash,
+                position: (cursor?.position ?? 0) + visibleRows.length,
+                providerProfileId: lastRow.providerProfileId,
+                snapshotId,
+                snapshotAt,
+                totalCount,
+              })
+            : null,
+        offset: cursor?.position ?? 0,
+        returned: items.length,
+        snapshotCursor,
+        totalCount,
+      },
+      snapshotAt: snapshotAt.toISOString(),
+    };
+  }
+
+  async purgeExpiredPartnerWalletDebtSnapshots() {
+    const purged = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      WITH expired_snapshot AS MATERIALIZED (
+        SELECT snapshot."id"
+        FROM "PartnerWalletDebtSnapshot" snapshot
+        WHERE snapshot."expiresAt" <= CURRENT_TIMESTAMP
+        ORDER BY snapshot."expiresAt" ASC, snapshot."id" ASC
+        LIMIT ${ADMIN_PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_LIMIT}
+      )
+      DELETE FROM "PartnerWalletDebtSnapshot" snapshot
+      USING expired_snapshot expired
+      WHERE snapshot."id" = expired."id"
+      RETURNING snapshot."id"
+    `);
+    const hasMore =
+      purged.length === ADMIN_PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_LIMIT &&
+      Boolean(
+        (
+          await this.prisma.$queryRaw<Array<{ exists: boolean }>>(Prisma.sql`
+            SELECT EXISTS (
+              SELECT 1
+              FROM "PartnerWalletDebtSnapshot" snapshot
+              WHERE snapshot."expiresAt" <= CURRENT_TIMESTAMP
+              LIMIT 1
+            ) AS "exists"
+          `)
+        )[0]?.exists,
+      );
+
+    return { hasMore, purgedCount: purged.length };
+  }
+
+  private async enrichPartnerDirectoryProviders(
+    providers: AdminProviderDirectoryRow[],
+    walletBalanceByProviderId?: ReadonlyMap<string, number>,
+  ) {
+    if (providers.length === 0) return [];
 
     const providerIds = providers.map((provider) => provider.id);
     const [bookingSummaries, activitySummaries, appActivitySummaries, { logsByTarget, countByTarget }] =
@@ -13685,9 +14874,11 @@ export class AdminService {
     return providers.map((provider) => {
       const { walletBalanceSummaries, ...profile } = provider;
       const activitySummary = activitySummaries.get(provider.id) ?? emptyProviderActivitySummary();
-      const walletBalance = walletBalanceSummaries
+      const walletBalance =
+        walletBalanceByProviderId?.get(provider.id) ??
+        (walletBalanceSummaries
         ? numberValue(walletBalanceSummaries[0]?.balance)
-        : activitySummary.walletBalance;
+          : activitySummary.walletBalance);
 
       return {
         ...profile,
@@ -13702,8 +14893,10 @@ export class AdminService {
 
   async partnerDirectorySummary(options: AdminPartnerDirectorySummaryOptions = {}) {
     const locationFreshBoundary = await this.partnerDirectoryLocationFreshBoundary(options.review);
-    const baseWhere = await this.partnerDirectoryWhere({ ...options, age: 'all' }, locationFreshBoundary);
     const approvalQueue = normalizeNullable(options.review) === 'approval-pending';
+    const baseWhere = approvalQueue
+      ? await this.partnerDirectoryWhere({ ...options, age: 'all' }, locationFreshBoundary)
+      : undefined;
     const slaWindow = approvalQueue
       ? await this.queueSlaWindow(
           START_SHIFT_ACTION_SLA_POLICY_KEYS.partnerApprovals,
@@ -13742,6 +14935,16 @@ export class AdminService {
       };
     }
 
+    if (!approvalQueue) {
+      const where = await this.partnerDirectoryWhere(options, locationFreshBoundary);
+      const totalCount = await this.prisma.providerProfile.count({ ...(where ? { where } : {}) });
+
+      return {
+        generatedAt: new Date().toISOString(),
+        totalCount,
+      };
+    }
+
     const selectedSlaDateWhere = slaWindow ? adminQueueSlaDateWhere(options.sla, slaWindow) : undefined;
     const selectedSlaWhere = selectedSlaDateWhere ? { updatedAt: selectedSlaDateWhere } : undefined;
     const where = adminPartnerDirectoryAndWhere([
@@ -13777,6 +14980,28 @@ export class AdminService {
       ...(queueSla ? { queueSla } : {}),
       totalCount,
     };
+  }
+
+  private async partnerDirectoryWalletDebtProviders(options: {
+    skip: number;
+    take: number;
+    where?: Prisma.ProviderProfileWhereInput;
+  }) {
+    const rows = await this.prisma.providerWalletBalanceSummary.findMany({
+      orderBy: [{ balance: 'asc' }, { providerProfileId: 'asc' }],
+      ...(options.skip > 0 ? { skip: options.skip } : {}),
+      take: options.take,
+      where: {
+        balance: { lt: 0 },
+        currency: 'VND',
+        ...(options.where ? { providerProfile: { is: options.where } } : {}),
+      },
+      select: {
+        providerProfile: { select: adminProviderDirectorySelect },
+      },
+    });
+
+    return rows.map((row) => row.providerProfile);
   }
 
   private async partnerApprovalQueueProviders(options: {
@@ -14169,6 +15394,8 @@ export class AdminService {
       blockedAccounts,
       locationGaps,
       onboardingGaps,
+      kycGaps,
+      bankGaps,
       walletDebt,
       sharedDeviceRows,
     ] = await Promise.all([
@@ -14212,6 +15439,12 @@ export class AdminService {
           ],
         },
       }),
+      this.prisma.providerProfile.count({
+        where: adminPartnerControlReviewWhere('kyc') ?? {},
+      }),
+      this.prisma.providerProfile.count({
+        where: adminPartnerControlReviewWhere('bank') ?? {},
+      }),
       this.prisma.providerWalletBalanceSummary.count({
         where: { balance: { lt: 0 }, currency: 'VND' },
       }),
@@ -14236,7 +15469,9 @@ export class AdminService {
     return {
       activeControls,
       blockedAccounts,
+      bankGaps,
       generatedAt: now.toISOString(),
+      kycGaps,
       locationGaps,
       onboardingGaps,
       openReports,
@@ -14607,42 +15842,69 @@ export class AdminService {
     return { ok: true, providerProfileId: provider.id, blockedAt: provider.blockedAt };
   }
 
-  async unblockProviderAccount(actorId: string, providerProfileId: string) {
-    const provider = await this.prisma.providerProfile.update({
-      where: { id: providerProfileId },
-      data: {
-        blockedAt: null,
-        blockedReason: null,
+  async unblockProviderAccount(actorId: string, providerProfileId: string, input: { reason?: string }) {
+    const { reason } = normalizeProviderSanctionLiftInput(input);
+    const liftedAt = new Date();
+    const { changed, provider, liftedSanctionIds } = await this.prisma.$transaction(
+      async (tx) => {
+        const provider = await tx.providerProfile.findUniqueOrThrow({
+          where: { id: providerProfileId },
+          select: { blockedAt: true, id: true, userId: true },
+        });
+        const activeAccountBlocks = await tx.providerSanction.findMany({
+          where: {
+            providerProfileId,
+            type: ProviderSanctionType.ACCOUNT_BLOCK,
+            status: ProviderSanctionStatus.ACTIVE,
+          },
+          select: { id: true, metadata: true },
+        });
+        if (provider.blockedAt === null && activeAccountBlocks.length === 0) {
+          return { changed: false, provider, liftedSanctionIds: [] };
+        }
+        await tx.providerProfile.update({
+          where: { id: providerProfileId },
+          data: {
+            blockedAt: null,
+            blockedReason: null,
+          },
+          select: { id: true, userId: true },
+        });
+        await Promise.all(
+          activeAccountBlocks.map((sanction) =>
+            tx.providerSanction.update({
+              where: { id: sanction.id },
+              data: {
+                status: ProviderSanctionStatus.LIFTED,
+                liftedAt,
+                liftedById: actorId,
+                metadata: providerSanctionLiftMetadata(sanction.metadata, reason),
+              },
+            }),
+          ),
+        );
+        const liftedSanctionIds = activeAccountBlocks.map((sanction) => sanction.id);
+        await this.writeAudit(
+          actorId,
+          'provider_account.unblock',
+          `provider:${providerProfileId}`,
+          providerAccountUnblockAuditMetadata(providerProfileId, reason, liftedSanctionIds),
+          undefined,
+          tx,
+        );
+        return { changed: true, provider, liftedSanctionIds };
       },
-      select: { id: true, userId: true },
-    });
-
-    await this.writeAudit(
-      actorId,
-      'provider_account.unblock',
-      `provider:${providerProfileId}`,
-      providerAccountUnblockAuditMetadata(providerProfileId),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
 
-    await this.prisma.providerSanction.updateMany({
-      where: {
-        providerProfileId,
-        type: ProviderSanctionType.ACCOUNT_BLOCK,
-        status: ProviderSanctionStatus.ACTIVE,
-      },
-      data: {
-        status: ProviderSanctionStatus.LIFTED,
-        liftedAt: new Date(),
-        liftedById: actorId,
-      },
-    });
+    if (changed) {
+      await this.notifications.create({
+        userId: provider.userId,
+        ...providerAccountUnblockedNotification(providerProfileId),
+      });
+    }
 
-    await this.notifications.create({
-      userId: provider.userId,
-      ...providerAccountUnblockedNotification(providerProfileId),
-    });
-
-    return { ok: true, providerProfileId: provider.id };
+    return { ok: true, providerProfileId: provider.id, liftedSanctionIds };
   }
 
   async listProviderReports(options: AdminProviderControlEvidenceListOptions = {}) {
@@ -14670,6 +15932,80 @@ export class AdminService {
     });
     if (!report) throw new NotFoundException('Partner report not found');
     return report;
+  }
+
+  async getProviderReportAuditHistory(reportId: string) {
+    const report = await this.prisma.providerReport.findUnique({
+      where: { id: reportId },
+      select: { id: true },
+    });
+    if (!report) throw new NotFoundException('Partner report not found');
+
+    const auditSelect = {
+      id: true,
+      action: true,
+      actorKey: true,
+      actorLabelSnapshot: true,
+      createdAt: true,
+      metadata: true,
+      actor: { select: { id: true, fullName: true } },
+    } as const;
+    const canonicalAuditLogs = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: { in: ['provider_report.create', 'provider_report.update'] },
+        objectId: reportId,
+        objectType: 'provider_report',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 5,
+      select: auditSelect,
+    });
+    const legacyAuditLogs =
+      canonicalAuditLogs.length < 5
+        ? await this.prisma.adminAuditLog.findMany({
+            where: {
+              action: { in: ['provider_report.create', 'provider_report.update'] },
+              objectId: null,
+              objectType: null,
+              target: `provider_report:${reportId}`,
+            },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            take: 5 - canonicalAuditLogs.length,
+            select: auditSelect,
+          })
+        : [];
+    const auditLogs = [...canonicalAuditLogs, ...legacyAuditLogs]
+      .sort(
+        (left, right) =>
+          right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id),
+      )
+      .slice(0, 5);
+
+    return {
+      items: auditLogs.map((auditLog) => {
+        const metadata = jsonObject(auditLog.metadata);
+        const actorId = auditLog.actor?.id ?? auditLog.actorKey;
+        return {
+          id: auditLog.id,
+          action: auditLog.action,
+          actor: actorId
+            ? {
+                id: actorId,
+                fullName: auditLog.actor?.fullName ?? auditLog.actorLabelSnapshot ?? null,
+              }
+            : null,
+          changes: {
+            ...(jsonString(metadata.category) ? { category: jsonString(metadata.category) } : {}),
+            ...(jsonString(metadata.severity) ? { severity: jsonString(metadata.severity) } : {}),
+            ...(jsonString(metadata.status) ? { status: jsonString(metadata.status) } : {}),
+            ...(Object.hasOwn(metadata, 'resolutionNote')
+              ? { resolutionNote: jsonString(metadata.resolutionNote) ?? null }
+              : {}),
+          },
+          createdAt: auditLog.createdAt,
+        };
+      }),
+    };
   }
 
   async createProviderReport(
@@ -14812,8 +16148,11 @@ export class AdminService {
     const { reason } = normalizeProviderSanctionLiftInput(input);
     const current = await this.prisma.providerSanction.findUniqueOrThrow({
       where: { id: sanctionId },
-      select: { metadata: true },
+      select: { metadata: true, status: true },
     });
+    if (current.status !== ProviderSanctionStatus.ACTIVE) {
+      throw new ConflictException('Provider sanction is no longer active');
+    }
     const sanction = await this.prisma.providerSanction.update({
       where: { id: sanctionId },
       data: {
@@ -14982,7 +16321,8 @@ export class AdminService {
       throw new BadRequestException('Rejection reason is required');
     }
 
-    const updated = status === FileReviewStatus.APPROVED
+    const updated =
+      status === FileReviewStatus.APPROVED
       ? await this.requireFilesService().approvePublicMedia(fileId, actorId)
       : await this.requireFilesService().rejectPublicMedia(fileId, actorId, normalizedReason!);
     await this.writeAudit(actorId, `provider_media.${status.toLowerCase()}`, `file:${fileId}`, {
@@ -15370,14 +16710,42 @@ export class AdminService {
       `);
     }
     const orderedIds = idRows.map((row) => row.id);
-    const bookings =
+    const [bookings, decisionAuditLogs] = await Promise.all([
       orderedIds.length === 0
-        ? []
-        : await this.prisma.booking.findMany({
+        ? Promise.resolve([])
+        : this.prisma.booking.findMany({
             where: { id: { in: orderedIds } },
             select: adminBookingListSelect,
-          });
+          }),
+      operationQuery.includePostMatchCancellationDecisionAt && orderedIds.length > 0
+        ? this.prisma.adminAuditLog.findMany({
+            where: {
+              action: {
+                in: ['booking.post_match_cancellation.approve', 'booking.post_match_cancellation.hold'],
+              },
+              OR: [
+                { objectId: { in: orderedIds }, objectType: 'booking' },
+                {
+                  objectId: null,
+                  target: { in: orderedIds.map((id) => `booking:${id}`) },
+                },
+              ],
+            },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            select: { createdAt: true, objectId: true, target: true },
+          })
+        : Promise.resolve([]),
+    ]);
     const bookingsById = new Map(bookings.map((booking) => [booking.id, booking]));
+    const decisionAtByBookingId = new Map<string, string>();
+    for (const auditLog of decisionAuditLogs) {
+      const bookingId =
+        auditLog.objectId ??
+        (auditLog.target.startsWith('booking:') ? auditLog.target.slice('booking:'.length) : null);
+      if (bookingId && !decisionAtByBookingId.has(bookingId)) {
+        decisionAtByBookingId.set(bookingId, auditLog.createdAt.toISOString());
+      }
+    }
     const items = withAdminBookingListMetadataList(
       withAdminBookingMatchingEvidenceList(
         orderedIds.flatMap((id) => {
@@ -15389,6 +16757,11 @@ export class AdminService {
       protectAdminBookingListItem({
         ...booking,
         metadata: adminBookingListMetadataPayload(booking.metadata),
+        ...(operationQuery.includePostMatchCancellationDecisionAt
+          ? {
+              postMatchCancellationDecisionAt: decisionAtByBookingId.get(booking.id) ?? null,
+            }
+          : {}),
       }),
     );
     const ageRow = ageRows?.[0];
@@ -15845,13 +17218,20 @@ export class AdminService {
         data: { chatRoom: { upsert: { create: {}, update: {} } } },
         select: adminBookingDetailSelect,
       });
-      await this.writeAudit(actorId, 'booking.chat_room.repair', `booking:${bookingId}`, {
+      await this.writeAudit(
+        actorId,
+        'booking.chat_room.repair',
+        `booking:${bookingId}`,
+        {
         bookingId,
         status: booking.status,
         selectedProviderId: booking.selectedProviderId,
         previousChatRoomId: booking.chatRoom?.id ?? null,
         repairedChatRoomId: updated.chatRoom?.id ?? null,
-      }, undefined, tx);
+        },
+        undefined,
+        tx,
+      );
 
       return updated;
     });
@@ -15897,10 +17277,7 @@ export class AdminService {
         where: {
           payment: { bookingId },
           status: {
-            in: [
-              PaymentAdminOperationStatus.IN_PROGRESS,
-              PaymentAdminOperationStatus.REVIEW_REQUIRED,
-            ],
+            in: [PaymentAdminOperationStatus.IN_PROGRESS, PaymentAdminOperationStatus.REVIEW_REQUIRED],
           },
         },
         select: { id: true, status: true },
@@ -15916,11 +17293,12 @@ export class AdminService {
         booking.notes,
         `No-show marked by operations${reason ? `: ${reason}. ` : '. '}${policyNote}`,
       );
+      const closedAt = new Date();
       const mutation = await tx.booking.updateMany({
         where: { id: bookingId, status: booking.status },
         data: {
           status: BookingStatus.NO_SHOW,
-          closedAt: new Date(),
+          closedAt,
           closedByRole: Role.ADMIN,
           closedReason: 'admin_no_show',
           closedNote: paymentReviewNote,
@@ -15932,6 +17310,11 @@ export class AdminService {
           'Booking changed while no-show review was running. Reload and review the latest status.',
         );
       }
+      await releaseCouponRedemptionForBooking(tx, {
+        bookingId,
+        occurredAt: closedAt,
+        reason: COUPON_RELEASE_REASON.NO_SHOW,
+      });
       await tx.bookingOpsTask.upsert({
         where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
         update: {
@@ -15951,13 +17334,20 @@ export class AdminService {
         where: { id: bookingId },
         select: adminBookingDetailSelect,
       });
-      await this.writeAudit(actorId, 'booking.no_show.mark', `booking:${bookingId}`, {
+      await this.writeAudit(
+        actorId,
+        'booking.no_show.mark',
+        `booking:${bookingId}`,
+        {
         bookingId,
         previousStatus: booking.status,
         paymentStatus: booking.payment?.status,
         reason,
         noShowPolicy,
-      }, undefined, tx);
+        },
+        undefined,
+        tx,
+      );
       return result;
     });
 
@@ -16109,6 +17499,11 @@ export class AdminService {
             },
           },
         });
+        await releaseCouponRedemptionForBooking(tx, {
+          bookingId,
+          occurredAt: now,
+          reason: COUPON_RELEASE_REASON.MATCHING_EXPIRED,
+        });
         await tx.bookingOpsTask.upsert({
           where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
           update: {
@@ -16125,14 +17520,21 @@ export class AdminService {
           },
         });
 
-        await this.writeAudit(actorId, 'booking.expire.manual', `booking:${bookingId}`, {
+        await this.writeAudit(
+          actorId,
+          'booking.expire.manual',
+          `booking:${bookingId}`,
+          {
           bookingId,
           previousStatus: booking.status,
           paymentId: booking.payment?.id ?? null,
           paymentClosurePending: Boolean(booking.payment),
           staleSelectableResponseCount: selectableBeforeDeadline,
           reason,
-        }, undefined, tx);
+          },
+          undefined,
+          tx,
+        );
       }
 
       return {
@@ -16182,7 +17584,11 @@ export class AdminService {
         },
         select: adminBookingDetailSelect,
       });
-      await this.writeAudit(actorId, 'booking.expire.payment_close', `booking:${bookingId}`, {
+      await this.writeAudit(
+        actorId,
+        'booking.expire.payment_close',
+        `booking:${bookingId}`,
+        {
         bookingId,
         paymentId: closure?.payment.id ?? null,
         paymentStatus: closure?.payment.status ?? null,
@@ -16190,7 +17596,10 @@ export class AdminService {
         refundRequested: closure?.refundRequested ?? false,
         paymentClosureRetry: result.paymentClosureRetry,
         reason,
-      }, undefined, tx);
+        },
+        undefined,
+        tx,
+      );
       return updated;
     });
     return updated;
@@ -16273,7 +17682,11 @@ export class AdminService {
         },
         select: adminBookingDetailSelect,
       });
-      await this.writeAudit(actorId, 'booking.completed.closeout', `booking:${bookingId}`, {
+      await this.writeAudit(
+        actorId,
+        'booking.completed.closeout',
+        `booking:${bookingId}`,
+        {
         bookingId,
         paymentId: capturedPayment?.id,
         paymentStatus: capturedPayment?.status,
@@ -16284,7 +17697,10 @@ export class AdminService {
           customerRewardId: referralRewards.customerReward?.id ?? null,
           partnerRewardId: referralRewards.partnerReward?.id ?? null,
         },
-      }, undefined, tx);
+        },
+        undefined,
+        tx,
+      );
       return updated;
     });
   }
@@ -16351,9 +17767,7 @@ export class AdminService {
         throw new ConflictException('Post-match cancellation has already been resolved');
       }
       const hasRetainablePartnerFee = Boolean(
-        booking.earning &&
-        booking.earning.status === EarningStatus.PENDING &&
-        booking.earning.netAmount < 0,
+        booking.earning && booking.earning.status === EarningStatus.PENDING && booking.earning.netAmount < 0,
       );
       if (decision === 'HELD' && !hasRetainablePartnerFee) {
         throw new BadRequestException('No active Partner fee deduction exists to keep');
@@ -16476,9 +17890,7 @@ export class AdminService {
         }
 
         const hasRetainablePartnerFee = Boolean(
-          booking.earning &&
-          booking.earning.status === EarningStatus.PENDING &&
-          booking.earning.netAmount < 0,
+        booking.earning && booking.earning.status === EarningStatus.PENDING && booking.earning.netAmount < 0,
         );
         if (decision === 'HELD' && !hasRetainablePartnerFee) {
           throw new BadRequestException('No active Partner fee deduction exists to keep');
@@ -16705,16 +18117,34 @@ export class AdminService {
     const byId = new Map(payments.map((payment) => [payment.id, payment]));
     return idRows.flatMap((row) => {
       const payment = byId.get(row.id);
-      return payment ? [{
+      const decisionRecord = payment
+        ? {
       ...payment,
-      ...paymentOperationDecision(payment, evaluatedAt),
-      }] : [];
+            callbackAttempts: adminPaymentDecisionCallbackAttempts(
+              row,
+              payment.amount,
+              payment.callbackAttempts,
+            ),
+          }
+        : null;
+      return payment
+        ? [
+            {
+              ...payment,
+              ...paymentOperationDecision(decisionRecord!, evaluatedAt),
+              ...(row.primaryQueue ? { primaryQueue: row.primaryQueue } : {}),
+            },
+          ]
+        : [];
     });
   }
 
-  async paymentSummary(options: AdminPaymentOperationsQuery = {}) {
+  async paymentSummary(
+    options: AdminPaymentOperationsQuery = {},
+    recordDurations?: (durations: FinanceOverviewPaymentSummaryPhaseDurations) => void,
+  ) {
+    const summaryStartedAt = Date.now();
     const globalOptions = { ...options, age: 'all', review: 'all', sla: 'all' };
-    const globalWhere = adminPaymentOperationsWhere(globalOptions);
     const slaWindow =
       normalizeAdminPaymentReview(options.review) === 'authorized'
         ? await this.queueSlaWindow(
@@ -16723,17 +18153,22 @@ export class AdminService {
           )
         : undefined;
     const selectedSlaDateWhere = slaWindow ? adminQueueSlaDateWhere(options.sla, slaWindow) : undefined;
-    const selectedSlaWhere = selectedSlaDateWhere
-      ? { booking: { updatedAt: selectedSlaDateWhere } }
-      : undefined;
+    const canReuseGlobalAggregateCount =
+      (!normalizeAdminPaymentReview(options.review) ||
+        normalizeAdminPaymentReview(options.review) === 'all') &&
+      (!normalizeNullable(options.age) || normalizeNullable(options.age) === 'all') &&
+      (!normalizeNullable(options.sla) || normalizeNullable(options.sla) === 'all');
+    const aggregateStartedAt = Date.now();
     const [aggregateRows, currentCountRows] = await Promise.all([
       this.prisma.$queryRaw<AdminPaymentQueueSqlRow[]>(adminPaymentOperationsAggregateSql(globalOptions)),
-      this.prisma.$queryRaw<AdminPaymentQueueCountRow[]>(
+      canReuseGlobalAggregateCount
+        ? Promise.resolve([])
+        : this.prisma.$queryRaw<AdminPaymentQueueCountRow[]>(
         adminPaymentOperationsCountSql(options, selectedSlaDateWhere),
       ),
     ]);
+    const aggregateAndCountMs = Date.now() - aggregateStartedAt;
     const aggregate = aggregateRows[0] ?? emptyAdminPaymentQueueAggregate();
-    const currentQueueTotal = integerValue(currentCountRows[0]?.count);
     const queueCounts: Record<AdminPaymentPrimaryQueue, number> = {
       'active-cash': integerValue(aggregate.activeCashCollection),
       'authorized-diagnostic': integerValue(aggregate.authorized),
@@ -16750,39 +18185,46 @@ export class AdminService {
       'release-recommended': integerValue(aggregate.releaseRecommended),
       'terminal-cash-cleanup': integerValue(aggregate.terminalCashCleanup),
     };
+    const currentQueueTotal = canReuseGlobalAggregateCount
+      ? Object.values(queueCounts).reduce((total, count) => total + count, 0)
+      : integerValue(currentCountRows[0]?.count);
     const authorized = integerValue(aggregate.authorized);
     const callbackVerified = integerValue(aggregate.callbackVerified);
     const linkedRefunds = integerValue(aggregate.linkedRefunds);
-    const pendingCash = queueCounts['active-cash'] + queueCounts['cash-debt'] + queueCounts['terminal-cash-cleanup'];
-    const [queueAgeCounts, queueSla] = await Promise.all([
-      adminQueueAgeCounts((age) =>
-        this.prisma.payment.count(
-          adminPaymentCountArgs(
-            selectedSlaWhere
-              ? adminMergePaymentOperationsWhere(
-                  adminPaymentOperationsWhere({ ...options, age, sla: 'all' }),
-                  selectedSlaWhere,
-                )
-              : adminPaymentOperationsWhere({ ...options, age, sla: 'all' }),
-          ),
-        ),
+    const pendingCash =
+      queueCounts['active-cash'] + queueCounts['cash-debt'] + queueCounts['terminal-cash-cleanup'];
+    const ageStartedAt = Date.now();
+    const [queueAgeRows, queueSlaRows] = await Promise.all([
+      this.prisma.$queryRaw<AdminPaymentQueueAgeSqlRow[]>(
+        adminPaymentOperationsAgeAggregateSql(options, selectedSlaDateWhere),
       ),
       slaWindow
-        ? (async () => ({
-            overdueCount: integerValue(
-              await this.prisma.payment.count(
-                adminPaymentCountArgs(
-                  adminMergePaymentOperationsWhere(globalWhere, {
-                    booking: { updatedAt: { lte: slaWindow.cutoffAt } },
-                  }),
-                ),
-              ),
-            ),
-            thresholdMinutes: slaWindow.thresholdMinutes,
-          }))()
-        : Promise.resolve(undefined),
+        ? this.prisma.$queryRaw<AdminPaymentQueueCountRow[]>(
+            adminPaymentOperationsCountSql(globalOptions, { lte: slaWindow.cutoffAt }),
+          )
+        : Promise.resolve([]),
     ]);
+    const queueAgeRow = queueAgeRows[0];
+    const queueAgeCounts = {
+      all: integerValue(queueAgeRow?.all),
+      'under-1h': integerValue(queueAgeRow?.underOneHour),
+      '1-4h': integerValue(queueAgeRow?.oneToFourHours),
+      '4-24h': integerValue(queueAgeRow?.fourToTwentyFourHours),
+      'over-24h': integerValue(queueAgeRow?.overTwentyFourHours),
+    };
+    const queueSla = slaWindow
+      ? {
+          overdueCount: integerValue(queueSlaRows[0]?.count),
+          thresholdMinutes: slaWindow.thresholdMinutes,
+        }
+      : undefined;
 
+    const ageAndSlaMs = Date.now() - ageStartedAt;
+    recordDurations?.({
+      aggregateAndCountMs,
+      ageAndSlaMs,
+      durationMs: Date.now() - summaryStartedAt,
+    });
     const generatedAt = new Date().toISOString();
     const globalActionMetrics = {
       activeCashCollection: queueCounts['active-cash'],
@@ -16793,9 +18235,9 @@ export class AdminService {
       releaseRecommended: queueCounts['release-recommended'],
       terminalCashCleanup: queueCounts['terminal-cash-cleanup'],
     };
-    const needsAction = ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER
-      .filter((queue) => !queue.startsWith('history-') && queue !== 'authorized-diagnostic')
-      .reduce((total, queue) => total + queueCounts[queue], 0);
+    const needsAction = ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER.filter(
+      (queue) => !queue.startsWith('history-') && queue !== 'authorized-diagnostic',
+    ).reduce((total, queue) => total + queueCounts[queue], 0);
 
     return {
       activeCashCollection: globalActionMetrics.activeCashCollection,
@@ -16822,7 +18264,8 @@ export class AdminService {
         currentQueue: normalizeAdminPaymentReview(options.review) || 'all',
         range: normalizeNullable(options.range) || 'all',
       },
-      staleMismatch: globalActionMetrics.terminalCashCleanup + globalActionMetrics.completedAuthorizationBlocked,
+      staleMismatch:
+        globalActionMetrics.terminalCashCleanup + globalActionMetrics.completedAuthorizationBlocked,
       totalCount: currentQueueTotal,
     };
   }
@@ -16856,9 +18299,18 @@ export class AdminService {
       select: adminAuditLogSelect,
     });
 
-    const [callbackAttempts, auditLogs] = await Promise.all([callbackAttemptsPromise, auditLogsPromise]);
+    const decisionFactPromise = this.prisma.$queryRaw<AdminPaymentQueueIdRow[]>(
+      adminPaymentOperationDecisionFactSql(payment.id),
+    );
 
-    const customerWalletLedgerEntries = payment.method === PaymentMethod.CUSTOMER_WALLET && payment.bookingId
+    const [callbackAttempts, auditLogs, decisionFacts] = await Promise.all([
+      callbackAttemptsPromise,
+      auditLogsPromise,
+      decisionFactPromise,
+    ]);
+
+    const customerWalletLedgerEntries =
+      payment.method === PaymentMethod.CUSTOMER_WALLET && payment.bookingId
       ? await this.prisma.customerWalletLedgerEntry.findMany({
           where: { bookingId: payment.bookingId },
           orderBy: { createdAt: 'desc' },
@@ -16873,15 +18325,22 @@ export class AdminService {
       : [];
     const decisionRecord = {
       ...payment,
-      booking: payment.booking
-        ? { ...payment.booking, customerWalletLedgerEntries }
-        : payment.booking,
+      booking: payment.booking ? { ...payment.booking, customerWalletLedgerEntries } : payment.booking,
       callbackAttempts,
+    };
+    const decisionInput = {
+      ...decisionRecord,
+      callbackAttempts: adminPaymentDecisionCallbackAttempts(
+        decisionFacts[0],
+        payment.amount,
+      callbackAttempts,
+      ),
     };
 
     return {
       ...decisionRecord,
-      ...paymentOperationDecision(decisionRecord),
+      ...paymentOperationDecision(decisionInput),
+      ...(decisionFacts[0]?.primaryQueue ? { primaryQueue: decisionFacts[0].primaryQueue } : {}),
       auditLogs,
     };
   }
@@ -16913,10 +18372,11 @@ export class AdminService {
         })
       : adminRefundOperationsWhere(options);
     const skip = boundedAdminListSkip(options.skip);
+    const sortDirection = adminQueueSortDirection(options.sort);
 
     const refunds = await this.prisma.refund.findMany({
       ...(where ? { where } : {}),
-      orderBy: { createdAt: adminQueueSortDirection(options.sort) },
+      orderBy: [{ createdAt: sortDirection }, { id: sortDirection }],
       ...(skip > 0 ? { skip } : {}),
       take: adminRefundOperationsTake(options.take),
       select: adminRefundListSelect,
@@ -17092,6 +18552,96 @@ export class AdminService {
     const periodOptions = { period };
     const clearingOptions = { ...currentQueueOptions, review: 'open' };
     const bankOptions = { ...currentQueueOptions, review: 'unmatched' };
+    const summaryStartedAt = Date.now();
+    const summaryDurationMs: Record<string, number> = {};
+    let paymentSummaryPhaseDurationMs: FinanceOverviewPaymentSummaryPhaseDurations | undefined;
+
+    const summaryPromise = Promise.all([
+      timedFinanceOverviewSummary('bookingSettlementSnapshotSummary', summaryDurationMs, () =>
+        this.bookingSettlementSnapshotSummary(rangeOptions),
+      ),
+      timedFinanceOverviewSummary('couponFinanceSummary', summaryDurationMs, () =>
+        this.couponFinanceSummary(rangeOptions),
+      ),
+      timedFinanceOverviewSummary('partnerWithholdingTaxSummary', summaryDurationMs, () =>
+        this.partnerWithholdingTaxSummary(periodOptions),
+      ),
+      timedFinanceOverviewSummary('providerWalletWithdrawalRequestSummary', summaryDurationMs, () =>
+        this.providerWalletWithdrawalRequestSummary(currentQueueOptions),
+      ),
+      timedFinanceOverviewSummary('bookingPaymentClearingSummary', summaryDurationMs, () =>
+        this.bookingPaymentClearingSummary(clearingOptions),
+      ),
+      timedFinanceOverviewSummary('bankReconciliationSummary', summaryDurationMs, () =>
+        this.bankReconciliationSummary(bankOptions),
+      ),
+      timedFinanceOverviewSummary('bankReconciliationWithdrawalCandidateSummary', summaryDurationMs, () =>
+        this.bankReconciliationWithdrawalCandidateSummary(currentQueueOptions),
+      ),
+      timedFinanceOverviewSummary('monthlyTaxClosingSummary', summaryDurationMs, () =>
+        this.monthlyTaxClosingSummary(periodOptions),
+      ),
+      timedFinanceOverviewSummary('earningsSummary', summaryDurationMs, () =>
+        this.earningsSummary(rangeOptions),
+      ),
+      timedFinanceOverviewSummary('paymentSummary', summaryDurationMs, () =>
+        this.paymentSummary(rangeOptions, (durations) => {
+          paymentSummaryPhaseDurationMs = durations;
+        }),
+      ),
+      timedFinanceOverviewSummary('refundSummary', summaryDurationMs, () =>
+        this.refundSummary(currentQueueOptions),
+      ),
+      timedFinanceOverviewSummary('cashSettlementSummary', summaryDurationMs, () =>
+        this.cashSettlementSummary(currentQueueOptions),
+      ),
+      timedFinanceOverviewSummary('paymentFeeSummary', summaryDurationMs, () =>
+        this.paymentFeeSummary(periodOptions),
+      ),
+      timedFinanceOverviewSummary('payoutBatchSummary', summaryDurationMs, () =>
+        this.payoutBatchSummary(currentQueueOptions),
+      ),
+      timedFinanceOverviewSummary('accountingJournalBatchSummary', summaryDurationMs, () =>
+        this.accountingJournalBatchSummary(currentQueueOptions),
+      ),
+      timedFinanceOverviewSummary('financeOverviewWalletSummary', summaryDurationMs, () =>
+        this.financeOverviewWalletSummary(),
+      ),
+      timedFinanceOverviewSummary('financeOverviewAmountSummary', summaryDurationMs, () =>
+        this.financeOverviewAmountSummary(rangeOptions),
+      ),
+      timedFinanceOverviewSummary('financeOverviewReviewSlaSummary', summaryDurationMs, () =>
+        this.financeOverviewReviewSlaSummary(rangeOptions),
+      ),
+      timedFinanceOverviewSummary('financeOverviewPartnerDepositQueueSummary', summaryDurationMs, () =>
+        this.financeOverviewPartnerDepositQueueSummary(),
+      ),
+      timedFinanceOverviewSummary('financeOverviewTaxProfileSummary', summaryDurationMs, () =>
+        this.financeOverviewTaxProfileSummary(currentQueueOptions),
+      ),
+      timedFinanceOverviewSummary('financeOverviewPreviousSettlementSummary', summaryDurationMs, () =>
+        this.financeOverviewPreviousSettlementSummary(rangeOptions),
+      ),
+      timedFinanceOverviewSummary('companyBankAccountApprovalSummary', summaryDurationMs, () =>
+        this.companyBankAccountApprovalSummary(),
+      ),
+    ]);
+    const logSummaryDuration = (status: 'ok' | 'failed') =>
+      console.log(
+        JSON.stringify({
+          event: 'finance_overview_summary_duration',
+          status,
+          range: normalizeNullable(options.range) ?? 'today',
+          period,
+          durationMs: Date.now() - summaryStartedAt,
+          summaryDurationMs,
+          ...(paymentSummaryPhaseDurationMs ? { paymentSummaryPhaseDurationMs } : {}),
+        }),
+      );
+    void summaryPromise.then(
+      () => logSummaryDuration('ok'),
+      () => logSummaryDuration('failed'),
+    );
 
     const [
       settlementSummary,
@@ -17116,30 +18666,7 @@ export class AdminService {
       taxProfileSummary,
       previousSettlementSummary,
       companyBankAccountApprovalSummary,
-    ] = await Promise.all([
-      this.bookingSettlementSnapshotSummary(rangeOptions),
-      this.couponFinanceSummary(rangeOptions),
-      this.partnerWithholdingTaxSummary(periodOptions),
-      this.providerWalletWithdrawalRequestSummary(currentQueueOptions),
-      this.bookingPaymentClearingSummary(clearingOptions),
-      this.bankReconciliationSummary(bankOptions),
-      this.bankReconciliationWithdrawalCandidateSummary(currentQueueOptions),
-      this.monthlyTaxClosingSummary(periodOptions),
-      this.earningsSummary(rangeOptions),
-      this.paymentSummary(rangeOptions),
-      this.refundSummary(currentQueueOptions),
-      this.cashSettlementSummary(currentQueueOptions),
-      this.paymentFeeSummary(periodOptions),
-      this.payoutBatchSummary(currentQueueOptions),
-      this.accountingJournalBatchSummary(currentQueueOptions),
-      this.financeOverviewWalletSummary(),
-      this.financeOverviewAmountSummary(rangeOptions),
-      this.financeOverviewReviewSlaSummary(rangeOptions),
-      this.financeOverviewPartnerDepositQueueSummary(),
-      this.financeOverviewTaxProfileSummary(currentQueueOptions),
-      this.financeOverviewPreviousSettlementSummary(rangeOptions),
-      this.companyBankAccountApprovalSummary(),
-    ]);
+    ] = await summaryPromise;
 
     return {
       generatedAt: new Date().toISOString(),
@@ -17658,7 +19185,13 @@ export class AdminService {
   }
 
   async bookingSettlementGapDryRun(options: AdminBookingSettlementGapQuery = {}) {
+    const durationStartedAt = Date.now();
     const generatedAt = new Date();
+    const scope = {
+      paymentMethod: normalizeAdminBookingSettlementGapPaymentMethod(options.paymentMethod) ?? 'all',
+      period: normalizeNullable(options.period) ?? 'all',
+      track: 'historical-ready' as const,
+    };
     const take = adminBoundedPositiveInteger(
       options.take,
       ADMIN_BOOKING_SETTLEMENT_DRY_RUN_DEFAULT_LIMIT,
@@ -17673,7 +19206,19 @@ export class AdminService {
       },
       generatedAt,
     );
-    const [rows, totalMatched] = await Promise.all([
+    const candidateLoadStartedAt = Date.now();
+    let candidateLoadMs = 0;
+    let evaluated = 0;
+    let failureStage = 'candidate-load';
+    let previewBatchCount = 0;
+    let previewCallCount = 0;
+    let previewMs = 0;
+    let previewStartedAt = 0;
+    let rowCount = 0;
+    let totalMatched = 0;
+    const previews: Awaited<ReturnType<AdminService['previewBookingSettlementGapRepair']>>[] = [];
+    try {
+      const [rows, matched] = await Promise.all([
       this.prisma.booking.findMany({
         where,
         orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
@@ -17682,20 +19227,26 @@ export class AdminService {
       }),
       this.prisma.booking.count({ where }),
     ]);
-    const previews: Awaited<ReturnType<AdminService['previewBookingSettlementGapRepair']>>[] = [];
+      candidateLoadMs = Date.now() - candidateLoadStartedAt;
+      rowCount = rows.length;
+      totalMatched = matched;
+      failureStage = 'preview';
+      previewStartedAt = Date.now();
     for (let index = 0; index < rows.length; index += ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY) {
+        const batch = rows.slice(index, index + ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY);
+        previewBatchCount += 1;
+        previewCallCount += batch.length;
       previews.push(
-        ...(await Promise.all(
-          rows
-            .slice(index, index + ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY)
-            .map((row) => this.previewBookingSettlementGapRepair(row.id)),
-        )),
+          ...(await Promise.all(batch.map((row) => this.previewBookingSettlementGapRepair(row.id)))),
       );
+        evaluated = previews.length;
     }
+      previewMs = Date.now() - previewStartedAt;
+      failureStage = 'result-build';
 
     const items = previews.map((preview) => adminBookingSettlementDryRunItem(preview));
     const counts = adminBookingSettlementDryRunCounts(items);
-    return {
+      const result = {
       counts,
       evaluated: items.length,
       generatedAt: generatedAt.toISOString(),
@@ -17712,15 +19263,65 @@ export class AdminService {
       totals: adminBookingSettlementDryRunTotals(items),
       truncated: totalMatched > items.length,
     };
+      this.logger.log(
+        JSON.stringify({
+          candidateLoadMs,
+          candidateQueryCount: 2,
+          durationMs: Date.now() - durationStartedAt,
+          evaluated: items.length,
+          event: 'booking_settlement_gap_dry_run_fanout',
+          observedAt: new Date().toISOString(),
+          paymentMethod: scope.paymentMethod,
+          period: scope.period,
+          previewBatchCount,
+          previewCallCount,
+          previewConcurrency: ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY,
+          previewMs,
+          status: 'ok',
+          totalMatched,
+          track: scope.track,
+          truncated: result.truncated,
+        }),
+      );
+      return result;
+    } catch (error) {
+      if (failureStage === 'candidate-load') candidateLoadMs = Date.now() - candidateLoadStartedAt;
+      if (previewStartedAt > 0) previewMs = Date.now() - previewStartedAt;
+      this.logger.warn(
+        JSON.stringify({
+          candidateLoadMs,
+          candidateQueryCount: 2,
+          durationMs: Date.now() - durationStartedAt,
+          evaluated,
+          event: 'booking_settlement_gap_dry_run_fanout',
+          failureStage,
+          observedAt: new Date().toISOString(),
+          paymentMethod: scope.paymentMethod,
+          period: scope.period,
+          previewBatchCount,
+          previewCallCount,
+          previewConcurrency: ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY,
+          previewMs,
+          status: 'failed',
+          totalMatched,
+          track: scope.track,
+          truncated: totalMatched > rowCount,
+        }),
+      );
+      throw error;
+    }
   }
 
-  async previewBookingSettlementGapRepair(bookingId: string) {
+  async previewBookingSettlementGapRepair(
+    bookingId: string,
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
     const normalizedBookingId = normalizeNullable(bookingId);
     if (!normalizedBookingId) {
       throw new BadRequestException('Booking id is required');
     }
 
-    const booking = await this.prisma.booking.findUnique({
+    const booking = await client.booking.findUnique({
       where: { id: normalizedBookingId },
       select: adminBookingSettlementGapPreviewSelect,
     });
@@ -17732,9 +19333,9 @@ export class AdminService {
     const currency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
     const monthlyPeriod = occurredAt ? settlementMonthlyPeriod(occurredAt) : null;
     const monthlyClosing = monthlyPeriod
-      ? await this.prisma.monthlyTaxClosing.findUnique({
+      ? await client.monthlyTaxClosing.findUnique({
           where: { period_currency: { period: monthlyPeriod, currency } },
-          select: { status: true },
+          select: { id: true, status: true, updatedAt: true },
         })
       : null;
     const blockers: Array<{ code: string; message: string }> = [];
@@ -17747,6 +19348,7 @@ export class AdminService {
     let historicalSettlementDryRun: Awaited<
       ReturnType<EarningsService['previewPaidBookingSettlementReconstruction']>
     >['settlementDryRun'] = null;
+    let historicalEvidence: unknown = null;
 
     if (booking.status !== BookingStatus.COMPLETED) {
       blockers.push({ code: 'BOOKING_NOT_COMPLETED', message: 'Booking is not completed.' });
@@ -17779,9 +19381,11 @@ export class AdminService {
       const historicalAnalysis = await this.earnings.previewPaidBookingSettlementReconstruction(
         booking.id,
         booking.selectedProviderId,
+        client,
       );
       historicalEvidenceSummary = historicalAnalysis.evidenceSummary;
       historicalSettlementDryRun = historicalAnalysis.settlementDryRun;
+      historicalEvidence = historicalAnalysis.evidence;
       historicalAnalysis.blockers.forEach((blocker) => {
         if (!blockers.some((existing) => existing.code === blocker.code)) {
           blockers.push(blocker);
@@ -17812,15 +19416,39 @@ export class AdminService {
       repairMode,
     });
     const generatedAt = new Date().toISOString();
-    const sourceVersion = [
-      booking.closedAt?.toISOString() ?? 'NO_COMPLETION_TIME',
-      booking.updatedAt.toISOString(),
-      booking.payment?.status ?? 'NO_PAYMENT',
-      booking.earning?.status ?? 'NO_EARNING',
-      booking.settlementSnapshot?.id ?? 'NO_SNAPSHOT',
-      monthlyClosing?.status ?? 'NO_MONTHLY_CLOSE',
-      policy.decision,
-    ].join(':');
+    const activePolicyEvidence =
+      occurredAt && booking.payment && booking.selectedProviderId
+        ? await adminBookingSettlementRepairActivePolicyEvidence(client, {
+            occurredAt,
+            paymentMethod: booking.payment.method,
+            providerProfileId: booking.selectedProviderId,
+          })
+        : null;
+    const sourceVersion = adminBookingSettlementRepairEvidenceVersion({
+      activePolicyEvidence,
+      booking: {
+        closedAt: booking.closedAt,
+        customerProfileId: booking.customerProfileId,
+        earning: booking.earning,
+        id: booking.id,
+        payment: booking.payment,
+        selectedProviderId: booking.selectedProviderId,
+        services: booking.services,
+        settlementSnapshotId: booking.settlementSnapshot?.id ?? null,
+        status: booking.status,
+        updatedAt: booking.updatedAt,
+      },
+      historicalEvidence,
+      historicalSettlementDryRun,
+      monthlyClosing,
+      policy: {
+        decision: policy.decision,
+        exceptionCodes: [...policy.exceptionCodes].sort(),
+        reasons: [...policy.reasons].sort(),
+        version: policy.version,
+      },
+      repairMode,
+    });
 
     return {
       bookingId: booking.id,
@@ -17833,8 +19461,29 @@ export class AdminService {
       monthlyClosingStatus: monthlyClosing?.status ?? null,
       customer: booking.customerProfile,
       partner: booking.selectedProvider,
-      payment: booking.payment,
-      earning: booking.earning,
+      payment: booking.payment
+        ? {
+            amount: booking.payment.amount,
+            currency: booking.payment.currency,
+            id: booking.payment.id,
+            method: booking.payment.method,
+            status: booking.payment.status,
+          }
+        : null,
+      earning: booking.earning
+        ? {
+            currency: booking.earning.currency,
+            grossAmount: booking.earning.grossAmount,
+            id: booking.earning.id,
+            netAmount: booking.earning.netAmount,
+            paidAt: booking.earning.paidAt,
+            payoutBatchId: booking.earning.payoutBatchId,
+            platformFee: booking.earning.platformFee,
+            status: booking.earning.status,
+            withholdingAmount: booking.earning.withholdingAmount,
+          }
+        : null,
+      evidenceVersion: sourceVersion,
       historicalEvidenceSummary,
       historicalSettlementDryRun,
       generatedAt,
@@ -17879,25 +19528,23 @@ export class AdminService {
         await lockTx.$queryRaw(
           Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`booking_settlement_gap_repair:${bookingId}`}))::text AS "lockResult"`,
         );
+        await assertFinanceActionApprovalAdmin(lockTx, actorId, 'Booking settlement repair');
 
-        const preview = await this.previewBookingSettlementGapRepair(bookingId);
+        const preview = await this.previewBookingSettlementGapRepair(bookingId, lockTx);
         if (input.sourceVersion !== preview.sourceVersion) {
           throw new BadRequestException(
             'Settlement evidence changed after preview. Reload the preview before requesting repair.',
           );
         }
         if (!preview.canRepair || preview.policyDecision !== 'APPROVED' || !preview.partner?.id) {
-          const reason = [...preview.blockers.map((blocker) => blocker.message), ...preview.policyReasons].join(
-            ' ',
-          );
+          const reason = [
+            ...preview.blockers.map((blocker) => blocker.message),
+            ...preview.policyReasons,
+          ].join(' ');
           throw new BadRequestException(reason || 'Booking settlement repair is not eligible.');
         }
         const target = `booking:${preview.bookingId}`;
-        const writeLockedAudit = (
-          auditActorId: string,
-          action: string,
-          metadata: Prisma.InputJsonValue,
-        ) => {
+        const writeLockedAudit = (auditActorId: string, action: string, metadata: Prisma.InputJsonValue) => {
           const classification = classifyAdminAuditAction(action);
           return lockTx.adminAuditLog.create({
             data: {
@@ -17926,26 +19573,31 @@ export class AdminService {
         });
         const latestRequestMetadata = latestRequest ? jsonObject(latestRequest.metadata) : {};
         const pendingRequest =
-          latestRequest && jsonString(latestRequestMetadata.sourceVersion) === preview.sourceVersion
+          latestRequest && jsonString(latestRequestMetadata.evidenceVersion) === preview.sourceVersion
             ? latestRequest
             : null;
 
         if (!pendingRequest) {
-          const requestAudit = await writeLockedAudit(
-            actorId,
-            'booking_settlement_gap.repair_requested',
-            {
+          const requestAudit = await writeLockedAudit(actorId, 'booking_settlement_gap.repair_requested', {
+            action: 'booking_settlement_gap.repair_requested',
+            bookingId: preview.bookingId,
+            evidenceDigestAlgorithm: 'SHA256_CANONICAL_JSON_V1',
+            evidenceVersion: preview.sourceVersion,
               monthlyPeriod: preview.monthlyPeriod,
+            policyDecision: preview.policyDecision,
+            policyExceptionCodes: preview.policyExceptionCodes,
+            policyReasons: preview.policyReasons,
+            policyVersion: preview.policyVersion,
               reason: input.reason,
               repairMode: preview.repairMode,
               sourceVersion: preview.sourceVersion,
-            },
-          );
+          });
           return {
             actorId,
             approvalRequested: true as const,
             auditLogId: requestAudit.id,
             bookingId: preview.bookingId,
+            evidenceVersion: preview.sourceVersion,
             policyDecision: preview.policyDecision,
             policyVersion: preview.policyVersion,
             repairMode: preview.repairMode,
@@ -17962,28 +19614,45 @@ export class AdminService {
             'Booking settlement repair requires approval from a different verified Finance operator',
           );
         }
+        await assertFinanceActionApprovalAdmin(
+          lockTx,
+          requestActorId,
+          'Booking settlement repair request maker',
+        );
         if (!preview.completedAt || !preview.monthlyPeriod) {
-          throw new BadRequestException('Authoritative booking completion time is required for settlement repair');
+          throw new BadRequestException(
+            'Authoritative booking completion time is required for settlement repair',
+          );
         }
 
         const approvalAdminId = actorId;
         const requestReason = jsonString(latestRequestMetadata.reason) ?? input.reason;
         const repairResult =
           preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
-            ? await this.earnings.reconstructPaidBookingSettlement(preview.bookingId, preview.partner.id, {
+            ? await this.earnings.reconstructPaidBookingSettlement(
+                preview.bookingId,
+                preview.partner.id,
+                {
                 actorId: requestActorId,
                 approvalAdminId,
                 reason: requestReason,
-              })
+                },
+                lockTx,
+              )
             : {
                 earningId: (
-                  await this.earnings.createForCompletedBooking(preview.bookingId, preview.partner.id, {
+                  await this.earnings.createForCompletedBooking(
+                    preview.bookingId,
+                    preview.partner.id,
+                    {
                     occurredAt: new Date(preview.completedAt),
                     preserveExistingLifecycle: true,
-                  })
+                    },
+                    lockTx,
+                  )
                 ).id,
               };
-        const settlementSnapshot = await this.prisma.bookingSettlementSnapshot.findUnique({
+        const settlementSnapshot = await lockTx.bookingSettlementSnapshot.findUnique({
           where: { bookingId: preview.bookingId },
           select: { id: true, sourceKey: true, monthlyPeriod: true },
         });
@@ -17995,7 +19664,7 @@ export class AdminService {
 
         let checkpoint;
         try {
-          checkpoint = await this.verifyBookingSettlementRepair(preview.bookingId);
+          checkpoint = await this.verifyBookingSettlementRepair(preview.bookingId, lockTx);
         } catch {
           checkpoint = {
             blockingFailures: ['CHECKPOINT_UNAVAILABLE'],
@@ -18004,7 +19673,8 @@ export class AdminService {
             checks: [
               {
                 code: 'CHECKPOINT_UNAVAILABLE',
-                message: 'The repair was recorded, but the post-repair accounting checkpoint could not be read.',
+                message:
+                  'The repair was recorded, but the post-repair accounting checkpoint could not be read.',
                 passed: false,
               },
             ],
@@ -18021,12 +19691,17 @@ export class AdminService {
             ? 'booking_settlement_gap.historical_reconstructed'
             : 'booking_settlement_gap.repaired',
           {
+            action:
+              preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
+                ? 'booking_settlement_gap.historical_reconstructed'
+                : 'booking_settlement_gap.repaired',
             approvalAdminId,
             approvalReason: input.reason,
             approvalRequestId: pendingRequest.id,
             checkpointBlockingFailures: checkpoint.blockingFailures,
             checkpointStatus: checkpoint.status,
             earningId: repairResult.earningId,
+            evidenceVersion: preview.sourceVersion,
             monthlyPeriod: settlementSnapshot.monthlyPeriod,
             reason: requestReason,
             repairMode: preview.repairMode,
@@ -18047,6 +19722,7 @@ export class AdminService {
           checkpoint,
           completedAt: new Date().toISOString(),
           earningId: repairResult.earningId,
+          evidenceVersion: preview.sourceVersion,
           policyDecision: preview.policyDecision,
           policyVersion: preview.policyVersion,
           repairMode: preview.repairMode,
@@ -18055,13 +19731,20 @@ export class AdminService {
           sourceVersion: preview.sourceVersion,
         };
       },
-      { maxWait: 5_000, timeout: 30_000 },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        maxWait: 5_000,
+        timeout: 30_000,
+      },
     );
   }
 
-  async verifyBookingSettlementRepair(bookingId: string) {
+  async verifyBookingSettlementRepair(
+    bookingId: string,
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
     const checkedAt = new Date();
-    const snapshot = await this.prisma.bookingSettlementSnapshot.findUnique({
+    const snapshot = await client.bookingSettlementSnapshot.findUnique({
       where: { bookingId },
       select: adminBookingSettlementRepairCheckpointSelect,
     });
@@ -18327,7 +20010,8 @@ export class AdminService {
     }
 
     const hydrateRows = this.hydrateBookingSettlementAuditRows.bind(this);
-    const stream = Readable.from((async function* () {
+    const stream = Readable.from(
+      (async function* () {
       yield `${JSON.stringify({ totalRows, type: 'metadata' })}\n`;
       for (let offset = 0; offset < idRows.length; offset += 500) {
         const rows = await hydrateRows(idRows.slice(offset, offset + 500), checkedAt, options);
@@ -18335,7 +20019,8 @@ export class AdminService {
           yield `${JSON.stringify({ row, type: 'row' })}\n`;
         }
       }
-    })());
+      })(),
+    );
     return { stream, totalRows, truncated: false };
   }
 
@@ -18372,25 +20057,52 @@ export class AdminService {
   async listCouponFinanceSnapshots(options: AdminPaymentOperationsQuery = {}) {
     const take = adminPaymentOperationsTake(options.take);
     const skip = boundedAdminListSkip(options.skip);
-    const idRows = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-      SELECT "id"
-      FROM "BookingSettlementSnapshot"
-      ${adminCouponFinanceSqlWhere(options)}
-      ORDER BY "postedAt" ${adminCouponFinanceSortSql(options.sort)}, "id" ${adminCouponFinanceSortSql(options.sort)}
-      LIMIT ${take}
-      OFFSET ${skip}
-    `);
+    const idRows = await this.prisma.$queryRaw<
+      Array<{ correctionIncluded: boolean; grossIncluded: boolean; id: string }>
+    >(adminCouponFinancePageSql(options, take, skip));
     const ids = idRows.map((row) => row.id).filter(Boolean);
     if (!ids.length) {
       return [];
     }
 
-    const snapshots = await this.prisma.bookingSettlementSnapshot.findMany({
+    const [snapshots, corrections] = await Promise.all([
+      this.prisma.bookingSettlementSnapshot.findMany({
       where: { id: { in: ids } },
       select: adminCouponFinanceSnapshotListSelect,
-    });
+      }),
+      this.prisma.bookingSettlementReversalEntry.findMany({
+        orderBy: { occurredAt: 'desc' },
+        select: {
+          currency: true,
+          id: true,
+          metadata: true,
+          monthlyPeriod: true,
+          occurredAt: true,
+          originalSettlementSnapshotId: true,
+          reason: true,
+          sourceKey: true,
+        },
+        where: { originalSettlementSnapshotId: { in: ids } },
+      }),
+    ]);
     const order = new Map(ids.map((id, index) => [id, index]));
-    return snapshots.sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0));
+    const scopeById = new Map(idRows.map((row) => [row.id, row]));
+    const correctionsBySnapshotId = new Map<string, typeof corrections>();
+    for (const correction of corrections) {
+      const rows = correctionsBySnapshotId.get(correction.originalSettlementSnapshotId) ?? [];
+      rows.push(correction);
+      correctionsBySnapshotId.set(correction.originalSettlementSnapshotId, rows);
+    }
+    return snapshots
+      .map((snapshot) => ({
+        ...snapshot,
+        closedPeriodCouponCorrections: correctionsBySnapshotId.get(snapshot.id) ?? [],
+        couponFinanceScope: {
+          correctionIncluded: scopeById.get(snapshot.id)?.correctionIncluded ?? false,
+          grossIncluded: scopeById.get(snapshot.id)?.grossIncluded ?? false,
+        },
+      }))
+      .sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0));
   }
 
   async bookingSettlementSnapshotSummary(options: AdminPaymentOperationsQuery = {}) {
@@ -18512,23 +20224,113 @@ export class AdminService {
     };
   }
 
-  listBookingSettlementReversals(options: AdminPaymentOperationsQuery = {}) {
+  async listBookingSettlementReversals(options: AdminPaymentOperationsQuery = {}) {
     const where = adminBookingSettlementReversalWhere(options);
     const skip = boundedAdminListSkip(options.skip);
 
-    return this.prisma.bookingSettlementReversalEntry.findMany({
+    const rows = await this.prisma.bookingSettlementReversalEntry.findMany({
       ...(where ? { where } : {}),
       orderBy: { occurredAt: 'desc' },
       ...(skip > 0 ? { skip } : {}),
       take: adminPaymentOperationsTake(options.take),
       select: adminBookingSettlementReversalEntryListSelect,
     });
+    return this.bookingSettlementReversalRowsWithEvidence(rows);
   }
 
-  getBookingSettlementReversal(id: string) {
-    return this.prisma.bookingSettlementReversalEntry.findUnique({
+  async getBookingSettlementReversal(id: string) {
+    const row = await this.prisma.bookingSettlementReversalEntry.findUnique({
       select: adminBookingSettlementReversalEntryDetailSelect,
       where: { id },
+    });
+    if (!row) return null;
+    const [result] = await this.bookingSettlementReversalRowsWithEvidence([row]);
+    return result ?? null;
+  }
+
+  private async bookingSettlementReversalRowsWithEvidence<
+    T extends {
+      accountingJournalBatches: Array<{ id: string }>;
+      bookingId: string;
+      customerPaymentAmount: number;
+      paymentClearingEntries: Array<{
+        amount: number;
+        bankReconciliationMatches?: Array<{ amount: number; status: string }>;
+        id: string;
+        status: string;
+        type: string;
+      }>;
+      paymentMethod: string;
+    },
+  >(rows: T[]) {
+    const journalIds = Array.from(
+      new Set(rows.flatMap((row) => row.accountingJournalBatches.map((journal) => journal.id))),
+    );
+    const customerWalletBookingIds = Array.from(
+      new Set(
+        rows.filter((row) => row.paymentMethod === PaymentMethod.CUSTOMER_WALLET).map((row) => row.bookingId),
+      ),
+    );
+    const [integrityRows, customerWalletRefundRows] = await Promise.all([
+      journalIds.length > 0
+        ? this.prisma.$queryRaw<AdminAccountingJournalIntegrityRow[]>(
+            adminAccountingJournalIntegrityPageSql(
+              { range: 'all', review: 'all' },
+              journalIds.length,
+              0,
+              undefined,
+              journalIds,
+            ),
+          )
+        : Promise.resolve([]),
+      customerWalletBookingIds.length > 0
+        ? this.prisma.customerWalletLedgerEntry.findMany({
+            select: { bookingId: true },
+            where: {
+              amount: { gt: 0 },
+              bookingId: { in: customerWalletBookingIds },
+              type: CustomerWalletLedgerType.REFUND,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+    const checkedAt = new Date().toISOString();
+    const integrityRowById = new Map(integrityRows.map((integrityRow) => [integrityRow.id, integrityRow]));
+    const customerWalletRefundBookingIds = new Set(
+      customerWalletRefundRows.flatMap((entry) => (entry.bookingId ? [entry.bookingId] : [])),
+    );
+    return rows.map((row) => {
+      const journal = row.accountingJournalBatches[0];
+      const integrityRow = journal ? integrityRowById.get(journal.id) : undefined;
+      const integrity = integrityRow
+        ? adminAccountingJournalIntegrityFromRow(integrityRow, checkedAt)
+        : undefined;
+      return {
+        ...row,
+        accountingJournalBatches: row.accountingJournalBatches.map((item) => ({
+          ...item,
+          integrity: item.id === journal?.id ? integrity : undefined,
+        })),
+        reversalEvidence: settlementReversalEvidenceDecision({
+          cashLedgerPresent: integrityRow?.hasCashLedger ?? false,
+          customerPaymentAmount: row.customerPaymentAmount,
+          customerWalletLedgerPresent: integrityRow?.hasCustomerWalletLedger ?? false,
+          customerWalletRefundLedgerPresent:
+            row.paymentMethod === PaymentMethod.CUSTOMER_WALLET
+              ? customerWalletRefundBookingIds.has(row.bookingId)
+              : null,
+          journalPresent: Boolean(journal),
+          journalState: !journal
+            ? 'FAIL'
+            : integrity?.state === 'CLEAR'
+              ? 'PASS'
+              : integrity?.state === 'BLOCKED'
+                ? 'FAIL'
+                : 'UNKNOWN',
+          paymentMethod: row.paymentMethod,
+          reversalClearings: row.paymentClearingEntries,
+        }),
+      };
     });
   }
 
@@ -18657,67 +20459,7 @@ export class AdminService {
         unbalancedCount: bigint | number;
         unknownCount: bigint | number;
       }>
-    >(Prisma.sql`
-      ${adminAccountingJournalIntegrityCte(options)}
-      SELECT
-        COUNT(*)::bigint AS "count",
-        COUNT(*) FILTER (
-          WHERE integrity."integrityState" = 'CLEAR'
-        )::bigint AS "balancedCount",
-        COUNT(*) FILTER (WHERE integrity."integrityState" = 'CLEAR')::bigint AS "clearCount",
-        COUNT(*) FILTER (WHERE integrity."integrityState" = 'BLOCKED')::bigint AS "blockedCount",
-        COUNT(*) FILTER (WHERE integrity."integrityState" = 'UNKNOWN')::bigint AS "unknownCount",
-        COUNT(*) FILTER (
-          WHERE integrity."status" = ${AccountingJournalBatchStatus.DRAFT}::"AccountingJournalBatchStatus"
-             OR integrity."integrityState" IN ('BLOCKED', 'UNKNOWN')
-        )::bigint AS "needsActionCount",
-        COUNT(*) FILTER (
-          WHERE integrity."status" = ${AccountingJournalBatchStatus.DRAFT}::"AccountingJournalBatchStatus"
-        )::bigint AS "draftCount",
-        COUNT(*) FILTER (
-          WHERE integrity."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
-        )::bigint AS "postedCount",
-        COUNT(*) FILTER (
-          WHERE integrity."status" = ${AccountingJournalBatchStatus.REVERSED}::"AccountingJournalBatchStatus"
-        )::bigint AS "reversedCount",
-        COUNT(*) FILTER (
-          WHERE integrity."integrityState" = 'BLOCKED'
-        )::bigint AS "unbalancedCount",
-        COUNT(*) FILTER (WHERE ABS(COALESCE(integrity."formulaDelta", 0)) > 0)::bigint AS "formulaDeltaCount",
-        COUNT(*) FILTER (
-          WHERE integrity."totalDebit" <> integrity."totalCredit"
-        )::bigint AS "headerMismatchCount",
-        COUNT(*) FILTER (
-          WHERE integrity."entryDebit" <> integrity."entryCredit"
-        )::bigint AS "entryMismatchCount",
-        COUNT(*) FILTER (
-          WHERE integrity."totalDebit" <> integrity."entryDebit"
-             OR integrity."totalCredit" <> integrity."entryCredit"
-        )::bigint AS "headerEntryMismatchCount",
-        COUNT(*) FILTER (
-          WHERE integrity."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
-            AND integrity."entryCount" = 0
-        )::bigint AS "postedWithoutEntryCount",
-        COALESCE(SUM(integrity."totalDebit"), 0)::bigint AS "totalDebit",
-        COALESCE(SUM(integrity."totalCredit"), 0)::bigint AS "totalCredit",
-        COALESCE(SUM(integrity."discrepancyAmount") FILTER (
-          WHERE integrity."integrityState" = 'BLOCKED'
-        ), 0)::bigint AS "blockedAmount",
-        COALESCE(SUM(integrity."discrepancyAmount") FILTER (
-          WHERE integrity."integrityState" = 'BLOCKED'
-        ), 0)::bigint AS "unbalancedAmount",
-        MIN(integrity."postedAt") FILTER (
-          WHERE integrity."status" = ${AccountingJournalBatchStatus.DRAFT}::"AccountingJournalBatchStatus"
-        ) AS "oldestDraftAt",
-        MIN(integrity."postedAt") FILTER (
-          WHERE integrity."integrityState" IN ('BLOCKED', 'UNKNOWN')
-        ) AS "oldestUnbalancedAt",
-        MIN(integrity."postedAt") FILTER (
-          WHERE integrity."integrityState" IN ('BLOCKED', 'UNKNOWN')
-        ) AS "oldestBlockerAt"
-      FROM journal_integrity integrity
-      WHERE ${adminAccountingJournalIntegrityReviewSql(options)}
-    `);
+    >(adminAccountingJournalIntegritySummarySql(options));
 
     const checkedAt = new Date().toISOString();
     return {
@@ -18756,15 +20498,67 @@ export class AdminService {
     if (!batch) {
       throw new NotFoundException('Accounting journal batch not found');
     }
-    const integrityRows = await this.prisma.$queryRaw<AdminAccountingJournalIntegrityRow[]>(
-      adminAccountingJournalIntegrityPageSql({ q: batch.sourceKey, range: 'all', review: 'all' }, 100, 0),
-    );
-    const integrityRow = integrityRows.find((row) => row.id === id);
+    const [integrityRows, reversalRefund] = await Promise.all([
+      this.prisma.$queryRaw<AdminAccountingJournalIntegrityRow[]>(
+        adminAccountingJournalIntegrityPageSql({ range: 'all', review: 'all' }, 1, 0, id),
+      ),
+      batch.sourceType === AccountingJournalSourceType.BOOKING_SETTLEMENT_REVERSAL && batch.paymentId
+        ? this.prisma.refund.findUnique({
+            where: { paymentId: batch.paymentId },
+            select: { id: true, metadata: true, paymentId: true, status: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    const [integrityRow] = integrityRows;
     if (!integrityRow) {
       throw new ServiceUnavailableException('Accounting journal integrity could not be evaluated');
     }
+
+    const refundMetadata = jsonObject(reversalRefund?.metadata ?? null);
+    const approvalAdminId = adminJsonString(refundMetadata.approvalAdminId);
+    const approvedAt = adminIsoDateTime(adminJsonString(refundMetadata.approvedAt));
+    const approval =
+      reversalRefund && reversalRefund.paymentId === batch.paymentId && approvalAdminId && approvedAt
+        ? {
+            action: 'payment.refund.approval.claim' as const,
+            approvedAt,
+            approvalAdminId,
+            paymentId: reversalRefund.paymentId,
+            refundId: reversalRefund.id,
+            requestedByAdminId: adminJsonString(refundMetadata.requestedByAdminId),
+          }
+        : null;
+    const recordedByAdminId =
+      batch.settlementReversalEntry?.createdById ??
+      batch.settlementSnapshot?.reversedById ??
+      batch.createdById ??
+      null;
+    const operatorIds = Array.from(
+      new Set(
+        [recordedByAdminId, approval?.approvalAdminId].filter((value): value is string => Boolean(value)),
+      ),
+    );
+    const operators =
+      operatorIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: operatorIds } },
+            select: { email: true, fullName: true, id: true, roles: true },
+          })
+        : [];
+    const operatorsById = new Map(operators.map((operator) => [operator.id, operator] as const));
+
     return {
       ...batch,
+      operatorEvidence: {
+        approval: approval
+          ? {
+              ...approval,
+              approver: operatorsById.get(approval.approvalAdminId) ?? null,
+            }
+          : null,
+        recordedBy: recordedByAdminId ? (operatorsById.get(recordedByAdminId) ?? null) : null,
+        recordedByAdminId,
+      },
       integrity: adminAccountingJournalIntegrityFromRow(integrityRow, new Date().toISOString()),
     };
   }
@@ -19034,10 +20828,7 @@ export class AdminService {
     const assignmentAdminsById = await this.financeReviewAssignmentAdminsById(
       adminFinanceReviewAssignmentReferencedIds(assignmentAuditLogs),
     );
-    const assignmentHistory = adminFinanceReviewAssignmentHistory(
-      assignmentAuditLogs,
-      assignmentAdminsById,
-    );
+    const assignmentHistory = adminFinanceReviewAssignmentHistory(assignmentAuditLogs, assignmentAdminsById);
     const bankTransactionCandidates =
       expectedBankDirection &&
       remainingAmount > 0 &&
@@ -19051,12 +20842,8 @@ export class AdminService {
               },
               type: expectedBankDirection,
               occurredAt: {
-                gte: new Date(
-                  entry.occurredAt.getTime() - BANK_RECONCILIATION_PAYMENT_CANDIDATE_WINDOW_MS,
-                ),
-                lte: new Date(
-                  entry.occurredAt.getTime() + BANK_RECONCILIATION_PAYMENT_CANDIDATE_WINDOW_MS,
-                ),
+                gte: new Date(entry.occurredAt.getTime() - BANK_RECONCILIATION_PAYMENT_CANDIDATE_WINDOW_MS),
+                lte: new Date(entry.occurredAt.getTime() + BANK_RECONCILIATION_PAYMENT_CANDIDATE_WINDOW_MS),
               },
             },
             orderBy: { occurredAt: 'desc' },
@@ -19101,7 +20888,8 @@ export class AdminService {
     });
   }
 
-  async companyBankAccountOperationsPage(options: {
+  async companyBankAccountOperationsPage(
+    options: {
     currency?: string | null;
     health?: string | null;
     purpose?: string | null;
@@ -19110,17 +20898,21 @@ export class AdminService {
     take?: string | null;
     verification?: string | null;
     view?: string | null;
-  } = {}) {
+    } = {},
+  ) {
     const skip = boundedAdminListSkip(options.skip);
     const take = Math.min(adminPaymentOperationsTake(options.take), 50);
     const requestedView = normalizeNullable(options.view)?.toLowerCase();
-    const view = requestedView === 'pending' || requestedView === 'archived' || requestedView === 'remediation'
+    const view =
+      requestedView === 'pending' || requestedView === 'archived' || requestedView === 'remediation'
       ? requestedView
       : 'current';
+    const filterContract = companyBankAccountOperationsFilterContract(view);
     const pendingWhere: Prisma.CompanyBankAccountWhereInput = {
       metadata: { path: ['pendingApproval', 'requestId'], not: Prisma.AnyNull },
     };
-    const scopeWhere: Prisma.CompanyBankAccountWhereInput = view === 'pending'
+    const scopeWhere: Prisma.CompanyBankAccountWhereInput =
+      view === 'pending'
       ? pendingWhere
       : view === 'archived'
         ? {
@@ -19138,11 +20930,15 @@ export class AdminService {
                 { NOT: pendingWhere },
               ],
             };
-    const purpose = companyBankAccountOperationsPurpose(options.purpose);
-    const currency = normalizeNullable(options.currency)?.toUpperCase() === 'VND' ? 'VND' : null;
-    const verification = companyBankAccountOperationsVerification(options.verification);
-    const health = normalizeNullable(options.health)?.toUpperCase();
-    const status = normalizeNullable(options.status)?.toUpperCase();
+    const purpose = companyBankAccountOperationsPurpose(
+      companyBankAccountAllowedFilterValue(options.purpose, filterContract.purpose),
+    );
+    const currency = companyBankAccountAllowedFilterValue(options.currency, filterContract.currency);
+    const verification = companyBankAccountOperationsVerification(
+      companyBankAccountAllowedFilterValue(options.verification, filterContract.verification),
+    );
+    const health = companyBankAccountAllowedFilterValue(options.health, filterContract.health);
+    const status = companyBankAccountAllowedFilterValue(options.status, filterContract.status);
     const openReconciliationWhere: Prisma.CompanyBankTransactionWhereInput = {
       status: { in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
     };
@@ -19179,11 +20975,10 @@ export class AdminService {
       syntheticCount,
       unknownDataScopeCount,
       pendingCount,
-      pendingMetadata,
+      oldestPendingRows,
       unmatchedCount,
       latestImported,
-    ] =
-      await Promise.all([
+    ] = await Promise.all([
         this.prisma.companyBankAccount.findMany({
           where,
           orderBy: [{ status: 'asc' }, { name: 'asc' }, { createdAt: 'asc' }],
@@ -19205,10 +21000,17 @@ export class AdminService {
           where: companyBankAccountScopeWhere(CompanyBankAccountDataScope.UNKNOWN),
         }),
         this.prisma.companyBankAccount.count({ where: pendingWhere }),
-        this.prisma.companyBankAccount.findMany({
-          where: pendingWhere,
-          select: { metadata: true },
-        }),
+        this.prisma.$queryRaw<Array<{ requestedAt: Date | string | null }>>(Prisma.sql`
+          SELECT audit."createdAt" AS "requestedAt"
+          FROM "AdminAuditLog" audit
+          INNER JOIN "CompanyBankAccount" account
+            ON audit."target" = CONCAT('company_bank_account:', account."id")
+            AND audit."metadata"->>'requestId' = account."metadata" #>> '{pendingApproval,requestId}'
+          WHERE audit."action" = 'company_bank_account.approval_requested'
+            AND account."metadata" #>> '{pendingApproval,requestId}' IS NOT NULL
+          ORDER BY audit."createdAt" ASC, audit."id" ASC
+          LIMIT 1
+        `),
         this.prisma.companyBankTransaction.count({
           where: {
             bankAccount: activeProductionWhere,
@@ -19229,30 +21031,37 @@ export class AdminService {
       ]);
 
     const accountIds = accounts.map((account) => account.id);
-    const openByAccount = accountIds.length > 0
+    const openByAccount =
+      accountIds.length > 0
       ? await this.prisma.companyBankTransaction.groupBy({
           by: ['bankAccountId'],
           where: {
             bankAccountId: { in: accountIds },
-            status: { in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+              status: {
+                in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+              },
           },
           _count: { _all: true },
           _max: { occurredAt: true },
         })
       : [];
     const openByAccountId = new Map(
-      openByAccount.map((row) => [row.bankAccountId, { count: row._count._all, lastActivityAt: row._max.occurredAt }]),
+      openByAccount.map((row) => [
+        row.bankAccountId,
+        { count: row._count._all, lastActivityAt: row._max.occurredAt },
+      ]),
     );
-    const oldestPendingRequestedAt = pendingMetadata
-      .map((account) => {
-        const metadata = adminJsonObject(account.metadata);
-        const pending = adminJsonObject(metadata?.pendingApproval);
-        return companyBankAccountMetadataString(pending?.requestedAt);
-      })
-      .filter((requestedAt): requestedAt is string => Boolean(requestedAt))
-      .sort((left, right) => Date.parse(left) - Date.parse(right))[0] ?? null;
+    const oldestPendingRequestedAt = adminIsoDateTime(oldestPendingRows[0]?.requestedAt);
 
     return {
+      filterContract,
+      filters: {
+        currency: currency ?? '',
+        health: health ?? '',
+        purpose: purpose ?? '',
+        status: status ?? '',
+        verification: verification ?? '',
+      },
       generatedAt: new Date().toISOString(),
       items: accounts.map((account) => {
         const pending = companyBankAccountPendingApproval(account.metadata);
@@ -19303,25 +21112,110 @@ export class AdminService {
       take,
       targetPrefix: 'company_bank_account:',
     });
-    const accountIds = [...new Set(
+    const accountIds = [
+      ...new Set(
       page.items
-        .map((item) => item.target?.startsWith('company_bank_account:')
+          .map((item) =>
+            item.target?.startsWith('company_bank_account:')
           ? item.target.slice('company_bank_account:'.length)
-          : null)
+              : null,
+          )
         .filter((id): id is string => Boolean(id)),
-    )];
-    const accountSnapshots = accountIds.length > 0
+      ),
+    ];
+    const accountRecords =
+      accountIds.length > 0
       ? await this.prisma.companyBankAccount.findMany({
           where: { id: { in: accountIds } },
           select: {
             accountNumberMasked: true,
             bankName: true,
             id: true,
+            metadata: true,
             name: true,
           },
         })
       : [];
-    return { ...page, accountSnapshots };
+    const actionableRequestIds = accountRecords.flatMap((account) => {
+      const pending = companyBankAccountPendingApproval(account.metadata);
+      return pending ? [pending.requestId] : [];
+    });
+    const accountSnapshots = accountRecords.map((account) => ({
+      accountNumberMasked: account.accountNumberMasked,
+      bankName: account.bankName,
+      id: account.id,
+      name: account.name,
+    }));
+    return { ...page, accountSnapshots, actionableRequestIds };
+  }
+
+  private async companyBankAccountActivationEvidence(accountId: string) {
+    const evidence = await this.prisma.companyBankAccountEvidence.findMany({
+      where: {
+        bankAccountId: accountId,
+        kind: {
+          in: [
+            CompanyBankAccountEvidenceKind.OWNERSHIP,
+            CompanyBankAccountEvidenceKind.STATEMENT,
+          ],
+        },
+        status: CompanyBankAccountEvidenceStatus.VERIFIED,
+      },
+      orderBy: [{ kind: 'asc' }, { version: 'desc' }],
+      select: {
+        contentSha256: true,
+        evidenceHash: true,
+        fileAssetId: true,
+        id: true,
+        kind: true,
+        reviewedAt: true,
+        version: true,
+      },
+    });
+    const ownership = evidence.find(
+      (item) => item.kind === CompanyBankAccountEvidenceKind.OWNERSHIP,
+    );
+    const statement = evidence.find(
+      (item) => item.kind === CompanyBankAccountEvidenceKind.STATEMENT,
+    );
+    if (!ownership || !statement) {
+      return { error: null, ownership: ownership ?? null, statement: statement ?? null };
+    }
+    if (!this.files) {
+      return {
+        error: 'Finance evidence verification is unavailable',
+        ownership: null,
+        statement: null,
+      };
+    }
+    try {
+      await Promise.all(
+        [ownership, statement].map(async (item) => {
+          const integrity = await this.files!.companyBankAccountEvidenceIntegrity(item.fileAssetId);
+          const evidenceHash = companyBankAccountEvidenceHash({
+            accountId,
+            contentSha256: integrity.contentSha256,
+            evidenceId: item.id,
+            fileAssetId: item.fileAssetId,
+            kind: item.kind,
+            version: item.version,
+          });
+          if (
+            integrity.contentSha256 !== item.contentSha256 ||
+            evidenceHash !== item.evidenceHash
+          ) {
+            throw new ConflictException('Finance evidence content changed after verification');
+          }
+        }),
+      );
+      return { error: null, ownership, statement };
+    } catch {
+      return {
+        error: 'Verified finance evidence could not be revalidated',
+        ownership: null,
+        statement: null,
+      };
+    }
   }
 
   async companyBankAccountStatusPreflight(
@@ -19331,7 +21225,8 @@ export class AdminService {
     replacementAccountIdInput?: string | null,
   ) {
     const accountId = normalizeRequiredId(id, 'Company bank account id');
-    const nextStatus = normalizeNullable(nextStatusInput)?.toUpperCase() === 'ACTIVE'
+    const nextStatus =
+      normalizeNullable(nextStatusInput)?.toUpperCase() === 'ACTIVE'
       ? CompanyBankAccountStatus.ACTIVE
       : CompanyBankAccountStatus.INACTIVE;
     const account = await this.prisma.companyBankAccount.findUnique({
@@ -19347,12 +21242,17 @@ export class AdminService {
     };
     const profile = companyBankAccountOperationalProfile(account.metadata);
     const eligibleApproverCount = await companyBankAccountEligibleApproverCount(this.prisma, actorId);
-    const blockers = nextStatus === CompanyBankAccountStatus.ACTIVE
-      ? companyBankAccountActivationBlockers(profile)
-      : [];
+    const activationEvidence =
+      nextStatus === CompanyBankAccountStatus.ACTIVE
+        ? await this.companyBankAccountActivationEvidence(account.id)
+        : null;
+    const blockers =
+      nextStatus === CompanyBankAccountStatus.ACTIVE
+        ? companyBankAccountActivationBlockers(profile, activationEvidence)
+        : [];
     const scopeError = companyBankAccountOperationalScopeError(account.dataScope);
     if (scopeError) blockers.push({ code: scopeError.code, label: scopeError.message });
-    const [duplicate, successfulStatementImport, openTransactions] = await Promise.all([
+    const [duplicate, successfulStatementImport] = await Promise.all([
       nextStatus === CompanyBankAccountStatus.ACTIVE
         ? this.prisma.companyBankAccount.findFirst({
             where: {
@@ -19375,41 +21275,14 @@ export class AdminService {
             select: { createdAt: true, id: true },
           })
         : Promise.resolve(null),
-      nextStatus === CompanyBankAccountStatus.INACTIVE
-        ? this.prisma.companyBankTransaction.findMany({
-            where: {
-              bankAccountId: account.id,
-              status: { in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
-            },
-            select: { metadata: true, occurredAt: true },
-            orderBy: { occurredAt: 'desc' },
-            take: 500,
-          })
-        : Promise.resolve([]),
     ]);
-    if (duplicate) blockers.push({ code: 'POTENTIAL_DUPLICATE', label: 'A potential duplicate account needs review' });
-    if (nextStatus === CompanyBankAccountStatus.ACTIVE && !successfulStatementImport) {
-      blockers.push({
-        code: 'STATEMENT_IMPORT_TEST_MISSING',
-        label: 'No successful statement import is linked to this account',
-      });
-    }
+    if (duplicate)
+      blockers.push({ code: 'POTENTIAL_DUPLICATE', label: 'A potential duplicate account needs review' });
     if (eligibleApproverCount === 0) {
       blockers.push({ code: 'APPROVER_UNAVAILABLE', label: 'No separate Finance approver is available' });
     }
-    const openImportBatchIds = new Set(
-      openTransactions
-        .map((transaction) => companyBankAccountMetadataString(adminJsonObject(transaction.metadata)?.batchImportId))
-        .filter((value): value is string => Boolean(value)),
-    );
-    if (openTransactions.length > 0) {
-      blockers.push({
-        code: 'OPEN_RECONCILIATION_REFERENCES',
-        label: `${openTransactions.length} open or partially matched transaction reference(s) remain`,
-      });
-    }
     const replacementAccountId = normalizeNullable(replacementAccountIdInput);
-    let replacementAccount: { id: string; name: string } | null = null;
+    let replacementAccount: { id: string; name: string; updatedAt: string } | null = null;
     let replacementCandidates: Array<{
       accountNumberMasked: string | null;
       bankName: string;
@@ -19429,28 +21302,63 @@ export class AdminService {
         take: 50,
       });
       replacementCandidates = candidates
-        .filter((candidate) => companyBankAccountReplacementCompatible(profile, companyBankAccountOperationalProfile(candidate.metadata)))
+        .filter((candidate) =>
+          companyBankAccountReplacementCompatible(
+            profile,
+            companyBankAccountOperationalProfile(candidate.metadata),
+          ),
+        )
         .map(({ accountNumberMasked, bankName, id, name }) => ({ accountNumberMasked, bankName, id, name }))
         .slice(0, 20);
       if (replacementAccountId) {
-        replacementAccount = replacementCandidates
-          .filter((candidate) => candidate.id === replacementAccountId)
-          .map(({ id, name }) => ({ id, name }))[0] ?? null;
+        const selectedReplacement = candidates.find(
+          (candidate) =>
+            candidate.id === replacementAccountId &&
+            companyBankAccountReplacementCompatible(
+              profile,
+              companyBankAccountOperationalProfile(candidate.metadata),
+            ),
+        );
+        replacementAccount = selectedReplacement
+          ? {
+              id: selectedReplacement.id,
+              name: selectedReplacement.name,
+              updatedAt: selectedReplacement.updatedAt.toISOString(),
+            }
+          : null;
       }
       if (!replacementAccount) {
-        blockers.push({ code: 'PRIMARY_REPLACEMENT_MISSING', label: 'Select an active replacement for this primary account' });
+        blockers.push({
+          code: 'PRIMARY_REPLACEMENT_MISSING',
+          label: 'Select an active replacement for this primary account',
+        });
       }
     }
 
-    const archiveSources = nextStatus === CompanyBankAccountStatus.INACTIVE
-      ? companyBankAccountArchiveReferenceSources({
-          lastOpenActivityAt: openTransactions[0]?.occurredAt.toISOString() ?? null,
-          openTransactionCount: openTransactions.length,
+    const archiveSources =
+      nextStatus === CompanyBankAccountStatus.INACTIVE
+      ? await companyBankAccountArchiveReferenceSources(this.prisma, {
+          accountId: account.id,
           totalTransactionCount: account._count.transactions,
         })
       : [];
+    const bankTransactionSource = archiveSources.find(
+      (source) => source.source === 'BANK_TRANSACTIONS',
+    );
+    const openSources = archiveSources.filter((source) => (source.openCount ?? 0) > 0);
+    if (openSources.length > 0) {
+      blockers.push({
+        code: 'OPEN_RECONCILIATION_REFERENCES',
+        label: `Open or partially matched references remain for ${openSources
+          .map((source) => `${source.source} (${source.openCount})`)
+          .join(', ')}`,
+      });
+    }
     const incompleteSources = archiveSources.filter(
-      (source) => source.coverage === 'INCOMPLETE' || source.coverage === 'ERROR',
+      (source) =>
+        source.coverage === 'INCOMPLETE' ||
+        source.coverage === 'ERROR' ||
+        source.coverage === 'TIMEOUT',
     );
     if (incompleteSources.length > 0) {
       blockers.push({
@@ -19465,7 +21373,9 @@ export class AdminService {
       blockerCodes: blockers.map((blocker) => blocker.code),
       mode: nextStatus === CompanyBankAccountStatus.ACTIVE ? 'ACTIVATION' : 'ARCHIVE',
       replacementAccountId: replacementAccount?.id ?? null,
-      successfulStatementImportId: successfulStatementImport?.id ?? null,
+      replacementAccountUpdatedAt: replacementAccount?.updatedAt ?? null,
+      successfulStatementImportId:
+        successfulStatementImport?.id ?? activationEvidence?.statement?.id ?? null,
     });
 
     return {
@@ -19484,25 +21394,45 @@ export class AdminService {
       profile,
       replacementCandidates,
       impact: {
-        incompleteImportBatchCount: openImportBatchIds.size,
-        lastOpenActivityAt: openTransactions[0]?.occurredAt.toISOString() ?? null,
-        openTransactionCount: openTransactions.length,
+        incompleteImportBatchCount:
+          archiveSources.find((source) => source.source === 'STATEMENT_IMPORTS')?.openCount ?? 0,
+        lastOpenActivityAt: bankTransactionSource?.lastActivityAt ?? null,
+        openTransactionCount: bankTransactionSource?.openCount ?? 0,
         totalTransactionCount: account._count.transactions,
         scheduledReferenceCount: null,
       },
       replacementAccount,
       statementImportEvidence: successfulStatementImport
         ? { id: successfulStatementImport.id, importedAt: successfulStatementImport.createdAt.toISOString() }
-        : null,
+        : activationEvidence?.statement
+          ? {
+              id: activationEvidence.statement.id,
+              importedAt: activationEvidence.statement.reviewedAt?.toISOString() ?? generatedAt,
+              source: 'NON_OPERATIONAL_STATEMENT_EVIDENCE',
+            }
+          : null,
     };
   }
 
   async createCompanyBankAccount(actorId: string, input: CreateCompanyBankAccountDto) {
+    await assertCompanyBankAccountMakerAccess(this.prisma, actorId);
     await assertCompanyBankAccountApproverAvailable(this.prisma, actorId);
     const account = normalizeCompanyBankAccountIdentity(input);
-    const operatorReason = input.operatorReason.trim();
+    const operatorReason = normalizeCompanyBankAccountOperatorReason(input.operatorReason);
     const idempotencyKey = normalizeCompanyBankAccountIdempotencyKey(input.idempotencyKey);
     const operationalProfile = companyBankAccountOperationalProfileFromInput(input);
+    const proposed: CompanyBankAccountApprovalSnapshot = {
+      ...account,
+      dataScope: CompanyBankAccountDataScope.UNKNOWN,
+      operationalProfile,
+      status: CompanyBankAccountStatus.INACTIVE,
+    };
+    const mutationHash = companyBankAccountMutationHash({
+      operation: 'CREATE',
+      operatorReason,
+      proposed,
+      replacementAccountId: null,
+    });
     assertControlledCompanyBankAccountIdentity(input.bankCode, account.bankName);
 
     return this.prisma.$transaction(async (tx) => {
@@ -19520,9 +21450,13 @@ export class AdminService {
           target: { startsWith: 'company_bank_account:' },
         },
         orderBy: { createdAt: 'desc' },
-        select: { target: true },
+        select: { metadata: true, target: true },
       });
       if (priorRequest) {
+        assertCompanyBankAccountIdempotencyHash(
+          companyBankAccountMetadataString(adminJsonObject(priorRequest.metadata)?.mutationHash),
+          mutationHash,
+        );
         const priorAccount = await tx.companyBankAccount.findUnique({
           where: { id: priorRequest.target.slice('company_bank_account:'.length) },
           select: adminCompanyBankAccountManagementSelect,
@@ -19549,7 +21483,8 @@ export class AdminService {
           candidate: duplicate,
           code: 'COMPANY_BANK_ACCOUNT_POTENTIAL_DUPLICATE',
           field: 'accountNumberLast4',
-          message: 'A company bank account with the same bank, currency, and last four digits requires review',
+          message:
+            'A company bank account with the same bank, currency, and last four digits requires review',
           reviewHref: `/finance-tax/company-bank-accounts?view=remediation&accountId=${encodeURIComponent(duplicate.id)}&dialog=edit`,
         });
       }
@@ -19564,14 +21499,10 @@ export class AdminService {
             operationalProfile,
             pendingApproval: {
               idempotencyKey,
+              mutationHash,
               operation: 'CREATE',
               operatorReason,
-              proposed: {
-                ...account,
-                dataScope: CompanyBankAccountDataScope.UNKNOWN,
-                operationalProfile,
-                status: CompanyBankAccountStatus.INACTIVE,
-              },
+              proposed,
               requestedAt,
               requestedByAdminId: actorId,
               requestId,
@@ -19589,6 +21520,7 @@ export class AdminService {
             bankName: account.bankName,
             currency: account.currency,
             idempotencyKey,
+            mutationHash,
             operation: 'CREATE',
             operatorReason,
             proposedStatus: CompanyBankAccountStatus.INACTIVE,
@@ -19602,6 +21534,7 @@ export class AdminService {
   }
 
   async updateCompanyBankAccount(actorId: string, id: string, input: UpdateCompanyBankAccountDto) {
+    await assertCompanyBankAccountMakerAccess(this.prisma, actorId);
     await assertCompanyBankAccountApproverAvailable(this.prisma, actorId);
     const accountId = normalizeRequiredId(id, 'Company bank account id');
     const idempotencyKey = normalizeCompanyBankAccountIdempotencyKey(input.idempotencyKey);
@@ -19616,12 +21549,6 @@ export class AdminService {
       throw new NotFoundException('Company bank account not found');
     }
     const existingPendingApproval = companyBankAccountPendingApproval(existing.metadata);
-    if (existingPendingApproval?.idempotencyKey === idempotencyKey) {
-      return existing;
-    }
-    if (existingPendingApproval) {
-      throw new ConflictException('Company bank account already has a pending approval request');
-    }
 
     const nextName = normalizeNullable(input.name ?? existing.name);
     if (!nextName) {
@@ -19663,11 +21590,15 @@ export class AdminService {
       throw new ConflictException({
         code: 'COMPANY_BANK_ACCOUNT_EVIDENCE_AUTHORITY_UNAVAILABLE',
         field: 'dataScope',
-        message: 'Production classification is blocked until authoritative restricted ownership evidence is available',
+        message:
+          'Production classification is blocked until authoritative restricted ownership evidence is available',
       });
     }
     const currentOperationalProfile = companyBankAccountOperationalProfile(existing.metadata);
-    const nextOperationalProfile = companyBankAccountOperationalProfileFromInput(input, currentOperationalProfile);
+    const nextOperationalProfile = companyBankAccountOperationalProfileFromInput(
+      input,
+      currentOperationalProfile,
+    );
     if (nextOperationalProfile.bankCode) {
       assertControlledCompanyBankAccountIdentity(nextOperationalProfile.bankCode, nextIdentity.bankName);
     }
@@ -19689,11 +21620,31 @@ export class AdminService {
       nextStatus !== existing.status ||
       nextDataScope !== existing.dataScope ||
       operationalProfileChanged;
+    const operatorReason = normalizeCompanyBankAccountOperatorReason(input.operatorReason);
+    const proposed: CompanyBankAccountApprovalSnapshot = {
+      ...nextIdentity,
+      dataScope: nextDataScope,
+      operationalProfile: nextOperationalProfile,
+      status: nextStatus,
+    };
+    const replacementAccountId = normalizeNullable(input.replacementAccountId);
+    const mutationHash = companyBankAccountMutationHash({
+      operation: 'UPDATE',
+      operatorReason,
+      proposed,
+      replacementAccountId,
+    });
+    if (existingPendingApproval?.idempotencyKey === idempotencyKey) {
+      assertCompanyBankAccountIdempotencyHash(existingPendingApproval.mutationHash, mutationHash);
+      return existing;
+    }
+    if (existingPendingApproval) {
+      throw new ConflictException('Company bank account already has a pending approval request');
+    }
     if (!changed) {
       throw new BadRequestException('Company bank account update did not change any managed field');
     }
 
-    const operatorReason = input.operatorReason.trim();
     let statusPreflight: {
       blockers: Array<{ code: string; label: string }>;
       generatedAt: string;
@@ -19732,9 +21683,13 @@ export class AdminService {
           target: `company_bank_account:${accountId}`,
         },
         orderBy: { createdAt: 'desc' },
-        select: { id: true },
+        select: { id: true, metadata: true },
       });
       if (priorRequest) {
+        assertCompanyBankAccountIdempotencyHash(
+          companyBankAccountMetadataString(adminJsonObject(priorRequest.metadata)?.mutationHash),
+          mutationHash,
+        );
         return;
       }
       const requested = await tx.companyBankAccount.updateMany({
@@ -19744,17 +21699,13 @@ export class AdminService {
             ...(adminJsonObject(existing.metadata) ?? {}),
             pendingApproval: {
               idempotencyKey,
+              mutationHash,
               operation: 'UPDATE',
               operatorReason,
               preflightGeneratedAt: statusPreflight?.generatedAt ?? null,
               preflightHash: statusPreflight?.preflightHash ?? null,
-              proposed: {
-                ...nextIdentity,
-                dataScope: nextDataScope,
-                operationalProfile: nextOperationalProfile,
-                status: nextStatus,
-              },
-              replacementAccountId: normalizeNullable(input.replacementAccountId),
+              proposed,
+              replacementAccountId,
               requestedAt,
               requestedByAdminId: actorId,
               requestId,
@@ -19775,17 +21726,13 @@ export class AdminService {
           metadata: toJson({
             before: companyBankAccountAuditSnapshot(existing),
             idempotencyKey,
+            mutationHash,
             operation: 'UPDATE',
             operatorReason,
             preflightGeneratedAt: statusPreflight?.generatedAt ?? null,
             preflightHash: statusPreflight?.preflightHash ?? null,
-            proposed: {
-              ...nextIdentity,
-              dataScope: nextDataScope,
-              operationalProfile: nextOperationalProfile,
-              status: nextStatus,
-            },
-            replacementAccountId: normalizeNullable(input.replacementAccountId),
+            proposed,
+            replacementAccountId,
             requestId,
           }),
           target: `company_bank_account:${accountId}`,
@@ -19803,12 +21750,254 @@ export class AdminService {
     return account;
   }
 
+  async createCompanyBankAccountEvidenceReview(
+    actorId: string,
+    id: string,
+    input: CreateCompanyBankAccountEvidenceReviewDto,
+  ) {
+    await assertCompanyBankAccountMakerAccess(this.prisma, actorId);
+    await assertCompanyBankAccountApproverAvailable(this.prisma, actorId);
+    if (!this.files) {
+      throw new ServiceUnavailableException('Finance evidence verification is unavailable');
+    }
+    const accountId = normalizeRequiredId(id, 'Company bank account id');
+    const idempotencyKey = normalizeCompanyBankAccountIdempotencyKey(input.idempotencyKey);
+    const operatorReason = normalizeCompanyBankAccountOperatorReason(input.operatorReason);
+    const expectedAccountUpdatedAt = requiredAdminDate(
+      input.expectedAccountUpdatedAt,
+      'Company bank account expected updatedAt',
+    );
+    const operation = input.intent;
+    const evidenceKind =
+      operation === 'CLASSIFY_PRODUCTION'
+        ? CompanyBankAccountEvidenceKind.OWNERSHIP
+        : CompanyBankAccountEvidenceKind.STATEMENT;
+    const integrity = await this.files.companyBankAccountEvidenceIntegrity(input.fileAssetId);
+    if (integrity.ownerUserId !== actorId) {
+      throw new ForbiddenException('Finance evidence must be uploaded by the request maker');
+    }
+    const existing = await this.prisma.companyBankAccount.findUnique({
+      where: { id: accountId },
+      select: adminCompanyBankAccountManagementSelect,
+    });
+    if (!existing) throw new NotFoundException('Company bank account not found');
+    const requestedAt = new Date().toISOString();
+    if (operation === 'CLASSIFY_PRODUCTION') {
+      if (
+        existing.dataScope !== CompanyBankAccountDataScope.UNKNOWN ||
+        existing.status !== CompanyBankAccountStatus.INACTIVE
+      ) {
+        throw new ConflictException(
+          'Production classification requires an inactive account with unknown data scope',
+        );
+      }
+    } else {
+      const verifiedOwnership = await this.prisma.companyBankAccountEvidence.findFirst({
+        where: {
+          bankAccountId: accountId,
+          kind: CompanyBankAccountEvidenceKind.OWNERSHIP,
+          status: CompanyBankAccountEvidenceStatus.VERIFIED,
+        },
+        orderBy: { version: 'desc' },
+        select: { id: true },
+      });
+      if (
+        existing.dataScope !== CompanyBankAccountDataScope.PRODUCTION ||
+        existing.status !== CompanyBankAccountStatus.INACTIVE ||
+        !verifiedOwnership
+      ) {
+        throw new ConflictException(
+          'Statement verification requires an inactive production-classified account with verified ownership evidence',
+        );
+      }
+    }
+    const mutationHash = createHash('sha256')
+      .update(
+        adminCanonicalJson({
+          accountId,
+          contentSha256: integrity.contentSha256,
+          expectedAccountUpdatedAt: expectedAccountUpdatedAt.toISOString(),
+          fileAssetId: integrity.fileAssetId,
+          operation,
+          operatorReason,
+        }),
+      )
+      .digest('hex');
+    const existingPending = companyBankAccountPendingApproval(existing.metadata);
+    if (existingPending?.idempotencyKey === idempotencyKey) {
+      assertCompanyBankAccountIdempotencyHash(existingPending.mutationHash, mutationHash);
+      return existing;
+    }
+    if (existingPending) {
+      throw new ConflictException('Company bank account already has a pending approval request');
+    }
+    if (existing.updatedAt.getTime() !== expectedAccountUpdatedAt.getTime()) {
+      throw new ConflictException({
+        code: 'COMPANY_BANK_ACCOUNT_VERSION_CONFLICT',
+        message: 'Company bank account changed during evidence review; reload before retrying',
+      });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`company_bank_account_request:${actorId}:${idempotencyKey}`}))::text AS lock_status`,
+      );
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`company_bank_account_evidence:${accountId}:${evidenceKind}`}))::text AS lock_status`,
+      );
+      const priorRequest = await tx.adminAuditLog.findFirst({
+        where: {
+          action: 'company_bank_account.approval_requested',
+          actorId,
+          metadata: { path: ['idempotencyKey'], equals: idempotencyKey },
+          target: `company_bank_account:${accountId}`,
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { metadata: true },
+      });
+      if (priorRequest) {
+        assertCompanyBankAccountIdempotencyHash(
+          companyBankAccountMetadataString(adminJsonObject(priorRequest.metadata)?.mutationHash),
+          mutationHash,
+        );
+        const replay = await tx.companyBankAccount.findUnique({
+          where: { id: accountId },
+          select: adminCompanyBankAccountManagementSelect,
+        });
+        if (replay) return replay;
+        throw new NotFoundException('Company bank account not found after evidence request replay');
+      }
+      const current = await tx.companyBankAccount.findUnique({
+        where: { id: accountId },
+        select: adminCompanyBankAccountManagementSelect,
+      });
+      if (
+        !current ||
+        current.updatedAt.getTime() !== expectedAccountUpdatedAt.getTime() ||
+        companyBankAccountPendingApproval(current.metadata)
+      ) {
+        throw new ConflictException({
+          code: 'COMPANY_BANK_ACCOUNT_VERSION_CONFLICT',
+          message: 'Company bank account changed during evidence review; reload before retrying',
+        });
+      }
+      const versionResult = await tx.companyBankAccountEvidence.aggregate({
+        where: { bankAccountId: accountId, kind: evidenceKind },
+        _max: { version: true },
+      });
+      const version = (versionResult._max.version ?? 0) + 1;
+      const evidenceId = randomUUID();
+      const evidenceHash = companyBankAccountEvidenceHash({
+        accountId,
+        contentSha256: integrity.contentSha256,
+        evidenceId,
+        fileAssetId: integrity.fileAssetId,
+        kind: evidenceKind,
+        version,
+      });
+      const evidence = await tx.companyBankAccountEvidence.create({
+        data: {
+          id: evidenceId,
+          bankAccountId: accountId,
+          contentSha256: integrity.contentSha256,
+          evidenceHash,
+          fileAssetId: integrity.fileAssetId,
+          kind: evidenceKind,
+          metadata: toJson({
+            contentType: integrity.contentType,
+            operatorReason,
+            sizeBytes: integrity.sizeBytes,
+            uploadedAt: integrity.uploadedAt.toISOString(),
+          }),
+          submittedByAdminId: actorId,
+          version,
+        },
+      });
+      const base = companyBankAccountAuditSnapshot(current);
+      const proposed: CompanyBankAccountApprovalSnapshot = {
+        ...base,
+        ...(operation === 'CLASSIFY_PRODUCTION'
+          ? { dataScope: CompanyBankAccountDataScope.PRODUCTION }
+          : {}),
+        operationalProfile: {
+          ...base.operationalProfile,
+          ...(operation === 'CLASSIFY_PRODUCTION'
+            ? {
+                evidenceObjectId: evidence.id,
+                verificationMethod: 'RESTRICTED_OWNERSHIP_EVIDENCE',
+                verificationStatus: 'EVIDENCE_SUBMITTED' as const,
+              }
+            : {
+                statementImportTestedAt: requestedAt,
+                verificationMethod: 'NON_OPERATIONAL_STATEMENT_EVIDENCE',
+                verificationStatus: 'VERIFIED' as const,
+              }),
+        },
+      };
+      const requested = await tx.companyBankAccount.updateMany({
+        where: { id: accountId, updatedAt: expectedAccountUpdatedAt },
+        data: {
+          metadata: toJson({
+            ...(adminJsonObject(current.metadata) ?? {}),
+            pendingApproval: {
+              evidenceHash,
+              evidenceId: evidence.id,
+              evidenceVersion: version,
+              idempotencyKey,
+              mutationHash,
+              operation,
+              operatorReason,
+              preflightGeneratedAt: null,
+              preflightHash: null,
+              proposed,
+              replacementAccountId: null,
+              requestedAt,
+              requestedByAdminId: actorId,
+              requestId: randomUUID(),
+            },
+          }),
+        },
+      });
+      if (requested.count !== 1) {
+        throw new ConflictException({
+          code: 'COMPANY_BANK_ACCOUNT_VERSION_CONFLICT',
+          message: 'Company bank account changed during evidence review; reload before retrying',
+        });
+      }
+      const account = await tx.companyBankAccount.findUniqueOrThrow({
+        where: { id: accountId },
+        select: adminCompanyBankAccountManagementSelect,
+      });
+      const pending = companyBankAccountPendingApproval(account.metadata);
+      await tx.adminAuditLog.create({
+        data: {
+          action: 'company_bank_account.approval_requested',
+          actorId,
+          metadata: toJson({
+            evidenceHash,
+            evidenceId: evidence.id,
+            evidenceVersion: version,
+            idempotencyKey,
+            mutationHash,
+            operation,
+            operatorReason,
+            requestId: pending?.requestId ?? null,
+          }),
+          target: `company_bank_account:${accountId}`,
+        },
+      });
+      return account;
+    });
+  }
+
   async decideCompanyBankAccountChange(
     actorId: string,
     id: string,
     input: DecideCompanyBankAccountChangeDto,
   ) {
-    await assertFinanceActionApprovalAdmin(this.prisma, actorId, 'Company bank account approval');
+    await assertVerifiedFinanceApprover(this.prisma, actorId, 'Company bank account approval', {
+      requiredCategory: AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+    });
     const accountId = normalizeRequiredId(id, 'Company bank account id');
     const existing = await this.prisma.companyBankAccount.findUnique({
       where: { id: accountId },
@@ -19828,14 +22017,79 @@ export class AdminService {
       throw new BadRequestException('Company bank account approval requires a different Finance approver');
     }
 
-    const decisionReason = input.operatorReason.trim();
+    const evidenceOperation =
+      pending.operation === 'CLASSIFY_PRODUCTION' || pending.operation === 'VERIFY_STATEMENT';
+    let evidenceReview: {
+      contentSha256: string;
+      evidenceHash: string;
+      fileAssetId: string;
+      id: string;
+      kind: CompanyBankAccountEvidenceKind;
+      status: CompanyBankAccountEvidenceStatus;
+      updatedAt: Date;
+      version: number;
+    } | null = null;
+    if (evidenceOperation) {
+      if (!pending.evidenceId || !pending.evidenceHash || pending.evidenceVersion == null) {
+        throw new ConflictException('Company bank account evidence request is incomplete');
+      }
+      evidenceReview = await this.prisma.companyBankAccountEvidence.findUnique({
+        where: { id: pending.evidenceId },
+        select: {
+          contentSha256: true,
+          evidenceHash: true,
+          fileAssetId: true,
+          id: true,
+          kind: true,
+          status: true,
+          updatedAt: true,
+          version: true,
+        },
+      });
+      const expectedKind =
+        pending.operation === 'CLASSIFY_PRODUCTION'
+          ? CompanyBankAccountEvidenceKind.OWNERSHIP
+          : CompanyBankAccountEvidenceKind.STATEMENT;
+      if (
+        !evidenceReview ||
+        evidenceReview.kind !== expectedKind ||
+        evidenceReview.status !== CompanyBankAccountEvidenceStatus.SUBMITTED ||
+        evidenceReview.version !== pending.evidenceVersion ||
+        evidenceReview.evidenceHash !== pending.evidenceHash
+      ) {
+        throw new ConflictException('Company bank account evidence changed after the request');
+      }
+      if (!this.files) {
+        throw new ServiceUnavailableException('Finance evidence verification is unavailable');
+      }
+      const integrity = await this.files.companyBankAccountEvidenceIntegrity(
+        evidenceReview.fileAssetId,
+      );
+      const currentHash = companyBankAccountEvidenceHash({
+        accountId,
+        contentSha256: integrity.contentSha256,
+        evidenceId: evidenceReview.id,
+        fileAssetId: evidenceReview.fileAssetId,
+        kind: evidenceReview.kind,
+        version: evidenceReview.version,
+      });
+      if (
+        integrity.contentSha256 !== evidenceReview.contentSha256 ||
+        currentHash !== evidenceReview.evidenceHash
+      ) {
+        throw new ConflictException('Company bank account evidence content changed after the request');
+      }
+    }
+
+    const decisionReason = normalizeCompanyBankAccountOperatorReason(input.operatorReason);
     const decisionAt = new Date().toISOString();
     const metadata = companyBankAccountMetadataWithoutPending(existing.metadata);
     const approved = input.decision === 'APPROVE';
     const nextAccount = approved ? pending.proposed : companyBankAccountAuditSnapshot(existing);
+    let approvedPrimaryReplacement: { id: string; name: string; updatedAt: string } | null = null;
     if (approved && nextAccount.status !== existing.status) {
       const currentPreflight = await this.companyBankAccountStatusPreflight(
-        actorId,
+        pending.requestedByAdminId,
         accountId,
         nextAccount.status,
         pending.replacementAccountId,
@@ -19844,9 +22098,11 @@ export class AdminService {
         throw new ConflictException({
           blockers: currentPreflight.blockers,
           code: 'COMPANY_BANK_ACCOUNT_PREFLIGHT_CHANGED',
-          message: 'Company bank account impact changed after the request; the maker must review and submit again',
+          message:
+            'Company bank account impact changed after the request; the maker must review and submit again',
         });
       }
+      approvedPrimaryReplacement = currentPreflight.replacementAccount;
     }
     const identityChanged =
       nextAccount.accountNumberLast4 !== existing.accountNumberLast4 ||
@@ -19860,6 +22116,68 @@ export class AdminService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      let replacementTransition:
+        | {
+            id: string;
+            metadata: Prisma.InputJsonValue;
+            updatedAt: Date;
+          }
+        | null = null;
+      if (
+        approved &&
+        existing.status === CompanyBankAccountStatus.ACTIVE &&
+        nextAccount.status === CompanyBankAccountStatus.INACTIVE &&
+        companyBankAccountOperationalProfile(existing.metadata).isPrimary
+      ) {
+        if (!approvedPrimaryReplacement || approvedPrimaryReplacement.id !== pending.replacementAccountId) {
+          throw new ConflictException('Primary replacement is no longer current');
+        }
+        const transitionIds = [accountId, approvedPrimaryReplacement.id].sort();
+        for (const transitionId of transitionIds) {
+          await tx.$queryRaw(
+            Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`company_bank_account_status:${transitionId}`}))::text AS lock_status`,
+          );
+        }
+        const replacement = await tx.companyBankAccount.findUnique({
+          where: { id: approvedPrimaryReplacement.id },
+          select: adminCompanyBankAccountManagementSelect,
+        });
+        const replacementProfile = companyBankAccountOperationalProfile(replacement?.metadata);
+        if (
+          !replacement ||
+          replacement.updatedAt.toISOString() !== approvedPrimaryReplacement.updatedAt ||
+          replacement.currency !== existing.currency ||
+          replacement.dataScope !== CompanyBankAccountDataScope.PRODUCTION ||
+          replacement.status !== CompanyBankAccountStatus.ACTIVE ||
+          !companyBankAccountReplacementCompatible(
+            companyBankAccountOperationalProfile(existing.metadata),
+            replacementProfile,
+          )
+        ) {
+          throw new ConflictException({
+            code: 'COMPANY_BANK_ACCOUNT_REPLACEMENT_CHANGED',
+            message: 'Primary replacement changed during approval; the maker must review and submit again',
+          });
+        }
+        const transition = {
+          id: replacement.id,
+          metadata: toJson({
+            ...(adminJsonObject(replacement.metadata) ?? {}),
+            operationalProfile: { ...replacementProfile, isPrimary: true },
+            primaryEffectiveFrom: decisionAt,
+            replacedPrimaryAccountId: accountId,
+          }),
+          updatedAt: replacement.updatedAt,
+        };
+        replacementTransition = transition;
+        const promoted = await tx.companyBankAccount.updateMany({
+          where: { id: transition.id, updatedAt: transition.updatedAt },
+          data: { metadata: transition.metadata },
+        });
+        if (promoted.count !== 1) {
+          throw new ConflictException('Primary replacement changed during approval');
+        }
+      }
       const updated = await tx.companyBankAccount.updateMany({
         where: { id: accountId, updatedAt: existing.updatedAt },
         data: {
@@ -19885,10 +22203,17 @@ export class AdminService {
                       : {}),
                   operationalProfile: {
                     ...nextAccount.operationalProfile,
+                    ...(replacementTransition ? { isPrimary: false } : {}),
                     ...(nextAccount.operationalProfile.verificationStatus === 'VERIFIED'
                       ? { verifiedAt: decisionAt, verifiedByAdminId: actorId }
                       : {}),
                   },
+                  ...(replacementTransition
+                    ? {
+                        primaryEffectiveTo: decisionAt,
+                        replacedByAccountId: replacementTransition.id,
+                      }
+                    : {}),
                 }
               : {}),
             lastApprovalAdminId: approved ? actorId : undefined,
@@ -19905,12 +22230,35 @@ export class AdminService {
       if (updated.count !== 1) {
         throw new ConflictException('Company bank account changed during approval; reload before retrying');
       }
+      if (evidenceReview) {
+        const reviewed = await tx.companyBankAccountEvidence.updateMany({
+          where: {
+            id: evidenceReview.id,
+            status: CompanyBankAccountEvidenceStatus.SUBMITTED,
+            updatedAt: evidenceReview.updatedAt,
+          },
+          data: {
+            reviewedAt: new Date(decisionAt),
+            reviewedByAdminId: actorId,
+            status: approved
+              ? CompanyBankAccountEvidenceStatus.VERIFIED
+              : CompanyBankAccountEvidenceStatus.REJECTED,
+          },
+        });
+        if (reviewed.count !== 1) {
+          throw new ConflictException('Company bank account evidence changed during approval');
+        }
+      }
       await tx.adminAuditLog.create({
         data: {
           action: approved
             ? pending.operation === 'CREATE'
               ? 'company_bank_account.create'
-              : 'company_bank_account.update'
+              : pending.operation === 'CLASSIFY_PRODUCTION'
+                ? 'company_bank_account.classification'
+                : pending.operation === 'VERIFY_STATEMENT'
+                  ? 'company_bank_account.statement_verification'
+                  : 'company_bank_account.update'
             : 'company_bank_account.approval_rejected',
           actorId,
           metadata: toJson({
@@ -19919,8 +22267,16 @@ export class AdminService {
             before: companyBankAccountAuditSnapshot(existing),
             decision: input.decision,
             decisionReason,
+            ...(evidenceReview
+              ? {
+                  evidenceHash: evidenceReview.evidenceHash,
+                  evidenceId: evidenceReview.id,
+                  evidenceVersion: evidenceReview.version,
+                }
+              : {}),
             operation: pending.operation,
             operatorReason: pending.operatorReason,
+            replacementAccountId: replacementTransition?.id ?? pending.replacementAccountId,
             requestId: pending.requestId,
             requestedByAdminId: pending.requestedByAdminId,
           }),
@@ -21322,13 +23678,18 @@ export class AdminService {
           type: 'admin.finance.bank_transaction.review_escalated',
           title: 'Bank transaction review is overdue',
           body: `Bank transaction ${candidate.bankTransactionId} has remained assigned and unresolved for over 48 hours.`,
-          data: toJson(notificationDataWithDeliveryContract({
+          data: toJson(
+            notificationDataWithDeliveryContract(
+              {
             assignmentAuditLogId: candidate.assignmentAuditLogId,
             bankTransactionId: candidate.bankTransactionId,
             destination: `/finance-tax/bank-reconciliation/${encodeURIComponent(candidate.bankTransactionId)}`,
             financeReviewStatus: 'OPEN',
             source: 'bank_transaction_review_escalation_sweep',
-          }, 'IN_APP_ONLY')),
+              },
+              'IN_APP_ONLY',
+            ),
+          ),
         },
         select: { id: true },
       });
@@ -21501,14 +23862,19 @@ export class AdminService {
           type: 'admin.finance.partner_bank_deposit.reconciliation_escalated',
           title: 'Partner deposit reconciliation is overdue',
           body: `Partner bank deposit ${request.id} has remained unreconciled for over 48 hours.`,
-          data: toJson(notificationDataWithDeliveryContract({
+          data: toJson(
+            notificationDataWithDeliveryContract(
+              {
             assignmentAuditLogId: candidate.assignmentAuditLogId,
             bankTransactionId: request.bankTransactionId,
             destination: `/finance-tax/partner-bank-deposits/${encodeURIComponent(request.id)}`,
             financeReviewStatus: 'OPEN',
             partnerBankDepositRequestId: request.id,
             source: 'partner_bank_deposit_reconciliation_escalation_sweep',
-          }, 'IN_APP_ONLY')),
+              },
+              'IN_APP_ONLY',
+            ),
+          ),
         },
         select: { id: true },
       });
@@ -21712,9 +24078,7 @@ export class AdminService {
     const target = `company_bank_transaction_batch:${candidate.batchImportId}`;
 
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(
-        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${target}))::text AS "lockResult"`,
-      );
+      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${target}))::text AS "lockResult"`);
 
       const existing = await tx.adminAuditLog.findFirst({
         where: {
@@ -21757,12 +24121,17 @@ export class AdminService {
           type: 'admin.finance.bank_statement_batch.escalated',
           title: 'Bank statement batch needs escalation',
           body: `Bank statement batch ${candidate.batchImportId} has waited over 48 hours and needs reconciliation.`,
-          data: toJson(notificationDataWithDeliveryContract({
+          data: toJson(
+            notificationDataWithDeliveryContract(
+              {
             batchImportId: candidate.batchImportId,
             destination: `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(candidate.batchImportId)}`,
             financeReviewStatus: 'OPEN',
             source: 'bank_statement_batch_escalation_sweep',
-          }, 'IN_APP_ONLY')),
+              },
+              'IN_APP_ONLY',
+            ),
+          ),
         },
         select: { id: true },
       });
@@ -21853,10 +24222,12 @@ export class AdminService {
     const latestAssignmentMetadata = jsonObject(assignmentAuditLogs[0]?.metadata ?? null);
     const currentAssigneeAdminId =
       jsonString(latestAssignmentMetadata.assigneeAdminId) ?? batch.assigneeAdminId;
-    const assignmentAdminIds = Array.from(new Set([
+    const assignmentAdminIds = Array.from(
+      new Set([
       ...adminFinanceReviewAssignmentReferencedIds(assignmentAuditLogs),
       ...(currentAssigneeAdminId ? [currentAssigneeAdminId] : []),
-    ]));
+      ]),
+    );
     const assignmentAdmins = assignmentAdminIds.length
       ? await this.prisma.user.findMany({
           where: { id: { in: assignmentAdminIds } },
@@ -23252,7 +25623,7 @@ export class AdminService {
               },
             }),
       },
-      orderBy: { occurredAt: 'desc' },
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
       skip: (page - 1) * take,
       take: take + 1,
       select: {
@@ -23867,9 +26238,7 @@ export class AdminService {
     }
     const scopeError = companyBankAccountOperationalScopeError(bankAccount.dataScope);
     if (scopeError) {
-      return companyBankTransactionInvalidBatchRow(input, [
-        scopeError.message,
-      ]);
+      return companyBankTransactionInvalidBatchRow(input, [scopeError.message]);
     }
 
     const currency = normalizeCompanyBankTransactionCurrency(input.currency, bankAccount.currency);
@@ -24006,8 +26375,7 @@ export class AdminService {
           accountingJournalEntryId:
             source.accountingJournalEntryId ??
             (source.field === 'accountingJournalEntryId' ? source.id : undefined),
-          paymentClearingEntryId:
-            source.field === 'paymentClearingEntryId' ? source.id : undefined,
+        paymentClearingEntryId: source.field === 'paymentClearingEntryId' ? source.id : undefined,
         });
         if (sourceRemainingAmount === undefined) {
           const currentSourceMatched = await tx.bankReconciliationMatch.aggregate({
@@ -24432,9 +26800,7 @@ export class AdminService {
           throw error;
         }
         if (attempt === 3) {
-          throw new ConflictException(
-            'Bank reconciliation changed concurrently; reload and try again.',
-          );
+          throw new ConflictException('Bank reconciliation changed concurrently; reload and try again.');
         }
       }
     }
@@ -24649,10 +27015,7 @@ export class AdminService {
       if (row.currency !== currency) {
         throw new BadRequestException('Match currency must equal payment clearing currency');
       }
-      const expectedDirection = bookingPaymentClearingExpectedBankDirection(
-        row.type,
-        row.amount,
-      );
+      const expectedDirection = bookingPaymentClearingExpectedBankDirection(row.type, row.amount);
       if (!expectedDirection) {
         throw new BadRequestException(
           'Direction unavailable: this payment evidence type cannot be matched automatically',
@@ -24775,46 +27138,47 @@ export class AdminService {
       Array<{
         bookingServiceAmount: bigint | number | null;
         companyCouponExpense: bigint | number | null;
+        couponActivityCount: bigint | number | null;
+        couponCorrectionCount: bigint | number | null;
         couponDiscountAmount: bigint | number | null;
         couponReviewFlagCount: bigint | number | null;
         couponSettlementCount: bigint | number | null;
         customerPaidAmount: bigint | number | null;
+        netCompanyCouponExpense: bigint | number | null;
+        netCouponDiscountAmount: bigint | number | null;
+        netPartnerFundedCouponAmount: bigint | number | null;
+        netPlatformFeeDiscountAmount: bigint | number | null;
         partnerFundedCouponAmount: bigint | number | null;
         platformFeeDiscountAmount: bigint | number | null;
         reversedCompanyCouponExpense: bigint | number | null;
         reversedCouponDiscountAmount: bigint | number | null;
+        reversedPartnerFundedCouponAmount: bigint | number | null;
+        reversedPlatformFeeDiscountAmount: bigint | number | null;
         settlementBaseAmount: bigint | number | null;
       }>
-    >(Prisma.sql`
-      SELECT
-        COUNT(*)::bigint AS "couponSettlementCount",
-        COALESCE(SUM(${adminJsonIntSql('bookingServiceAmount')}), 0)::bigint AS "bookingServiceAmount",
-        COALESCE(SUM(${adminJsonIntSql('customerPaidAmount')}), 0)::bigint AS "customerPaidAmount",
-        COALESCE(SUM(${adminJsonIntSql('settlementBaseAmount')}), 0)::bigint AS "settlementBaseAmount",
-        COALESCE(SUM(${adminJsonIntSql('couponDiscountAmount')}), 0)::bigint AS "couponDiscountAmount",
-        COALESCE(SUM(${adminJsonIntSql('companyCouponExpense')}), 0)::bigint AS "companyCouponExpense",
-        COALESCE(SUM(${adminJsonIntSql('partnerFundedCouponAmount')}), 0)::bigint AS "partnerFundedCouponAmount",
-        COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}), 0)::bigint AS "platformFeeDiscountAmount",
-        COALESCE(SUM(${adminJsonIntSql('reversedCouponDiscountAmount')}), 0)::bigint AS "reversedCouponDiscountAmount",
-        COALESCE(SUM(${adminJsonIntSql('reversedCompanyCouponExpense')}), 0)::bigint AS "reversedCompanyCouponExpense",
-        COUNT(*) FILTER (WHERE "metadata" ? 'couponReviewFlag')::bigint AS "couponReviewFlagCount"
-      FROM "BookingSettlementSnapshot"
-      ${adminCouponFinanceSqlWhere(options)}
-    `);
+    >(adminCouponFinanceSummarySql(options));
     const row = rows[0];
 
     return {
       bookingServiceAmount: numberValue(row?.bookingServiceAmount),
       companyCouponExpense: numberValue(row?.companyCouponExpense),
+      couponActivityCount: numberValue(row?.couponActivityCount),
+      couponCorrectionCount: numberValue(row?.couponCorrectionCount),
       couponDiscountAmount: numberValue(row?.couponDiscountAmount),
       couponReviewFlagCount: numberValue(row?.couponReviewFlagCount),
       couponSettlementCount: numberValue(row?.couponSettlementCount),
       currency: 'VND',
       customerPaidAmount: numberValue(row?.customerPaidAmount),
+      netCompanyCouponExpense: numberValue(row?.netCompanyCouponExpense),
+      netCouponDiscountAmount: numberValue(row?.netCouponDiscountAmount),
+      netPartnerFundedCouponAmount: numberValue(row?.netPartnerFundedCouponAmount),
+      netPlatformFeeDiscountAmount: numberValue(row?.netPlatformFeeDiscountAmount),
       partnerFundedCouponAmount: numberValue(row?.partnerFundedCouponAmount),
       platformFeeDiscountAmount: numberValue(row?.platformFeeDiscountAmount),
       reversedCompanyCouponExpense: numberValue(row?.reversedCompanyCouponExpense),
       reversedCouponDiscountAmount: numberValue(row?.reversedCouponDiscountAmount),
+      reversedPartnerFundedCouponAmount: numberValue(row?.reversedPartnerFundedCouponAmount),
+      reversedPlatformFeeDiscountAmount: numberValue(row?.reversedPlatformFeeDiscountAmount),
       settlementBaseAmount: numberValue(row?.settlementBaseAmount),
     };
   }
@@ -24835,22 +27199,39 @@ export class AdminService {
         partnerVatWithheldTotal: bigint | number | null;
         partnerPitWithheldTotal: bigint | number | null;
         totalPartnerTaxWithheld: bigint | number | null;
+        completeEvidenceCount: bigint | number | null;
+        explicitZeroEvidenceCount: bigint | number | null;
+        missingEvidenceCount: bigint | number | null;
+        withholdingEvidenceStatus: AdminPartnerWithholdingEvidenceStatus;
       }>
     >(Prisma.sql`
       WITH ${adminPartnerWithholdingTaxActivityCteSql(period)}
       SELECT
-        "providerProfileId",
-        "monthlyPeriod",
-        "currency",
-        COALESCE(SUM("postedSettlementCount"), 0)::bigint AS "postedSettlementCount",
-        COALESCE(SUM("reversalCount"), 0)::bigint AS "reversalCount",
-        COALESCE(SUM("grossServiceRevenue"), 0)::bigint AS "grossServiceRevenue",
-        COALESCE(SUM("partnerPayoutTotal"), 0)::bigint AS "partnerPayoutTotal",
-        COALESCE(SUM("partnerVatWithheldTotal"), 0)::bigint AS "partnerVatWithheldTotal",
-        COALESCE(SUM("partnerPitWithheldTotal"), 0)::bigint AS "partnerPitWithheldTotal",
-        COALESCE(SUM("totalPartnerTaxWithheld"), 0)::bigint AS "totalPartnerTaxWithheld"
-      FROM "withholdingActivity"
-      GROUP BY "providerProfileId", "monthlyPeriod", "currency"
+        activity."providerProfileId",
+        activity."monthlyPeriod",
+        activity."currency",
+        COALESCE(SUM(activity."postedSettlementCount"), 0)::bigint AS "postedSettlementCount",
+        COALESCE(SUM(activity."reversalCount"), 0)::bigint AS "reversalCount",
+        COALESCE(SUM(activity."grossServiceRevenue"), 0)::bigint AS "grossServiceRevenue",
+        COALESCE(SUM(activity."partnerPayoutTotal"), 0)::bigint AS "partnerPayoutTotal",
+        COALESCE(SUM(activity."partnerVatWithheldTotal"), 0)::bigint AS "partnerVatWithheldTotal",
+        COALESCE(SUM(activity."partnerPitWithheldTotal"), 0)::bigint AS "partnerPitWithheldTotal",
+        COALESCE(SUM(activity."totalPartnerTaxWithheld"), 0)::bigint AS "totalPartnerTaxWithheld",
+        evidence."completeEvidenceCount",
+        evidence."explicitZeroEvidenceCount",
+        evidence."missingEvidenceCount",
+        evidence."withholdingEvidenceStatus"
+      FROM "withholdingActivity" activity
+      INNER JOIN "withholdingEvidenceByProvider" evidence
+        ON evidence."providerProfileId" = activity."providerProfileId"
+      GROUP BY
+        activity."providerProfileId",
+        activity."monthlyPeriod",
+        activity."currency",
+        evidence."completeEvidenceCount",
+        evidence."explicitZeroEvidenceCount",
+        evidence."missingEvidenceCount",
+        evidence."withholdingEvidenceStatus"
       ORDER BY "monthlyPeriod" DESC, "providerProfileId" ASC
       LIMIT ${take}
       OFFSET ${skip}
@@ -24886,6 +27267,10 @@ export class AdminService {
         partnerVatWithheldTotal: numberValue(group.partnerVatWithheldTotal),
         partnerPitWithheldTotal: numberValue(group.partnerPitWithheldTotal),
         totalPartnerTaxWithheld: numberValue(group.totalPartnerTaxWithheld),
+        completeEvidenceCount: numberValue(group.completeEvidenceCount),
+        explicitZeroEvidenceCount: numberValue(group.explicitZeroEvidenceCount),
+        missingEvidenceCount: numberValue(group.missingEvidenceCount),
+        withholdingEvidenceStatus: group.withholdingEvidenceStatus,
       };
     });
   }
@@ -24902,6 +27287,10 @@ export class AdminService {
         partnerVatWithheldTotal: bigint | number | null;
         partnerPitWithheldTotal: bigint | number | null;
         totalPartnerTaxWithheld: bigint | number | null;
+        completeEvidencePartnerCount: bigint | number | null;
+        explicitZeroEvidencePartnerCount: bigint | number | null;
+        mixedEvidencePartnerCount: bigint | number | null;
+        missingEvidencePartnerCount: bigint | number | null;
       }>
     >(Prisma.sql`
       WITH ${adminPartnerWithholdingTaxActivityCteSql(period)}
@@ -24913,7 +27302,11 @@ export class AdminService {
         COALESCE(SUM("partnerPayoutTotal"), 0)::bigint AS "partnerPayoutTotal",
         COALESCE(SUM("partnerVatWithheldTotal"), 0)::bigint AS "partnerVatWithheldTotal",
         COALESCE(SUM("partnerPitWithheldTotal"), 0)::bigint AS "partnerPitWithheldTotal",
-        COALESCE(SUM("totalPartnerTaxWithheld"), 0)::bigint AS "totalPartnerTaxWithheld"
+        COALESCE(SUM("totalPartnerTaxWithheld"), 0)::bigint AS "totalPartnerTaxWithheld",
+        (SELECT COUNT(*)::bigint FROM "withholdingEvidenceByProvider" WHERE "withholdingEvidenceStatus" = 'COMPLETE') AS "completeEvidencePartnerCount",
+        (SELECT COUNT(*)::bigint FROM "withholdingEvidenceByProvider" WHERE "withholdingEvidenceStatus" = 'EXPLICIT_ZERO') AS "explicitZeroEvidencePartnerCount",
+        (SELECT COUNT(*)::bigint FROM "withholdingEvidenceByProvider" WHERE "withholdingEvidenceStatus" = 'MIXED') AS "mixedEvidencePartnerCount",
+        (SELECT COUNT(*)::bigint FROM "withholdingEvidenceByProvider" WHERE "withholdingEvidenceStatus" = 'MISSING_EVIDENCE') AS "missingEvidencePartnerCount"
       FROM "withholdingActivity"
     `);
     const totals = rows[0];
@@ -24932,6 +27325,18 @@ export class AdminService {
       partnerVatWithheldTotal: numberValue(totals?.partnerVatWithheldTotal),
       partnerPitWithheldTotal: numberValue(totals?.partnerPitWithheldTotal),
       totalPartnerTaxWithheld: numberValue(totals?.totalPartnerTaxWithheld),
+      evidenceBreakdown: [
+        { status: 'COMPLETE' as const, partnerCount: numberValue(totals?.completeEvidencePartnerCount) },
+        {
+          status: 'EXPLICIT_ZERO' as const,
+          partnerCount: numberValue(totals?.explicitZeroEvidencePartnerCount),
+        },
+        { status: 'MIXED' as const, partnerCount: numberValue(totals?.mixedEvidencePartnerCount) },
+        {
+          status: 'MISSING_EVIDENCE' as const,
+          partnerCount: numberValue(totals?.missingEvidencePartnerCount),
+        },
+      ],
     };
   }
 
@@ -25010,6 +27415,7 @@ export class AdminService {
           payoutReturnInflowReconciliationOpenAmount: bigint | number | null;
           payoutReturnInflowReconciliationOpenCount: bigint | number | null;
           paymentFeeReviewFlagCount: bigint | number | null;
+          platformVatReviewFlagCount: bigint | number | null;
           reversalCount: bigint | number | null;
           reversalCustomerPaymentAmountTotal: bigint | number | null;
           reversalPartnerPayoutTotal: bigint | number | null;
@@ -25029,21 +27435,33 @@ export class AdminService {
             FROM "BookingSettlementReversalEntry"
             WHERE "monthlyPeriod" = ${period}
           ),
+          ${adminPlatformVatEvidenceCteSql(period)},
           ${adminPartnerBankDepositReconciliationCteSql({ period })},
           ${adminPartnerPayoutBankReconciliationCteSql({ period })}
           SELECT
             COUNT(DISTINCT "providerProfileId")::bigint AS "partnerCountWithRevenue",
-            COUNT(*) FILTER (
-              WHERE "paymentMethod" IN (
-                ${PaymentMethod.CARD}::"PaymentMethod",
-                ${PaymentMethod.MOMO}::"PaymentMethod",
-                ${PaymentMethod.VNPAY}::"PaymentMethod"
-              )
-                AND (
-                  "paymentFeePolicyVersionId" IS NULL
-                  OR COALESCE("paymentFeeRuleSnapshot" ? 'reason', false)
-                )
-            )::bigint AS "paymentFeeReviewFlagCount",
+            (
+              SELECT COUNT(*)::bigint
+              FROM "BookingSettlementSnapshot" fee_snapshot
+              WHERE fee_snapshot."monthlyPeriod" = ${period}
+                AND ${adminPaymentFeeEvidenceSqlCondition({
+                  paymentFeePolicyVersionId: Prisma.sql`fee_snapshot."paymentFeePolicyVersionId"`,
+                  paymentFeeRuleSnapshot: Prisma.sql`fee_snapshot."paymentFeeRuleSnapshot"`,
+                  paymentMethod: Prisma.sql`fee_snapshot."paymentMethod"`,
+                  reversalExists: Prisma.sql`EXISTS (
+                    SELECT 1
+                    FROM "BookingSettlementReversalEntry" fee_reversal
+                    WHERE fee_reversal."originalSettlementSnapshotId" = fee_snapshot."id"
+                  )`,
+                  settlementStatus: Prisma.sql`fee_snapshot."settlementStatus"`,
+                  taxStatus: Prisma.sql`fee_snapshot."taxStatus"`,
+                })}
+            ) AS "paymentFeeReviewFlagCount",
+            (
+              SELECT COUNT(*)::bigint
+              FROM "platformVatEvidenceClassified" vat_evidence
+              WHERE vat_evidence."evidenceStatus" IN ('ZERO_UNEXPLAINED', 'EVIDENCE_UNAVAILABLE')
+            ) AS "platformVatReviewFlagCount",
             (SELECT COUNT(*)::bigint FROM "openPartnerBankDeposits") AS "partnerDepositReconciliationOpenCount",
             (SELECT COALESCE(SUM("remainingAmount"), 0)::bigint FROM "openPartnerBankDeposits") AS "partnerDepositReconciliationOpenAmount",
             (SELECT COUNT(*)::bigint FROM "openPayoutBankOutflows") AS "payoutBankOutflowReconciliationOpenCount",
@@ -25085,7 +27503,7 @@ export class AdminService {
         `),
       client.$queryRaw<Array<{ journalReconciliationIssueCount: bigint | number | null }>>(
         Prisma.sql`
-          ${adminAccountingJournalIntegrityCte({ period, review: 'posted' })}
+          ${adminAccountingJournalIntegrityCte({ period, range: 'all', review: 'posted' }, undefined, true)}
           SELECT COUNT(*) FILTER (
             WHERE integrity."integrityState" <> 'CLEAR'
           )::bigint AS "journalReconciliationIssueCount"
@@ -25193,9 +27611,10 @@ export class AdminService {
     }).delta;
     const netRevenueDelta = platformFeeGrossTotal - companyOutputVatTotal - platformFeeNetRevenueTotal;
     const status = closing?.status ?? MonthlyTaxClosingStatus.DRAFT;
-    const periodState = closing?.status ?? (
-      period > adminPartnerWithholdingTaxPeriod(undefined) ? 'FUTURE_PERIOD' : 'NOT_STARTED'
-    );
+    const periodState =
+      period > adminPartnerWithholdingTaxPeriod(undefined)
+        ? 'FUTURE_PERIOD'
+        : (closing?.status ?? 'NOT_STARTED');
     const nextStatus = monthlyTaxClosingNextStatus(status);
     const withholdingRemittanceJournal =
       nextStatus === MonthlyTaxClosingStatus.CLOSED && partnerWithholdingTotal > 0
@@ -25234,12 +27653,12 @@ export class AdminService {
       ),
       partnerWithholdingTotal,
       paymentFeeReviewFlagCount: numberValue(providerCount?.paymentFeeReviewFlagCount),
+      platformVatReviewFlagCount: numberValue(providerCount?.platformVatReviewFlagCount),
       reconciliationDelta,
       withholdingRemittanceJournal,
     });
-    const preflight = periodState === 'FUTURE_PERIOD'
-      ? { blockers: [], nextStatus: null, ready: false }
-      : computedPreflight;
+    const preflight =
+      periodState === 'FUTURE_PERIOD' ? { blockers: [], nextStatus: null, ready: false } : computedPreflight;
     const generatedAt = new Date().toISOString();
     const reversalCount = numberValue(providerCount?.reversalCount);
     const couponSettlementCount = numberValue(couponSummary?.couponSettlementCount);
@@ -25282,6 +27701,7 @@ export class AdminService {
       platformFeeDiscountAmountTotal: numberValue(couponSummary?.platformFeeDiscountAmount),
       couponReviewFlagCount: numberValue(couponSummary?.couponReviewFlagCount),
       paymentFeeReviewFlagCount: numberValue(providerCount?.paymentFeeReviewFlagCount),
+      platformVatReviewFlagCount: numberValue(providerCount?.platformVatReviewFlagCount),
       partnerDepositReconciliationOpenCount: numberValue(
         providerCount?.partnerDepositReconciliationOpenCount,
       ),
@@ -25335,7 +27755,10 @@ export class AdminService {
       if (existing?.status === MonthlyTaxClosingStatus.CLOSED) {
         throw new BadRequestException('Closed monthly periods require reversal entries, not direct edits.');
       }
-      if (existing?.status === MonthlyTaxClosingStatus.DECLARED && status === MonthlyTaxClosingStatus.DECLARED) {
+      if (
+        existing?.status === MonthlyTaxClosingStatus.DECLARED &&
+        status === MonthlyTaxClosingStatus.DECLARED
+      ) {
         throw new ConflictException(
           'Declared monthly tax closing evidence is immutable; advance the period to paid or use a reversal entry.',
         );
@@ -25356,8 +27779,17 @@ export class AdminService {
       }
 
       const summary = await this.monthlyTaxClosingSummary({ period }, tx);
+      if (period > adminPartnerWithholdingTaxPeriod(undefined)) {
+        throw new BadRequestException('Future monthly tax periods cannot change closing status.');
+      }
+      if (status === MonthlyTaxClosingStatus.REVIEWED && !summary.hasActivity) {
+        throw new BadRequestException(
+          'Monthly tax closing review requires settlement, reversal, or reconciliation activity.',
+        );
+      }
       assertMonthlyTaxClosingReconciliationIsBalanced(summary, status);
       assertMonthlyTaxClosingPaymentFeeEvidenceIsReady(summary, status);
+      assertMonthlyTaxClosingPlatformVatEvidenceIsReady(summary, status);
       assertMonthlyTaxClosingPartnerDepositReconciliationIsReady(summary, status);
       assertMonthlyTaxClosingPartnerPayoutReconciliationIsReady(summary, status);
       await assertMonthlyTaxClosingPostedJournalsAreBalanced(tx, period, status);
@@ -25488,7 +27920,7 @@ export class AdminService {
       monthlyPeriod: period,
       settlementStatus: { not: BookingSettlementStatus.REVERSED },
     };
-    const [totals, rateGroups, reversalTotals, reversalRateGroups] = await Promise.all([
+    const [totals, rateGroups, reversalTotals, reversalRateGroups, evidenceGroups] = await Promise.all([
       this.prisma.bookingSettlementSnapshot.aggregate({
         where,
         _count: { _all: true },
@@ -25537,6 +27969,20 @@ export class AdminService {
           ON original."id" = reversal."originalSettlementSnapshotId"
         WHERE reversal."monthlyPeriod" = ${period}
         GROUP BY original."platformVatRateBps"
+      `),
+      this.prisma.$queryRaw<
+        Array<{
+          evidenceStatus: AdminPlatformVatRegisterEvidenceStatus;
+          recordCount: bigint | number;
+        }>
+      >(Prisma.sql`
+        WITH ${adminPlatformVatEvidenceCteSql(period)}
+        SELECT
+          evidence."evidenceStatus",
+          COUNT(*)::bigint AS "recordCount"
+        FROM "platformVatEvidenceClassified" evidence
+        GROUP BY evidence."evidenceStatus"
+        ORDER BY evidence."evidenceStatus" ASC
       `),
     ]);
 
@@ -25594,19 +28040,24 @@ export class AdminService {
         platformFeeNetRevenueTotal: group.platformFeeNetRevenueTotal,
         companyOutputVatTotal: group.companyOutputVatTotal,
       }));
+    const evidenceBreakdown = evidenceGroups.map((group) => ({
+      status: group.evidenceStatus,
+      recordCount: numberValue(group.recordCount),
+    }));
 
     return {
       period,
       currency: 'VND',
       settlementCount: totals._count._all,
       reversalCount: reversalTotals._count._all,
-      manualReviewCount: rateBreakdown
-        .filter((group) => group.category === 'MANUAL_REVIEW')
-        .reduce((count, group) => count + group.settlementCount + group.reversalCount, 0),
+      manualReviewCount: evidenceBreakdown
+        .filter((group) => group.status === 'ZERO_UNEXPLAINED' || group.status === 'EVIDENCE_UNAVAILABLE')
+        .reduce((count, group) => count + group.recordCount, 0),
       platformFeeGrossTotal,
       platformFeeNetRevenueTotal,
       companyOutputVatTotal,
       netRevenueDelta: platformFeeGrossTotal - companyOutputVatTotal - platformFeeNetRevenueTotal,
+      evidenceBreakdown,
       rateBreakdown,
     };
   }
@@ -25719,7 +28170,18 @@ export class AdminService {
       (method) => !configuredMethods.includes(method),
     );
     const remediationReadiness = adminPaymentFeeRemediationReadiness(applicablePolicy, period);
-    const evidenceCondition = adminPaymentFeeEvidenceSqlCondition();
+    const evidenceCondition = adminPaymentFeeEvidenceSqlCondition({
+      paymentFeePolicyVersionId: Prisma.sql`fee_snapshot."paymentFeePolicyVersionId"`,
+      paymentFeeRuleSnapshot: Prisma.sql`fee_snapshot."paymentFeeRuleSnapshot"`,
+      paymentMethod: Prisma.sql`fee_snapshot."paymentMethod"`,
+      reversalExists: Prisma.sql`EXISTS (
+        SELECT 1
+        FROM "BookingSettlementReversalEntry" fee_reversal
+        WHERE fee_reversal."originalSettlementSnapshotId" = fee_snapshot."id"
+      )`,
+      settlementStatus: Prisma.sql`fee_snapshot."settlementStatus"`,
+      taxStatus: Prisma.sql`fee_snapshot."taxStatus"`,
+    });
     const expectedFeeExpression = adminPaymentFeeExpectedAmountSql(applicablePolicy?.rules ?? []);
     const methodGroups = await this.prisma.$queryRaw<AdminPaymentFeeMethodEvidenceGroupRow[]>(Prisma.sql`
       SELECT
@@ -25740,9 +28202,9 @@ export class AdminService {
           SUM(CASE WHEN ${evidenceCondition} THEN ${expectedFeeExpression} ELSE 0 END),
           0
         )::bigint AS "remediationExpectedFeeTotal"
-      FROM "BookingSettlementSnapshot"
-      WHERE "monthlyPeriod" = ${period}
-        AND "settlementStatus" <> 'REVERSED'::"BookingSettlementStatus"
+      FROM "BookingSettlementSnapshot" fee_snapshot
+      WHERE fee_snapshot."monthlyPeriod" = ${period}
+        AND fee_snapshot."settlementStatus" <> 'REVERSED'::"BookingSettlementStatus"
       GROUP BY "paymentMethod"
       ORDER BY "paymentMethod" ASC
     `);
@@ -25892,13 +28354,10 @@ export class AdminService {
     const view = adminFinanceApprovalQueueView(options.view);
     const page = view === 'priority' ? 1 : adminFinanceApprovalPage(options.page);
     const queueSkip = view === 'priority' ? 0 : (page - 1) * take;
-    const refundReview = view === 'refunds'
-      ? adminFinanceApprovalRefundReviewFilter(options.review)
-      : 'ready';
+    const refundReview =
+      view === 'refunds' ? adminFinanceApprovalRefundReviewFilter(options.review) : 'ready';
     const focusedRefundId = view === 'refunds' ? normalizeNullable(options.requestId) : null;
-    const payoutReview = view === 'payouts'
-      ? adminFinanceApprovalPayoutReviewFilter(options.review)
-      : 'all';
+    const payoutReview = view === 'payouts' ? adminFinanceApprovalPayoutReviewFilter(options.review) : 'all';
     const include = (focusedView: Exclude<AdminFinanceApprovalQueueView, 'priority'>) =>
       view === 'priority' || view === focusedView;
     const currentApproverPolicy = actorId
@@ -26013,7 +28472,7 @@ export class AdminService {
       include('withdrawals')
         ? this.prisma.providerWalletWithdrawalRequest.findMany({
             where: { status: { in: withdrawalStatuses } },
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
             ...(queueSkip > 0 ? { skip: queueSkip } : {}),
             take,
             select: {
@@ -26030,7 +28489,11 @@ export class AdminService {
               updatedAt: true,
               bankAccount: {
                 select: {
+                  accountNumberLast4: true,
+                  accountNumberMasked: true,
+                  bankName: true,
                   deletedAt: true,
+                  id: true,
                   status: true,
                 },
               },
@@ -26315,9 +28778,7 @@ export class AdminService {
               actorId,
             ),
             orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-            ...(view === 'refunds' && refundReview !== 'all' && queueSkip > 0
-              ? { skip: queueSkip }
-              : {}),
+            ...(view === 'refunds' && refundReview !== 'all' && queueSkip > 0 ? { skip: queueSkip } : {}),
             take,
             select: adminFinanceApprovalRefundSelect,
           })
@@ -26511,10 +28972,42 @@ export class AdminService {
         ])
       : [[], []];
 
-    const withdrawalApprovalRequests = withdrawalRequestsWithPreflight.map((request) => {
+    const withdrawalApprovalEvidence = withdrawalRequestsWithPreflight.map((request) => {
+      const metadata = recordFromUnknown(request.metadata);
+      const transferEvidence = recordFromUnknown(metadata?.bankTransferEvidence);
+      const requestedByAdminId =
+        typeof transferEvidence?.submittedByAdminId === 'string'
+          ? normalizeNullable(transferEvidence.submittedByAdminId)
+          : null;
+      const requestedAt =
+        typeof transferEvidence?.submittedAt === 'string'
+          ? normalizeNullable(transferEvidence.submittedAt)
+          : null;
+      return { request, requestedAt, requestedByAdminId };
+    });
+    const withdrawalMakersById = await this.adminOperatorIdentitiesById(
+      withdrawalApprovalEvidence.map((evidence) => evidence.requestedByAdminId),
+    );
+    const withdrawalApprovalRequests = withdrawalApprovalEvidence.map(
+      ({ request, requestedAt, requestedByAdminId }) => {
       const preflight = ('preflight' in request ? request.preflight : undefined) as
-        | { canMarkPaid?: boolean }
+          | { canMarkPaid?: boolean; walletBalance?: number }
         | undefined;
+        const bankEvidence = adminMaskedPartnerBankAccount(request.bankAccount);
+        const walletBefore = typeof preflight?.walletBalance === 'number' ? preflight.walletBalance : null;
+        const walletAfter = walletBefore === null ? null : walletBefore - request.amount;
+        const approvalEvidenceMissing = [
+          !requestedByAdminId ? 'Maker' : null,
+          !requestedAt ? 'Requested time' : null,
+          !request.transferRef?.trim() ? 'Transfer reference' : null,
+          !bankEvidence.bankName ? 'Bank name' : null,
+          !bankEvidence.accountLast4 ? 'Account last4' : null,
+          walletBefore === null ? 'Wallet balance' : null,
+        ].filter((label): label is string => Boolean(label));
+        const ready =
+          request.status === ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING &&
+          preflight?.canMarkPaid === true &&
+          approvalEvidenceMissing.length === 0;
       return {
         id: request.id,
         providerProfileId: request.providerProfileId,
@@ -26527,17 +29020,26 @@ export class AdminService {
         status: request.status,
         transferRef: request.transferRef ?? null,
         hasBankAccount: Boolean(request.bankAccountId),
+          bankName: bankEvidence.bankName,
+          bankAccountLast4: bankEvidence.accountLast4,
+          requestedByAdminId,
+          requestedBy: requestedByAdminId ? (withdrawalMakersById.get(requestedByAdminId) ?? null) : null,
+          requestedAt,
+          walletBefore,
+          walletAfter,
+          approvalEvidenceMissing,
         createdAt: request.createdAt,
         updatedAt: request.updatedAt,
         reviewState:
           request.status === ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING
-            ? preflight?.canMarkPaid
+              ? ready
               ? ('READY' as const)
               : ('BLOCKED' as const)
             : ('REVIEW' as const),
         ...(preflight ? { preflight } : {}),
       };
-    });
+      },
+    );
     const refundApprovalRequest = (request: (typeof refundQueueRequests)[number]) => {
       const metadata = jsonObject(request.metadata);
       const requestedByAdminId =
@@ -26564,7 +29066,7 @@ export class AdminService {
         bookingStatus: request.booking?.status ?? 'UNKNOWN',
         mismatchReason:
           review.reviewState === 'STATE_MISMATCH'
-            ? review.blockers.find((blocker) => blocker.code === 'PAYMENT_STATE_MISMATCH')?.message ?? null
+            ? (review.blockers.find((blocker) => blocker.code === 'PAYMENT_STATE_MISMATCH')?.message ?? null)
             : null,
         ...review,
         createdAt: request.createdAt,
@@ -26578,8 +29080,30 @@ export class AdminService {
       : null;
     const allPayoutApprovalRequests = payoutBatchesWithPreflight.map((batch) => {
       const preflight = ('preflight' in batch ? batch.preflight : undefined) as
-        | { canMarkPaid?: boolean }
+        | { approvedBankAccountId?: string | null; canMarkPaid?: boolean; walletBalance?: number }
         | undefined;
+      const approvedBankAccount = batch.providerProfile?.bankAccounts?.find(
+        (account) => account.id === preflight?.approvedBankAccountId,
+      );
+      const bankEvidence = adminMaskedPartnerBankAccount(approvedBankAccount);
+      const earningCount = batch.earnings?.length ?? 0;
+      const withholdingCount = batch.withholdingLogs?.length ?? 0;
+      const withholdingApplied = (batch.earnings ?? []).some(
+        (earning) => (earning.withholdingAmount ?? 0) > 0,
+      );
+      const requestedAt = batch.paidCloseoutRequestedAt ?? null;
+      const walletBefore = typeof preflight?.walletBalance === 'number' ? preflight.walletBalance : null;
+      const walletAfter = walletBefore === null ? null : walletBefore - batch.totalNetAmount;
+      const approvalEvidenceMissing = [
+        !batch.paidCloseoutRequestedByAdminId ? 'Maker' : null,
+        !requestedAt ? 'Requested time' : null,
+        !batch.transferRef?.trim() ? 'Transfer reference' : null,
+        !bankEvidence.bankName ? 'Bank name' : null,
+        !bankEvidence.accountLast4 ? 'Account last4' : null,
+        earningCount === 0 ? 'Linked earnings' : null,
+        withholdingApplied && withholdingCount === 0 ? 'Withholding records' : null,
+        walletBefore === null ? 'Wallet balance' : null,
+      ].filter((label): label is string => Boolean(label));
       return {
         id: batch.id,
         providerProfileId: batch.providerProfileId,
@@ -26591,15 +29115,31 @@ export class AdminService {
         currency: batch.currency,
         status: batch.status,
         transferRef: batch.transferRef ?? null,
+        bankName: bankEvidence.bankName,
+        bankAccountLast4: bankEvidence.accountLast4,
+        earningCount,
+        withholdingCount,
+        withholdingApplied,
+        requestedAt,
+        walletBefore,
+        walletAfter,
+        approvalEvidenceMissing,
         createdAt: batch.createdAt,
         paidCloseoutRequestedByAdminId: batch.paidCloseoutRequestedByAdminId ?? null,
         paidCloseoutRequestedBy: batch.paidCloseoutRequestedBy ?? null,
-        reviewState: preflight?.canMarkPaid ? ('READY' as const) : ('BLOCKED' as const),
+        reviewState:
+          preflight?.canMarkPaid && approvalEvidenceMissing.length === 0
+            ? ('READY' as const)
+            : ('BLOCKED' as const),
         ...(preflight ? { preflight } : {}),
       };
     });
-    const payoutReadyRequests = allPayoutApprovalRequests.filter((request) => request.reviewState === 'READY');
-    const payoutBlockedRequests = allPayoutApprovalRequests.filter((request) => request.reviewState === 'BLOCKED');
+    const payoutReadyRequests = allPayoutApprovalRequests.filter(
+      (request) => request.reviewState === 'READY',
+    );
+    const payoutBlockedRequests = allPayoutApprovalRequests.filter(
+      (request) => request.reviewState === 'BLOCKED',
+    );
     const payoutApprovalRequests = adminFinanceApprovalPayoutPage(
       allPayoutApprovalRequests,
       payoutReview,
@@ -26632,26 +29172,30 @@ export class AdminService {
       partnerBankDepositPendingCount +
       numberValue(refundSummary?.totalCount) +
       payoutBatchPendingCount;
-    const refundPageTotal = refundReview === 'ready'
+    const refundPageTotal =
+      refundReview === 'ready'
       ? numberValue(refundSummary?.readyCount)
       : refundReview === 'blocked'
         ? numberValue(refundSummary?.blockedCount)
         : refundReview === 'state-mismatch'
           ? numberValue(refundSummary?.stateMismatchCount)
           : numberValue(refundSummary?.totalCount);
-    const payoutPageTotal = payoutReview === 'ready'
+    const payoutPageTotal =
+      payoutReview === 'ready'
       ? payoutReadyRequests.length
       : payoutReview === 'blocked'
         ? payoutBlockedRequests.length
         : payoutBatchPendingCount;
-    const walletPageTotal = walletReview === 'ready'
+    const walletPageTotal =
+      walletReview === 'ready'
       ? numberValue(walletAdjustmentSummary?.readyCount)
       : walletReview === 'blocked'
         ? numberValue(walletAdjustmentSummary?.blockedCount)
         : walletReview === 'stale'
           ? numberValue(walletAdjustmentSummary?.staleCount)
           : numberValue(walletAdjustmentSummary?.totalCount);
-    const focusedPageTotal = view === 'refunds'
+    const focusedPageTotal =
+      view === 'refunds'
       ? refundPageTotal
       : view === 'payouts'
         ? payoutPageTotal
@@ -26674,7 +29218,14 @@ export class AdminService {
         hasNext: view !== 'priority' && queueSkip + take < focusedPageTotal,
         hasPrevious: view !== 'priority' && page > 1,
         page,
-        review: view === 'refunds' ? refundReview : view === 'payouts' ? payoutReview : view === 'wallet' ? walletReview : 'all',
+        review:
+          view === 'refunds'
+            ? refundReview
+            : view === 'payouts'
+              ? payoutReview
+              : view === 'wallet'
+                ? walletReview
+                : 'all',
         totalCount: focusedPageTotal,
       },
       currentApprover,
@@ -26843,8 +29394,7 @@ export class AdminService {
       currentBalance: integerValue(request.currentBalance),
       direction: request.direction,
       monthlyPeriod: request.monthlyPeriod,
-      monthlyPeriodStatus:
-        request.monthlyPeriodStatus as ManualWalletAdjustmentPeriodStatus | null,
+      monthlyPeriodStatus: request.monthlyPeriodStatus as ManualWalletAdjustmentPeriodStatus | null,
       ownerType: request.ownerType,
       requestedBeforeBalance: request.requestedBeforeBalance,
       requestedByAdminId: request.requestedByAdminId,
@@ -26890,7 +29440,8 @@ export class AdminService {
     const decisionAllowed = actorCanApprove && request.requestedByAdminId !== actorId;
     const makerCanCancelStale =
       request.requestedByAdminId === actorId &&
-      blockers.some((blocker) =>
+      blockers.some(
+        (blocker) =>
         blocker.code === 'WALLET_BALANCE_CHANGED' ||
         blocker.code === 'POLICY_MIGRATION_REQUIRED' ||
         blocker.code === 'WALLET_ADJUSTMENT_PERIOD_NOT_FOUND' ||
@@ -27415,6 +29966,10 @@ export class AdminService {
     return this.requiredSiteContent().createPreviewToken(pageId);
   }
 
+  retryPublicSiteCacheInvalidation(actorId: string, pageId: string) {
+    return this.requiredSiteContent().retryPublicCacheInvalidation(actorId, pageId);
+  }
+
   createPublicSitePage(actorId: string, input: CreatePublicSitePageDto) {
     return this.requiredSiteContent().createPage(actorId, input);
   }
@@ -27547,13 +30102,10 @@ export class AdminService {
       }),
     ]);
     const publishedOptions = services.filter(
-      (service) =>
-        service.active && service.publicationStatus === ServicePublicationStatus.PUBLISHED,
+      (service) => service.active && service.publicationStatus === ServicePublicationStatus.PUBLISHED,
     );
     const liveOptions = publishedOptions.filter(isPublicServiceCatalogOption);
-    const blockedOptions = publishedOptions.filter(
-      (service) => !isPublicServiceCatalogOption(service),
-    );
+    const blockedOptions = publishedOptions.filter((service) => !isPublicServiceCatalogOption(service));
     const liveGroups = groupServiceCatalogOptions(liveOptions);
     const liveEnViReadyGroupCount = liveGroups.filter((group) => {
       const translations = serviceCatalogNameTranslations(group.nameTranslations);
@@ -27570,10 +30122,7 @@ export class AdminService {
         ).length,
       0,
     );
-    const allPayoutRuleCount = services.reduce(
-      (count, service) => count + service.payoutRules.length,
-      0,
-    );
+    const allPayoutRuleCount = services.reduce((count, service) => count + service.payoutRules.length, 0);
     const duplicateCurrentPayoutCount = liveOptions.filter(
       (service) =>
         service.payoutRules.filter(
@@ -27597,13 +30146,17 @@ export class AdminService {
     ).length;
     const lastPublished = services
       .filter(
-        (service) =>
-          service.publicationStatus === ServicePublicationStatus.PUBLISHED && service.publishedAt,
+        (service) => service.publicationStatus === ServicePublicationStatus.PUBLISHED && service.publishedAt,
       )
-      .sort(
-        (left, right) =>
-          (right.publishedAt?.getTime() ?? 0) - (left.publishedAt?.getTime() ?? 0),
-      )[0];
+      .sort((left, right) => (right.publishedAt?.getTime() ?? 0) - (left.publishedAt?.getTime() ?? 0))[0];
+    const publisherEvidence = lastPublished
+      ? await this.serviceCatalogPublisherEvidence(lastPublished)
+      : {
+          auditTarget: null,
+          evidenceId: null,
+          label: 'No publication recorded',
+          provenance: 'NONE' as const,
+        };
 
     return {
       status:
@@ -27619,10 +30172,61 @@ export class AdminService {
       workingDraftCount,
       lastPublishedAt: lastPublished?.publishedAt ?? null,
       lastPublishedById: lastPublished?.publishedById ?? null,
+      lastPublishedByLabel: publisherEvidence.label,
+      lastPublishedEvidenceId: publisherEvidence.evidenceId,
       lastPublishedGroupKey: lastPublished?.serviceGroupKey ?? null,
-      auditTarget: lastPublished?.serviceGroupKey
-        ? `service_group:${lastPublished.serviceGroupKey}`
-        : null,
+      lastPublishedProvenance: publisherEvidence.provenance,
+      auditTarget: publisherEvidence.auditTarget,
+    };
+  }
+
+  private async serviceCatalogPublisherEvidence(lastPublished: {
+    provenance: ServiceCatalogProvenance;
+    publishedById: string | null;
+    serviceGroupKey: string | null;
+  }) {
+    const target = lastPublished.serviceGroupKey
+      ? `service_group:${lastPublished.serviceGroupKey}`
+      : null;
+    const audit = target
+      ? await this.prisma.adminAuditLog.findFirst({
+          where: { action: 'service_catalog.published', target },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            actor: { select: { email: true, fullName: true, id: true } },
+          },
+        })
+      : null;
+    const auditActorLabel = audit?.actor?.fullName?.trim() || audit?.actor?.email?.trim();
+    if (audit) {
+      return {
+        auditTarget: target,
+        evidenceId: audit.id,
+        label: auditActorLabel || 'Recorded publication · actor unavailable',
+        provenance: auditActorLabel ? ('AUDIT_ACTOR' as const) : ('AUDIT_ACTOR_UNAVAILABLE' as const),
+      };
+    }
+    if (lastPublished.provenance === ServiceCatalogProvenance.SEED) {
+      return {
+        auditTarget: null,
+        evidenceId: null,
+        label: 'Legacy/seed publication · actor not recorded',
+        provenance: 'LEGACY_SEED' as const,
+      };
+    }
+    const actor = lastPublished.publishedById
+      ? await this.prisma.user.findUnique({
+          where: { id: lastPublished.publishedById },
+          select: { email: true, fullName: true, id: true },
+        })
+      : null;
+    const actorLabel = actor?.fullName?.trim() || actor?.email?.trim();
+    return {
+      auditTarget: null,
+      evidenceId: null,
+      label: actorLabel || 'Unknown actor',
+      provenance: actorLabel ? ('USER_LOOKUP' as const) : ('UNKNOWN' as const),
     };
   }
 
@@ -27666,6 +30270,37 @@ export class AdminService {
       ).size,
       openBookingLineCount,
     };
+  }
+
+  async serviceCatalogAuditEvidence(groupKeyInput: string) {
+    const groupKey = groupKeyInput.trim();
+    if (!/^[a-z0-9_]{2,80}$/u.test(groupKey)) {
+      throw new BadRequestException('Invalid service group key');
+    }
+    const [service, draft] = await Promise.all([
+      this.prisma.massageService.findFirst({
+        where: { serviceGroupKey: groupKey },
+        select: { id: true },
+      }),
+      this.prisma.serviceCatalogDraft.findUnique({
+        where: { serviceGroupKey: groupKey },
+        select: { id: true },
+      }),
+    ]);
+    if (!service && !draft) {
+      throw new NotFoundException('Service group not found');
+    }
+    const target = `service_group:${groupKey}`;
+    const items = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: { startsWith: 'service_catalog.' },
+        target,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 25,
+      select: adminAuditLogSelect,
+    });
+    return { groupKey, items, target };
   }
 
   async saveServiceCatalogGroup(
@@ -27748,7 +30383,8 @@ export class AdminService {
         throw new ConflictException({
           code: 'SERVICE_CATALOG_VERSION_CONFLICT',
           currentVersion,
-          message: 'The service catalog changed after this drawer was opened. Reload and review the latest values.',
+          message:
+            'The service catalog changed after this drawer was opened. Reload and review the latest values.',
         });
       }
       const nextVersion = currentVersion + 1;
@@ -27786,16 +30422,8 @@ export class AdminService {
       }
 
       if (command.intent === 'HIDE' || command.intent === 'ARCHIVE') {
-        if (!command.reason || command.reason.length < 12) {
-          throw new BadRequestException({
-            code: 'SERVICE_CATALOG_VALIDATION_FAILED',
-            fieldErrors: { reason: 'Explain the customer impact in at least 12 characters.' },
-          });
-        }
         const publicationStatus =
-          command.intent === 'HIDE'
-            ? ServicePublicationStatus.HIDDEN
-            : ServicePublicationStatus.ARCHIVED;
+          command.intent === 'HIDE' ? ServicePublicationStatus.HIDDEN : ServicePublicationStatus.ARCHIVED;
         await tx.massageService.updateMany({
           where: { serviceGroupKey: command.serviceGroupKey },
           data: {
@@ -27817,10 +30445,7 @@ export class AdminService {
       }
 
       const now = new Date();
-      const name =
-        command.nameTranslations.en ??
-        command.nameTranslations.vi ??
-        command.serviceGroupKey;
+      const name = command.nameTranslations.en ?? command.nameTranslations.vi ?? command.serviceGroupKey;
       for (const row of command.durations) {
         const existingService = existing.find((service) => service.durationMin === row.durationMin);
         if (row.basePrice === undefined) {
@@ -28122,11 +30747,7 @@ export class AdminService {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: adminServicePayoutRuleMutationSelect,
       });
-      const rule = await createServicePayoutRuleVersion(
-        tx,
-        serviceId,
-        data,
-      );
+      const rule = await createServicePayoutRuleVersion(tx, serviceId, data);
       await tx.adminAuditLog.create({
         data: {
           actorId,
@@ -28186,11 +30807,7 @@ export class AdminService {
       });
       const saved = [];
       for (const row of data) {
-        const rule = await createServicePayoutRuleVersion(
-          tx,
-          serviceId,
-          row,
-        );
+        const rule = await createServicePayoutRuleVersion(tx, serviceId, row);
         saved.push(rule);
       }
       await tx.adminAuditLog.create({
@@ -28224,11 +30841,7 @@ export class AdminService {
       });
       assertLegacyServiceCatalogMutationAllowed(existing.service);
       const data = normalizeServicePayoutRuleInput(existing.service, input, false, existing);
-      const rule = await createServicePayoutRuleVersion(
-        tx,
-        existing.serviceId,
-        data,
-      );
+      const rule = await createServicePayoutRuleVersion(tx, existing.serviceId, data);
       await tx.adminAuditLog.create({
         data: {
           actorId,
@@ -28256,9 +30869,7 @@ export class AdminService {
         'Approved Partner deposits must be allocated from the deposit request detail',
       );
     }
-    throw new BadRequestException(
-      'Cash fee debt can only be settled by allocating approved evidence',
-    );
+    throw new BadRequestException('Cash fee debt can only be settled by allocating approved evidence');
   }
 
   async approvePartnerBankDepositFromLegacyRoute(actorId: string, input: RecordPartnerBankDepositDto) {
@@ -29211,7 +31822,8 @@ export class AdminService {
     const status = normalizeManualWalletAdjustmentRequestStatus(options.status);
     const ownerType = normalizeManualWalletAdjustmentOwnerTypeFilter(options.ownerType);
     const ownerId = normalizeNullable(options.ownerId);
-    const requestedStatus = review === 'history' ? null : status ?? ManualWalletAdjustmentRequestStatus.REQUESTED;
+    const requestedStatus =
+      review === 'history' ? null : (status ?? ManualWalletAdjustmentRequestStatus.REQUESTED);
     const filters: Prisma.ManualWalletAdjustmentRequestWhereInput[] = [
       review === 'history'
         ? status
@@ -29303,7 +31915,10 @@ export class AdminService {
       ADMIN_MANUAL_WALLET_ADJUSTMENT_REQUEST_MAX_LIMIT,
     );
     const where = await this.manualWalletAdjustmentRequestWhere(options, review);
-    const requests = await this.prisma.manualWalletAdjustmentRequest.findMany({
+    const requests =
+      review === 'history'
+        ? await this.manualWalletAdjustmentHistoryPage(where, options, skip, take)
+        : await this.prisma.manualWalletAdjustmentRequest.findMany({
       where,
       orderBy:
         normalizeManualWalletAdjustmentRequestSort(options.sort) === 'newest'
@@ -29335,6 +31950,61 @@ export class AdminService {
           : manualWalletAdjustmentRequestHasOperationalBlocker(request.preflight),
     );
     return filtered.slice(skip, skip + take);
+  }
+
+  private async manualWalletAdjustmentHistoryPage(
+    where: Prisma.ManualWalletAdjustmentRequestWhereInput,
+    options: AdminManualWalletAdjustmentRequestQuery,
+    skip: number,
+    take: number,
+  ) {
+    const requestedStatus = normalizeManualWalletAdjustmentRequestStatus(options.status);
+    const statuses = requestedStatus
+      ? [requestedStatus]
+      : [
+          ManualWalletAdjustmentRequestStatus.EXECUTED,
+          ManualWalletAdjustmentRequestStatus.REJECTED,
+          ManualWalletAdjustmentRequestStatus.CANCELLED,
+        ];
+    const newest = normalizeNullable(options.sort)?.toLowerCase() !== 'oldest';
+    const direction = newest ? ('desc' as const) : ('asc' as const);
+    const batches = await Promise.all(
+      statuses.map((status) =>
+        this.prisma.manualWalletAdjustmentRequest.findMany({
+          where: { AND: [where, { status }] },
+          orderBy:
+            status === ManualWalletAdjustmentRequestStatus.EXECUTED
+              ? [{ executedAt: direction }, { id: direction }]
+              : status === ManualWalletAdjustmentRequestStatus.REJECTED
+                ? [{ rejectedAt: direction }, { id: direction }]
+                : [{ updatedAt: direction }, { id: direction }],
+          take: skip + take,
+          include: {
+            attachmentFile: {
+              select: {
+                id: true,
+                contentType: true,
+                originalName: true,
+                reviewStatus: true,
+                sizeBytes: true,
+                uploadStatus: true,
+                uploadedAt: true,
+              },
+            },
+          },
+        }),
+      ),
+    );
+    return batches
+      .flat()
+      .sort((left, right) => {
+        const timeDelta =
+          manualWalletAdjustmentRequestDecisionTime(left) - manualWalletAdjustmentRequestDecisionTime(right);
+        if (timeDelta !== 0) return newest ? -timeDelta : timeDelta;
+        const idDelta = left.id.localeCompare(right.id);
+        return newest ? -idDelta : idDelta;
+      })
+      .slice(skip, skip + take);
   }
 
   async manualWalletAdjustmentRequestWorkspaceSummary(actorId: string) {
@@ -29382,19 +32052,35 @@ export class AdminService {
     requests: readonly ManualWalletAdjustmentRequestWithEvidence[],
     actorId?: string,
   ) {
+    const pendingRequests = requests.filter(
+      (request) => request.status === ManualWalletAdjustmentRequestStatus.REQUESTED,
+    );
     const customerOwnerIds = uniqueStrings(
       requests.filter((request) => request.ownerType === 'CUSTOMER').map((request) => request.ownerId),
     );
     const providerOwnerIds = uniqueStrings(
       requests.filter((request) => request.ownerType === 'PARTNER').map((request) => request.ownerId),
     );
+    const pendingCustomerOwnerIds = uniqueStrings(
+      pendingRequests.filter((request) => request.ownerType === 'CUSTOMER').map((request) => request.ownerId),
+    );
+    const pendingProviderOwnerIds = uniqueStrings(
+      pendingRequests.filter((request) => request.ownerType === 'PARTNER').map((request) => request.ownerId),
+    );
     const periodKeys = uniqueStrings(
-      requests
+      pendingRequests
         .filter((request) => request.monthlyPeriod)
         .map((request) => `${request.monthlyPeriod}:${request.currency}`),
     );
-    const [adminsById, customerOwners, providerOwners, customerBalances, providerBalances, periods, approver] =
-      await Promise.all([
+    const [
+      adminsById,
+      customerOwners,
+      providerOwners,
+      customerBalances,
+      providerBalances,
+      periods,
+      approver,
+    ] = await Promise.all([
       this.adminOperatorIdentitiesById(
         requests.flatMap((request) => [
           request.requestedByAdminId,
@@ -29421,17 +32107,17 @@ export class AdminService {
             },
           })
         : [],
-      customerOwnerIds.length
+      pendingCustomerOwnerIds.length
         ? this.prisma.customerWalletLedgerEntry.groupBy({
             by: ['customerProfileId', 'currency'],
-            where: { customerProfileId: { in: customerOwnerIds } },
+            where: { customerProfileId: { in: pendingCustomerOwnerIds } },
             _sum: { amount: true },
           })
         : [],
-      providerOwnerIds.length
+      pendingProviderOwnerIds.length
         ? this.prisma.providerWalletLedgerEntry.groupBy({
             by: ['providerProfileId', 'currency'],
-            where: { providerProfileId: { in: providerOwnerIds } },
+            where: { providerProfileId: { in: pendingProviderOwnerIds } },
             _sum: { amount: true },
           })
         : [],
@@ -29446,7 +32132,7 @@ export class AdminService {
             select: { currency: true, period: true, status: true },
           })
         : [],
-      actorId
+      actorId && pendingRequests.length
         ? financeApproverPolicySnapshot(this.prisma, actorId, {
             requireAttestation: true,
             requireFinanceRole: true,
@@ -29473,12 +32159,10 @@ export class AdminService {
 
     const balancesByKey = new Map<string, number>([
       ...customerBalances.map(
-        (row) =>
-          [`CUSTOMER:${row.customerProfileId}:${row.currency}`, row._sum.amount ?? 0] as const,
+        (row) => [`CUSTOMER:${row.customerProfileId}:${row.currency}`, row._sum.amount ?? 0] as const,
       ),
       ...providerBalances.map(
-        (row) =>
-          [`PARTNER:${row.providerProfileId}:${row.currency}`, row._sum.amount ?? 0] as const,
+        (row) => [`PARTNER:${row.providerProfileId}:${row.currency}`, row._sum.amount ?? 0] as const,
       ),
     ]);
     const periodStatusByKey = new Map(
@@ -29503,7 +32187,7 @@ export class AdminService {
       requestedBy: adminsById.get(request.requestedByAdminId) ?? null,
       approvedBy: request.approvedByAdminId ? (adminsById.get(request.approvedByAdminId) ?? null) : null,
       rejectedBy: request.rejectedByAdminId ? (adminsById.get(request.rejectedByAdminId) ?? null) : null,
-      ...(actorId
+      ...(actorId && request.status === ManualWalletAdjustmentRequestStatus.REQUESTED
         ? {
             preflight: manualWalletAdjustmentRequestPolicyPreflight({
               actorCanApprove,
@@ -29544,7 +32228,19 @@ export class AdminService {
       where,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take: 10_000,
-      include: { attachmentFile: { select: { id: true, contentType: true, originalName: true, reviewStatus: true, sizeBytes: true, uploadStatus: true, uploadedAt: true } } },
+      include: {
+        attachmentFile: {
+          select: {
+            id: true,
+            contentType: true,
+            originalName: true,
+            reviewStatus: true,
+            sizeBytes: true,
+            uploadStatus: true,
+            uploadedAt: true,
+          },
+        },
+      },
     });
     const enriched = await this.enrichManualWalletAdjustmentRequests(requests, actorId);
     return {
@@ -29698,9 +32394,8 @@ export class AdminService {
     ownerId: string,
     currency: string,
   ) {
-    const lockKey = ownerType === 'PARTNER'
-      ? `${ownerId}:${currency}`
-      : customerWalletBookingLockKey(ownerId);
+    const lockKey =
+      ownerType === 'PARTNER' ? `${ownerId}:${currency}` : customerWalletBookingLockKey(ownerId);
     await tx.$queryRaw(
       Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS "lockResult"`,
     );
@@ -29913,10 +32608,12 @@ export class AdminService {
         type: copy.type,
         title: copy.title,
         body: copy.body,
-        data: toJson(notificationDataWithDeliveryContract(
+        data: toJson(
+          notificationDataWithDeliveryContract(
           notificationDataWithTargetRole(copy.data, Role.CUSTOMER),
           'PUSH_AND_IN_APP',
-        )),
+          ),
+        ),
       },
       select: { id: true },
     });
@@ -29958,6 +32655,33 @@ export class AdminService {
       .filter((row): row is NonNullable<typeof row> => Boolean(row));
 
     return this.withManualWalletAdjustmentApprovers(rows);
+  }
+
+  async manualWalletAdjustment(recordId: string) {
+    const id = normalizeRequiredId(recordId, 'Manual wallet adjustment record id');
+    const [customerRow, providerRow] = await Promise.all([
+      this.prisma.customerWalletLedgerEntry.findFirst({
+        where: { ...manualWalletAdjustmentCustomerWhere(null), id },
+        select: manualWalletAdjustmentCustomerListSelect,
+      }),
+      this.prisma.providerWalletLedgerEntry.findFirst({
+        where: { ...manualWalletAdjustmentProviderWhere(null), id },
+        select: manualWalletAdjustmentProviderListSelect,
+      }),
+    ]);
+    if (customerRow && providerRow) {
+      throw new ConflictException('Manual wallet adjustment record identity is ambiguous');
+    }
+    const row = customerRow
+      ? manualWalletAdjustmentCustomerRow(customerRow)
+      : providerRow
+        ? manualWalletAdjustmentProviderRow(providerRow)
+        : null;
+    if (!row) {
+      throw new NotFoundException('Manual wallet adjustment record was not found');
+    }
+    const [enriched] = await this.withManualWalletAdjustmentApprovers([row]);
+    return enriched;
   }
 
   private async withManualWalletAdjustmentApprovers(rows: ManualWalletAdjustmentLedgerRow[]) {
@@ -30016,7 +32740,7 @@ export class AdminService {
             target: { in: targets },
           },
           orderBy: { createdAt: 'desc' },
-          select: { action: true, actorId: true, metadata: true, target: true },
+          select: { action: true, actorId: true, createdAt: true, metadata: true, target: true },
         })
       : [];
     const evidenceByTarget = new Map<
@@ -30026,6 +32750,7 @@ export class AdminService {
         createdByAdminId?: string;
         lastUpdatedByAdminId?: string;
         paidCloseoutRequestedByAdminId?: string;
+        paidCloseoutRequestedAt?: Date;
         paidByAdminId?: string;
       }
     >();
@@ -30045,6 +32770,7 @@ export class AdminService {
         !evidence.paidCloseoutRequestedByAdminId
       ) {
         evidence.paidCloseoutRequestedByAdminId = log.actorId;
+        evidence.paidCloseoutRequestedAt = log.createdAt;
       }
       if (
         log.actorId &&
@@ -30074,6 +32800,7 @@ export class AdminService {
       const lastUpdatedByAdminId = evidence?.lastUpdatedByAdminId ?? null;
       const paidByAdminId = evidence?.paidByAdminId ?? null;
       const paidCloseoutRequestedByAdminId = evidence?.paidCloseoutRequestedByAdminId ?? null;
+      const paidCloseoutRequestedAt = evidence?.paidCloseoutRequestedAt ?? null;
       const approvalAdminId = evidence?.approvalAdminId ?? null;
       return {
         ...batch,
@@ -30084,6 +32811,7 @@ export class AdminService {
         paidByAdminId,
         paidBy: paidByAdminId ? (adminsById.get(paidByAdminId) ?? null) : null,
         paidCloseoutRequestedByAdminId,
+        paidCloseoutRequestedAt,
         paidCloseoutRequestedBy: paidCloseoutRequestedByAdminId
           ? (adminsById.get(paidCloseoutRequestedByAdminId) ?? null)
           : null,
@@ -30610,11 +33338,7 @@ export class AdminService {
       actorId,
       async (tx, updatedRequest) => {
         if (approvalAdminId) {
-          await assertFinanceActionApprovalAdmin(
-            tx,
-            actorId,
-            'Provider wallet withdrawal paid closeout',
-          );
+          await assertFinanceActionApprovalAdmin(tx, actorId, 'Provider wallet withdrawal paid closeout');
         }
         const withdrawalStatusChange = providerWalletWithdrawalStatusChangeForAudit(
           updatedRequest.metadata ?? null,
@@ -30695,11 +33419,7 @@ export class AdminService {
         attachmentUrl: input.attachmentUrl,
       },
       async (tx, result) => {
-        await assertFinanceActionApprovalAdmin(
-          tx,
-          approvalAdminId,
-          'Provider wallet withdrawal reversal',
-        );
+        await assertFinanceActionApprovalAdmin(tx, approvalAdminId, 'Provider wallet withdrawal reversal');
         await this.writeAudit(
           actorId,
           'provider_wallet.withdrawal_request.reversal',
@@ -30728,10 +33448,7 @@ export class AdminService {
   }
 
   async getPayoutBatch(payoutBatchId: string, actorId: string) {
-    const batches = await this.listPayoutBatches(
-      { q: payoutBatchId, take: '50', view: 'summary' },
-      actorId,
-    );
+    const batches = await this.listPayoutBatches({ q: payoutBatchId, take: '50', view: 'summary' }, actorId);
     const batch = batches.find((item) => item.id === payoutBatchId);
     if (!batch) {
       throw new NotFoundException('Payout batch not found');
@@ -30758,7 +33475,6 @@ export class AdminService {
       pendingWithdrawals,
       paidLedgerEntries,
       journalBatches,
-      separateApprover,
       actorFinanceApprover,
       monthlyClosings,
     ] = await Promise.all([
@@ -30793,11 +33509,6 @@ export class AdminService {
           totalDebit: true,
         },
       }),
-      listFinanceApproverPolicySnapshots(this.prisma, {
-        excludeIds: [actorId],
-        requireAttestation: true,
-        requireFinanceRole: true,
-      }).then((snapshots) => snapshots.find((snapshot) => snapshot.ready) ?? null),
       financeApproverPolicySnapshot(this.prisma, actorId, {
         requireAttestation: true,
         requireFinanceRole: true,
@@ -30825,7 +33536,6 @@ export class AdminService {
     );
     const paidLedgerSourceKeys = new Set(paidLedgerEntries.map((entry) => entry.sourceKey));
     const journalsByRequestId = groupFinanceJournalEvidence(journalBatches);
-    const independentApproverAvailable = Boolean(separateApprover);
     const actorCanApprovePaidCloseout = Boolean(actorFinanceApprover);
     const monthlyClosingStatusByCurrency = new Map(
       monthlyClosings.map((closing) => [closing.currency, closing.status]),
@@ -30870,6 +33580,9 @@ export class AdminService {
       const transferEvidence = recordFromJsonValue(
         (requestMetadata.bankTransferEvidence as Prisma.JsonValue) ?? null,
       );
+      const bankPayoutEvidence = recordFromJsonValue(
+        (requestMetadata.bankPayout as Prisma.JsonValue) ?? null,
+      );
       const transferEvidenceDate = stringFromRecord(transferEvidence, 'bankTransferDate');
       const transferEvidenceAttached = Boolean(
         stringFromRecord(transferEvidence, 'attachmentFileId') ??
@@ -30881,6 +33594,14 @@ export class AdminService {
         (statusChange ? stringFromRecord(statusChange, 'adminId') : null) ??
         request.reviewedByAdminId ??
         null;
+      const paidCloseoutApprovedByAdminId =
+        request.approvalAdminId ?? stringFromRecord(bankPayoutEvidence, 'completedByAdminId') ?? null;
+      const independentApproverAvailable = Boolean(
+        actorFinanceApprover &&
+        (request.status === ProviderWalletWithdrawalRequestStatus.PAID
+          ? paidCloseoutApprovedByAdminId && paidCloseoutApprovedByAdminId !== actorId
+          : paidCloseoutRequestedByAdminId && paidCloseoutRequestedByAdminId !== actorId),
+      );
 
       if (!paidStatusAllowed) {
         blockers.push({
@@ -30947,12 +33668,6 @@ export class AdminService {
           message: 'A paid withdrawal ledger entry already exists while this request is still open.',
         });
       }
-      if (!independentApproverAvailable) {
-        blockers.push({
-          code: 'SEPARATE_FINANCE_APPROVER_REQUIRED',
-          message: 'No different operator with the FINANCE_APPROVER role is available.',
-        });
-      }
       const postingPeriodStatus = monthlyClosingStatusByCurrency.get(request.currency);
       const postingPeriodOpen =
         postingPeriodStatus !== MonthlyTaxClosingStatus.DECLARED &&
@@ -31008,8 +33723,8 @@ export class AdminService {
             !reversalJournalPosted &&
             independentApproverAvailable &&
             postingPeriodOpen,
-          canReject: ADMIN_ACTIVE_WITHDRAWAL_REQUEST_STATUSES.includes(
-            request.status as (typeof ADMIN_ACTIVE_WITHDRAWAL_REQUEST_STATUSES)[number],
+          canReject: ADMIN_REJECTABLE_WITHDRAWAL_REQUEST_STATUSES.includes(
+            request.status as (typeof ADMIN_REJECTABLE_WITHDRAWAL_REQUEST_STATUSES)[number],
           ),
           independentApproverAvailable,
           actorCanApprovePaidCloseout,
@@ -31408,12 +34123,19 @@ export class AdminService {
     input: { providerProfileId: string; transferRef?: string; notes?: string },
   ) {
     const batch = await this.earnings.createProviderPayoutBatch(input, async (tx, createdBatch) => {
-      await this.writeAudit(actorId, 'payout_batch.create', `payout_batch:${createdBatch.id}`, {
+      await this.writeAudit(
+        actorId,
+        'payout_batch.create',
+        `payout_batch:${createdBatch.id}`,
+        {
         providerProfileId: createdBatch.providerProfileId,
         totalNetAmount: createdBatch.totalNetAmount,
         transferRef: createdBatch.transferRef,
         earningCount: createdBatch.earnings.length,
-      }, undefined, tx);
+        },
+        undefined,
+        tx,
+      );
     });
     return batch;
   }
@@ -31526,7 +34248,11 @@ export class AdminService {
         if (approvalAdminId) {
           await assertFinanceActionApprovalAdmin(tx, actorId, 'Payout batch paid closeout');
         }
-        await this.writeAudit(actorId, 'payout_batch.update', `payout_batch:${updatedBatch.id}`, {
+        await this.writeAudit(
+          actorId,
+          'payout_batch.update',
+          `payout_batch:${updatedBatch.id}`,
+          {
           ...(approvalAdminId ? { approvalAdminId } : {}),
           ...(paidCloseoutRequestedByAdminId ? { paidCloseoutRequestedByAdminId } : {}),
           status: updatedBatch.status,
@@ -31543,7 +34269,10 @@ export class AdminService {
                 reason: normalizeAuditReason(input.reason ?? undefined),
               }
             : {}),
-        }, undefined, tx);
+          },
+          undefined,
+          tx,
+        );
       },
     );
     return batch;
@@ -31998,6 +34727,7 @@ export class AdminService {
     options: {
       q?: string | null;
       skip?: number | string | null;
+      sort?: string | null;
       state?: string | null;
       take?: number | string | null;
     } = {},
@@ -32005,7 +34735,7 @@ export class AdminService {
     const where = adminCouponListWhere(options, new Date());
     const coupons = await this.prisma.coupon.findMany({
       ...(where ? { where } : {}),
-      orderBy: { code: 'asc' },
+      orderBy: adminCouponListOrderBy(options.sort),
       skip: adminCouponListSkip(options.skip),
       take: adminCouponListTake(options.take),
     });
@@ -32165,7 +34895,7 @@ export class AdminService {
         code: input.code.trim().toUpperCase(),
         description: input.description,
         discount: toJson(input.discount),
-        active: input.active ?? true,
+        active: false,
         startsAt: startsAt ?? undefined,
         endsAt: endsAt ?? undefined,
       },
@@ -32200,7 +34930,7 @@ export class AdminService {
     for (const input of inputs) {
       const code = input.code.trim().toUpperCase();
       try {
-        const coupon = await this.createCoupon(actorId, { ...input, active: input.active ?? false, code });
+        const coupon = await this.createCoupon(actorId, { ...input, code });
         results.push({ code, couponId: coupon.id, ok: true });
       } catch (error) {
         results.push({ code, ok: false, reason: adminCouponBatchFailureReason(error) });
@@ -32225,6 +34955,12 @@ export class AdminService {
       endsAt?: string | null;
     },
   ) {
+    if (input.active !== undefined) {
+      throw new BadRequestException(
+        'Coupon active state cannot be changed with PATCH /admin/coupons/:id. Use the activate or pause endpoint with an operational reason.',
+      );
+    }
+
     const existing = await this.prisma.coupon.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Coupon not found');
@@ -32246,7 +34982,6 @@ export class AdminService {
       data: {
         description: input.description,
         discount: input.discount === undefined ? undefined : toJson(input.discount),
-        active: input.active,
         startsAt,
         endsAt,
       },
@@ -32258,6 +34993,41 @@ export class AdminService {
       discount: coupon.discount,
       endsAt: coupon.endsAt,
       startsAt: coupon.startsAt,
+    });
+    return coupon;
+  }
+
+  activateCoupon(actorId: string, id: string, reason: string) {
+    return this.setCouponActiveState(actorId, id, true, reason);
+  }
+
+  pauseCoupon(actorId: string, id: string, reason: string) {
+    return this.setCouponActiveState(actorId, id, false, reason);
+  }
+
+  private async setCouponActiveState(actorId: string, id: string, active: boolean, reasonInput: string) {
+    const reason = adminCouponStateChangeReason(reasonInput);
+    const existing = await this.prisma.coupon.findUnique({
+      where: { id },
+      select: { active: true, code: true, id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Coupon not found');
+    }
+    if (existing.active === active) {
+      throw new ConflictException(`Coupon is already ${active ? 'active' : 'paused'}.`);
+    }
+
+    const coupon = await this.prisma.coupon.update({
+      where: { id },
+      data: { active },
+    });
+    await this.writeAudit(actorId, active ? 'coupon.activate' : 'coupon.pause', `coupon:${coupon.id}`, {
+      after: { active },
+      before: { active: existing.active },
+      code: existing.code,
+      couponId: existing.id,
+      reason,
     });
     return coupon;
   }
@@ -32344,8 +35114,18 @@ export class AdminService {
       adminAuditLogCursorWhere(cursor, generatedAt, sort),
     );
 
-    return this.prisma.$transaction(async (tx) => {
-      const [pageRows, totalCount, filteredGroupedCounts, baseGroupedCounts, latest, reviewRequiredCount, previousRows, incidentRows] = await Promise.all([
+    return this.prisma.$transaction(
+      async (tx) => {
+        const [
+          pageRows,
+          totalCount,
+          filteredGroupedCounts,
+          baseGroupedCounts,
+          latest,
+          reviewRequiredCount,
+          previousRows,
+          incidentRows,
+        ] = await Promise.all([
         tx.adminAuditLog.findMany({
           where: pageWhere,
           orderBy: [{ timelineAt: sort }, { id: sort }],
@@ -32376,17 +35156,15 @@ export class AdminService {
                 filteredWhere,
                 adminAuditLogPreviousPageWhere(cursor, generatedAt, sort),
               ),
-              orderBy: [{ timelineAt: sort === 'desc' ? 'asc' : 'desc' }, { id: sort === 'desc' ? 'asc' : 'desc' }],
+                orderBy: [
+                  { timelineAt: sort === 'desc' ? 'asc' : 'desc' },
+                  { id: sort === 'desc' ? 'asc' : 'desc' },
+                ],
               take,
               select: { id: true, timelineAt: true },
             })
           : Promise.resolve([]),
-        tx.adminAuditLog.findMany({
-          where: adminAuditActionableIncidentWhere(options),
-          orderBy: [{ timelineAt: 'desc' }, { id: 'desc' }],
-          take: 500,
-          select: adminAuditLogSelect,
-        }),
+        adminAuditActionableIncidentRows(tx, options),
       ]);
       const hasMore = pageRows.length > take;
       const rows = hasMore ? pageRows.slice(0, take) : pageRows;
@@ -32430,7 +35208,8 @@ export class AdminService {
           severities: auditFacetEntries(facets.severityCounts),
         },
         cursor: {
-          next: hasMore && lastRow
+            next:
+              hasMore && lastRow
             ? adminAuditLogCursorValue(lastRow.timelineAt, lastRow.id, generatedAt)
             : null,
           previous: cursor
@@ -32441,7 +35220,9 @@ export class AdminService {
         },
         take,
       };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
   }
 
   async auditLogEventDetail(actorId: string, id: string, bucket?: string | null) {
@@ -32525,9 +35306,7 @@ export class AdminService {
         select: adminAuditLogSelect,
       });
       const truncated = rows.length > ADMIN_AUDIT_EXPORT_LIMIT;
-      const events = rows
-        .slice(0, ADMIN_AUDIT_EXPORT_LIMIT)
-        .map((row) => adminAuditEventReadModel(row));
+      const events = rows.slice(0, ADMIN_AUDIT_EXPORT_LIMIT).map((row) => adminAuditEventReadModel(row));
       await this.writeAudit(actorId, 'admin.audit_export.succeeded', target, {
         ...filterEvidence,
         format,
@@ -32813,19 +35592,41 @@ export class AdminService {
     return { ok: true, auditLog };
   }
 
-  private async operationsHandoffOpenCaseRows() {
-    const rows = await this.prisma.$queryRaw<AdminOperationsHandoffOpenCaseDbRow[]>(Prisma.sql`
+  private async lockOperationsHandoffOpenCaseRevision(tx: Prisma.TransactionClient) {
+    const lockedRows = await tx.$executeRaw(Prisma.sql`
+      UPDATE "OperationsHandoffOpenCaseRevision"
+      SET "revision" = "revision"
+      WHERE "key" = ${OPERATIONS_HANDOFF_OPEN_CASE_REVISION_KEY}
+    `);
+    if (lockedRows !== 1) {
+      throw new Error('Operations handoff open-case revision is not initialized');
+    }
+
+    const row = await tx.operationsHandoffOpenCaseRevision.findUnique({
+      select: { revision: true },
+      where: { key: OPERATIONS_HANDOFF_OPEN_CASE_REVISION_KEY },
+    });
+    if (!row) {
+      throw new Error('Operations handoff open-case revision is not initialized');
+    }
+    return row.revision;
+  }
+
+  private async operationsHandoffOpenCaseRows(
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
+    const rows = await client.$queryRaw<AdminOperationsHandoffOpenCaseDbRow[]>(Prisma.sql`
       WITH policy_defaults AS (
         SELECT *
         FROM (VALUES
-          (${START_SHIFT_ACTION_SLA_POLICY_KEYS.paymentHolds}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.paymentHolds}::integer),
-          (${START_SHIFT_ACTION_SLA_POLICY_KEYS.matchingDelays}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.matchingDelays}::integer),
-          (${START_SHIFT_ACTION_SLA_POLICY_KEYS.cancellationReview}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cancellationReview}::integer),
-          (${START_SHIFT_ACTION_SLA_POLICY_KEYS.refundReview}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.refundReview}::integer),
-          (${START_SHIFT_ACTION_SLA_POLICY_KEYS.partnerApprovals}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.partnerApprovals}::integer),
-          (${START_SHIFT_ACTION_SLA_POLICY_KEYS.cashReconciliation}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cashReconciliation}::integer),
-          (${START_SHIFT_ACTION_SLA_POLICY_KEYS.notificationFailures}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.notificationFailures}::integer)
-        ) AS policy_default("key", "defaultMinutes")
+          ('payment-holds'::text, ${START_SHIFT_ACTION_SLA_POLICY_KEYS.paymentHolds}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.paymentHolds}::integer),
+          ('matching-delays'::text, ${START_SHIFT_ACTION_SLA_POLICY_KEYS.matchingDelays}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.matchingDelays}::integer),
+          ('cancellation-review'::text, ${START_SHIFT_ACTION_SLA_POLICY_KEYS.cancellationReview}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cancellationReview}::integer),
+          ('refund-review'::text, ${START_SHIFT_ACTION_SLA_POLICY_KEYS.refundReview}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.refundReview}::integer),
+          ('partner-approvals'::text, ${START_SHIFT_ACTION_SLA_POLICY_KEYS.partnerApprovals}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.partnerApprovals}::integer),
+          ('cash-reconciliation'::text, ${START_SHIFT_ACTION_SLA_POLICY_KEYS.cashReconciliation}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cashReconciliation}::integer),
+          ('notification-failures'::text, ${START_SHIFT_ACTION_SLA_POLICY_KEYS.notificationFailures}::text, ${DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.notificationFailures}::integer)
+        ) AS policy_default("key", "policyKey", "defaultMinutes")
       ),
       action_sla AS (
         SELECT
@@ -32840,7 +35641,7 @@ export class AdminService {
             policy_default."defaultMinutes"
           )::integer AS "slaMinutes"
         FROM policy_defaults policy_default
-        LEFT JOIN "OperationalPolicySetting" setting ON setting.key = policy_default."key"
+        LEFT JOIN "OperationalPolicySetting" setting ON setting.key = policy_default."policyKey"
       ),
       ${adminStartShiftOpenCaseCtes(adminProviderProductionDataSql())},
       grouped_action_items AS (
@@ -32955,10 +35756,9 @@ export class AdminService {
   }
 
   async listOperationsHandoffOperators(actorId: string) {
+    const now = new Date();
     const operators = await this.prisma.user.findMany({
-      where: {
-        roles: { hasSome: [Role.ADMIN, Role.MASTER_ADMIN] },
-      },
+      where: operationsHandoffActiveOperatorWhere(now),
       orderBy: [{ fullName: 'asc' }, { email: 'asc' }, { phone: 'asc' }],
       select: {
         adminOperatorPermission: { select: { categories: true } },
@@ -33108,12 +35908,12 @@ export class AdminService {
       throw new BadRequestException('Incoming operator must be a different active Admin operator');
     }
 
+    return this.runOperationsShiftHandoffTransaction(async (tx) => {
+      const openCaseRevision = await this.lockOperationsHandoffOpenCaseRevision(tx);
     const operatorIds = [...new Set([actorId, incomingOperatorId, ownerId])];
-    const operators = await this.prisma.user.findMany({
-      where: {
-        id: { in: operatorIds },
-        roles: { hasSome: [Role.ADMIN, Role.MASTER_ADMIN] },
-      },
+      const now = new Date();
+      const operators = await tx.user.findMany({
+        where: operationsHandoffActiveOperatorWhere(now, operatorIds),
       select: {
         adminOperatorPermission: { select: { categories: true } },
         email: true,
@@ -33128,7 +35928,9 @@ export class AdminService {
     const owner = operatorById.get(ownerId);
     const outgoingOperator = operatorById.get(actorId);
     if (!incomingOperator || !owner || !outgoingOperator) {
-      throw new BadRequestException('Incoming operator and follow-up owner must be active Admin operators');
+        throw new BadRequestException(
+          'Incoming operator and follow-up owner must be active, eligible Admin operators.',
+        );
     }
     if (sameAdminOperatorIdentity(incomingOperator, outgoingOperator)) {
       throw new BadRequestException('Incoming operator must be a different active Admin operator');
@@ -33138,13 +35940,16 @@ export class AdminService {
         ? ADMIN_OPERATOR_PERMISSION_CATEGORIES
         : (operatorRecord.adminOperatorPermission?.categories ?? []);
     const outgoingCategories = operatorCategories(outgoingOperator);
-    const openCases = (await this.operationsHandoffOpenCaseRows()).filter((item) =>
+      const openCases = (await this.operationsHandoffOpenCaseRows(tx)).filter((item) =>
       adminOperatorHasRequiredCategory(
         outgoingCategories,
         ADMIN_OPEN_OPERATIONS_CASE_QUEUES[item.key].category,
       ),
     );
-    if (!Number.isInteger(input.expectedOpenCaseCount) || input.expectedOpenCaseCount !== openCases.length) {
+      if (
+        !Number.isInteger(input.expectedOpenCaseCount) ||
+        input.expectedOpenCaseCount !== openCases.length
+      ) {
       throw new ConflictException('Some selected cases are no longer open. Review the list and try again.');
     }
     const openCaseByRef = new Map<string, (typeof openCases)[number]>(
@@ -33201,6 +36006,7 @@ export class AdminService {
         incomingOperator: operationsShiftHandoffOperatorLabel(incomingOperator),
         incomingOperatorId,
         expectedOpenCaseCount: openCases.length,
+          openCaseRevision: openCaseRevision.toString(),
         followUpOwner: operationsShiftHandoffOperatorLabel(owner),
         followUpOwnerId: ownerId,
         note: note ?? 'No open cases at handoff time',
@@ -33211,9 +36017,32 @@ export class AdminService {
         unresolvedCases: uniqueSelectedCases,
         unresolvedCaseIds,
       },
+        undefined,
+        tx,
     );
 
     return { ok: true, handoffId: auditLog.id };
+    });
+  }
+
+  private async runOperationsShiftHandoffTransaction<T>(
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (error) {
+        const canRetry = operationsHandoffSerializationConflict(error);
+        if (!canRetry) throw error;
+        if (attempt === 2) {
+          throw new ConflictException('Operations queue changed concurrently; review it and try again.');
+        }
+      }
+    }
+
+    throw new ConflictException('Operations queue changed concurrently; review it and try again.');
   }
 
   async acknowledgeOperationsShiftHandoff(actorId: string, handoffId: string) {
@@ -33266,7 +36095,8 @@ export class AdminService {
         ? OPERATIONAL_POLICY_DEFINITIONS.filter((definition) => requestedKeys.includes(definition.key))
         : OPERATIONAL_POLICY_DEFINITIONS;
     const auditTargets = savedSettings.map((setting) => `operational_policy:${setting.key}`);
-    const latestAuditRows = auditTargets.length > 0
+    const latestAuditRows =
+      auditTargets.length > 0
       ? await this.findRecentAuditLogsByTargets(auditTargets, 1, 'operational_policy.update')
       : [];
     const latestAuditByTarget = new Map(
@@ -33282,9 +36112,12 @@ export class AdminService {
       const auditSource = operationalPolicyAuditSource(
         typeof auditMetadata?.source === 'string' ? auditMetadata.source : 'legacy_unknown',
       );
-      const effectiveAt = normalizeNullable(
+      const effectiveAt =
+        normalizeNullable(
         typeof auditMetadata?.effectiveAt === 'string' ? auditMetadata.effectiveAt : null,
-      ) ?? audit?.createdAt.toISOString() ?? null;
+        ) ??
+        audit?.createdAt.toISOString() ??
+        null;
       const savedValue =
         saved && this.isOperationalPolicyValueSupported(definition, saved.value)
           ? saved.value
@@ -33328,8 +36161,11 @@ export class AdminService {
     const pageRows = hasMore ? rows.slice(0, take) : rows;
     const items = pageRows.map((row) => {
       const metadata = recordFromUnknown(row.metadata);
-      const key = normalizeNullable(typeof metadata?.key === 'string' ? metadata.key : null)
-        ?? (row.target.startsWith('operational_policy:') ? row.target.slice('operational_policy:'.length) : row.target);
+      const key =
+        normalizeNullable(typeof metadata?.key === 'string' ? metadata.key : null) ??
+        (row.target.startsWith('operational_policy:')
+          ? row.target.slice('operational_policy:'.length)
+          : row.target);
       const definition = OPERATIONAL_POLICY_DEFINITIONS.find((item) => item.key === key);
       return definition
         ? { ...row, policyDefinition: { category: definition.category, label: definition.label } }
@@ -33337,9 +36173,8 @@ export class AdminService {
     });
     return {
       items,
-      nextCursor: hasMore && pageRows.at(-1)
-        ? operationalPolicyAuditCursorValue(pageRows.at(-1)!.id, source)
-        : null,
+      nextCursor:
+        hasMore && pageRows.at(-1) ? operationalPolicyAuditCursorValue(pageRows.at(-1)!.id, source) : null,
       source,
     };
   }
@@ -33427,8 +36262,10 @@ export class AdminService {
 
       const auditEvent = await tx.adminAuditLog.create({
         data: {
+          ...adminAuditCanonicalCreateData({
           actorId,
           action: 'operational_policy.update',
+          source: auditContext.source,
           target: `operational_policy:${key}`,
           metadata: {
             actorId,
@@ -33445,6 +36282,8 @@ export class AdminService {
               ? { restoration: auditContext.restoration, runId: auditContext.runId }
               : {}),
           },
+          }),
+          ...(auditContext.source === 'automated_smoke' ? { tags: ['test'] } : {}),
         },
       });
 
@@ -33561,6 +36400,42 @@ export class AdminService {
     }
 
     return typeof value === 'string';
+  }
+
+  notificationDeliveryIncidents(options: NotificationDeliveryIncidentListOptions = {}) {
+    return listNotificationDeliveryIncidents(this.prisma, options);
+  }
+
+  notificationDeliveryIncident(id: string) {
+    return notificationDeliveryIncidentDetail(this.prisma, id);
+  }
+
+  openNotificationDeliveryIncident(actorId: string, input: OpenNotificationDeliveryIncidentInput) {
+    return openNotificationDeliveryIncident(this.prisma, actorId, input);
+  }
+
+  assignNotificationDeliveryIncident(
+    actorId: string,
+    incidentId: string,
+    input: AssignNotificationDeliveryIncidentInput,
+  ) {
+    return assignNotificationDeliveryIncident(this.prisma, actorId, incidentId, input);
+  }
+
+  resolveNotificationDeliveryIncident(
+    actorId: string,
+    incidentId: string,
+    input: ResolveNotificationDeliveryIncidentInput,
+  ) {
+    return resolveNotificationDeliveryIncident(this.prisma, actorId, incidentId, input);
+  }
+
+  reopenNotificationDeliveryIncident(
+    actorId: string,
+    incidentId: string,
+    input: ReopenNotificationDeliveryIncidentInput,
+  ) {
+    return reopenNotificationDeliveryIncident(this.prisma, actorId, incidentId, input);
   }
 
   async listNotifications(options: NotificationBoardQueryOptions = {}) {
@@ -33752,7 +36627,8 @@ export class AdminService {
     const now = new Date();
     const deliveryIncidentMode = notificationDeliveryIncidentMode(options.review);
     const includesDeliveryHealth = options.viewMode !== 'records';
-    const deliveryIncidentWindow = includesDeliveryHealth || deliveryIncidentMode
+    const deliveryIncidentWindow =
+      includesDeliveryHealth || deliveryIncidentMode
       ? await this.queueSlaWindow(
           START_SHIFT_ACTION_SLA_POLICY_KEYS.notificationFailures,
           DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.notificationFailures,
@@ -33789,13 +36665,10 @@ export class AdminService {
     };
     const countDataScope = (dataScope: 'production' | 'synthetic' | 'unknown') =>
       this.prisma.notification.count(
-        notificationCountArgs(
-          notificationBoardWhere({ ...dataScopeCountOptions, dataScope }),
-        ),
+        notificationCountArgs(notificationBoardWhere({ ...dataScopeCountOptions, dataScope })),
       );
     if (options.viewMode === 'records') {
-      const [totalCount, productionDataCount, unknownDataCount, syntheticDataCount] =
-        await Promise.all([
+      const [totalCount, productionDataCount, unknownDataCount, syntheticDataCount] = await Promise.all([
           countNotifications(),
           countDataScope('production'),
           countDataScope('unknown'),
@@ -33844,16 +36717,12 @@ export class AdminService {
         staleRouteNotifications: staleRows[0]?.count ?? 0,
       };
     };
-    const deliveryIncidentSummaryForScope = (scope: 'current' | 'historical') => deliveryIncidentWindow
+    const deliveryIncidentSummaryForScope = (scope: 'current' | 'historical') =>
+      deliveryIncidentWindow
       ? this.prisma
-          .$queryRaw<AdminNotificationIncidentSummaryRow[]>(
-            adminNotificationIncidentSummaryQuery(
-              { ...options, scope: 'all' },
-              scope,
-              deliveryIncidentWindow.thresholdMinutes,
-              deliveryIncidentHistoricalCutoffAt,
-            ),
-          )
+            .$queryRaw<
+              AdminNotificationIncidentSummaryRow[]
+            >(adminNotificationIncidentSummaryQuery({ ...options, scope: 'all' }, scope, deliveryIncidentWindow.thresholdMinutes, deliveryIncidentHistoricalCutoffAt))
           .then((rows) => rows[0])
       : Promise.resolve(undefined);
 
@@ -33875,33 +36744,42 @@ export class AdminService {
         countDataScope('unknown'),
         countDataScope('synthetic'),
       ]);
-      const selectedScope = options.scope === 'history' ? 'history' : options.scope === 'all' ? 'all' : 'current';
-      const selectedHealth = selectedScope === 'history'
+      const selectedScope =
+        options.scope === 'history' ? 'history' : options.scope === 'all' ? 'all' : 'current';
+      const selectedHealth =
+        selectedScope === 'history'
         ? historicalHealth
         : selectedScope === 'all'
           ? addNotificationDeliveryHealth(currentHealth, historicalHealth)
           : currentHealth;
-      const selectedIncidentCount = selectedScope === 'history'
-        ? historicalIncidents?.incidentCount ?? 0
+      const selectedIncidentCount =
+        selectedScope === 'history'
+          ? (historicalIncidents?.incidentCount ?? 0)
         : selectedScope === 'all'
           ? (currentIncidents?.incidentCount ?? 0) + (historicalIncidents?.incidentCount ?? 0)
-          : currentIncidents?.incidentCount ?? 0;
+            : (currentIncidents?.incidentCount ?? 0);
       let selectedCount = selectedIncidentCount;
 
       if (deliveryDisposition) {
-        selectedCount = options.failureProvider && options.failureCode
-          ? (await this.prisma.$queryRaw<AdminNotificationRetryCountRow[]>(
+        selectedCount =
+          options.failureProvider && options.failureCode
+            ? ((
+                await this.prisma.$queryRaw<AdminNotificationRetryCountRow[]>(
               adminNotificationDispositionCountQuery(options, deliveryDisposition),
-            ))[0]?.count ?? 0
-          : selectedHealth?.failed ?? 0;
+                )
+              )[0]?.count ?? 0)
+            : (selectedHealth?.failed ?? 0);
       } else if (unattemptedDisposition === 'no-push-path') {
         selectedCount = selectedHealth?.noPushPathRecipientCount ?? 0;
       } else if (unattemptedDisposition) {
-        selectedCount = options.age && options.age !== 'all'
-          ? (await this.prisma.$queryRaw<AdminNotificationUnattemptedCountRow[]>(
+        selectedCount =
+          options.age && options.age !== 'all'
+            ? ((
+                await this.prisma.$queryRaw<AdminNotificationUnattemptedCountRow[]>(
               adminNotificationUnattemptedCountQuery(options, unattemptedDisposition),
-            ))[0]?.count ?? 0
-          : selectedHealth?.deliveryGaps ?? 0;
+                )
+              )[0]?.count ?? 0)
+            : (selectedHealth?.deliveryGaps ?? 0);
       } else if (staleRouteReview) {
         selectedCount = selectedHealth?.staleRouteNotifications ?? 0;
       }
@@ -34164,18 +37042,14 @@ export class AdminService {
       deliveryIncidentWindowMinutes: deliveryIncidentWindow?.thresholdMinutes,
       currentFailed: currentDeliveryHealth?.failed ?? 0,
       currentDeliveryGaps: currentDeliveryHealth?.deliveryGaps ?? 0,
-      currentNoPushPathNotificationCount:
-        currentDeliveryHealth?.noPushPathNotificationCount ?? 0,
+      currentNoPushPathNotificationCount: currentDeliveryHealth?.noPushPathNotificationCount ?? 0,
       currentNoPushPathRecipientCount: currentDeliveryHealth?.noPushPathRecipientCount ?? 0,
       currentStaleRouteNotifications: currentDeliveryHealth?.staleRouteNotifications ?? 0,
       historicalFailed: historicalDeliveryHealth?.failed ?? 0,
       historicalDeliveryGaps: historicalDeliveryHealth?.deliveryGaps ?? 0,
-      historicalNoPushPathNotificationCount:
-        historicalDeliveryHealth?.noPushPathNotificationCount ?? 0,
-      historicalNoPushPathRecipientCount:
-        historicalDeliveryHealth?.noPushPathRecipientCount ?? 0,
-      historicalStaleRouteNotifications:
-        historicalDeliveryHealth?.staleRouteNotifications ?? 0,
+      historicalNoPushPathNotificationCount: historicalDeliveryHealth?.noPushPathNotificationCount ?? 0,
+      historicalNoPushPathRecipientCount: historicalDeliveryHealth?.noPushPathRecipientCount ?? 0,
+      historicalStaleRouteNotifications: historicalDeliveryHealth?.staleRouteNotifications ?? 0,
       historicalDeliveryIncidentCount: historicalDeliveryIncidents?.incidentCount ?? 0,
       historicalDeliveryOldestAt: adminIsoDateTime(historicalDeliveryIncidents?.oldestOpenAt),
       legacySystemIncidentCount: systemIncidentSummary.legacy,
@@ -34310,33 +37184,36 @@ export class AdminService {
       for (const translation of translations) {
         const previous = previousByLocale.get(translation.locale);
         const identicalToEnglish =
-          translation.locale !== 'en'
-          && Boolean(englishSource)
-          && notificationCopyEquals(translation, englishSource!);
-        if (translation.confirmIdenticalTranslation && !(
-          previous?.status === NotificationTranslationStatus.SOURCE_COPIED
-          && translation.reviewedAndReady
-          && identicalToEnglish
-        )) {
+          translation.locale !== 'en' &&
+          Boolean(englishSource) &&
+          notificationCopyEquals(translation, englishSource!);
+        if (
+          translation.confirmIdenticalTranslation &&
+          !(
+            previous?.status === NotificationTranslationStatus.SOURCE_COPIED &&
+            translation.reviewedAndReady &&
+            identicalToEnglish
+          )
+        ) {
           throw new BadRequestException(
             'Identical-language confirmation is only valid when reviewed source-copied text still matches English',
           );
         }
         if (
-          previous?.status === NotificationTranslationStatus.SOURCE_COPIED
-          && translation.reviewedAndReady
-          && identicalToEnglish
-          && !translation.confirmIdenticalTranslation
+          previous?.status === NotificationTranslationStatus.SOURCE_COPIED &&
+          translation.reviewedAndReady &&
+          identicalToEnglish &&
+          !translation.confirmIdenticalTranslation
         ) {
           throw new BadRequestException(
             `This ${translation.locale} copy still matches the English source. Translate it or confirm the identical-language exception before marking it ready.`,
           );
         }
         if (
-          previous?.status === NotificationTranslationStatus.SOURCE_COPIED
-          && translation.reviewedAndReady
-          && identicalToEnglish
-          && translation.confirmIdenticalTranslation
+          previous?.status === NotificationTranslationStatus.SOURCE_COPIED &&
+          translation.reviewedAndReady &&
+          identicalToEnglish &&
+          translation.confirmIdenticalTranslation
         ) {
           identicalOverrideLocales.add(translation.locale);
         }
@@ -34499,7 +37376,7 @@ export class AdminService {
       ...(dateWhere ?? {}),
     };
     return this.prisma.adminPushCampaign.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: adminPushCampaignOperatorSelect,
       skip: normalizeAdminPushCampaignHistorySkip(options.skip),
       take: normalizeAdminPushCampaignHistoryTake(options.take),
@@ -34582,7 +37459,12 @@ export class AdminService {
     return campaign;
   }
 
-  async previewAdminPushCampaign(actorId: string, input: AdminPushCampaignDto) {
+  async previewAdminPushCampaign(
+    actorId: string,
+    sessionId: string | undefined,
+    input: AdminPushCampaignDto,
+  ) {
+    await this.assertAdminPushCampaignRateLimit('preview', actorId, sessionId);
     const targetRole = normalizeAdminPushTargetRole(input.targetRole);
     const targetSegment = normalizeAdminPushTargetSegment(targetRole, input.targetSegment);
     const locale = normalizeAdminPushLocale(targetRole, input.locale);
@@ -34683,7 +37565,11 @@ export class AdminService {
     };
   }
 
-  async confirmAdminPushCampaign(actorId: string, input: AdminPushCampaignConfirmDto) {
+  async confirmAdminPushCampaign(
+    actorId: string,
+    sessionId: string | undefined,
+    input: AdminPushCampaignConfirmDto,
+  ) {
     const replay = await this.prisma.adminPushCampaign.findUnique({
       where: { idempotencyKey: input.idempotencyKey },
       select: { ...adminPushCampaignOperatorSelect, createdById: true },
@@ -34694,6 +37580,8 @@ export class AdminService {
       }
       return { ...adminPushCampaignWithoutActorId(replay), replayed: true };
     }
+
+    await this.assertAdminPushCampaignRateLimit('confirm', actorId, sessionId);
 
     const preview = await this.prisma.adminPushCampaign.findUnique({
       where: { id: input.previewId },
@@ -34826,17 +37714,43 @@ export class AdminService {
     }
   }
 
+  private async assertAdminPushCampaignRateLimit(
+    operation: 'preview' | 'confirm',
+    actorId: string,
+    sessionId: string | undefined,
+  ) {
+    if (!sessionId) throw new UnauthorizedException('Admin Web session is required');
+    const policy = operation === 'preview'
+      ? { max: ADMIN_PUSH_CAMPAIGN_PREVIEW_RATE_LIMIT, windowMs: ADMIN_PUSH_CAMPAIGN_PREVIEW_RATE_WINDOW_MS }
+      : { max: ADMIN_PUSH_CAMPAIGN_CONFIRM_RATE_LIMIT, windowMs: ADMIN_PUSH_CAMPAIGN_CONFIRM_RATE_WINDOW_MS };
+    let bucket: Awaited<ReturnType<RedisStateService['consumeRateLimit']>>;
+    try {
+      bucket = await this.redisState.consumeRateLimit(
+        `admin-push-campaign:${operation}:${actorId}:${sessionId}`,
+        policy.windowMs,
+      );
+    } catch {
+      throw new ServiceUnavailableException('Push Send request protection is temporarily unavailable');
+    }
+    if (bucket.count > policy.max) {
+      throw new HttpException(
+        {
+          code: 'PUSH_SEND_RATE_LIMITED',
+          message: `Too many Push Send ${operation} requests`,
+          retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - Date.now()) / 1000)),
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
   private async resolveAdminPushAudience(input: {
     locale: string;
     targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>;
     targetSegment: string;
     targetUserId?: string;
   }) {
-    const baseWhere = adminPushRecipientBaseWhere(
-      input.targetRole,
-      input.targetUserId,
-      input.targetSegment,
-    );
+    const baseWhere = adminPushRecipientBaseWhere(input.targetRole, input.targetUserId, input.targetSegment);
     const localeFilter = { startsWith: input.locale, mode: Prisma.QueryMode.insensitive } as const;
     const eligibleWhere: Prisma.UserWhereInput = {
       AND: [
@@ -34880,8 +37794,7 @@ export class AdminService {
     const roleMismatchDeviceCount = Math.max(0, allEnabledDeviceCount - roleDeviceCount);
     const localeMismatchDeviceCount = Math.max(0, roleDeviceCount - matchingDeviceCount);
     const excludedUserCount = Math.max(0, candidateUserCount - eligibleUserCount);
-    const excludedDeviceCount =
-      roleMismatchDeviceCount + localeMismatchDeviceCount + cappedDeviceCount;
+    const excludedDeviceCount = roleMismatchDeviceCount + localeMismatchDeviceCount + cappedDeviceCount;
     const take = eligibleUserCount <= ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT ? eligibleUserCount : 5;
     const matchedUsers =
       take > 0
@@ -34907,8 +37820,7 @@ export class AdminService {
             },
           })
         : [];
-    const snapshotUsers =
-      eligibleUserCount <= ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT ? matchedUsers : [];
+    const snapshotUsers = eligibleUserCount <= ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT ? matchedUsers : [];
     const recipients = snapshotUsers.map((user) => ({
       userId: user.id,
       devices: user.pushDevices,
@@ -35155,25 +38067,16 @@ export class AdminService {
     options?: { correctionOfEventId?: string },
     client: PrismaService | Prisma.TransactionClient = this.prisma,
   ) {
-    const classification = classifyAdminAuditAction(action);
-    const targetSeparator = target.indexOf(':');
     const metadataObject = jsonObject((metadata ?? null) as Prisma.JsonValue | null);
     return client.adminAuditLog.create({
-      data: {
+      data: adminAuditCanonicalCreateData({
         actorId,
-        actorKey: actorId,
-        actorType: 'HUMAN',
         action,
-        area: classification.area,
         correctionOfEventId: options?.correctionOfEventId,
-        severity: classification.severity,
-        outcome: classification.outcome,
         target,
         metadata,
-        objectType: targetSeparator > 0 ? target.slice(0, targetSeparator) : 'unknown',
-        objectId: targetSeparator > 0 ? target.slice(targetSeparator + 1) : target,
         source: jsonString(metadataObject.source) ?? 'admin_api',
-      },
+      }),
     });
   }
 
@@ -35207,11 +38110,7 @@ export class AdminService {
     };
   }
 
-  private async findRecentAuditLogsByTargets(
-    targets: string[],
-    perTargetLimit: number,
-    action?: string,
-  ) {
+  private async findRecentAuditLogsByTargets(targets: string[], perTargetLimit: number, action?: string) {
     const rows = await this.prisma.$queryRaw<AdminAuditLogSummaryRow[]>(Prisma.sql`
       WITH ranked_logs AS (
         SELECT
@@ -35815,8 +38714,7 @@ function marketingVietnamDateKey(value: Date) {
     timeZone: 'Asia/Ho_Chi_Minh',
     year: 'numeric',
   }).formatToParts(value);
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((item) => item.type === type)?.value ?? '';
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
@@ -35991,6 +38889,10 @@ function adminCouponListWhere(
     });
   } else if (options.state === 'scheduled') {
     filters.push({ active: true, startsAt: { gt: now } });
+  } else if (options.state === 'paused') {
+    filters.push({ active: false });
+  } else if (options.state === 'expired') {
+    filters.push({ active: true, endsAt: { lt: now } });
   } else if (options.state === 'records') {
     filters.push({
       OR: [{ active: false }, { active: true, endsAt: { lt: now } }],
@@ -35998,6 +38900,15 @@ function adminCouponListWhere(
   }
 
   return filters.length > 0 ? { AND: filters } : undefined;
+}
+
+function adminCouponListOrderBy(
+  value: string | null | undefined,
+): Prisma.CouponOrderByWithRelationInput | Prisma.CouponOrderByWithRelationInput[] {
+  if (value === 'ending-soon') {
+    return [{ endsAt: { nulls: 'last', sort: 'asc' } }, { code: 'asc' }];
+  }
+  return { code: 'asc' };
 }
 
 function adminCouponUsageListTake(value: number | string | null | undefined): number {
@@ -36046,9 +38957,19 @@ function adminCouponInputDate(value: string | null | undefined, label: string): 
 }
 
 function assertAdminCouponDateOrder(startsAt: Date | null | undefined, endsAt: Date | null | undefined) {
-  if (startsAt && endsAt && startsAt.getTime() > endsAt.getTime()) {
+  if (startsAt && endsAt && startsAt.getTime() >= endsAt.getTime()) {
     throw new BadRequestException('Coupon start date must be before the end date.');
   }
+}
+
+function adminCouponStateChangeReason(value: unknown) {
+  const reason = typeof value === 'string' ? value.trim() : '';
+  if (!reason || reason.length > 500) {
+    throw new BadRequestException(
+      'Coupon state change reason is required and must be 500 characters or fewer.',
+    );
+  }
+  return reason;
 }
 
 function adminCouponBatchFailureReason(error: unknown) {
@@ -36061,7 +38982,8 @@ function adminCouponBatchFailureReason(error: unknown) {
     if (response && typeof response === 'object' && 'message' in response) {
       const message = (response as { message?: unknown }).message;
       if (typeof message === 'string') return message;
-      if (Array.isArray(message)) return message.filter((item): item is string => typeof item === 'string').join(' ');
+      if (Array.isArray(message))
+        return message.filter((item): item is string => typeof item === 'string').join(' ');
     }
   }
   return 'Coupon could not be created.';
@@ -36108,11 +39030,15 @@ function adminReferralCashoutListSkip(value: number | string | null | undefined)
   return boundedAdminListSkip(value);
 }
 
-function adminReferralCashoutWhere(options: AdminReferralCashoutQueueQuery): Prisma.ReferralRewardWhereInput {
-  const filters: Prisma.ReferralRewardWhereInput[] = [
-    { status: { in: adminReferralCashoutStatuses(options.status) } },
-    { NOT: referralAdminFixtureRewardWhere },
-  ];
+function adminReferralCashoutWhere(
+  options: AdminReferralCashoutQueueQuery,
+  settings: { readonly includeStatus?: boolean } = {},
+): Prisma.ReferralRewardWhereInput {
+  const filters: Prisma.ReferralRewardWhereInput[] = [{ NOT: referralAdminFixtureRewardWhere }];
+  if (settings.includeStatus !== false) {
+    filters.unshift({ status: { in: adminReferralCashoutStatuses(options.status) } });
+  }
+
   const audience = adminReferralCashoutAudience(options.audience);
   const q = normalizeNullable(options.q);
 
@@ -36676,7 +39602,7 @@ function adminChatArchiveSenderRole(sender: string | null | undefined): Role | u
 }
 
 function adminChatArchiveSearchWhere(q: string | null | undefined): Prisma.ChatMessageWhereInput | undefined {
-  const query = normalizeNullable(q);
+  const query = adminChatArchiveQuery(q);
   if (!query) {
     return undefined;
   }
@@ -36753,13 +39679,17 @@ function adminChatArchiveAuditFilters(query: AdminChatArchiveListQuery) {
     dateFrom: dateRange === 'custom' ? normalizeNullable(query.dateFrom) : null,
     dateRange,
     dateTo: dateRange === 'custom' ? normalizeNullable(query.dateTo) : null,
-    q: normalizeNullable(query.q),
+    q: adminChatArchiveQuery(query.q),
     sender: normalizeNullable(query.sender)?.toLowerCase() ?? null,
     skip: adminChatArchiveListSkip(query.skip),
     sort: adminChatArchiveSortDirection(query.sort) === 'asc' ? 'oldest' : 'newest',
     status: normalizeNullable(query.status)?.toLowerCase() ?? null,
     take: adminChatArchiveListTake(query.take),
   };
+}
+
+function adminChatArchiveQuery(value: string | null | undefined) {
+  return normalizeNullable(value)?.slice(0, ADMIN_CHAT_ARCHIVE_QUERY_MAX_LENGTH) ?? null;
 }
 
 type AdminAuditGroupCount = {
@@ -36841,7 +39771,9 @@ function adminAuditWorkspaceWhere(
   if (objectType) filters.push({ OR: [{ objectType }, { target: { startsWith: `${objectType}:` } }] });
   if (eventId) filters.push({ OR: [{ id: eventId }, { eventId }] });
   if (correlationId) {
-    filters.push({ OR: [{ correlationId }, { metadata: { path: ['correlationId'], equals: correlationId } }] });
+    filters.push({
+      OR: [{ correlationId }, { metadata: { path: ['correlationId'], equals: correlationId } }],
+    });
   }
   if (requestId) {
     filters.push({ OR: [{ requestId }, { metadata: { path: ['requestId'], equals: requestId } }] });
@@ -36868,26 +39800,52 @@ function adminAuditWorkspaceSourceWhere(
   return filters.length === 1 ? filters[0] : { AND: filters };
 }
 
-function adminAuditActionableIncidentWhere(
+async function adminAuditActionableIncidentRows(
+  tx: Prisma.TransactionClient,
   options: AdminAuditLogListOptions,
-): Prisma.AdminAuditLogWhereInput {
-  const filters: Prisma.AdminAuditLogWhereInput[] = [{
-    action: {
-      in: [
+): Promise<AdminAuditRegistryRow[]> {
+  const bucket = normalizeNullable(options.bucket);
+  if (adminAuditLogBucketWhere(bucket) && bucket !== 'System') return [];
+
+  return tx.$queryRaw<AdminAuditRegistryRow[]>(Prisma.sql`
+    WITH latest_times AS MATERIALIZED (
+      SELECT log.target, MAX(log."timelineAt") AS "timelineAt"
+      FROM "AdminAuditLog" log
+      WHERE log.action IN (
         'admin.background_jobs.recurring_incident_opened',
-        'admin.background_jobs.recurring_incident_recovered',
-      ],
-    },
-  }];
-  const bucketWhere = adminAuditLogBucketWhere(normalizeNullable(options.bucket));
-  if (bucketWhere) filters.push(bucketWhere);
-  return filters.length === 1 ? filters[0] : { AND: filters };
+        'admin.background_jobs.recurring_incident_recovered'
+      )
+      GROUP BY log.target
+    ), latest_ids AS MATERIALIZED (
+      SELECT latest.target, latest."timelineAt", MAX(log.id) AS id
+      FROM latest_times latest
+      JOIN "AdminAuditLog" log
+        ON log.target = latest.target
+        AND log."timelineAt" = latest."timelineAt"
+      WHERE log.action IN (
+        'admin.background_jobs.recurring_incident_opened',
+        'admin.background_jobs.recurring_incident_recovered'
+      )
+      GROUP BY latest.target, latest."timelineAt"
+    ), open_incidents AS (
+      SELECT latest.id, latest."timelineAt"
+      FROM latest_ids latest
+      JOIN "AdminAuditLog" state ON state.id = latest.id
+      WHERE state.action = 'admin.background_jobs.recurring_incident_opened'
+      ORDER BY latest."timelineAt" DESC, latest.id DESC
+      LIMIT 10
+    )
+    SELECT log.*
+    FROM open_incidents incident
+    JOIN "AdminAuditLog" log ON log.id = incident.id
+    ORDER BY incident."timelineAt" DESC, incident.id DESC
+  `);
 }
 
 function adminAuditActionableIncidents(
-  rows: readonly Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>[],
+  rows: readonly AdminAuditRegistryRow[],
 ) {
-  const latestByTarget = new Map<string, typeof rows[number]>();
+  const latestByTarget = new Map<string, (typeof rows)[number]>();
   for (const row of rows) {
     if (!latestByTarget.has(row.target)) latestByTarget.set(row.target, row);
   }
@@ -36958,10 +39916,7 @@ function adminAuditExportFormat(value: string | null | undefined): 'csv' | 'json
   return normalized;
 }
 
-function adminAuditExportFilterEvidence(
-  options: AdminAuditLogListOptions,
-  view: AdminAuditSavedView,
-) {
+function adminAuditExportFilterEvidence(options: AdminAuditLogListOptions, view: AdminAuditSavedView) {
   const normalizedFilters = {
     actorType: normalizeNullable(options.actorType),
     area: normalizeNullable(options.area),
@@ -37027,11 +39982,15 @@ function adminAuditSavedViewCount(view: AdminAuditSavedView, groups: readonly Ad
     const severity = canonical ? group.severity : classification.severity;
     const include =
       view === 'ALL' ||
-      (view === 'REVIEW_REQUIRED' && group.action !== 'admin.background_jobs.failure_registered' && (severity === 'REVIEW' || severity === 'CRITICAL')) ||
+      (view === 'REVIEW_REQUIRED' &&
+        group.action !== 'admin.background_jobs.failure_registered' &&
+        (severity === 'REVIEW' || severity === 'CRITICAL')) ||
       (view === 'OPERATOR_CHANGES' && area === 'OPERATOR') ||
       (view === 'MONEY_POLICY' && (area === 'MONEY' || area === 'POLICY')) ||
       (view === 'SECURITY_ACCESS' && area === 'SECURITY') ||
-      (view === 'SYSTEM_INCIDENTS' && area === 'SYSTEM' && (severity === 'REVIEW' || severity === 'CRITICAL'));
+      (view === 'SYSTEM_INCIDENTS' &&
+        area === 'SYSTEM' &&
+        (severity === 'REVIEW' || severity === 'CRITICAL'));
     return include ? total + group._count._all : total;
   }, 0);
 }
@@ -37048,10 +40007,7 @@ function incrementAuditFacet(counts: Record<string, number>, value: string, incr
 
 function adminAuditLogSavedView(value: string | null | undefined): AdminAuditSavedView {
   const normalized = normalizeNullable(value)?.toUpperCase() ?? 'ALL';
-  const supported = new Set<string>([
-    ...ADMIN_AUDIT_SAVED_VIEWS.map((view) => view.key),
-    'LEGACY_TELEMETRY',
-  ]);
+  const supported = new Set<string>([...ADMIN_AUDIT_SAVED_VIEWS.map((view) => view.key), 'LEGACY_TELEMETRY']);
   if (!supported.has(normalized)) throw new BadRequestException('Unsupported audit saved view');
   return normalized as AdminAuditSavedView;
 }
@@ -37077,9 +40033,19 @@ function adminAuditSeverityFilter(value: string | null | undefined): AdminAuditS
 function adminAuditOutcomeFilter(value: string | null | undefined): AdminAuditOutcomeValue | null {
   const normalized = normalizeNullable(value)?.toUpperCase();
   if (!normalized) return null;
-  if (![
-    'SUCCEEDED', 'FAILED', 'DENIED', 'SKIPPED', 'OPENED', 'ACKNOWLEDGED', 'RESOLVED', 'RECORDED', 'UNKNOWN',
-  ].includes(normalized)) {
+  if (
+    ![
+      'SUCCEEDED',
+      'FAILED',
+      'DENIED',
+      'SKIPPED',
+      'OPENED',
+      'ACKNOWLEDGED',
+      'RESOLVED',
+      'RECORDED',
+      'UNKNOWN',
+    ].includes(normalized)
+  ) {
     throw new BadRequestException('Unsupported audit outcome');
   }
   return normalized as AdminAuditOutcomeValue;
@@ -37100,7 +40066,10 @@ function adminAuditLogCursor(value: string | null | undefined): AdminAuditCursor
   const normalized = normalizeNullable(value);
   if (!normalized) return null;
   try {
-    const parsed = JSON.parse(Buffer.from(normalized, 'base64url').toString('utf8')) as Record<string, unknown>;
+    const parsed = JSON.parse(Buffer.from(normalized, 'base64url').toString('utf8')) as Record<
+      string,
+      unknown
+    >;
     const occurredAt = new Date(String(parsed.occurredAt ?? ''));
     const snapshotAt = new Date(String(parsed.snapshotAt ?? ''));
     const id = typeof parsed.id === 'string' ? parsed.id : '';
@@ -37112,11 +40081,13 @@ function adminAuditLogCursor(value: string | null | undefined): AdminAuditCursor
 }
 
 function adminAuditLogCursorValue(occurredAt: Date, id: string, snapshotAt: Date) {
-  return Buffer.from(JSON.stringify({
+  return Buffer.from(
+    JSON.stringify({
     occurredAt: occurredAt.toISOString(),
     id,
     snapshotAt: snapshotAt.toISOString(),
-  })).toString('base64url');
+    }),
+  ).toString('base64url');
 }
 
 function adminAuditLogCursorWhere(
@@ -37128,8 +40099,10 @@ function adminAuditLogCursorWhere(
     AND: [
       { timelineAt: { lte: generatedAt } },
       ...(cursor
-        ? [{
-            OR: sort === 'desc'
+        ? [
+            {
+              OR:
+                sort === 'desc'
               ? [
                   { timelineAt: { lt: cursor.occurredAt } },
                   { timelineAt: cursor.occurredAt, id: { lt: cursor.id } },
@@ -37138,7 +40111,8 @@ function adminAuditLogCursorWhere(
                   { timelineAt: { gt: cursor.occurredAt } },
                   { timelineAt: cursor.occurredAt, id: { gt: cursor.id } },
                 ],
-          }]
+            },
+          ]
         : []),
     ],
   };
@@ -37153,7 +40127,8 @@ function adminAuditLogPreviousPageWhere(
     AND: [
       { timelineAt: { lte: generatedAt } },
       {
-        OR: sort === 'desc'
+        OR:
+          sort === 'desc'
           ? [
               { timelineAt: { gt: cursor.occurredAt } },
               { timelineAt: cursor.occurredAt, id: { gt: cursor.id } },
@@ -37186,7 +40161,10 @@ function operationalPolicyAuditCursor(
       id?: unknown;
       source?: unknown;
     };
-    return typeof parsed.id === 'string' && parsed.id.length > 0 && parsed.id.length <= 200 && parsed.source === source
+    return typeof parsed.id === 'string' &&
+      parsed.id.length > 0 &&
+      parsed.id.length <= 200 &&
+      parsed.source === source
       ? { id: parsed.id, source }
       : null;
   } catch {
@@ -37257,7 +40235,9 @@ function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAudi
 const COMPANY_BANK_ACCOUNT_AUDIT_ACTIONS: string[] = [
   'company_bank_account.approval_requested',
   'company_bank_account.approval_rejected',
+  'company_bank_account.classification',
   'company_bank_account.create',
+  'company_bank_account.statement_verification',
   'company_bank_account.update',
 ];
 
@@ -37918,9 +40898,10 @@ const adminPartnerControlRiskCandidateSelect = {
   currentLocationUpdatedAt: true,
   kyc: { select: { status: true } },
   bankAccounts: {
-    where: { status: ProviderBankAccountStatus.APPROVED },
-    take: 1,
-    select: { id: true },
+    where: {
+      status: { in: [ProviderBankAccountStatus.APPROVED, ProviderBankAccountStatus.PENDING_REVIEW] },
+    },
+    select: { id: true, status: true },
   },
   walletBalanceSummaries: {
     where: { currency: 'VND' },
@@ -38104,8 +41085,7 @@ function adminPartnerControlRisk(candidate: AdminPartnerControlRiskCandidate, re
       candidate.kyc?.status !== ProviderKycStatus.APPROVED
         ? { kind: 'KYC_READINESS', priority: 50, startedAt: null, slaHours: null }
         : null,
-    bank:
-      candidate.bankAccounts.length === 0
+    bank: !candidate.bankAccounts.some((account) => account.status === ProviderBankAccountStatus.APPROVED)
         ? { kind: 'BANK_APPROVAL', priority: 40, startedAt: null, slaHours: null }
         : null,
     location: adminPartnerControlLocationStale(candidate, new Date())
@@ -38125,10 +41105,64 @@ function adminPartnerControlRisk(candidate: AdminPartnerControlRiskCandidate, re
           .sort((left, right) => right.priority - left.priority)[0] ?? null);
   if (!risk) return null;
   const owner = 'owner' in risk ? risk.owner : null;
+  let ownerLabel = owner?.fullName || owner?.phone || 'Responsible queue not set';
+  let nextActionLabel = 'Review blocker evidence';
+  switch (risk.kind) {
+    case 'ACCOUNT_BLOCK':
+      nextActionLabel = 'Review restriction evidence';
+      break;
+    case 'NEGATIVE_WALLET':
+      nextActionLabel = 'Review debt';
+      break;
+    case 'PAYOUT_HOLD':
+      nextActionLabel = 'Review payout hold';
+      break;
+    case 'URGENT_REPORT':
+      ownerLabel = owner?.fullName || owner?.phone || 'Report triage queue';
+      nextActionLabel = 'Operator: review urgent report';
+      break;
+    case 'OVERDUE_REPORT':
+      ownerLabel = owner?.fullName || owner?.phone || 'Report triage queue';
+      nextActionLabel = 'Operator: review overdue report';
+      break;
+    case 'OPEN_REPORT':
+      ownerLabel = owner?.fullName || owner?.phone || 'Report triage queue';
+      nextActionLabel = 'Operator: review report';
+      break;
+    case 'KYC_READINESS':
+      if (candidate.kyc?.status === ProviderKycStatus.PENDING) {
+        ownerLabel = 'KYC review queue';
+        nextActionLabel = 'Operator: review submitted KYC';
+      } else {
+        ownerLabel = 'Partner';
+        nextActionLabel =
+          candidate.kyc?.status === ProviderKycStatus.REJECTED ||
+          candidate.kyc?.status === ProviderKycStatus.BLOCKED
+            ? 'Partner: correct and resubmit KYC'
+            : 'Partner: submit KYC';
+      }
+      break;
+    case 'BANK_APPROVAL':
+      if (
+        candidate.bankAccounts.some((account) => account.status === ProviderBankAccountStatus.PENDING_REVIEW)
+      ) {
+        ownerLabel = 'Bank review queue';
+        nextActionLabel = 'Operator: review pending bank account';
+      } else {
+        ownerLabel = 'Partner';
+        nextActionLabel = 'Partner: submit bank details';
+      }
+      break;
+    case 'STALE_LOCATION':
+      ownerLabel = 'Partner';
+      nextActionLabel = 'Partner: refresh app location';
+      break;
+  }
   return {
     providerId: candidate.id,
     ...risk,
-    ownerLabel: owner?.fullName || owner?.phone || 'Responsible queue not set',
+    nextActionLabel,
+    ownerLabel,
     overdue: Boolean(
       risk.slaHours && risk.startedAt && Date.now() - risk.startedAt.getTime() >= risk.slaHours * 3_600_000,
     ),
@@ -39353,6 +42387,7 @@ type AdminBookingOperationPageQuery = {
   readonly condition: Prisma.Sql;
   readonly factsCte: Prisma.Sql;
   readonly factsTable: Prisma.Sql;
+  readonly includePostMatchCancellationDecisionAt?: boolean;
   readonly occurredAt: Prisma.Sql;
   readonly slaPolicy?: AdminBookingQueueSlaPolicy;
   readonly sla: string | null | undefined;
@@ -39392,6 +42427,7 @@ function adminBookingOperationPageQuery(query: AdminBookingListQuery): AdminBook
       condition: adminPostMatchCancellationOperationCondition(statusGroup),
       factsCte: adminPostMatchCancellationFactsCte(query),
       factsTable: Prisma.sql`"cancellationFacts" facts`,
+      includePostMatchCancellationDecisionAt: statusGroup === 'post-match-cancellations',
       occurredAt: Prisma.sql`facts."decisionAt"`,
       ...(statusGroup === 'post-match-cancellations-review' ||
       statusGroup === 'post-match-cancellations-no-show'
@@ -39727,19 +42763,30 @@ function adminIdentifierProductionDataSql(identifier: Prisma.Sql) {
   return Prisma.sql`
     LOWER(${identifier}) NOT LIKE 'smoke%'
     AND LOWER(${identifier}) NOT LIKE 'seed-%'
+    AND LOWER(${identifier}) NOT LIKE 'audit\\_%' ESCAPE '\\'
   `;
+}
+
+function operationsHandoffSerializationConflict(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === 'P2034' || (error.code === 'P2010' && error.meta?.code === '40001'))
+  );
 }
 
 function adminCustomerProductionDataWhere(): Prisma.CustomerProfileWhereInput {
   return {
     NOT: {
-      OR: ['smoke', 'seed-'].flatMap((prefix) => [
+      OR: ['smoke', 'seed-', 'audit_'].flatMap((prefix) => [
         { id: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
         { userId: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
       ]),
     },
     user: {
       is: {
+        fixtureExpiresAt: null,
+        fixtureKind: null,
+        fixtureRunId: null,
         OR: [
           { fullName: null },
           {
@@ -39759,7 +42806,7 @@ function adminProviderProductionDataWhere(): Prisma.ProviderProfileWhereInput {
   return {
     NOT: {
       OR: [
-        ...['smoke', 'seed-'].flatMap((prefix) => [
+        ...['smoke', 'seed-', 'audit_'].flatMap((prefix) => [
           { id: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
           { userId: { startsWith: prefix, mode: Prisma.QueryMode.insensitive } },
         ]),
@@ -39770,6 +42817,9 @@ function adminProviderProductionDataWhere(): Prisma.ProviderProfileWhereInput {
     },
     user: {
       is: {
+        fixtureExpiresAt: null,
+        fixtureKind: null,
+        fixtureRunId: null,
         OR: [
           { fullName: null },
           {
@@ -39782,6 +42832,12 @@ function adminProviderProductionDataWhere(): Prisma.ProviderProfileWhereInput {
         ],
       },
     },
+  };
+}
+
+function adminVietnamOverviewOperatingProviderWhere(): Prisma.ProviderProfileWhereInput {
+  return {
+    AND: [adminProviderProductionDataWhere(), { blockedAt: null, deletedAt: null }],
   };
 }
 
@@ -39806,7 +42862,10 @@ function adminProfileProductionDataSql(profile: Prisma.Sql) {
       FROM "User" profile_user
       WHERE profile_user.id = ${profile}."userId"
         AND (
-          LOWER(COALESCE(profile_user."fullName", '')) LIKE 'smoke%'
+          profile_user."fixtureKind" IS NOT NULL
+          OR profile_user."fixtureRunId" IS NOT NULL
+          OR profile_user."fixtureExpiresAt" IS NOT NULL
+          OR LOWER(COALESCE(profile_user."fullName", '')) LIKE 'smoke%'
           OR LOWER(COALESCE(profile_user."fullName", '')) LIKE 'demo%'
         )
     )
@@ -40736,6 +43795,7 @@ type AdminFinanceJournalEvidence = {
 };
 
 type AdminProviderWalletWithdrawalPreflightInput = {
+  approvalAdminId?: string | null;
   id: string;
   providerProfileId: string;
   amount: number;
@@ -40912,7 +43972,8 @@ export function manualWalletAdjustmentRequestPolicyPreflight(input: {
   const decisionAllowed = input.actorCanApprove && input.requestedByAdminId !== input.actorId;
   const makerCanCancel =
     input.requestedByAdminId === input.actorId &&
-    blockers.some((blocker) =>
+    blockers.some(
+      (blocker) =>
       blocker.code === 'WALLET_BALANCE_CHANGED' ||
       blocker.code === 'POLICY_MIGRATION_REQUIRED' ||
       blocker.code === 'WALLET_ADJUSTMENT_PERIOD_NOT_FOUND' ||
@@ -40955,7 +44016,11 @@ function adminFinanceApprovalPayoutReviewFilter(
 }
 
 export function adminFinanceApprovalPayoutPage<
-  T extends { readonly createdAt: Date | string; readonly id: string; readonly reviewState: 'BLOCKED' | 'READY' },
+  T extends {
+    readonly createdAt: Date | string;
+    readonly id: string;
+    readonly reviewState: 'BLOCKED' | 'READY';
+  },
 >(
   requests: readonly T[],
   review: AdminFinanceApprovalPayoutReview,
@@ -40963,7 +44028,8 @@ export function adminFinanceApprovalPayoutPage<
   take: number,
   independentPriorityBuckets = false,
 ) {
-  const oldestFirst = (rows: readonly T[]) => [...rows].sort((left, right) => {
+  const oldestFirst = (rows: readonly T[]) =>
+    [...rows].sort((left, right) => {
     const ageOrder = new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
     return ageOrder || left.id.localeCompare(right.id);
   });
@@ -40984,12 +44050,12 @@ function adminFinanceApprovalRefundWhere(
   actorId?: string,
 ): Prisma.RefundWhereInput {
   const requestedByCurrentActor = actorId
-    ? {
+    ? ({
         OR: [
           { metadata: { path: ['requestedByAdminId'], equals: actorId } },
           { metadata: { path: ['actorId'], equals: actorId } },
         ],
-      } satisfies Prisma.RefundWhereInput
+      } satisfies Prisma.RefundWhereInput)
     : null;
   const capturedPayment = { payment: { status: PaymentStatus.CAPTURED } } satisfies Prisma.RefundWhereInput;
 
@@ -41376,8 +44442,7 @@ function assertLegacyServiceCatalogMutationAllowed(service: {
   ) {
     throw new ConflictException({
       code: 'SERVICE_CATALOG_GROUP_COMMAND_REQUIRED',
-      message:
-        'Published operational services can only be changed through the service group command.',
+      message: 'Published operational services can only be changed through the service group command.',
     });
   }
 }
@@ -41566,11 +44631,36 @@ function adminPaymentFeeRemediationPeriodBounds(period: string) {
   };
 }
 
-function adminPaymentFeeEvidenceSqlCondition() {
+function adminPaymentFeeEvidenceSqlCondition(columns: {
+  readonly paymentFeePolicyVersionId: Prisma.Sql;
+  readonly paymentFeeRuleSnapshot: Prisma.Sql;
+  readonly paymentMethod: Prisma.Sql;
+  readonly reversalExists: Prisma.Sql;
+  readonly settlementStatus: Prisma.Sql;
+  readonly taxStatus: Prisma.Sql;
+}) {
+  const {
+    paymentFeePolicyVersionId,
+    paymentFeeRuleSnapshot,
+    paymentMethod,
+    reversalExists,
+    settlementStatus,
+    taxStatus,
+  } = columns;
   return Prisma.sql`
     (
-      "paymentFeePolicyVersionId" IS NULL
-      OR COALESCE("paymentFeeRuleSnapshot" ? 'reason', false)
+      ${paymentMethod} IN (
+        ${PaymentMethod.CARD}::"PaymentMethod",
+        ${PaymentMethod.MOMO}::"PaymentMethod",
+        ${PaymentMethod.VNPAY}::"PaymentMethod"
+      )
+      AND ${settlementStatus} <> ${BookingSettlementStatus.REVERSED}::"BookingSettlementStatus"
+      AND ${taxStatus} <> ${BookingSettlementTaxStatus.REVERSED}::"BookingSettlementTaxStatus"
+      AND NOT (${reversalExists})
+      AND (
+        ${paymentFeePolicyVersionId} IS NULL
+        OR COALESCE(${paymentFeeRuleSnapshot} ? 'reason', false)
+      )
     )
   `;
 }
@@ -41608,6 +44698,34 @@ async function assertFinanceActionApprovalAdmin(
 
 type CompanyBankAccountApproverLookupDb = FinanceApprovalLookupDb;
 
+async function assertCompanyBankAccountMakerAccess(
+  db: CompanyBankAccountApproverLookupDb,
+  actorId: string,
+) {
+  const actor = await db.user.findFirst({
+    where: { id: actorId },
+    select: {
+      roles: true,
+      adminOperatorPermission: { select: { categories: true } },
+    },
+  });
+  const categories = actor?.adminOperatorPermission?.categories ?? [];
+  const allowed =
+    actor?.roles.includes(Role.ADMIN) &&
+    (actor.roles.includes(Role.MASTER_ADMIN) ||
+      (adminOperatorHasRequiredCategory(categories, AdminOperatorPermissionCategory.SYSTEM_POLICY) &&
+        adminOperatorHasRequiredCategory(
+          categories,
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+        )));
+  if (!allowed) {
+    throw new ForbiddenException({
+      code: 'ADMIN_OPERATOR_ACCESS_DENIED',
+      message: 'Company bank account changes require System Policy and Bank Reconciliation access',
+    });
+  }
+}
+
 async function companyBankAccountEligibleApproverCount(
   db: CompanyBankAccountApproverLookupDb,
   actorId: string,
@@ -41615,6 +44733,7 @@ async function companyBankAccountEligibleApproverCount(
   const snapshots = await listFinanceApproverPolicySnapshots(db, {
     excludeIds: [actorId],
     requireAttestation: true,
+    requiredCategory: AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
     requireFinanceRole: true,
   });
   return snapshots.filter((snapshot) => snapshot.ready).length;
@@ -42001,7 +45120,9 @@ function manualWalletAdjustmentRecordConditionsSql(
   }
   const period = normalizeNullable(options.period);
   if (period) {
-    conditions.push(Prisma.sql`ledger."metadata"->>'monthlyPeriod' = ${normalizeManualWalletMonthlyPeriod(period)}`);
+    conditions.push(
+      Prisma.sql`ledger."metadata"->>'monthlyPeriod' = ${normalizeManualWalletMonthlyPeriod(period)}`,
+    );
   }
   if (normalizeBooleanFilter(options.periodMissing)) {
     conditions.push(Prisma.sql`NULLIF(ledger."metadata"->>'monthlyPeriod', '') IS NULL`);
@@ -42155,6 +45276,22 @@ function normalizeManualWalletAdjustmentRequestSort(value?: string | null) {
   return normalizeNullable(value)?.toLowerCase() === 'newest' ? 'newest' : 'oldest';
 }
 
+function manualWalletAdjustmentRequestDecisionTime(request: {
+  readonly createdAt: Date;
+  readonly executedAt: Date | null;
+  readonly rejectedAt: Date | null;
+  readonly status: ManualWalletAdjustmentRequestStatus;
+  readonly updatedAt: Date;
+}) {
+  const decidedAt =
+    request.status === ManualWalletAdjustmentRequestStatus.EXECUTED
+      ? request.executedAt
+      : request.status === ManualWalletAdjustmentRequestStatus.REJECTED
+        ? request.rejectedAt
+        : request.updatedAt;
+  return (decidedAt ?? request.updatedAt ?? request.createdAt).getTime();
+}
+
 function normalizeBooleanFilter(value?: string | null) {
   const normalized = normalizeNullable(value)?.toLowerCase();
   return normalized === '1' || normalized === 'true' || normalized === 'yes';
@@ -42202,9 +45339,7 @@ function manualWalletAdjustmentDateRange(
   if (start && end && start >= end) {
     throw new BadRequestException('Wallet adjustment date range is invalid');
   }
-  return start || end
-    ? { ...(start ? { gte: start } : {}), ...(end ? { lt: end } : {}) }
-    : undefined;
+  return start || end ? { ...(start ? { gte: start } : {}), ...(end ? { lt: end } : {}) } : undefined;
 }
 
 function normalizeManualWalletAdjustmentFilterDate(value: string | null | undefined, label: string) {
@@ -42228,13 +45363,9 @@ const MANUAL_WALLET_ADJUSTMENT_RECREATION_BLOCKERS = new Set([
   'WALLET_BALANCE_CHANGED',
 ]);
 
-function manualWalletAdjustmentRequestNeedsRecreation(
-  preflight?: AdminFinanceApprovalRequestPreflight,
-) {
+function manualWalletAdjustmentRequestNeedsRecreation(preflight?: AdminFinanceApprovalRequestPreflight) {
   return Boolean(
-    preflight?.blockers.some((blocker) =>
-      MANUAL_WALLET_ADJUSTMENT_RECREATION_BLOCKERS.has(blocker.code),
-    ),
+    preflight?.blockers.some((blocker) => MANUAL_WALLET_ADJUSTMENT_RECREATION_BLOCKERS.has(blocker.code)),
   );
 }
 
@@ -42243,8 +45374,7 @@ function manualWalletAdjustmentRequestHasOperationalBlocker(
 ) {
   return Boolean(
     preflight?.blockers.some(
-      (blocker) =>
-        blocker.code !== 'FINANCE_APPROVER_REQUIRED' && blocker.code !== 'MAKER_CANNOT_APPROVE',
+      (blocker) => blocker.code !== 'FINANCE_APPROVER_REQUIRED' && blocker.code !== 'MAKER_CANNOT_APPROVE',
     ),
   );
 }
@@ -42295,6 +45425,7 @@ function manualWalletAdjustmentCustomerRow(row: {
   updatedAt: Date;
 }) {
   const metadata = recordFromJsonValue(row.metadata);
+  const ownerPhone = maskedAdminOwnerPhone(row.customerProfile.user.phone) ?? 'Phone unavailable';
   return manualWalletAdjustmentLedgerRow({
     amount: row.amount,
     createdAt: row.createdAt,
@@ -42303,8 +45434,8 @@ function manualWalletAdjustmentCustomerRow(row: {
     metadata,
     notes: row.notes,
     ownerId: row.customerProfileId,
-    ownerLabel: row.customerProfile.user.fullName ?? row.customerProfile.user.phone,
-    ownerPhone: row.customerProfile.user.phone,
+    ownerLabel: row.customerProfile.user.fullName ?? ownerPhone,
+    ownerPhone,
     ownerType: 'CUSTOMER',
     reference: row.reference,
     sourceKey: row.sourceKey,
@@ -42334,6 +45465,7 @@ function manualWalletAdjustmentProviderRow(row: {
   updatedAt: Date;
 }) {
   const metadata = recordFromJsonValue(row.metadata);
+  const ownerPhone = maskedAdminOwnerPhone(row.providerProfile.user.phone) ?? 'Phone unavailable';
   return manualWalletAdjustmentLedgerRow({
     amount: row.amount,
     createdAt: row.createdAt,
@@ -42342,9 +45474,8 @@ function manualWalletAdjustmentProviderRow(row: {
     metadata,
     notes: row.notes,
     ownerId: row.providerProfileId,
-    ownerLabel:
-      row.providerProfile.displayName ?? row.providerProfile.user.fullName ?? row.providerProfile.user.phone,
-    ownerPhone: row.providerProfile.user.phone,
+    ownerLabel: row.providerProfile.displayName ?? row.providerProfile.user.fullName ?? ownerPhone,
+    ownerPhone,
     ownerType: 'PARTNER',
     reference: row.reference,
     sourceKey: row.sourceKey,
@@ -42613,6 +45744,350 @@ type PartnerOverviewServiceCountRow = {
     _all: number;
   };
 };
+
+export type PartnerOverviewExactSupplyFilters = {
+  readonly city: string | null;
+  readonly onlineStatuses: readonly ProviderStatus[] | null;
+  readonly serviceId: string | null;
+  readonly verificationStatus: VerificationStatus | null;
+  readonly walletStatus: 'negative' | 'positive' | 'zero' | null;
+};
+
+type PartnerOverviewAreaSupplyAggregateRow = {
+  areaCode: VietnamRegionCode;
+  totalPartners: bigint | number | null;
+  onlinePartners: bigint | number | null;
+  locationFreshPartners: bigint | number | null;
+  eligiblePartners: bigint | number | null;
+};
+
+type PartnerOverviewAreaOutcomeAggregateRow = {
+  areaCode: VietnamRegionCode;
+  completedOutcomes: bigint | number | null;
+  nonCompletedOutcomes: bigint | number | null;
+  openRequests: bigint | number | null;
+};
+
+type PartnerOverviewServiceSupplyAggregateRow = {
+  serviceId: string;
+  partnersOffering: bigint | number | null;
+  onlinePartners: bigint | number | null;
+  eligiblePartners: bigint | number | null;
+  avgRating: unknown;
+};
+
+export function partnerOverviewExactProviderScopeSql(filters: PartnerOverviewExactSupplyFilters) {
+  const conditions: Prisma.Sql[] = [Prisma.sql`provider."deletedAt" IS NULL`];
+
+  if (filters.city) {
+    const cityConditions = partnerOverviewCitySearchTerms(filters.city).flatMap((term) => {
+      const contains = `%${term}%`;
+      return [
+        Prisma.sql`provider."city" ILIKE ${contains}`,
+        Prisma.sql`provider."residentialAddress" ILIKE ${contains}`,
+      ];
+    });
+    conditions.push(Prisma.sql`(${Prisma.join(cityConditions, ' OR ')})`);
+  }
+  if (filters.serviceId) {
+    conditions.push(Prisma.sql`EXISTS (
+      SELECT 1
+      FROM "ProviderService" filtered_service
+      WHERE filtered_service."providerProfileId" = provider."id"
+        AND filtered_service."active" = TRUE
+        AND filtered_service."serviceId" = ${filters.serviceId}
+    )`);
+  }
+  if (filters.verificationStatus) {
+    conditions.push(Prisma.sql`EXISTS (
+      SELECT 1
+      FROM "ProviderVerification" filtered_verification
+      WHERE filtered_verification."providerProfileId" = provider."id"
+        AND filtered_verification."status" = ${filters.verificationStatus}::"VerificationStatus"
+    )`);
+  }
+  if (filters.onlineStatuses?.length) {
+    conditions.push(
+      Prisma.sql`provider."status" IN (${Prisma.join(
+        filters.onlineStatuses.map((status) => Prisma.sql`${status}::"ProviderStatus"`),
+      )})`,
+    );
+  }
+  if (filters.walletStatus === 'negative') {
+    conditions.push(Prisma.sql`EXISTS (
+      SELECT 1
+      FROM "ProviderWalletBalanceSummary" filtered_wallet
+      WHERE filtered_wallet."providerProfileId" = provider."id"
+        AND filtered_wallet."currency" = 'VND'
+        AND filtered_wallet."balance" < 0
+    )`);
+  } else if (filters.walletStatus === 'positive') {
+    conditions.push(Prisma.sql`EXISTS (
+      SELECT 1
+      FROM "ProviderWalletBalanceSummary" filtered_wallet
+      WHERE filtered_wallet."providerProfileId" = provider."id"
+        AND filtered_wallet."currency" = 'VND'
+        AND filtered_wallet."balance" > 0
+    )`);
+  } else if (filters.walletStatus === 'zero') {
+    conditions.push(Prisma.sql`(
+      NOT EXISTS (
+        SELECT 1
+        FROM "ProviderWalletBalanceSummary" filtered_wallet
+        WHERE filtered_wallet."providerProfileId" = provider."id"
+          AND filtered_wallet."currency" = 'VND'
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM "ProviderWalletBalanceSummary" filtered_wallet
+        WHERE filtered_wallet."providerProfileId" = provider."id"
+          AND filtered_wallet."currency" = 'VND'
+          AND filtered_wallet."balance" = 0
+      )
+    )`);
+  }
+
+  return Prisma.join(conditions, ' AND ');
+}
+
+function partnerOverviewExactEligibleSql(locationFreshBoundary: Date) {
+  return Prisma.sql`(
+    provider."status" = ${ProviderStatus.ONLINE_AVAILABLE}::"ProviderStatus"
+    AND provider."blockedAt" IS NULL
+    AND provider."currentLat" IS NOT NULL
+    AND provider."currentLng" IS NOT NULL
+    AND provider."currentLocationUpdatedAt" >= ${locationFreshBoundary}
+    AND EXISTS (
+      SELECT 1
+      FROM "ProviderVerification" eligible_verification
+      WHERE eligible_verification."providerProfileId" = provider."id"
+        AND eligible_verification."status" = ${VerificationStatus.APPROVED}::"VerificationStatus"
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM "ProviderKyc" eligible_kyc
+      WHERE eligible_kyc."providerProfileId" = provider."id"
+        AND eligible_kyc."status" = ${ProviderKycStatus.APPROVED}::"ProviderKycStatus"
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM "ProviderService" eligible_provider_service
+      INNER JOIN "MassageService" eligible_service
+        ON eligible_service."id" = eligible_provider_service."serviceId"
+      WHERE eligible_provider_service."providerProfileId" = provider."id"
+        AND eligible_provider_service."active" = TRUE
+        AND eligible_service."active" = TRUE
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM "ProviderWalletBalanceSummary" eligible_wallet
+      WHERE eligible_wallet."providerProfileId" = provider."id"
+        AND eligible_wallet."currency" = 'VND'
+        AND eligible_wallet."balance" < 0
+    )
+  )`;
+}
+
+function partnerOverviewRegionCodeSql(
+  textExpression: Prisma.Sql,
+  latitudeExpression: Prisma.Sql,
+  longitudeExpression: Prisma.Sql,
+) {
+  const containsAny = (terms: readonly string[]) =>
+    Prisma.sql`(${Prisma.join(
+      terms.map((term) => Prisma.sql`${textExpression} ILIKE ${`%${term}%`}`),
+      ' OR ',
+    )})`;
+
+  return Prisma.sql`CASE
+    WHEN ${containsAny(['vung tau', 'vũng tàu', 'tam thang', 'tam thắng'])} THEN 'vung-tau'
+    WHEN ${containsAny([
+      'ho chi minh',
+      'hồ chí minh',
+      'hcm',
+      'sai gon',
+      'sài gòn',
+      'saigon',
+      'district 1',
+      'quan 1',
+      'quận 1',
+      'ben nghe',
+      'bến nghé',
+      'binh thanh',
+      'bình thạnh',
+      'thanh my tay',
+      'an khanh',
+      'phu nhuan',
+      'tan binh',
+      'thu duc',
+    ])} THEN 'hcm'
+    WHEN ${containsAny([
+      'ha noi',
+      'hà nội',
+      'hanoi',
+      'cau giay',
+      'cầu giấy',
+      'dong da',
+      'đống đa',
+      'hoan kiem',
+      'hoàn kiếm',
+      'tay ho',
+      'tây hồ',
+      'ba dinh',
+      'ba đình',
+      'nam tu liem',
+      'bac tu liem',
+      'thanh xuan',
+      'long bien',
+      'hai ba trung',
+    ])} THEN 'hanoi'
+    WHEN ${containsAny(['da nang', 'đà nẵng', 'danang', 'hai chau', 'son tra', 'ngu hanh son'])} THEN 'da-nang'
+    WHEN ${containsAny(['nha trang', 'khanh hoa', 'khánh hòa'])} THEN 'nha-trang'
+    WHEN ${containsAny(['da lat', 'đà lạt', 'dalat', 'lam dong', 'lâm đồng'])} THEN 'da-lat'
+    WHEN ${containsAny(['can tho', 'cần thơ', 'ninh kieu', 'ninh kiều'])} THEN 'can-tho'
+    WHEN ${latitudeExpression} BETWEEN 10.2 AND 10.65 AND ${longitudeExpression} BETWEEN 106.95 AND 107.45 THEN 'vung-tau'
+    WHEN ${latitudeExpression} BETWEEN 10.3 AND 11.2 AND ${longitudeExpression} BETWEEN 106.2 AND 107.3 THEN 'hcm'
+    WHEN ${latitudeExpression} BETWEEN 20.75 AND 21.35 AND ${longitudeExpression} BETWEEN 105.5 AND 106.15 THEN 'hanoi'
+    WHEN ${latitudeExpression} BETWEEN 15.85 AND 16.25 AND ${longitudeExpression} BETWEEN 107.85 AND 108.45 THEN 'da-nang'
+    WHEN ${latitudeExpression} BETWEEN 12.1 AND 12.4 AND ${longitudeExpression} BETWEEN 109.0 AND 109.4 THEN 'nha-trang'
+    WHEN ${latitudeExpression} BETWEEN 11.75 AND 12.1 AND ${longitudeExpression} BETWEEN 108.25 AND 108.65 THEN 'da-lat'
+    WHEN ${latitudeExpression} BETWEEN 9.8 AND 10.2 AND ${longitudeExpression} BETWEEN 105.55 AND 106.1 THEN 'can-tho'
+    ELSE 'other-vietnam'
+  END`;
+}
+
+function partnerOverviewAreaSupplyAggregateSql(
+  filters: PartnerOverviewExactSupplyFilters,
+  locationFreshBoundary: Date,
+) {
+  const regionCode = partnerOverviewRegionCodeSql(
+    Prisma.sql`CONCAT_WS(' ', provider."city", provider."residentialAddress", provider."serviceArea"::text)`,
+    Prisma.sql`provider."currentLat"`,
+    Prisma.sql`provider."currentLng"`,
+  );
+  const providerScope = partnerOverviewExactProviderScopeSql(filters);
+  const eligible = partnerOverviewExactEligibleSql(locationFreshBoundary);
+
+  return Prisma.sql`
+    SELECT
+      ${regionCode}::text AS "areaCode",
+      COUNT(*)::bigint AS "totalPartners",
+      COUNT(*) FILTER (
+        WHERE provider."status" = ${ProviderStatus.ONLINE_AVAILABLE}::"ProviderStatus"
+      )::bigint AS "onlinePartners",
+      COUNT(*) FILTER (
+        WHERE provider."currentLat" IS NOT NULL
+          AND provider."currentLng" IS NOT NULL
+          AND provider."currentLocationUpdatedAt" >= ${locationFreshBoundary}
+      )::bigint AS "locationFreshPartners",
+      COUNT(*) FILTER (WHERE ${eligible})::bigint AS "eligiblePartners"
+    FROM "ProviderProfile" provider
+    WHERE ${providerScope}
+    GROUP BY 1
+  `;
+}
+
+function partnerOverviewServiceSupplyAggregateSql(
+  filters: PartnerOverviewExactSupplyFilters,
+  locationFreshBoundary: Date,
+) {
+  const providerScope = partnerOverviewExactProviderScopeSql(filters);
+  const eligible = partnerOverviewExactEligibleSql(locationFreshBoundary);
+
+  return Prisma.sql`
+    SELECT
+      provider_service."serviceId" AS "serviceId",
+      COUNT(*)::bigint AS "partnersOffering",
+      COUNT(*) FILTER (
+        WHERE provider."status" = ${ProviderStatus.ONLINE_AVAILABLE}::"ProviderStatus"
+      )::bigint AS "onlinePartners",
+      COUNT(*) FILTER (WHERE ${eligible})::bigint AS "eligiblePartners",
+      AVG(provider."ratingAvg") FILTER (WHERE provider."ratingAvg" > 0) AS "avgRating"
+    FROM "ProviderService" provider_service
+    INNER JOIN "ProviderProfile" provider
+      ON provider."id" = provider_service."providerProfileId"
+    INNER JOIN "MassageService" service
+      ON service."id" = provider_service."serviceId"
+    WHERE provider_service."active" = TRUE
+      AND service."active" = TRUE
+      AND ${providerScope}
+    GROUP BY provider_service."serviceId"
+  `;
+}
+
+function partnerOverviewAreaOutcomeAggregateSql(
+  filters: PartnerOverviewExactSupplyFilters,
+  window: AdminPartnerOverviewWindow,
+) {
+  const providerScope = partnerOverviewExactProviderScopeSql(filters);
+  const serviceScope = filters.serviceId
+    ? Prisma.sql`AND EXISTS (
+        SELECT 1
+        FROM "BookingService" filtered_booking_service
+        WHERE filtered_booking_service."bookingId" = booking."id"
+          AND filtered_booking_service."serviceId" = ${filters.serviceId}
+      )`
+    : Prisma.empty;
+  const bookingRegion = partnerOverviewRegionCodeSql(
+    Prisma.sql`CONCAT_WS(
+      ' ',
+      booking."address"::text,
+      address_snapshot."address"::text,
+      address_snapshot."addressText"
+    )`,
+    Prisma.sql`COALESCE(address_snapshot."latitude", booking."lat")`,
+    Prisma.sql`COALESCE(address_snapshot."longitude", booking."lng")`,
+  );
+
+  return Prisma.sql`
+    WITH scoped_events AS (
+      SELECT
+        ${bookingRegion}::text AS "areaCode",
+        'open'::text AS "eventKind"
+      FROM "Booking" booking
+      INNER JOIN "ProviderProfile" provider
+        ON provider."id" = booking."preferredProviderId"
+      LEFT JOIN "BookingAddressSnapshot" address_snapshot
+        ON address_snapshot."bookingId" = booking."id"
+      WHERE booking."status" = ${BookingStatus.OPEN_MATCHING}::"BookingStatus"
+        AND booking."createdAt" >= ${window.startAt}
+        AND booking."createdAt" < ${window.endAt}
+        AND ${providerScope}
+        ${serviceScope}
+
+      UNION ALL
+
+      SELECT
+        ${bookingRegion}::text AS "areaCode",
+        CASE
+          WHEN booking."status" = ${BookingStatus.COMPLETED}::"BookingStatus" THEN 'completed'
+          ELSE 'non-completed'
+        END AS "eventKind"
+      FROM "Booking" booking
+      INNER JOIN "ProviderProfile" provider
+        ON provider."id" = booking."selectedProviderId"
+      LEFT JOIN "BookingAddressSnapshot" address_snapshot
+        ON address_snapshot."bookingId" = booking."id"
+      WHERE booking."status" IN (
+          ${BookingStatus.COMPLETED}::"BookingStatus",
+          ${BookingStatus.CANCELLED}::"BookingStatus",
+          ${BookingStatus.NO_SHOW}::"BookingStatus",
+          ${BookingStatus.EXPIRED}::"BookingStatus"
+        )
+        AND booking."closedAt" >= ${window.startAt}
+        AND booking."closedAt" < ${window.endAt}
+        AND ${providerScope}
+        ${serviceScope}
+    )
+    SELECT
+      "areaCode",
+      COUNT(*) FILTER (WHERE "eventKind" = 'open')::bigint AS "openRequests",
+      COUNT(*) FILTER (WHERE "eventKind" = 'completed')::bigint AS "completedOutcomes",
+      COUNT(*) FILTER (WHERE "eventKind" = 'non-completed')::bigint AS "nonCompletedOutcomes"
+    FROM scoped_events
+    GROUP BY "areaCode"
+  `;
+}
 
 type PartnerOverviewProfileViewRow = {
   providerProfileId: string;
@@ -42970,6 +46445,7 @@ function adminPartnerReadyNowWhere(locationFreshBoundary: Date): Prisma.Provider
     kyc: { is: { status: ProviderKycStatus.APPROVED } },
     status: ProviderStatus.ONLINE_AVAILABLE,
     blockedAt: null,
+    deletedAt: null,
     services: { some: { active: true, service: { active: true } } },
     walletBalanceSummaries: {
       none: { balance: { lt: 0 }, currency: 'VND' },
@@ -43196,19 +46672,17 @@ function partnerOverviewFavoriteMap(rows: readonly PartnerOverviewFavoriteRow[])
 }
 
 function partnerOverviewAreaRows(options: {
+  readonly areaOutcomeRows: readonly PartnerOverviewAreaOutcomeAggregateRow[];
+  readonly areaSupplyRows: readonly PartnerOverviewAreaSupplyAggregateRow[];
   readonly averageResponseSecondsByRegion: ReadonlyMap<VietnamRegionCode, number>;
-  readonly eligibleProviderIds: ReadonlySet<string>;
-  readonly nonCompletedBookingRows: readonly PartnerOverviewBookingPointRow[];
-  readonly locationFreshBoundary: Date;
-  readonly openBookingRows: readonly PartnerOverviewBookingPointRow[];
-  readonly providerRows: readonly PartnerOverviewProviderRow[];
 }) {
+  const completedOutcomesByRegion = new Map<VietnamRegionCode, number>();
   const rows = new Map(
     VIETNAM_REGION_BUCKETS.map((bucket) => [
       bucket.code,
       {
         areaCode: bucket.code,
-        area: bucket.name,
+        area: bucket.code === 'other-vietnam' ? 'Unknown / unmapped' : bucket.name,
         totalPartners: 0,
         onlinePartners: 0,
         locationFreshPartners: 0,
@@ -43223,40 +46697,32 @@ function partnerOverviewAreaRows(options: {
     ]),
   );
 
-  for (const provider of options.providerRows) {
-    const code = vietnamRegionCodeFromValues(
-      [provider.city, provider.residentialAddress, provider.serviceArea],
-      { latitude: provider.currentLat, longitude: provider.currentLng },
-    );
-    const row = rows.get(code);
+  for (const supply of options.areaSupplyRows) {
+    const row = rows.get(supply.areaCode);
     if (!row) continue;
-
-    row.totalPartners += 1;
-    if (provider.status === ProviderStatus.ONLINE_AVAILABLE) row.onlinePartners += 1;
-    if (
-      provider.currentLocationUpdatedAt &&
-      provider.currentLocationUpdatedAt.getTime() >= options.locationFreshBoundary.getTime()
-    ) {
-      row.locationFreshPartners += 1;
-    }
-    if (options.eligibleProviderIds.has(provider.id)) row.eligiblePartners += 1;
+    row.totalPartners = numberValue(supply.totalPartners);
+    row.onlinePartners = numberValue(supply.onlinePartners);
+    row.locationFreshPartners = numberValue(supply.locationFreshPartners);
+    row.eligiblePartners = numberValue(supply.eligiblePartners);
   }
 
-  for (const booking of options.openBookingRows) {
-    const row = rows.get(partnerOverviewBookingRegion(booking));
-    if (row) row.openRequests += 1;
-  }
-  for (const booking of options.nonCompletedBookingRows) {
-    const row = rows.get(partnerOverviewBookingRegion(booking));
-    if (row) row.nonCompletedOutcomes += 1;
+  for (const outcome of options.areaOutcomeRows) {
+    const row = rows.get(outcome.areaCode);
+    if (!row) continue;
+    row.openRequests = numberValue(outcome.openRequests);
+    row.nonCompletedOutcomes = numberValue(outcome.nonCompletedOutcomes);
+    completedOutcomesByRegion.set(outcome.areaCode, numberValue(outcome.completedOutcomes));
   }
 
   return VIETNAM_REGION_BUCKETS.map((bucket) => {
     const row = rows.get(bucket.code);
     if (!row) throw new Error(`Missing Vietnam region bucket ${bucket.code}`);
-    const demandSignalCount = row.openRequests + row.nonCompletedOutcomes;
-    row.nonCompletedShare =
-      demandSignalCount > 0 ? percentageValue(row.nonCompletedOutcomes, demandSignalCount) : null;
+    const outcomeCount = (completedOutcomesByRegion.get(bucket.code) ?? 0) + row.nonCompletedOutcomes;
+    const demandSignalCount = row.openRequests + outcomeCount;
+    row.nonCompletedShare = partnerOverviewOutcomeShare(
+      row.nonCompletedOutcomes,
+      completedOutcomesByRegion.get(bucket.code) ?? 0,
+    );
     row.averageResponseSeconds = options.averageResponseSecondsByRegion.get(bucket.code) ?? null;
     if (row.totalPartners === 0) {
       row.status = 'No Partner data';
@@ -43286,43 +46752,36 @@ function partnerOverviewAreaRows(options: {
 
 function partnerOverviewServiceRows(options: {
   readonly completedServiceRows: readonly PartnerOverviewServiceCountRow[];
-  readonly eligibleProviderIds: ReadonlySet<string>;
+  readonly nonCompletedServiceRows: readonly PartnerOverviewServiceCountRow[];
   readonly openServiceRows: readonly PartnerOverviewServiceCountRow[];
-  readonly providerRows: readonly PartnerOverviewProviderRow[];
   readonly serviceCatalogRows: readonly PartnerOverviewServiceRow[];
+  readonly serviceSupplyRows: readonly PartnerOverviewServiceSupplyAggregateRow[];
 }) {
   const openMap = new Map(options.openServiceRows.map((row) => [row.serviceId, row._count._all]));
   const completedMap = new Map(options.completedServiceRows.map((row) => [row.serviceId, row._count._all]));
+  const nonCompletedMap = new Map(
+    options.nonCompletedServiceRows.map((row) => [row.serviceId, row._count._all]),
+  );
+  const supplyMap = new Map(options.serviceSupplyRows.map((row) => [row.serviceId, row]));
 
   return options.serviceCatalogRows.map((service) => {
-    const providers = options.providerRows.filter((provider) =>
-      provider.services.some((providerService) => providerService.serviceId === service.id),
-    );
-    const onlinePartners = providers.filter(
-      (provider) => provider.status === ProviderStatus.ONLINE_AVAILABLE,
-    ).length;
-    const eligiblePartners = providers.filter((provider) =>
-      options.eligibleProviderIds.has(provider.id),
-    ).length;
+    const supply = supplyMap.get(service.id);
+    const partnersOffering = numberValue(supply?.partnersOffering);
+    const onlinePartners = numberValue(supply?.onlinePartners);
+    const eligiblePartners = numberValue(supply?.eligiblePartners);
     const openRequests = openMap.get(service.id) ?? 0;
     const completedBookings = completedMap.get(service.id) ?? 0;
-    const demandCount = openRequests + completedBookings;
-    const completionRate = demandCount > 0 ? percentageValue(completedBookings, demandCount) : null;
-    const avgRatingSource = providers.filter((provider) => numberValue(provider.ratingAvg) > 0);
-    const avgRating =
-      avgRatingSource.length > 0
-        ? Number(
-            (
-              avgRatingSource.reduce((sum, provider) => sum + numberValue(provider.ratingAvg), 0) /
-              avgRatingSource.length
-            ).toFixed(2),
-          )
-        : null;
+    const nonCompletedBookings = nonCompletedMap.get(service.id) ?? 0;
+    const outcomeCount = completedBookings + nonCompletedBookings;
+    const demandSignalCount = openRequests + outcomeCount;
+    const completionRate = partnerOverviewOutcomeShare(completedBookings, nonCompletedBookings);
+    const avgRatingValue = numberValue(supply?.avgRating);
+    const avgRating = avgRatingValue > 0 ? Number(avgRatingValue.toFixed(2)) : null;
 
     return {
       serviceId: service.id,
       serviceName: `${service.name} · ${service.durationMin} min`,
-      partnersOffering: providers.length,
+      partnersOffering,
       onlinePartners,
       eligiblePartners,
       openRequests,
@@ -43330,17 +46789,17 @@ function partnerOverviewServiceRows(options: {
       completionRate,
       avgRating,
       status:
-        providers.length === 0
+        partnersOffering === 0
           ? 'No Partner data'
           : eligiblePartners === 0
             ? 'Not bookable'
-            : demandCount === 0
+            : demandSignalCount === 0
               ? 'No demand data'
               : onlinePartners === 0
                 ? 'Offline supply'
                 : 'Healthy',
       riskLevel:
-        providers.length === 0
+        partnersOffering === 0
           ? 'medium'
           : eligiblePartners === 0
             ? openRequests > 0
@@ -43351,6 +46810,11 @@ function partnerOverviewServiceRows(options: {
               : 'low',
     };
   });
+}
+
+export function partnerOverviewOutcomeShare(primaryOutcomes: number, otherOutcomes: number) {
+  const totalOutcomes = Math.max(0, primaryOutcomes) + Math.max(0, otherOutcomes);
+  return totalOutcomes > 0 ? percentageValue(Math.max(0, primaryOutcomes), totalOutcomes) : null;
 }
 
 function partnerOverviewProviderFact(options: {
@@ -44925,6 +48389,7 @@ function adminReferralRewardQueueSummaries(
 
 function adminReferralCashoutQueueSummary(
   totalCount: number,
+  totalAmount: number,
   rewardGroups: readonly {
     readonly status: ReferralRewardStatus;
     readonly _count: { readonly _all: number };
@@ -44953,7 +48418,7 @@ function adminReferralCashoutQueueSummary(
 
   return {
     totalCount,
-    totalAmount: statusSummaries.reduce((total, summary) => total + summary.amount, 0),
+    totalAmount,
     statusSummaries,
   };
 }
@@ -45096,7 +48561,8 @@ function normalizeAdminOperatorPermissionCategories(
     return [...ADMIN_OPERATOR_PERMISSION_CATEGORIES];
   }
 
-  const categories = requestedCategories === undefined
+  const categories =
+    requestedCategories === undefined
     ? defaultAdminOperatorPermissionCategories(roles)
     : requestedCategories.flatMap(adminOperatorEffectivePermissionLeaves);
   const allowed = new Set<AdminOperatorPermissionCategory>(ADMIN_OPERATOR_PERMISSION_CATEGORIES);
@@ -45172,9 +48638,11 @@ type FinanceApproverAccessRequestRecord = Prisma.FinanceApproverAccessRequestGet
 }>;
 
 async function assertFinanceApproverGovernanceAccess(
-  db: Pick<Prisma.TransactionClient, 'adminAuditLog' | 'user'>,
+  db: Pick<Prisma.TransactionClient, 'adminAuditLog' | 'user'> &
+    Partial<Pick<Prisma.TransactionClient, 'adminWebSession'>>,
   actorId: string,
   purpose: 'read' | 'request' | 'decision' | 'history',
+  sessionId?: string,
 ) {
   const actor = await db.user.findUnique({
     where: { id: actorId },
@@ -45193,24 +48661,21 @@ async function assertFinanceApproverGovernanceAccess(
     requiredCategory: AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
     requireFinanceRole: false,
   });
-  const governedFinanceGrant = actor.financeApproverRequestsTargeted[0]?.requestedEnabled === true;
-  const decisionPolicy = actor.roles.includes(Role.FINANCE_APPROVER) && !governedFinanceGrant
-    ? await financeApproverPolicySnapshot(db, actorId, {
-        requireAttestation: true,
-        requiredCategory: AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
-        requireFinanceRole: true,
-      })
-    : evaluateFinanceApproverPolicy(actor, {
-        requireAttestation: true,
-        requiredCategory: AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
-        requireFinanceRole: true,
-      });
+  const decisionPolicy = await financeApproverPolicySnapshot(db, actorId, {
+    requireAttestation: true,
+    requiredCategory: AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+    requireFinanceRole: true,
+    ...(purpose === 'decision'
+      ? {
+          requireRecentReauthentication: true,
+          requireSessionMfa: true,
+          sessionId,
+        }
+      : {}),
+  });
   const canRead =
     isMaster ||
-    adminOperatorHasRequiredCategory(
-      categories,
-      AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
-    );
+    adminOperatorHasRequiredCategory(categories, AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS);
   if (purpose === 'read' && !canRead) {
     throw new ForbiddenException({
       code: 'FINANCE_APPROVER_GOVERNANCE_READ_FORBIDDEN',
@@ -45345,7 +48810,10 @@ function financeApproverGovernanceOperatorView(
       message: 'A different verified role governor is required.',
     });
   }
-  if (enabled && context.verifiedRealApproverCount - (context.policy.ready ? 1 : 0) < FINANCE_APPROVER_REQUIRED_REAL_COUNT) {
+  if (
+    enabled &&
+    context.verifiedRealApproverCount - (context.policy.ready ? 1 : 0) < FINANCE_APPROVER_REQUIRED_REAL_COUNT
+  ) {
     blockers.push({
       code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED',
       message: 'Removing this approver would leave finance operations without an independent backup.',
@@ -45367,6 +48835,7 @@ function financeApproverGovernanceOperatorView(
     fixtureExpiresAt: operator.fixtureExpiresAt,
     financeAccess: enabled ? 'APPROVER' : 'PREPARATION_ONLY',
     attestationStatus: context.policy.attestationStatus,
+    legacyAttestationLifecycle: context.policy.legacyAttestationLifecycle,
     credentialState: context.policy.credentialState,
     mfaVerified: context.policy.mfaVerified,
     permissionVersion: context.policy.permissionVersion,
@@ -45391,7 +48860,11 @@ function financeApproverAccessRequestWhere(
 ): Prisma.FinanceApproverAccessRequestWhereInput {
   const filters: Prisma.FinanceApproverAccessRequestWhereInput[] = [];
   const status = normalizeNullable(options.status)?.toUpperCase();
-  if (status && status !== 'ALL' && Object.values(FinanceApproverAccessRequestStatus).includes(status as FinanceApproverAccessRequestStatus)) {
+  if (
+    status &&
+    status !== 'ALL' &&
+    Object.values(FinanceApproverAccessRequestStatus).includes(status as FinanceApproverAccessRequestStatus)
+  ) {
     filters.push({ status: status as FinanceApproverAccessRequestStatus });
   } else if (defaultPending) {
     filters.push({ status: FinanceApproverAccessRequestStatus.PENDING });
@@ -45447,19 +48920,49 @@ function financeApproverAccessRequestWhere(
     filters.push({
       OR: [
         { id: { contains: q, mode: 'insensitive' } },
-        { targetUser: { is: { OR: [
+        {
+          targetUser: {
+            is: {
+              OR: [
           { id: { contains: q, mode: 'insensitive' } },
           { email: { contains: q, mode: 'insensitive' } },
           { fullName: { contains: q, mode: 'insensitive' } },
-        ] } } },
-        { requestedByAdmin: { is: { OR: [
+              ],
+            },
+          },
+        },
+        {
+          requestedByAdmin: {
+            is: {
+              OR: [
           { email: { contains: q, mode: 'insensitive' } },
           { fullName: { contains: q, mode: 'insensitive' } },
-        ] } } },
+              ],
+            },
+          },
+        },
       ],
     });
   }
   return filters.length === 0 ? {} : filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function financeApproverHistorySourceMatches(
+  source: FinanceApproverPolicySnapshot['source'],
+  filter: string,
+) {
+  if (filter === 'all') return true;
+  if (filter === 'test') return source === 'FIXTURE' || source === 'TEST_RUN';
+  if (filter === 'unknown') return source === 'UNKNOWN';
+  return source === 'PRODUCTION' || source === 'LEGACY';
+}
+
+function financeApproverLegacyHistoryDate(metadata: Prisma.JsonValue | null, key: string) {
+  const record = recordFromUnknown(metadata);
+  const value = record?.[key];
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 function financeApproverGovernanceTake(value: string | number | null | undefined) {
@@ -45545,13 +49048,46 @@ function financeApproverLegacyAttestationEvidence(event: {
   const sourceReference = typeof metadata.sourceReference === 'string' ? metadata.sourceReference : '';
   const reason = typeof metadata.reason === 'string' ? metadata.reason : '';
   const attestorId = typeof metadata.attestorId === 'string' ? metadata.attestorId : event.actorId;
+  const targetSnapshot = recordFromUnknown(metadata.targetSnapshot) as Prisma.InputJsonObject | null;
+  const snapshotPermission = recordFromUnknown(targetSnapshot?.permission);
+  const permissionVersion =
+    typeof metadata.permissionVersion === 'number'
+      ? metadata.permissionVersion
+      : typeof snapshotPermission?.version === 'number'
+        ? snapshotPermission.version
+        : null;
   if (!targetUserId || !sourceReference || !reason || !attestorId) {
     throw new ConflictException({
       code: 'ATTESTATION_EVIDENCE_INVALID',
       message: 'The attestation request is missing owner, reason, or source evidence',
     });
   }
-  return { attestorId, reason, sourceReference, targetUserId };
+  return { attestorId, permissionVersion, reason, sourceReference, targetSnapshot, targetUserId };
+}
+
+function financeApproverLegacySnapshotHash(value: unknown) {
+  return createHash('sha256')
+    .update(JSON.stringify(financeApproverCanonicalJson(value)))
+    .digest('hex');
+}
+
+function financeApproverCanonicalJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(financeApproverCanonicalJson);
+  const record = recordFromUnknown(value);
+  if (!record) return value;
+  return Object.fromEntries(
+    Object.keys(record)
+      .sort()
+      .map((key) => [key, financeApproverCanonicalJson(record[key])]),
+  );
+}
+
+function financeApproverLegacyLifecycleEventId(
+  action: 'revoked' | 'superseded',
+  ...eventIds: string[]
+) {
+  const digest = createHash('sha256').update(eventIds.join(':')).digest('hex');
+  return `finance-approver-attestation-${action}-${digest}`;
 }
 
 function financeApproverLegacyAttestationReceipt(
@@ -45571,11 +49107,16 @@ function financeApproverLegacyAttestationReceipt(
       auditHref: `/audit-log?range=all&sort=oldest&targetPrefix=${encodeURIComponent(event.target)}`,
       eventId: event.id,
       replayed,
-      status: event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION
+      status:
+        event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION
         ? 'PENDING'
         : event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION
           ? 'APPROVED'
-          : 'REJECTED',
+          : event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION
+            ? 'REVOKED'
+            : event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION
+              ? 'SUPERSEDED'
+              : 'REJECTED',
       target: event.target,
     },
   };
@@ -45628,7 +49169,12 @@ function financeApproverAccessRequestReceipt(request: FinanceApproverAccessReque
 
 function financeApproverAuditMetadata(
   request: FinanceApproverAccessRequestRecord,
-  input: { actorId: string; reason: string; nextRoles?: Role[] },
+  input: {
+    actorId: string;
+    reason: string;
+    nextRoles?: Role[];
+    targetReview?: Prisma.InputJsonObject;
+  },
 ): Prisma.InputJsonObject {
   return {
     requestId: request.id,
@@ -45636,7 +49182,9 @@ function financeApproverAuditMetadata(
     requestedEnabled: request.requestedEnabled,
     previousEnabled: request.previousEnabled,
     previousRoles: request.previousRoles,
+    expectedPermissionVersion: request.expectedPermissionVersion,
     ...(input.nextRoles ? { nextRoles: input.nextRoles } : {}),
+    ...(input.targetReview ? { targetReview: input.targetReview } : {}),
     requestedByAdminId: request.requestedByAdminId,
     decidedByAdminId: request.decidedByAdminId,
     actorId: input.actorId,
@@ -45665,15 +49213,7 @@ async function assertAdminOperatorProtectedRoleRemoval(
   nextRoles: readonly Role[],
 ) {
   if (previousRoles.includes(Role.MASTER_ADMIN) && !nextRoles.includes(Role.MASTER_ADMIN)) {
-    const remainingMasterAdmins = await db.user.count({
-      where: {
-        id: { not: targetUserId },
-        roles: { has: Role.MASTER_ADMIN },
-      },
-    });
-    if (remainingMasterAdmins === 0) {
-      throw new BadRequestException('Cannot remove the last master admin');
-    }
+    await assertAdminOperatorOperationalMasterRemains(db, targetUserId, new Date());
   }
 
   if (previousRoles.includes(Role.FINANCE_APPROVER) && !nextRoles.includes(Role.FINANCE_APPROVER)) {
@@ -45742,6 +49282,77 @@ function adminOperatorDirectoryBaseWhere(includeTestRecords: boolean): Prisma.Us
   };
 }
 
+function adminOperatorOperationalMasterWhere(
+  now: Date,
+  excludeUserId?: string,
+): Prisma.UserWhereInput {
+  return {
+    AND: [
+      { roles: { has: Role.MASTER_ADMIN } },
+      { adminUserProvenance: AdminUserProvenance.PRODUCTION },
+      { fixtureKind: null },
+      { fixtureRunId: null },
+      { fixtureExpiresAt: null },
+      { adminOperatorPermission: { isNot: null } },
+      {
+        adminOperatorCredential: {
+          is: {
+            disabledAt: null,
+            setupCompletedAt: { not: null },
+            OR: [{ lockedUntil: null }, { lockedUntil: { lte: now } }],
+          },
+        },
+      },
+      ...(excludeUserId ? [{ id: { not: excludeUserId } }] : []),
+    ],
+  };
+}
+
+export function adminOperatorIsOperationalMaster(
+  operator: {
+    readonly roles: readonly Role[];
+    readonly adminUserProvenance: AdminUserProvenance | null;
+    readonly fixtureKind: string | null;
+    readonly fixtureRunId: string | null;
+    readonly fixtureExpiresAt: Date | null;
+    readonly adminOperatorPermission: unknown | null;
+    readonly adminOperatorCredential: null | {
+      readonly disabledAt: Date | null;
+      readonly lockedUntil: Date | null;
+      readonly setupCompletedAt: Date | null;
+    };
+  },
+  now: Date,
+) {
+  return (
+    operator.roles.includes(Role.MASTER_ADMIN) &&
+    operator.adminUserProvenance === AdminUserProvenance.PRODUCTION &&
+    !operator.fixtureKind &&
+    !operator.fixtureRunId &&
+    !operator.fixtureExpiresAt &&
+    Boolean(operator.adminOperatorPermission) &&
+    Boolean(operator.adminOperatorCredential?.setupCompletedAt) &&
+    !operator.adminOperatorCredential?.disabledAt &&
+    (operator.adminOperatorCredential?.lockedUntil?.getTime() ?? 0) <= now.getTime()
+  );
+}
+
+async function assertAdminOperatorOperationalMasterRemains(
+  db: AdminOperatorAccessDb,
+  targetUserId: string,
+  now: Date,
+) {
+  const remainingMasterAdmins = await db.user.count({
+    where: adminOperatorOperationalMasterWhere(now, targetUserId),
+  });
+  if (remainingMasterAdmins === 0) {
+    throw new ConflictException({
+      code: 'LAST_MASTER_ADMIN_REQUIRED',
+      message: 'At least one other operational production Master Admin must remain',
+    });
+  }
+}
+
 function adminOperatorDirectoryWhere(
   options: AdminOperatorDirectoryOptions,
   now = new Date(),
@@ -45763,14 +49374,19 @@ function adminOperatorDirectoryWhere(
   const role = normalizeNullable(options.role)?.toUpperCase();
   if (role) {
     if (!ADMIN_OPERATOR_ROLES.includes(role as (typeof ADMIN_OPERATOR_ROLES)[number])) {
-      throw new BadRequestException({ code: 'ADMIN_OPERATOR_ROLE_INVALID', message: 'Unsupported operator role' });
+      throw new BadRequestException({
+        code: 'ADMIN_OPERATOR_ROLE_INVALID',
+        message: 'Unsupported operator role',
+      });
     }
     filters.push({ roles: { has: role as Role } });
   }
 
   const category = normalizeNullable(options.category)?.toUpperCase();
   if (category) {
-    if (!Object.values(AdminOperatorPermissionCategory).includes(category as AdminOperatorPermissionCategory)) {
+    if (
+      !Object.values(AdminOperatorPermissionCategory).includes(category as AdminOperatorPermissionCategory)
+    ) {
       throw new BadRequestException({
         code: 'ADMIN_OPERATOR_CATEGORY_INVALID',
         message: 'Unsupported operator permission category',
@@ -45799,19 +49415,22 @@ function adminOperatorDirectoryWhere(
         { adminOperatorCredential: { is: { mfaState: { not: 'VERIFIED' } } } },
       ],
     });
-  } else if (status && ['active', 'setup-required', 'migration-required', 'suspended', 'locked'].includes(status)) {
+  } else if (
+    status &&
+    ['active', 'setup-required', 'migration-required', 'suspended', 'locked'].includes(status)
+  ) {
     filters.push(adminOperatorLifecycleWhere(status, now));
   } else if (status) {
-    throw new BadRequestException({ code: 'ADMIN_OPERATOR_STATUS_INVALID', message: 'Unsupported operator status' });
+    throw new BadRequestException({
+      code: 'ADMIN_OPERATOR_STATUS_INVALID',
+      message: 'Unsupported operator status',
+    });
   }
 
   const cursor = adminOperatorDirectoryCursor(options.cursor);
   if (cursor) {
     filters.push({
-      OR: [
-        { createdAt: { lt: cursor.createdAt } },
-        { createdAt: cursor.createdAt, id: { lt: cursor.id } },
-      ],
+      OR: [{ createdAt: { lt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { lt: cursor.id } }],
     });
   }
 
@@ -45870,6 +49489,28 @@ function adminOperatorLifecycleWhere(status: string, now: Date): Prisma.UserWher
   };
 }
 
+function operationsHandoffActiveOperatorWhere(
+  now: Date,
+  operatorIds?: readonly string[],
+): Prisma.UserWhereInput {
+  return {
+    AND: [
+      { roles: { hasSome: [Role.ADMIN, Role.MASTER_ADMIN] } },
+      { adminOperatorPermission: { isNot: null } },
+      {
+        adminOperatorCredential: {
+          is: {
+            disabledAt: null,
+            OR: [{ lockedUntil: null }, { lockedUntil: { lte: now } }],
+            setupCompletedAt: { not: null },
+          },
+        },
+      },
+      ...(operatorIds ? [{ id: { in: [...operatorIds] } }] : []),
+    ],
+  };
+}
+
 function adminOperatorEffectiveCategoryStorageCandidates(category: AdminOperatorPermissionCategory) {
   const requestedLeaves = new Set(adminOperatorEffectivePermissionLeaves(category));
   return Object.values(AdminOperatorPermissionCategory).filter((storedCategory) => {
@@ -45881,7 +49522,7 @@ function adminOperatorEffectiveCategoryStorageCandidates(category: AdminOperator
 function adminOperatorEffectivePermissionLeaves(category: AdminOperatorPermissionCategory) {
   return ADMIN_OPERATOR_PERMISSION_CATEGORY_SET.has(category)
     ? [category]
-    : ADMIN_OPERATOR_LEGACY_PERMISSION_GROUPS[category] ?? [category];
+    : (ADMIN_OPERATOR_LEGACY_PERMISSION_GROUPS[category] ?? [category]);
 }
 
 function adminOperatorDirectoryCursor(value: string | null | undefined) {
@@ -45890,19 +49531,53 @@ function adminOperatorDirectoryCursor(value: string | null | undefined) {
   try {
     const parsed = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as Record<string, unknown>;
     const id = typeof parsed.id === 'string' ? parsed.id : '';
-    const createdAt = typeof parsed.createdAt === 'string' ? new Date(parsed.createdAt) : new Date(Number.NaN);
+    const createdAt =
+      typeof parsed.createdAt === 'string' ? new Date(parsed.createdAt) : new Date(Number.NaN);
     if (!id || Number.isNaN(createdAt.getTime())) throw new Error('invalid cursor payload');
     return { createdAt, id };
   } catch {
-    throw new BadRequestException({ code: 'ADMIN_OPERATOR_CURSOR_INVALID', message: 'Invalid operator cursor' });
+    throw new BadRequestException({
+      code: 'ADMIN_OPERATOR_CURSOR_INVALID',
+      message: 'Invalid operator cursor',
+    });
   }
 }
 
 function adminOperatorDirectoryCursorValue(row: AdminOperatorDirectoryRecord | undefined) {
   if (!row) return null;
-  return Buffer.from(
-    JSON.stringify({ createdAt: row.createdAt.toISOString(), id: row.id }),
-  ).toString('base64url');
+  return Buffer.from(JSON.stringify({ createdAt: row.createdAt.toISOString(), id: row.id })).toString(
+    'base64url',
+  );
+}
+
+function adminOperatorHistoryCursor(value: string | null | undefined) {
+  const encoded = normalizeNullable(value);
+  if (!encoded) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as Record<
+      string,
+      unknown
+    >;
+    const id = typeof parsed.id === 'string' ? parsed.id : '';
+    const createdAt =
+      typeof parsed.createdAt === 'string' ? new Date(parsed.createdAt) : new Date(Number.NaN);
+    if (!id || Number.isNaN(createdAt.getTime())) throw new Error('invalid cursor payload');
+    return { createdAt, id };
+  } catch {
+    throw new BadRequestException({
+      code: 'ADMIN_OPERATOR_HISTORY_CURSOR_INVALID',
+      message: 'Invalid operator lifecycle history cursor',
+    });
+  }
+}
+
+function adminOperatorHistoryCursorValue(
+  row: { readonly createdAt: Date; readonly id: string } | undefined,
+) {
+  if (!row) return null;
+  return Buffer.from(JSON.stringify({ createdAt: row.createdAt.toISOString(), id: row.id })).toString(
+    'base64url',
+  );
 }
 
 function adminOperatorDirectoryRow(
@@ -45963,7 +49638,13 @@ function adminOperatorDirectoryRow(
       : null,
     activeSessionCount,
     lastSession: row.adminWebSessions[0] ?? null,
-    allowedActions: adminOperatorAllowedActions(row, lifecycleStatus, activeSessionCount, actionContext),
+    allowedActions: adminOperatorAllowedActions(
+      row,
+      lifecycleStatus,
+      activeSessionCount,
+      actionContext,
+      now,
+    ),
   };
 }
 
@@ -45972,28 +49653,35 @@ function adminOperatorAllowedActions(
   lifecycleStatus: 'ACTIVE' | 'LOCKED' | 'MIGRATION_REQUIRED' | 'SETUP_REQUIRED' | 'SUSPENDED',
   activeSessionCount: number,
   context: { activeMasterCount: number; actorId: string | null; actorRoles: readonly Role[] },
+  now: Date,
 ) {
   const isMasterActor = context.actorRoles.includes(Role.MASTER_ADMIN);
   const isSelf = context.actorId === row.id;
-  const isLastActiveMaster =
-    row.roles.includes(Role.MASTER_ADMIN) &&
-    !row.adminOperatorCredential?.disabledAt &&
-    context.activeMasterCount <= 1;
+  const isOperationalMaster = adminOperatorIsOperationalMaster(row, now);
+  const isLastActiveMaster = isOperationalMaster && context.activeMasterCount <= 1;
   const baseBlockers = [
-    ...(!isMasterActor ? [{ code: 'MASTER_ADMIN_REQUIRED', message: 'Master Admin access is required.' }] : []),
-    ...(isSelf ? [{ code: 'SELF_ACTION_FORBIDDEN', message: 'Another active Master Admin must perform this action.' }] : []),
+    ...(!isMasterActor
+      ? [{ code: 'MASTER_ADMIN_REQUIRED', message: 'Master Admin access is required.' }]
+      : []),
+    ...(isSelf
+      ? [{ code: 'SELF_ACTION_FORBIDDEN', message: 'Another active Master Admin must perform this action.' }]
+      : []),
   ];
   const action = (extra: Array<{ code: string; message: string }> = []) => ({
     allowed: [...baseBlockers, ...extra].length === 0,
     blockedReasons: [...baseBlockers, ...extra],
   });
   return {
-    initializeAccess: action(row.adminOperatorPermission
+    initializeAccess: action(
+      row.adminOperatorPermission
       ? [{ code: 'PERMISSION_POLICY_EXISTS', message: 'The permission policy is already initialized.' }]
-      : []),
-    updateAccess: action(!row.adminOperatorPermission
+        : [],
+    ),
+    updateAccess: action(
+      !row.adminOperatorPermission
       ? [{ code: 'PERMISSION_POLICY_REQUIRED', message: 'Initialize the permission policy first.' }]
-      : []),
+        : [],
+    ),
     suspend: action([
       ...(!row.adminOperatorCredential
         ? [{ code: 'SIGN_IN_SETUP_REQUIRED', message: 'This operator has no sign-in credential to suspend.' }]
@@ -46002,24 +49690,46 @@ function adminOperatorAllowedActions(
         ? [{ code: 'ALREADY_SUSPENDED', message: 'This operator is already suspended.' }]
         : []),
       ...(isLastActiveMaster
-        ? [{ code: 'LAST_MASTER_ADMIN_REQUIRED', message: 'Create another active Master Admin before suspending this operator.' }]
+        ? [
+            {
+              code: 'LAST_MASTER_ADMIN_REQUIRED',
+              message: 'Create another active Master Admin before suspending this operator.',
+            },
+          ]
         : []),
     ]),
-    reactivate: action(lifecycleStatus === 'SUSPENDED'
+    reactivate: action(
+      lifecycleStatus === 'SUSPENDED'
       ? []
-      : [{ code: 'NOT_SUSPENDED', message: 'Only suspended operators can be reactivated.' }]),
+        : [{ code: 'NOT_SUSPENDED', message: 'Only suspended operators can be reactivated.' }],
+    ),
     revokeOperatorAccess: action([
       ...(lifecycleStatus !== 'SUSPENDED'
         ? [{ code: 'SUSPEND_FIRST', message: 'Suspend Admin Web access before offboarding.' }]
         : []),
       ...(activeSessionCount > 0
-        ? [{ code: 'ACTIVE_SESSIONS_REMAIN', message: 'Revoke all active Admin Web sessions before offboarding.' }]
+        ? [
+            {
+              code: 'ACTIVE_SESSIONS_REMAIN',
+              message: 'Revoke all active Admin Web sessions before offboarding.',
+            },
+          ]
         : []),
       ...(row.roles.includes(Role.FINANCE_APPROVER)
-        ? [{ code: 'FINANCE_APPROVER_GOVERNANCE_REQUIRED', message: 'Remove Finance Approver access from Finance Approvers first.' }]
+        ? [
+            {
+              code: 'FINANCE_APPROVER_GOVERNANCE_REQUIRED',
+              message: 'Remove Finance Approver access from Finance Approvers first.',
+            },
+          ]
         : []),
       ...(isLastActiveMaster
-        ? [{ code: 'LAST_MASTER_ADMIN_REQUIRED', message: 'Create another active Master Admin before offboarding this operator.' }]
+        ? [
+            {
+              code: 'LAST_MASTER_ADMIN_REQUIRED',
+              message: 'Create another active Master Admin before offboarding this operator.',
+            },
+          ]
         : []),
     ]),
     revokeSession: action(),
@@ -46106,6 +49816,96 @@ function adminPartnerDirectoryOrderBy(
   }
 
   return [{ user: { createdAt: 'desc' } }, { id: 'desc' }];
+}
+
+const ADMIN_PARTNER_WALLET_DEBT_CURSOR_VERSION = 2;
+const ADMIN_PARTNER_WALLET_DEBT_CURSOR_MAX_AGE_MS = 30 * 60_000;
+const ADMIN_PARTNER_WALLET_DEBT_SNAPSHOT_PURGE_LIMIT = 500;
+
+type AdminPartnerWalletDebtCursor = {
+  balance: bigint;
+  filterHash: string;
+  position: number;
+  providerProfileId: string;
+  snapshotId: string;
+  snapshotAt: Date;
+  totalCount: number;
+};
+
+function adminPartnerWalletDebtFilterHash(q: string | null) {
+  return createHash('sha256')
+    .update(JSON.stringify({ q: q?.toLowerCase() ?? '' }))
+    .digest('base64url');
+}
+
+function adminPartnerWalletDebtCursor(
+  value: string | null | undefined,
+  expectedFilterHash: string,
+): AdminPartnerWalletDebtCursor | null {
+  const normalized = normalizeNullable(value);
+  if (!normalized) return null;
+
+  try {
+    if (normalized.length > 2_048) throw new Error();
+    const parsed = JSON.parse(Buffer.from(normalized, 'base64url').toString('utf8')) as Record<
+      string,
+      unknown
+    >;
+    const snapshotAt = new Date(String(parsed.snapshotAt ?? ''));
+    const providerProfileId = typeof parsed.providerProfileId === 'string' ? parsed.providerProfileId : '';
+    const filterHash = typeof parsed.filterHash === 'string' ? parsed.filterHash : '';
+    const snapshotId = typeof parsed.snapshotId === 'string' ? parsed.snapshotId : '';
+    const position = Number(parsed.position);
+    const totalCount = Number(parsed.totalCount);
+    const balanceText = typeof parsed.balance === 'string' ? parsed.balance : '';
+    const balance = BigInt(balanceText);
+    const snapshotAgeMs = Date.now() - snapshotAt.getTime();
+    const commonInvalid =
+      providerProfileId.length > 200 ||
+      filterHash !== expectedFilterHash ||
+      !Number.isInteger(position) ||
+      position < 0 ||
+      !Number.isSafeInteger(totalCount) ||
+      totalCount < position ||
+      Number.isNaN(snapshotAt.getTime()) ||
+      snapshotAgeMs < -60_000 ||
+      snapshotAgeMs > ADMIN_PARTNER_WALLET_DEBT_CURSOR_MAX_AGE_MS;
+
+    if (parsed.version === 1 && !commonInvalid && position === 0 && !providerProfileId && balance === 0n) {
+      return null;
+    }
+
+    if (
+      parsed.version !== ADMIN_PARTNER_WALLET_DEBT_CURSOR_VERSION ||
+      commonInvalid ||
+      !snapshotId ||
+      snapshotId.length > 100 ||
+      (position === 0 ? Boolean(providerProfileId) || balance !== 0n : !providerProfileId || balance >= 0n)
+    ) {
+      throw new Error();
+    }
+
+    return { balance, filterHash, position, providerProfileId, snapshotAt, snapshotId, totalCount };
+  } catch {
+    throw new BadRequestException(
+      'Wallet debt snapshot cursor is invalid or expired. Restart the snapshot and retry.',
+    );
+  }
+}
+
+function adminPartnerWalletDebtCursorValue(cursor: AdminPartnerWalletDebtCursor) {
+  return Buffer.from(
+    JSON.stringify({
+      balance: cursor.balance.toString(),
+      filterHash: cursor.filterHash,
+      position: cursor.position,
+      providerProfileId: cursor.providerProfileId,
+      snapshotId: cursor.snapshotId,
+      snapshotAt: cursor.snapshotAt.toISOString(),
+      totalCount: cursor.totalCount,
+      version: ADMIN_PARTNER_WALLET_DEBT_CURSOR_VERSION,
+    }),
+  ).toString('base64url');
 }
 
 function adminPartnerApprovalSubmittedAt(row: {
@@ -46768,7 +50568,7 @@ function adminCustomerDirectoryWhere(
 ): Prisma.CustomerProfileWhereInput | undefined {
   const usageNewUnbooked = normalizeNullable(options.segment)?.toLowerCase() === 'usage-new-unbooked';
   const conditions: Prisma.CustomerProfileWhereInput[] = usageNewUnbooked
-    ? [{ user: { fixtureKind: null } }]
+    ? [{ user: { is: { fixtureExpiresAt: null, fixtureKind: null, fixtureRunId: null } } }]
     : [adminCustomerProductionDataWhere()];
   const userWhere: Prisma.UserWhereInput = {};
   const q = normalizeNullable(options.q);
@@ -47432,6 +51232,8 @@ function adminBookingSettlementDryRunCounts(items: AdminBookingSettlementDryRunI
       counts.paymentFeeDefaulted += item.paymentFeeRuleStatus === 'DEFAULTED' ? 1 : 0;
       counts.companyOutputVatPositive += (item.expected?.companyOutputVat ?? 0) > 0 ? 1 : 0;
       counts.companyOutputVatZero += item.expected?.companyOutputVat === 0 ? 1 : 0;
+      counts.expectedAvailable += item.expected ? 1 : 0;
+      counts.expectedUnavailable += item.expected ? 0 : 1;
       counts.platformVatEvidenceReady += isAdminPlatformVatEvidenceReady(item.platformVatEvidenceStatus)
         ? 1
         : 0;
@@ -47446,6 +51248,8 @@ function adminBookingSettlementDryRunCounts(items: AdminBookingSettlementDryRunI
       companyOutputVatPositive: 0,
       companyOutputVatZero: 0,
       eligible: 0,
+      expectedAvailable: 0,
+      expectedUnavailable: 0,
       journalBalanced: 0,
       paymentFeeDefaulted: 0,
       paymentFeePolicyMatched: 0,
@@ -47608,6 +51412,132 @@ function adminBookingSettlementRepairPolicy(input: {
   };
 }
 
+async function adminBookingSettlementRepairActivePolicyEvidence(
+  client: PrismaService | Prisma.TransactionClient,
+  input: {
+    occurredAt: Date;
+    paymentMethod: PaymentMethod;
+    providerProfileId: string;
+  },
+) {
+  const effectiveWhere = {
+    effectiveFrom: { lte: input.occurredAt },
+    OR: [{ effectiveTo: null }, { effectiveTo: { gte: input.occurredAt } }],
+    status: TaxPolicyStatus.ACTIVE as TaxPolicyStatus,
+  };
+  const [paymentFeePolicy, platformFeePolicy, providerTaxProfile, taxPolicy] = await Promise.all([
+    client.paymentFeePolicyVersion.findFirst({
+      where: effectiveWhere,
+      orderBy: { effectiveFrom: 'desc' },
+      select: {
+        effectiveFrom: true,
+        effectiveTo: true,
+        id: true,
+        status: true,
+        updatedAt: true,
+        rules: {
+          where: { active: true, method: input.paymentMethod },
+          orderBy: { id: 'asc' },
+          select: {
+            active: true,
+            feeType: true,
+            fixedAmount: true,
+            id: true,
+            method: true,
+            payer: true,
+            rateBps: true,
+            treatment: true,
+            updatedAt: true,
+          },
+        },
+      },
+    }),
+    client.platformFeePolicyVersion.findFirst({
+      where: effectiveWhere,
+      orderBy: { effectiveFrom: 'desc' },
+      select: {
+        effectiveFrom: true,
+        effectiveTo: true,
+        id: true,
+        status: true,
+        updatedAt: true,
+        vatRateBps: true,
+        rules: {
+          where: { active: true },
+          orderBy: { id: 'asc' },
+          select: {
+            active: true,
+            fixedAmount: true,
+            id: true,
+            maxGrossAmount: true,
+            minGrossAmount: true,
+            rateBps: true,
+            scope: true,
+            serviceType: true,
+            updatedAt: true,
+          },
+        },
+      },
+    }),
+    client.providerTaxProfile.findUnique({
+      where: { providerProfileId: input.providerProfileId },
+      select: { approvedAt: true, id: true, status: true, updatedAt: true },
+    }),
+    client.taxPolicyVersion.findFirst({
+      where: effectiveWhere,
+      orderBy: { effectiveFrom: 'desc' },
+      select: {
+        effectiveFrom: true,
+        effectiveTo: true,
+        id: true,
+        payloadHash: true,
+        revision: true,
+        status: true,
+        updatedAt: true,
+        rules: {
+          where: { active: true },
+          orderBy: { id: 'asc' },
+          select: {
+            active: true,
+            category: true,
+            collectionMode: true,
+            fixedAmount: true,
+            id: true,
+            maxGrossAmount: true,
+            minGrossAmount: true,
+            rateBps: true,
+            scope: true,
+            serviceType: true,
+            taxKind: true,
+            updatedAt: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  return { paymentFeePolicy, platformFeePolicy, providerTaxProfile, taxPolicy };
+}
+
+function adminBookingSettlementRepairEvidenceVersion(evidence: unknown) {
+  return `settlement-evidence-v2:${createHash('sha256').update(adminCanonicalJson(evidence)).digest('hex')}`;
+}
+
+function adminCanonicalJson(value: unknown): string {
+  if (value === null || value === undefined) return 'null';
+  if (value instanceof Date) return JSON.stringify(value.toISOString());
+  if (Array.isArray(value)) return `[${value.map(adminCanonicalJson).join(',')}]`;
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${adminCanonicalJson(record[key])}`)
+      .join(',')}}`;
+  }
+  if (typeof value === 'number' && !Number.isFinite(value)) return 'null';
+  return JSON.stringify(value);
+}
+
 type AdminPlatformVatEvidenceStatus =
   | 'EXPLICIT_ZERO_SERVICE_PAYOUT_RULE'
   | 'POSITIVE'
@@ -47619,16 +51549,15 @@ function adminPlatformVatEvidenceStatus(
   dryRun: AdminHistoricalSettlementDryRun | null,
 ): AdminPlatformVatEvidenceStatus {
   if (!dryRun) return 'UNAVAILABLE';
-  if (dryRun.amounts.companyOutputVat > 0 || dryRun.platformVatRateBps > 0) return 'POSITIVE';
-
-  const ruleSnapshot = adminJsonObject(dryRun.platformFeeRuleSnapshot);
-  const lines = Array.isArray(ruleSnapshot?.lines) ? ruleSnapshot.lines : [];
-  const hasExplicitZeroServiceRules =
-    ruleSnapshot?.source === 'SERVICE_PAYOUT_RULE' &&
-    lines.length > 0 &&
-    lines.every((line) => adminJsonObject(line)?.vatBps === 0);
-  if (hasExplicitZeroServiceRules) return 'EXPLICIT_ZERO_SERVICE_PAYOUT_RULE';
-  if (dryRun.platformFeePolicyVersionId) return 'ZERO_FROM_POLICY';
+  const status = adminPlatformVatRegisterEvidenceStatus({
+    companyOutputVat: dryRun.amounts.companyOutputVat,
+    platformFeePolicyVersionId: dryRun.platformFeePolicyVersionId,
+    platformFeeRuleSnapshot: dryRun.platformFeeRuleSnapshot,
+    platformVatRateBps: dryRun.platformVatRateBps,
+  });
+  if (status === 'POSITIVE_STANDARD_OR_REDUCED') return 'POSITIVE';
+  if (status === 'EXPLICIT_ZERO_RULE') return 'EXPLICIT_ZERO_SERVICE_PAYOUT_RULE';
+  if (status === 'ZERO_FROM_POLICY') return 'ZERO_FROM_POLICY';
   return 'ZERO_UNEXPLAINED';
 }
 
@@ -47637,7 +51566,7 @@ function isAdminPlatformVatEvidenceReady(status: AdminPlatformVatEvidenceStatus)
 }
 
 function adminBookingSettlementDryRunTotals(items: AdminBookingSettlementDryRunItem[]) {
-  return items.reduce(
+  const totals = items.reduce(
     (totals, item) => {
       const expected = item.expected;
       if (!expected) return totals;
@@ -47666,6 +51595,20 @@ function adminBookingSettlementDryRunTotals(items: AdminBookingSettlementDryRunI
       platformFeeNetRevenue: 0,
     },
   );
+  const computedCount = items.filter((item) => item.expected !== null).length;
+  const totalCount = items.length;
+
+  return {
+    ...totals,
+    availability:
+      computedCount === 0
+        ? ('UNAVAILABLE' as const)
+        : computedCount === totalCount
+          ? ('ALL_AVAILABLE' as const)
+          : ('PARTIAL' as const),
+    computedCount,
+    totalCount,
+  };
 }
 
 function adminCountBy<T>(items: T[], keyForItem: (item: T) => string) {
@@ -47713,7 +51656,11 @@ type CompanyBankAccountOperationalProfile = {
 
 type CompanyBankAccountPendingApproval = {
   idempotencyKey: string | null;
-  operation: 'CREATE' | 'UPDATE';
+  mutationHash: string | null;
+  operation: 'CLASSIFY_PRODUCTION' | 'CREATE' | 'UPDATE' | 'VERIFY_STATEMENT';
+  evidenceHash: string | null;
+  evidenceId: string | null;
+  evidenceVersion: number | null;
   operatorReason: string;
   preflightGeneratedAt: string | null;
   preflightHash: string | null;
@@ -47755,7 +51702,16 @@ function companyBankAccountPendingApproval(value: unknown): CompanyBankAccountPe
   const dataScope = proposed?.dataScope;
   const operatorReason = companyBankAccountMetadataString(pending?.operatorReason);
   const idempotencyKey = companyBankAccountMetadataString(pending?.idempotencyKey);
-  const preflightGeneratedAt = adminIsoDateTime(companyBankAccountMetadataString(pending?.preflightGeneratedAt));
+  const mutationHash = companyBankAccountMetadataString(pending?.mutationHash);
+  const evidenceHash = companyBankAccountMetadataString(pending?.evidenceHash);
+  const evidenceId = companyBankAccountMetadataString(pending?.evidenceId);
+  const evidenceVersion =
+    typeof pending?.evidenceVersion === 'number' && Number.isSafeInteger(pending.evidenceVersion)
+      ? pending.evidenceVersion
+      : null;
+  const preflightGeneratedAt = adminIsoDateTime(
+    companyBankAccountMetadataString(pending?.preflightGeneratedAt),
+  );
   const preflightHash = companyBankAccountMetadataString(pending?.preflightHash);
   const replacementAccountId = companyBankAccountMetadataString(pending?.replacementAccountId);
   const requestedAt = companyBankAccountMetadataString(pending?.requestedAt);
@@ -47765,7 +51721,10 @@ function companyBankAccountPendingApproval(value: unknown): CompanyBankAccountPe
   const currency = companyBankAccountMetadataString(proposed?.currency)?.toUpperCase() ?? null;
   const name = companyBankAccountMetadataString(proposed?.name);
   if (
-    (operation !== 'CREATE' && operation !== 'UPDATE') ||
+    (operation !== 'CREATE' &&
+      operation !== 'UPDATE' &&
+      operation !== 'CLASSIFY_PRODUCTION' &&
+      operation !== 'VERIFY_STATEMENT') ||
     !operatorReason ||
     !requestedAt ||
     !requestedByAdminId ||
@@ -47780,7 +51739,11 @@ function companyBankAccountPendingApproval(value: unknown): CompanyBankAccountPe
   }
 
   return {
+    evidenceHash,
+    evidenceId,
+    evidenceVersion,
     idempotencyKey,
+    mutationHash,
     operation,
     operatorReason,
     preflightGeneratedAt,
@@ -47822,7 +51785,9 @@ function companyBankAccountOperationalProfile(value: unknown): CompanyBankAccoun
       purpose === 'ADJUSTMENT'
         ? purpose
         : null,
-    statementImportTestedAt: adminIsoDateTime(companyBankAccountMetadataString(profile?.statementImportTestedAt)),
+    statementImportTestedAt: adminIsoDateTime(
+      companyBankAccountMetadataString(profile?.statementImportTestedAt),
+    ),
     verificationMethod: companyBankAccountMetadataString(profile?.verificationMethod),
     verificationStatus:
       verificationStatus === 'EVIDENCE_SUBMITTED' ||
@@ -47867,7 +51832,9 @@ function companyBankAccountOperationsLifecycleWhere(
     metadata: { path: ['pendingApproval', 'proposed', 'status'], equals: CompanyBankAccountStatus.ACTIVE },
   };
   if (lifecycle === 'ACTIVE') {
-    return { AND: [companyBankAccountProductionWhere(CompanyBankAccountStatus.ACTIVE), { NOT: pendingWhere }] };
+    return {
+      AND: [companyBankAccountProductionWhere(CompanyBankAccountStatus.ACTIVE), { NOT: pendingWhere }],
+    };
   }
   if (lifecycle === 'PENDING_ACTIVATION') return pendingActivationWhere;
   if (lifecycle === 'PENDING_CHANGE') return { AND: [pendingWhere, { NOT: pendingActivationWhere }] };
@@ -47881,10 +51848,7 @@ function companyBankAccountOperationsLifecycleWhere(
         companyBankAccountProductionWhere(),
         { status: CompanyBankAccountStatus.INACTIVE },
         {
-          OR: [
-            { transactions: { some: {} } },
-            { metadata: { path: ['archivedAt'], not: Prisma.AnyNull } },
-          ],
+          OR: [{ transactions: { some: {} } }, { metadata: { path: ['archivedAt'], not: Prisma.AnyNull } }],
         },
       ],
     };
@@ -47928,24 +51892,106 @@ function companyBankAccountOperationalProfileFromInput(
   });
 }
 
-function companyBankAccountActivationBlockers(profile: CompanyBankAccountOperationalProfile) {
+function companyBankAccountActivationBlockers(
+  profile: CompanyBankAccountOperationalProfile,
+  authority: {
+    error: string | null;
+    ownership: { id: string } | null;
+    statement: { id: string } | null;
+  } | null,
+) {
   const blockers: Array<{ code: string; label: string }> = [];
-  if (!profile.legalOwnerName) blockers.push({ code: 'LEGAL_OWNER_MISSING', label: 'Legal account owner is missing' });
-  if (!profile.bankCode) blockers.push({ code: 'BANK_CODE_MISSING', label: 'Controlled bank code is missing' });
+  if (!profile.legalOwnerName)
+    blockers.push({ code: 'LEGAL_OWNER_MISSING', label: 'Legal account owner is missing' });
+  if (!profile.bankCode)
+    blockers.push({ code: 'BANK_CODE_MISSING', label: 'Controlled bank code is missing' });
   if (!profile.purpose) blockers.push({ code: 'PURPOSE_MISSING', label: 'Account purpose is missing' });
   if (!profile.direction) blockers.push({ code: 'DIRECTION_MISSING', label: 'Money direction is missing' });
   if (profile.verificationStatus !== 'VERIFIED') {
     blockers.push({ code: 'VERIFICATION_INCOMPLETE', label: 'Ownership verification is not complete' });
   }
-  blockers.push({
-    code: 'EVIDENCE_AUTHORITY_UNAVAILABLE',
-    label: 'No authoritative restricted ownership evidence relation is available',
-  });
+  if (authority?.error) {
+    blockers.push({ code: 'EVIDENCE_AUTHORITY_UNAVAILABLE', label: authority.error });
+  } else {
+    if (!authority?.ownership) {
+      blockers.push({
+        code: 'OWNERSHIP_EVIDENCE_MISSING',
+        label: 'Verified restricted ownership evidence is missing',
+      });
+    }
+    if (!authority?.statement) {
+      blockers.push({
+        code: 'STATEMENT_VERIFICATION_MISSING',
+        label: 'Verified non-operational statement evidence is missing',
+      });
+    }
+  }
   return blockers;
 }
 
+type CompanyBankAccountOperationsView = 'archived' | 'current' | 'pending' | 'remediation';
+
+const companyBankAccountOperationsFilterValues = {
+  currency: ['VND'],
+  health: ['HEALTHY', 'ATTENTION'],
+  purpose: ['COLLECTION', 'REFUND', 'PAYOUT', 'RECONCILIATION', 'ADJUSTMENT'],
+  verification: ['UNVERIFIED', 'EVIDENCE_SUBMITTED', 'VERIFIED', 'FAILED'],
+} as const;
+
+function companyBankAccountOperationsFilterContract(view: CompanyBankAccountOperationsView) {
+  return {
+    currency: [...companyBankAccountOperationsFilterValues.currency],
+    health: view === 'remediation' ? [] : [...companyBankAccountOperationsFilterValues.health],
+    purpose: [...companyBankAccountOperationsFilterValues.purpose],
+    status:
+      view === 'pending'
+        ? ['PENDING_ACTIVATION', 'PENDING_CHANGE']
+        : view === 'archived'
+          ? ['NEVER_ACTIVATED', 'REJECTED', 'ARCHIVED_WITH_HISTORY', 'DISABLED_BY_SYSTEM']
+          : [],
+    verification: [...companyBankAccountOperationsFilterValues.verification],
+  };
+}
+
+function financeApproverRejectionTargetReview(
+  request: FinanceApproverAccessRequestRecord,
+  target: FinanceApproverGovernanceActor | null,
+): Prisma.InputJsonObject {
+  if (!target) {
+    return {
+      blockerCodes: ['TARGET_ADMIN_NOT_FOUND'],
+      currentPermissionVersion: null,
+      exists: false,
+      stale: true,
+    };
+  }
+  const policy = evaluateFinanceApproverPolicy(target, {
+    requireAttestation: false,
+    requireFinanceRole: false,
+  });
+  return {
+    blockerCodes: policy.blockers.map((blocker) => blocker.code),
+    currentPermissionVersion: target.adminOperatorPermission?.version ?? null,
+    currentUpdatedAt: target.updatedAt.toISOString(),
+    exists: true,
+    stale:
+      target.updatedAt.getTime() !== request.expectedTargetUpdatedAt.getTime() ||
+      target.roles.includes(Role.FINANCE_APPROVER) !== request.previousEnabled ||
+      request.expectedPermissionVersion == null ||
+      target.adminOperatorPermission?.version !== request.expectedPermissionVersion,
+  };
+}
+
+function companyBankAccountAllowedFilterValue(
+  value: string | null | undefined,
+  allowed: readonly string[],
+) {
+  const normalized = normalizeNullable(value)?.toUpperCase() ?? null;
+  return normalized && allowed.includes(normalized) ? normalized : null;
+}
+
 type CompanyBankAccountArchiveReferenceSource = {
-  coverage: 'COMPLETE' | 'ERROR' | 'INCOMPLETE' | 'NOT_APPLICABLE';
+  coverage: 'COMPLETE' | 'ERROR' | 'INCOMPLETE' | 'NOT_APPLICABLE' | 'TIMEOUT';
   lastActivityAt: string | null;
   openCount: number | null;
   reason: string | null;
@@ -47953,36 +51999,196 @@ type CompanyBankAccountArchiveReferenceSource = {
   totalCount: number | null;
 };
 
-function companyBankAccountArchiveReferenceSources(input: {
-  lastOpenActivityAt: string | null;
-  openTransactionCount: number;
+async function companyBankAccountArchiveReferenceSources(
+  db: Pick<PrismaService, '$queryRaw'>,
+  input: {
+  accountId: string;
   totalTransactionCount: number;
-}): CompanyBankAccountArchiveReferenceSource[] {
-  const unsupported = (
-    source: CompanyBankAccountArchiveReferenceSource['source'],
-    reason: string,
-  ): CompanyBankAccountArchiveReferenceSource => ({
-    coverage: 'INCOMPLETE',
-    lastActivityAt: null,
-    openCount: null,
-    reason,
-    source,
-    totalCount: null,
-  });
+},
+): Promise<CompanyBankAccountArchiveReferenceSource[]> {
+  type AggregateRow = {
+    lastActivityAt: Date | string | null;
+    openCount: bigint | number | null;
+    totalCount: bigint | number | null;
+    unattributedCount?: bigint | number | null;
+  };
+  const activeMatch = Prisma.sql`match."status" IN (
+    ${BankReconciliationStatus.MATCHED}::"BankReconciliationStatus",
+    ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+  )`;
+  const results = await Promise.allSettled([
+    db.$queryRaw<AggregateRow[]>(Prisma.sql`
+      SELECT
+        COUNT(*)::bigint AS "totalCount",
+        COUNT(*) FILTER (
+          WHERE bank."status" IN (
+            ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+            ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+          )
+        )::bigint AS "openCount",
+        MAX(bank."occurredAt") FILTER (
+          WHERE bank."status" IN (
+            ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+            ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+          )
+        ) AS "lastActivityAt"
+      FROM "CompanyBankTransaction" bank
+      WHERE bank."bankAccountId" = ${input.accountId}
+    `),
+    db.$queryRaw<AggregateRow[]>(Prisma.sql`
+      SELECT
+        COUNT(DISTINCT bank."metadata"->>'batchImportId') FILTER (
+          WHERE bank."metadata" ? 'batchImportId'
+        )::bigint AS "totalCount",
+        COUNT(DISTINCT bank."metadata"->>'batchImportId') FILTER (
+          WHERE bank."metadata" ? 'batchImportId'
+            AND bank."status" IN (
+              ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+              ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+            )
+        )::bigint AS "openCount",
+        MAX(bank."occurredAt") FILTER (WHERE bank."metadata" ? 'batchImportId') AS "lastActivityAt"
+      FROM "CompanyBankTransaction" bank
+      WHERE bank."bankAccountId" = ${input.accountId}
+    `),
+    db.$queryRaw<AggregateRow[]>(Prisma.sql`
+      WITH linked AS (
+        SELECT DISTINCT payout."id", bank."occurredAt", bank."status"
+        FROM "BankReconciliationMatch" match
+        INNER JOIN "CompanyBankTransaction" bank ON bank."id" = match."bankTransactionId"
+        INNER JOIN "ProviderPayoutBatch" payout ON payout."id" = match."payoutBatchId"
+        WHERE bank."bankAccountId" = ${input.accountId}
+          AND ${activeMatch}
+      )
+      SELECT
+        COUNT(*)::bigint AS "totalCount",
+        COUNT(*) FILTER (
+          WHERE linked."status" = ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+        )::bigint AS "openCount",
+        MAX(linked."occurredAt") AS "lastActivityAt",
+        (
+          SELECT COUNT(*)::bigint
+          FROM "ProviderPayoutBatch" payout
+          WHERE payout."status" = ${PayoutBatchStatus.PAID}::"PayoutBatchStatus"
+            AND NOT EXISTS (
+              SELECT 1
+              FROM "BankReconciliationMatch" unmatched
+              WHERE unmatched."payoutBatchId" = payout."id"
+                AND unmatched."status" IN (
+                  ${BankReconciliationStatus.MATCHED}::"BankReconciliationStatus",
+                  ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+                )
+            )
+        ) AS "unattributedCount"
+      FROM linked
+    `),
+    db.$queryRaw<AggregateRow[]>(Prisma.sql`
+      SELECT
+        COUNT(DISTINCT COALESCE(journal."sourceId", clearing."bookingId", match."id"))::bigint AS "totalCount",
+        COUNT(DISTINCT COALESCE(journal."sourceId", clearing."bookingId", match."id")) FILTER (
+          WHERE bank."status" = ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+        )::bigint AS "openCount",
+        MAX(bank."occurredAt") AS "lastActivityAt"
+      FROM "BankReconciliationMatch" match
+      INNER JOIN "CompanyBankTransaction" bank ON bank."id" = match."bankTransactionId"
+      LEFT JOIN "AccountingJournalEntry" entry ON entry."id" = match."accountingJournalEntryId"
+      LEFT JOIN "AccountingJournalBatch" journal ON journal."id" = entry."batchId"
+      LEFT JOIN "BookingPaymentClearingEntry" clearing ON clearing."id" = match."paymentClearingEntryId"
+      WHERE bank."bankAccountId" = ${input.accountId}
+        AND ${activeMatch}
+        AND (
+          journal."sourceType" = ${AccountingJournalSourceType.REFUND}::"AccountingJournalSourceType"
+          OR clearing."type" = ${BookingPaymentClearingEntryType.REFUND_REVERSAL}::"BookingPaymentClearingEntryType"
+        )
+    `),
+    db.$queryRaw<AggregateRow[]>(Prisma.sql`
+      SELECT
+        COUNT(DISTINCT COALESCE(journal."sourceId", clearing."settlementSnapshotId", match."id"))::bigint AS "totalCount",
+        COUNT(DISTINCT COALESCE(journal."sourceId", clearing."settlementSnapshotId", match."id")) FILTER (
+          WHERE bank."status" = ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+        )::bigint AS "openCount",
+        MAX(bank."occurredAt") AS "lastActivityAt"
+      FROM "BankReconciliationMatch" match
+      INNER JOIN "CompanyBankTransaction" bank ON bank."id" = match."bankTransactionId"
+      LEFT JOIN "AccountingJournalEntry" entry ON entry."id" = match."accountingJournalEntryId"
+      LEFT JOIN "AccountingJournalBatch" journal ON journal."id" = entry."batchId"
+      LEFT JOIN "BookingPaymentClearingEntry" clearing ON clearing."id" = match."paymentClearingEntryId"
+      WHERE bank."bankAccountId" = ${input.accountId}
+        AND ${activeMatch}
+        AND (
+          journal."sourceType" IN (
+            ${AccountingJournalSourceType.BOOKING_SETTLEMENT}::"AccountingJournalSourceType",
+            ${AccountingJournalSourceType.BOOKING_SETTLEMENT_REVERSAL}::"AccountingJournalSourceType"
+          )
+          OR clearing."type" = ${BookingPaymentClearingEntryType.SETTLEMENT_POSTED}::"BookingPaymentClearingEntryType"
+        )
+    `),
+  ]);
+
+  const source = (
+    index: number,
+    sourceName: CompanyBankAccountArchiveReferenceSource['source'],
+    emptyCoverage: CompanyBankAccountArchiveReferenceSource['coverage'] = 'COMPLETE',
+    emptyReason: string | null = null,
+  ): CompanyBankAccountArchiveReferenceSource => {
+    const result = results[index];
+    if (result.status === 'rejected') {
+      const coverage = companyBankAccountArchiveQueryTimedOut(result.reason) ? 'TIMEOUT' : 'ERROR';
+      return {
+        coverage,
+        lastActivityAt: null,
+        openCount: null,
+        reason:
+          coverage === 'TIMEOUT'
+            ? `${sourceName} reference query timed out`
+            : `${sourceName} reference query failed`,
+        source: sourceName,
+        totalCount: null,
+      };
+    }
+    const row = result.value[0];
+    const totalCount = numberValue(row?.totalCount);
+    return {
+      coverage: totalCount === 0 ? emptyCoverage : 'COMPLETE',
+      lastActivityAt: adminIsoDateTime(row?.lastActivityAt),
+      openCount: numberValue(row?.openCount),
+      reason: totalCount === 0 ? emptyReason : null,
+      source: sourceName,
+      totalCount,
+    };
+  };
+
+  const payouts = source(2, 'PAYOUTS');
+  if (results[2]?.status === 'fulfilled') {
+    const unattributedCount = numberValue(results[2].value[0]?.unattributedCount);
+    if (unattributedCount > 0) {
+      payouts.coverage = 'INCOMPLETE';
+      payouts.openCount = null;
+      payouts.reason = `${unattributedCount} paid payout batch(es) have no authoritative company bank account match`;
+    }
+  }
   return [
-    {
-      coverage: 'COMPLETE',
-      lastActivityAt: input.lastOpenActivityAt,
-      openCount: input.openTransactionCount,
-      reason: null,
-      source: 'BANK_TRANSACTIONS',
-      totalCount: input.totalTransactionCount,
-    },
-    unsupported('STATEMENT_IMPORTS', 'Statement imports are identified through transaction metadata, not an authoritative account relation.'),
-    unsupported('PAYOUTS', 'Payout records do not have an authoritative direct company bank account relation.'),
-    unsupported('REFUNDS', 'Refund records do not have an authoritative direct company bank account relation.'),
-    unsupported('SETTLEMENTS', 'Settlement records do not have an authoritative direct company bank account relation.'),
+    { ...source(0, 'BANK_TRANSACTIONS'), totalCount: input.totalTransactionCount },
+    source(1, 'STATEMENT_IMPORTS'),
+    payouts,
+    source(
+      3,
+      'REFUNDS',
+      'NOT_APPLICABLE',
+      'Current refund adapters settle through gateway or internal wallet/cash flows.',
+    ),
+    source(
+      4,
+      'SETTLEMENTS',
+      'NOT_APPLICABLE',
+      'Booking settlement snapshots are accounting evidence, not direct bank routing.',
+    ),
   ];
+}
+
+function companyBankAccountArchiveQueryTimedOut(error: unknown) {
+  const text = error instanceof Error ? error.message : String(error);
+  return /57014|statement timeout|timed out|timeout/iu.test(text);
 }
 
 function companyBankAccountReplacementCompatible(
@@ -47991,7 +52197,8 @@ function companyBankAccountReplacementCompatible(
 ) {
   if (candidate.verificationStatus !== 'VERIFIED') return false;
   if (current.purpose && candidate.purpose !== current.purpose) return false;
-  if (current.direction && candidate.direction !== current.direction && candidate.direction !== 'BOTH') return false;
+  if (current.direction && candidate.direction !== current.direction && candidate.direction !== 'BOTH')
+    return false;
   return true;
 }
 
@@ -48001,6 +52208,7 @@ function companyBankAccountPreflightHash(input: {
   blockerCodes: string[];
   mode: 'ACTIVATION' | 'ARCHIVE';
   replacementAccountId: string | null;
+  replacementAccountUpdatedAt: string | null;
   successfulStatementImportId: string | null;
 }) {
   return createHash('sha256')
@@ -48186,7 +52394,13 @@ function adminBookingSettlementGapRepairTrackWhere(
     return undefined;
   }
 
-  const canonical: Prisma.BookingWhereInput = {
+  const technicalEvidence: Prisma.BookingWhereInput = {
+    closedAt: { not: null },
+    payment: { is: { status: PaymentStatus.CAPTURED } },
+    selectedProviderId: { not: null },
+    services: { some: {} },
+  };
+  const canonicalLifecycle: Prisma.BookingWhereInput = {
     OR: [
       { earning: { is: null } },
       {
@@ -48199,31 +52413,25 @@ function adminBookingSettlementGapRepairTrackWhere(
       },
     ],
   };
+  const historicalLifecycle: Prisma.BookingWhereInput = {
+    earning: { is: { status: EarningStatus.PAID } },
+  };
+  const canonical: Prisma.BookingWhereInput = {
+    AND: [technicalEvidence, canonicalLifecycle],
+  };
   const historicalReady: Prisma.BookingWhereInput = {
+    AND: [
+      technicalEvidence,
+      {
     earning: { is: { paidAt: { not: null }, status: EarningStatus.PAID } },
-    payment: { is: { status: PaymentStatus.CAPTURED } },
     platformFeeLogs: { some: {} },
-    selectedProviderId: { not: null },
-    services: { some: {} },
     taxLogs: { some: {} },
     walletLedgerEntries: { some: {} },
-  };
-  const evidenceBlocked: Prisma.BookingWhereInput = {
-    AND: [
-      { earning: { is: { status: EarningStatus.PAID } } },
-      {
-        OR: [
-          { earning: { is: { paidAt: null } } },
-          { payment: { is: null } },
-          { payment: { is: { status: { not: PaymentStatus.CAPTURED } } } },
-          { platformFeeLogs: { none: {} } },
-          { selectedProviderId: null },
-          { services: { none: {} } },
-          { taxLogs: { none: {} } },
-          { walletLedgerEntries: { none: {} } },
-        ],
       },
     ],
+  };
+  const evidenceBlocked: Prisma.BookingWhereInput = {
+    AND: [{ OR: [canonicalLifecycle, historicalLifecycle] }, { NOT: { OR: [canonical, historicalReady] } }],
   };
 
   switch (track) {
@@ -48270,22 +52478,29 @@ type AdminBookingSettlementGapListRow = Prisma.BookingGetPayload<{
 function adminBookingSettlementGapRepairTrackFromRow(
   row: AdminBookingSettlementGapListRow,
 ): Exclude<AdminBookingSettlementGapTrack, 'all'> {
-  if (
+  const canonicalLifecycle =
     !row.earning ||
     ((row.earning.status === EarningStatus.PENDING || row.earning.status === EarningStatus.AVAILABLE) &&
-      !row.earning.payoutBatchId)
-  ) {
-    return 'canonical';
-  }
-  if (row.earning.status !== EarningStatus.PAID) {
+      !row.earning.payoutBatchId);
+  const historicalLifecycle = row.earning?.status === EarningStatus.PAID;
+  if (!canonicalLifecycle && !historicalLifecycle) {
     return 'manual-review';
   }
-  if (
-    row.earning.paidAt &&
+  const technicalEvidenceReady = Boolean(
+    row.closedAt &&
     row.selectedProvider &&
     row.payment?.status === PaymentStatus.CAPTURED &&
+    row._count.services > 0,
+  );
+  if (!technicalEvidenceReady) {
+    return 'evidence-blocked';
+  }
+  if (canonicalLifecycle) {
+    return 'canonical';
+  }
+  if (
+    row.earning?.paidAt &&
     row._count.platformFeeLogs > 0 &&
-    row._count.services > 0 &&
     row._count.taxLogs > 0 &&
     row._count.walletLedgerEntries > 0
   ) {
@@ -48386,13 +52601,19 @@ function adminSettlementAuditHealth(
     ...(checkedAt ? { checkedAt } : {}),
     customerWalletRefundLedgerPresent:
       snapshot.paymentMethod === PaymentMethod.CUSTOMER_WALLET
-        ? walletRefundEntries?.some((entry) => entry.amount > 0 && entry.type === CustomerWalletLedgerType.REFUND) ?? null
+        ? (walletRefundEntries?.some(
+            (entry) => entry.amount > 0 && entry.type === CustomerWalletLedgerType.REFUND,
+          ) ?? null)
         : null,
   });
 }
 
 function adminSettlementAuditResult<
   T extends SettlementAuditHealthInput & {
+    companyOutputVat: number;
+    platformFeePolicyVersionId?: string | null;
+    platformFeeRuleSnapshot?: unknown;
+    platformVatRateBps: number;
     booking?: {
       customerWalletLedgerEntries?: Array<{ amount: number; sourceKey: string; type: string }>;
     } | null;
@@ -48412,6 +52633,12 @@ function adminSettlementAuditResult<
       ...settlementAuditHealth.blockers.map((blocker) => Math.abs(blocker.amount ?? 0)),
     ),
     booking,
+    platformVatEvidenceStatus: adminPlatformVatRegisterEvidenceStatus({
+      companyOutputVat: snapshot.companyOutputVat,
+      platformFeePolicyVersionId: snapshot.platformFeePolicyVersionId,
+      platformFeeRuleSnapshot: snapshot.platformFeeRuleSnapshot,
+      platformVatRateBps: snapshot.platformVatRateBps,
+    }),
     settlementAuditHealth,
   };
 }
@@ -48614,13 +52841,20 @@ function adminBookingSettlementAuditProjectionCteSql(
           facts."paymentMethod"::text IN ('BANK_TRANSFER', 'CARD', 'MANUAL', 'MOMO', 'VNPAY')
           AND facts."canonicalMatchedAmount" < facts."customerPaymentAmount"
         ) AS "bankIssue",
-        (
-          facts."paymentMethod"::text IN ('CARD', 'MOMO', 'VNPAY')
-          AND (
-            facts."paymentFeePolicyVersionId" IS NULL
-            OR COALESCE(facts."paymentFeeRuleSnapshot"->>'reason', '') <> ''
-          )
-        ) AS "feeIssue",
+        ${adminPlatformVatEvidenceStatusSql({
+          companyOutputVat: Prisma.sql`facts."companyOutputVat"`,
+          platformFeePolicyVersionId: Prisma.sql`facts."platformFeePolicyVersionId"`,
+          platformFeeRuleSnapshot: Prisma.sql`facts."platformFeeRuleSnapshot"`,
+          platformVatRateBps: Prisma.sql`facts."platformVatRateBps"`,
+        })} AS "vatEvidenceStatus",
+        ${adminPaymentFeeEvidenceSqlCondition({
+          paymentFeePolicyVersionId: Prisma.sql`facts."paymentFeePolicyVersionId"`,
+          paymentFeeRuleSnapshot: Prisma.sql`facts."paymentFeeRuleSnapshot"`,
+          paymentMethod: Prisma.sql`facts."paymentMethod"`,
+          reversalExists: Prisma.sql`facts."reversalEntryCount" > 0`,
+          settlementStatus: Prisma.sql`facts."settlementStatus"`,
+          taxStatus: Prisma.sql`facts."taxStatus"`,
+        })} AS "feeIssue",
         (
           facts."companyCouponExpense" > 0
           AND (
@@ -48682,6 +52916,8 @@ function adminBookingSettlementAuditProjectionCteSql(
     "settlementAuditProjection" AS NOT MATERIALIZED (
       SELECT
         classified.*,
+        (classified."vatEvidenceStatus" IN ('ZERO_UNEXPLAINED', 'EVIDENCE_UNAVAILABLE'))
+          AS "vatEvidenceIssue",
         (
           classified."allocationIssue"
           OR classified."journalIssue"
@@ -48725,12 +52961,25 @@ function adminBookingSettlementAuditBaseWhereSql(options: AdminPaymentOperations
   const conditions: Prisma.Sql[] = [];
   const dateRange = adminPaymentDateRangeWhere(options.range);
   const period = normalizeNullable(options.period);
+  const review = normalizeNullable(options.review ?? options.queue)?.toLowerCase();
   const paymentMethod = normalizeNullable(options.paymentMethod)?.toUpperCase();
   const query = normalizeNullable(options.q);
   if (dateRange?.gte instanceof Date) conditions.push(Prisma.sql`snapshot."postedAt" >= ${dateRange.gte}`);
   if (dateRange?.lte instanceof Date) conditions.push(Prisma.sql`snapshot."postedAt" <= ${dateRange.lte}`);
   if (/^\d{4}-(0[1-9]|1[0-2])$/.test(period ?? '')) {
-    conditions.push(Prisma.sql`snapshot."monthlyPeriod" = ${period}`);
+    conditions.push(
+      review === 'platform-vat-evidence'
+        ? Prisma.sql`(
+            snapshot."monthlyPeriod" = ${period}
+            OR EXISTS (
+              SELECT 1
+              FROM "BookingSettlementReversalEntry" vat_reversal
+              WHERE vat_reversal."originalSettlementSnapshotId" = snapshot."id"
+                AND vat_reversal."monthlyPeriod" = ${period}
+            )
+          )`
+        : Prisma.sql`snapshot."monthlyPeriod" = ${period}`,
+    );
   }
   if (paymentMethod && Object.values(PaymentMethod).includes(paymentMethod as PaymentMethod)) {
     conditions.push(Prisma.sql`snapshot."paymentMethod" = ${paymentMethod}::"PaymentMethod"`);
@@ -48771,6 +53020,7 @@ function adminBookingSettlementAuditFilterSql(options: AdminPaymentOperationsQue
     clearing: Prisma.sql`audit."clearingIssue"`,
     'bank-match': Prisma.sql`audit."bankIssue"`,
     'fee-policy': Prisma.sql`audit."feeIssue"`,
+    'platform-vat': Prisma.sql`audit."vatEvidenceIssue"`,
     coupon: Prisma.sql`audit."couponIssue"`,
     'tax-period': Prisma.sql`audit."taxPeriodIssue"`,
     reversal: Prisma.sql`audit."reversalIssue"`,
@@ -48778,11 +53028,17 @@ function adminBookingSettlementAuditFilterSql(options: AdminPaymentOperationsQue
   };
   if (reason && reasonSql[reason]) conditions.push(reasonSql[reason]);
   if (owner === 'accounting') {
-    conditions.push(Prisma.sql`(audit."allocationIssue" OR audit."journalIssue" OR audit."couponIssue" OR audit."reversalIssue")`);
+    conditions.push(
+      Prisma.sql`(audit."allocationIssue" OR audit."journalIssue" OR audit."couponIssue" OR audit."reversalIssue")`,
+    );
   } else if (owner === 'finance-operations') {
-    conditions.push(Prisma.sql`(audit."clearingIssue" OR audit."bankIssue" OR audit."feeIssue" OR audit."reversalIssue")`);
+    conditions.push(
+      Prisma.sql`(audit."clearingIssue" OR audit."bankIssue" OR audit."feeIssue" OR audit."reversalIssue")`,
+    );
   } else if (owner === 'tax-period-close') {
-    conditions.push(Prisma.sql`(audit."taxPeriodIssue" OR audit."workflowState" IN ('TAX_OPEN', 'TAX_DECLARED'))`);
+    conditions.push(
+      Prisma.sql`(audit."taxPeriodIssue" OR audit."vatEvidenceIssue" OR audit."workflowState" IN ('TAX_OPEN', 'TAX_DECLARED'))`,
+    );
   }
   if (status === 'open') conditions.push(Prisma.sql`audit."workflowState" = 'TAX_OPEN'`);
   if (status === 'declared') conditions.push(Prisma.sql`audit."workflowState" = 'TAX_DECLARED'`);
@@ -48814,6 +53070,8 @@ function adminBookingSettlementAuditReviewSql(review: string | null | undefined)
       return Prisma.sql`(audit."clearingIssue" OR audit."bankIssue")`;
     case 'payment-fee-evidence':
       return Prisma.sql`audit."feeIssue"`;
+    case 'platform-vat-evidence':
+      return Prisma.sql`audit."vatEvidenceIssue"`;
     case 'coupon-evidence':
       return Prisma.sql`audit."couponIssue"`;
     case 'reversal-incomplete':
@@ -48858,7 +53116,8 @@ function adminBookingSettlementAuditEffectiveSort(
   const sort = normalizeNullable(options.sort)?.toLowerCase();
   if (sort === 'largest-discrepancy' || sort === 'newest' || sort === 'oldest') return sort;
   const review = normalizeNullable(options.review ?? options.queue)?.toLowerCase();
-  return !review || ['needs-action', 'open', 'integrity-exceptions', 'payment-evidence', 'tax-workflow'].includes(review)
+  return !review ||
+    ['needs-action', 'open', 'integrity-exceptions', 'payment-evidence', 'tax-workflow'].includes(review)
     ? 'oldest'
     : 'newest';
 }
@@ -48880,7 +53139,12 @@ function adminBookingSettlementAuditCursor(value: string | null | undefined) {
     ) {
       throw new Error('invalid cursor payload');
     }
-    return { amountAtRisk: BigInt(amountAtRisk), id, postedAt, sort } satisfies AdminBookingSettlementAuditCursor;
+    return {
+      amountAtRisk: BigInt(amountAtRisk),
+      id,
+      postedAt,
+      sort,
+    } satisfies AdminBookingSettlementAuditCursor;
   } catch {
     throw new BadRequestException('Invalid booking settlement audit cursor');
   }
@@ -48997,6 +53261,8 @@ type AdminAccountingJournalIntegrityRow = {
   formulaEvidenceAvailable: boolean;
   headerCredit: bigint | number;
   headerDebit: bigint | number;
+  hasCashLedger: boolean;
+  hasCustomerWalletLedger: boolean;
   id: string;
   linkedMonthlyPeriod: string | null;
   monthlyPeriod: string | null;
@@ -49021,6 +53287,19 @@ type AdminAccountingJournalExportRow = AdminAccountingJournalIntegrityRow & {
   updatedAt: Date | string;
 };
 
+const ADMIN_ACCOUNTING_JOURNAL_MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES =
+  ACCOUNTING_JOURNAL_MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES.map(
+    (sourceType) => sourceType as AccountingJournalSourceType,
+  );
+
+function adminAccountingJournalMonthlyPeriodRequiredSourceSql(column: Prisma.Sql) {
+  return Prisma.sql`${column} IN (${Prisma.join(
+    ADMIN_ACCOUNTING_JOURNAL_MONTHLY_PERIOD_REQUIRED_SOURCE_TYPES.map(
+      (sourceType) => Prisma.sql`${sourceType}::"AccountingJournalSourceType"`,
+    ),
+  )})`;
+}
+
 function adminAccountingJournalIntegrityFromRow(
   row: AdminAccountingJournalIntegrityRow,
   checkedAt: string,
@@ -49044,10 +53323,15 @@ function adminAccountingJournalIntegrityFromRow(
 function adminAccountingJournalIntegrityCte(
   options: AdminPaymentOperationsQuery,
   id?: string,
+  includeTargetLinkedPeriodless = false,
+  ids?: readonly string[],
 ) {
-  const baseWhere = adminAccountingJournalBatchBaseSqlWhere(options, id);
+  const baseWhere = adminAccountingJournalBatchBaseSqlWhere(options, id, includeTargetLinkedPeriodless, ids);
+  const filteredBatchesMaterialization = normalizeNullable(options.q)
+    ? Prisma.sql`MATERIALIZED`
+    : Prisma.sql`NOT MATERIALIZED`;
   return Prisma.sql`
-    WITH filtered_batches AS (
+    WITH filtered_batches AS ${filteredBatchesMaterialization} (
       SELECT batch.*
       FROM "AccountingJournalBatch" batch
       WHERE ${baseWhere}
@@ -49061,7 +53345,13 @@ function adminAccountingJournalIntegrityCte(
         ), 0)::bigint AS "entryDebit",
         COALESCE(SUM(entry."amount") FILTER (
           WHERE entry."side" = ${AccountingJournalEntrySide.CREDIT}::"AccountingJournalEntrySide"
-        ), 0)::bigint AS "entryCredit"
+        ), 0)::bigint AS "entryCredit",
+        COALESCE(BOOL_OR(
+          entry."accountCode" IN ('partner_receivable_negative_wallet', 'partner_wallet_liability')
+        ), FALSE) AS "hasCashLedger",
+        COALESCE(BOOL_OR(
+          entry."accountCode" = 'customer_wallet_liability'
+        ), FALSE) AS "hasCustomerWalletLedger"
       FROM "AccountingJournalEntry" entry
       INNER JOIN filtered_batches batch ON batch."id" = entry."batchId"
       GROUP BY entry."batchId"
@@ -49072,6 +53362,8 @@ function adminAccountingJournalIntegrityCte(
         COALESCE(entries."entryCount", 0)::bigint AS "entryCount",
         COALESCE(entries."entryDebit", 0)::bigint AS "entryDebit",
         COALESCE(entries."entryCredit", 0)::bigint AS "entryCredit",
+        COALESCE(entries."hasCashLedger", FALSE) AS "hasCashLedger",
+        COALESCE(entries."hasCustomerWalletLedger", FALSE) AS "hasCustomerWalletLedger",
         CASE
           WHEN batch."sourceType" IN (
             ${AccountingJournalSourceType.BOOKING_SETTLEMENT}::"AccountingJournalSourceType",
@@ -49106,7 +53398,13 @@ function adminAccountingJournalIntegrityCte(
           OR settlement."id" IS NOT NULL
           OR reversal."id" IS NOT NULL
         ) AS "formulaEvidenceAvailable",
-        COALESCE(settlement."monthlyPeriod", reversal."monthlyPeriod") AS "linkedMonthlyPeriod"
+        CASE
+          WHEN batch."sourceType" = ${AccountingJournalSourceType.BOOKING_SETTLEMENT}::"AccountingJournalSourceType"
+          THEN settlement."monthlyPeriod"
+          WHEN batch."sourceType" = ${AccountingJournalSourceType.BOOKING_SETTLEMENT_REVERSAL}::"AccountingJournalSourceType"
+          THEN reversal."monthlyPeriod"
+          ELSE NULL
+        END AS "linkedMonthlyPeriod"
       FROM filtered_batches batch
       LEFT JOIN entry_totals entries ON entries."batchId" = batch."id"
       LEFT JOIN "BookingSettlementSnapshot" settlement
@@ -49151,13 +53449,19 @@ function adminAccountingJournalIntegrityCte(
               AND facts."monthlyPeriod" <> facts."linkedMonthlyPeriod"
             )
           THEN 'BLOCKED'
-          WHEN facts."sourceType" IN (
+          WHEN (
+            facts."sourceType" IN (
             ${AccountingJournalSourceType.BOOKING_SETTLEMENT}::"AccountingJournalSourceType",
             ${AccountingJournalSourceType.BOOKING_SETTLEMENT_REVERSAL}::"AccountingJournalSourceType"
           ) AND (
             NOT facts."formulaEvidenceAvailable"
             OR facts."monthlyPeriod" IS NULL
             OR facts."linkedMonthlyPeriod" IS NULL
+          )
+          ) OR (
+            facts."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
+            AND ${adminAccountingJournalMonthlyPeriodRequiredSourceSql(Prisma.sql`facts."sourceType"`)}
+            AND facts."monthlyPeriod" IS NULL
           )
           THEN 'UNKNOWN'
           ELSE 'CLEAR'
@@ -49171,9 +53475,11 @@ function adminAccountingJournalIntegrityPageSql(
   options: AdminPaymentOperationsQuery,
   take: number,
   skip: number,
+  id?: string,
+  ids?: readonly string[],
 ) {
   return Prisma.sql`
-    ${adminAccountingJournalIntegrityCte(options)}
+    ${adminAccountingJournalIntegrityCte(options, id, false, ids)}
     SELECT
       integrity."id",
       integrity."sourceType",
@@ -49183,6 +53489,8 @@ function adminAccountingJournalIntegrityPageSql(
       integrity."entryCount",
       integrity."entryDebit",
       integrity."entryCredit",
+      integrity."hasCashLedger",
+      integrity."hasCustomerWalletLedger",
       integrity."formulaDelta",
       integrity."formulaEvidenceAvailable",
       integrity."monthlyPeriod",
@@ -49196,10 +53504,82 @@ function adminAccountingJournalIntegrityPageSql(
   `;
 }
 
-function adminAccountingJournalIntegrityExportSql(
-  options: AdminPaymentOperationsQuery,
-  take: number,
+function adminAccountingJournalIntegritySummarySql(options: AdminPaymentOperationsQuery) {
+  return Prisma.sql`
+    ${adminAccountingJournalIntegrityCte(options)}
+    SELECT
+      COUNT(*)::bigint AS "count",
+      COUNT(*) FILTER (
+        WHERE integrity."integrityState" = 'CLEAR'
+      )::bigint AS "balancedCount",
+      COUNT(*) FILTER (WHERE integrity."integrityState" = 'CLEAR')::bigint AS "clearCount",
+      COUNT(*) FILTER (WHERE integrity."integrityState" = 'BLOCKED')::bigint AS "blockedCount",
+      COUNT(*) FILTER (WHERE integrity."integrityState" = 'UNKNOWN')::bigint AS "unknownCount",
+      COUNT(*) FILTER (
+        WHERE integrity."status" = ${AccountingJournalBatchStatus.DRAFT}::"AccountingJournalBatchStatus"
+           OR integrity."integrityState" IN ('BLOCKED', 'UNKNOWN')
+      )::bigint AS "needsActionCount",
+      COUNT(*) FILTER (
+        WHERE integrity."status" = ${AccountingJournalBatchStatus.DRAFT}::"AccountingJournalBatchStatus"
+      )::bigint AS "draftCount",
+      COUNT(*) FILTER (
+        WHERE integrity."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
+      )::bigint AS "postedCount",
+      COUNT(*) FILTER (
+        WHERE integrity."status" = ${AccountingJournalBatchStatus.REVERSED}::"AccountingJournalBatchStatus"
+      )::bigint AS "reversedCount",
+      COUNT(*) FILTER (
+        WHERE integrity."integrityState" = 'BLOCKED'
+      )::bigint AS "unbalancedCount",
+      COUNT(*) FILTER (WHERE ABS(COALESCE(integrity."formulaDelta", 0)) > 0)::bigint AS "formulaDeltaCount",
+      COUNT(*) FILTER (
+        WHERE integrity."totalDebit" <> integrity."totalCredit"
+      )::bigint AS "headerMismatchCount",
+      COUNT(*) FILTER (
+        WHERE integrity."entryDebit" <> integrity."entryCredit"
+      )::bigint AS "entryMismatchCount",
+      COUNT(*) FILTER (
+        WHERE integrity."totalDebit" <> integrity."entryDebit"
+           OR integrity."totalCredit" <> integrity."entryCredit"
+      )::bigint AS "headerEntryMismatchCount",
+      COUNT(*) FILTER (
+        WHERE integrity."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
+          AND integrity."entryCount" = 0
+      )::bigint AS "postedWithoutEntryCount",
+      COALESCE(SUM(integrity."totalDebit"), 0)::bigint AS "totalDebit",
+      COALESCE(SUM(integrity."totalCredit"), 0)::bigint AS "totalCredit",
+      COALESCE(SUM(integrity."discrepancyAmount") FILTER (
+        WHERE integrity."integrityState" = 'BLOCKED'
+      ), 0)::bigint AS "blockedAmount",
+      COALESCE(SUM(integrity."discrepancyAmount") FILTER (
+        WHERE integrity."integrityState" = 'BLOCKED'
+      ), 0)::bigint AS "unbalancedAmount",
+      MIN(integrity."postedAt") FILTER (
+        WHERE integrity."status" = ${AccountingJournalBatchStatus.DRAFT}::"AccountingJournalBatchStatus"
+      ) AS "oldestDraftAt",
+      MIN(integrity."postedAt") FILTER (
+        WHERE integrity."integrityState" IN ('BLOCKED', 'UNKNOWN')
+      ) AS "oldestUnbalancedAt",
+      MIN(integrity."postedAt") FILTER (
+        WHERE integrity."integrityState" IN ('BLOCKED', 'UNKNOWN')
+      ) AS "oldestBlockerAt"
+    FROM journal_integrity integrity
+    WHERE ${adminAccountingJournalIntegrityReviewSql(options)}
+  `;
+}
+
+export function adminAccountingJournalPerformanceQueries(
+  options: AdminPaymentOperationsQuery = {},
+  take = 10,
+  skip = 0,
 ) {
+  return [
+    { name: 'list-page', sql: adminAccountingJournalIntegrityPageSql(options, take, skip) },
+    { name: 'summary-aggregate', sql: adminAccountingJournalIntegritySummarySql(options) },
+  ] as const;
+}
+
+function adminAccountingJournalIntegrityExportSql(options: AdminPaymentOperationsQuery, take: number) {
   return Prisma.sql`
     ${adminAccountingJournalIntegrityCte(options)}
     SELECT
@@ -49237,7 +53617,12 @@ function adminAccountingJournalIntegrityExportSql(
   `;
 }
 
-function adminAccountingJournalBatchBaseSqlWhere(options: AdminPaymentOperationsQuery, id?: string) {
+function adminAccountingJournalBatchBaseSqlWhere(
+  options: AdminPaymentOperationsQuery,
+  id?: string,
+  includeTargetLinkedPeriodless = false,
+  ids?: readonly string[],
+) {
   const filters: Prisma.Sql[] = [];
   const dateRange = adminPaymentDateRangeWhere(options.range);
   const query = normalizeNullable(options.q);
@@ -49245,13 +53630,80 @@ function adminAccountingJournalBatchBaseSqlWhere(options: AdminPaymentOperations
   const source = normalizeAccountingJournalSourceType(options.source);
 
   if (id) filters.push(Prisma.sql`batch."id" = ${id}`);
+  if (ids?.length) filters.push(Prisma.sql`batch."id" IN (${Prisma.join(ids)})`);
 
   if (dateRange) {
     filters.push(
       Prisma.sql`batch."postedAt" >= ${dateRange.gte as Date} AND batch."postedAt" <= ${dateRange.lte as Date}`,
     );
   }
-  if (period) filters.push(Prisma.sql`batch."monthlyPeriod" = ${period}`);
+  if (period) {
+    filters.push(
+      includeTargetLinkedPeriodless
+        ? Prisma.sql`(
+            batch."monthlyPeriod" = ${period}
+            OR (
+              batch."monthlyPeriod" IS NULL
+              AND batch."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
+              AND ${adminAccountingJournalMonthlyPeriodRequiredSourceSql(Prisma.sql`batch."sourceType"`)}
+              AND (
+                (
+                  batch."sourceType" = ${AccountingJournalSourceType.BOOKING_SETTLEMENT}::"AccountingJournalSourceType"
+                  AND EXISTS (
+                    SELECT 1
+                    FROM "BookingSettlementSnapshot" target_settlement
+                    WHERE target_settlement."id" = batch."settlementSnapshotId"
+                      AND target_settlement."monthlyPeriod" = ${period}
+                  )
+                )
+                OR (
+                  batch."sourceType" = ${AccountingJournalSourceType.BOOKING_SETTLEMENT_REVERSAL}::"AccountingJournalSourceType"
+                  AND EXISTS (
+                    SELECT 1
+                    FROM "BookingSettlementReversalEntry" target_reversal
+                    WHERE target_reversal."id" = batch."settlementReversalEntryId"
+                      AND target_reversal."monthlyPeriod" = ${period}
+                  )
+                )
+                OR batch."metadata"->>'monthlyPeriod' = ${period}
+                OR EXISTS (
+                  SELECT 1
+                  FROM (
+                    SELECT provider_ledger."metadata"
+                    FROM "ProviderWalletLedgerEntry" provider_ledger
+                    WHERE provider_ledger."id" = batch."sourceId"
+                    UNION ALL
+                    SELECT customer_ledger."metadata"
+                    FROM "CustomerWalletLedgerEntry" customer_ledger
+                    WHERE customer_ledger."id" = batch."sourceId"
+                  ) ledger
+                  WHERE ledger."metadata"->>'monthlyPeriod' = ${period}
+                )
+                OR (
+                  batch."sourceType" = ${AccountingJournalSourceType.REFERRAL_REWARD}::"AccountingJournalSourceType"
+                  AND EXISTS (
+                    SELECT 1
+                    FROM (
+                      SELECT provider_ledger."createdAt"
+                      FROM "ProviderWalletLedgerEntry" provider_ledger
+                      WHERE provider_ledger."id" = batch."metadata"->>'ledgerId'
+                      UNION ALL
+                      SELECT customer_ledger."createdAt"
+                      FROM "CustomerWalletLedgerEntry" customer_ledger
+                      WHERE customer_ledger."id" = batch."metadata"->>'ledgerId'
+                    ) referral_ledger
+                    WHERE TO_CHAR(
+                      referral_ledger."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE ${VIETNAM_TIME_ZONE},
+                      'YYYY-MM'
+                    ) = ${period}
+                  )
+                )
+              )
+            )
+          )`
+        : Prisma.sql`batch."monthlyPeriod" = ${period}`,
+    );
+  }
   if (source) {
     filters.push(Prisma.sql`batch."sourceType" = ${source}::"AccountingJournalSourceType"`);
   }
@@ -49291,6 +53743,15 @@ function adminAccountingJournalIntegrityReviewSql(options: AdminPaymentOperation
       )`;
     case 'unbalanced':
       return Prisma.sql`integrity."integrityState" = 'BLOCKED'`;
+    case 'unknown':
+      return Prisma.sql`integrity."integrityState" = 'UNKNOWN'`;
+    case 'unassigned-period':
+      return Prisma.sql`(
+        integrity."integrityState" = 'UNKNOWN'
+        AND integrity."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
+        AND ${adminAccountingJournalMonthlyPeriodRequiredSourceSql(Prisma.sql`integrity."sourceType"`)}
+        AND integrity."monthlyPeriod" IS NULL
+      )`;
     case 'draft':
       return Prisma.sql`integrity."status" = ${AccountingJournalBatchStatus.DRAFT}::"AccountingJournalBatchStatus"`;
     case 'posted':
@@ -49315,7 +53776,7 @@ function adminAccountingJournalIntegrityOrderSql(options: AdminPaymentOperations
     return Prisma.sql`integrity."postedAt" DESC, integrity."id" DESC`;
   }
   const review = normalizeNullable(options.review ?? options.status)?.toLowerCase();
-  return review === 'needs-action' || review === 'unbalanced' || review === 'draft'
+  return review === 'needs-action' || review === 'unbalanced' || review === 'unknown' || review === 'draft'
     ? Prisma.sql`integrity."postedAt" ASC, integrity."id" ASC`
     : Prisma.sql`integrity."postedAt" DESC, integrity."id" DESC`;
 }
@@ -50223,8 +54684,7 @@ function normalizeCompanyBankAccountIdentity(input: {
 }) {
   const name = normalizeNullable(input.name);
   const bankName = normalizeNullable(input.bankName);
-  const accountNumberLast4 =
-    typeof input.accountNumberLast4 === 'string' ? input.accountNumberLast4 : '';
+  const accountNumberLast4 = typeof input.accountNumberLast4 === 'string' ? input.accountNumberLast4 : '';
   const currency = normalizeNullable(input.currency)?.toUpperCase();
   if (!name || !bankName) {
     throw new BadRequestException('Company bank account name and bank name are required');
@@ -50267,6 +54727,49 @@ function normalizeCompanyBankAccountIdempotencyKey(value: string | null | undefi
   return normalized;
 }
 
+function normalizeCompanyBankAccountOperatorReason(value: string) {
+  const normalized = value.trim();
+  if (/[0-9]{6,}/u.test(normalized)) {
+    throw new BadRequestException({
+      code: 'COMPANY_BANK_ACCOUNT_RAW_NUMBER_REJECTED',
+      field: 'operatorReason',
+      message: 'Do not include a full account number in Finance evidence text',
+    });
+  }
+  return normalized;
+}
+
+function companyBankAccountMutationHash(input: {
+  operation: 'CREATE' | 'UPDATE';
+  operatorReason: string;
+  proposed: CompanyBankAccountApprovalSnapshot;
+  replacementAccountId: string | null;
+}) {
+  return createHash('sha256').update(adminCanonicalJson(input)).digest('hex');
+}
+
+function companyBankAccountEvidenceHash(input: {
+  accountId: string;
+  contentSha256: string;
+  evidenceId: string;
+  fileAssetId: string;
+  kind: CompanyBankAccountEvidenceKind;
+  version: number;
+}) {
+  return createHash('sha256').update(adminCanonicalJson(input)).digest('hex');
+}
+
+function assertCompanyBankAccountIdempotencyHash(
+  existingHash: string | null,
+  requestedHash: string,
+) {
+  if (existingHash === requestedHash) return;
+  throw new ConflictException({
+    code: 'COMPANY_BANK_ACCOUNT_IDEMPOTENCY_CONFLICT',
+    message: 'The idempotency key was already used with a different company bank account request',
+  });
+}
+
 function assertControlledCompanyBankAccountIdentity(bankCode: string, bankName: string) {
   const names: Record<string, string> = {
     ACB: 'ACB',
@@ -50280,7 +54783,8 @@ function assertControlledCompanyBankAccountIdentity(bankCode: string, bankName: 
     expected &&
     (expected.toLocaleLowerCase('en') === bankName.toLocaleLowerCase('en') ||
       bankCode.toLocaleLowerCase('en') === bankName.toLocaleLowerCase('en'))
-  ) return;
+  )
+    return;
   throw new BadRequestException({
     code: 'COMPANY_BANK_ACCOUNT_BANK_IDENTITY_MISMATCH',
     field: 'bankName',
@@ -50843,8 +55347,7 @@ function withAdminNotificationRetryDecision<
   const targetRole = notificationTargetRole(notification);
   const roleNeutral = isRoleNeutralNotificationType(notification.type);
   const targetDevices = notificationRetryPushDevices(notification.user).filter(
-    (device) =>
-      device.enabled && (roleNeutral || pushDeviceMatchesTargetRole(device, targetRole)),
+    (device) => device.enabled && (roleNeutral || pushDeviceMatchesTargetRole(device, targetRole)),
   );
   const retryDecision = notificationRetryDecision(targetDevices, notification.deliveries ?? [], now);
   return {
@@ -50861,7 +55364,9 @@ function notificationRetryPushDevices(value: unknown) {
   const pushDevices = (value as { pushDevices?: unknown }).pushDevices;
   if (!Array.isArray(pushDevices)) return [];
   return pushDevices.filter(
-    (device): device is {
+    (
+      device,
+    ): device is {
       createdAt: Date | string;
       enabled: boolean;
       id: string;
@@ -50884,7 +55389,10 @@ function withAdminNotificationDataScope<
   const notificationDataScope =
     data.dataScope === 'production'
       ? ('production' as const)
-      : data.dataScope === 'synthetic' || data.smokeFixture === true || data.smoke === true || data.fixture === true
+      : data.dataScope === 'synthetic' ||
+          data.smokeFixture === true ||
+          data.smoke === true ||
+          data.fixture === true
         ? ('synthetic' as const)
         : ('unknown' as const);
   const liveBoundary = new Date(now.getTime() - ADMIN_BOOKING_LIVE_MAX_AGE_HOURS * 60 * 60_000);
@@ -50894,7 +55402,8 @@ function withAdminNotificationDataScope<
   }, null);
   const createdAt = new Date(notification.createdAt);
   const lastEventAt = latestDeliveryAt === null ? createdAt : new Date(latestDeliveryAt);
-  const dataClass = notificationDataScope === 'synthetic'
+  const dataClass =
+    notificationDataScope === 'synthetic'
     ? ('test' as const)
     : createdAt >= liveBoundary
       ? ('live' as const)
@@ -51190,6 +55699,188 @@ function adminCouponFinanceSqlWhere(options: AdminPaymentOperationsQuery): Prism
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
 }
 
+function adminCouponFinanceActivityCteSql(options: AdminPaymentOperationsQuery) {
+  return Prisma.sql`
+    "couponSnapshots" AS NOT MATERIALIZED (
+      SELECT *
+      FROM "BookingSettlementSnapshot"
+      ${adminCouponFinanceSqlWhere(options)}
+    ),
+    "couponReversals" AS NOT MATERIALIZED (
+      SELECT *
+      FROM "BookingSettlementReversalEntry"
+      ${adminCouponFinanceReversalSqlWhere(options)}
+    )
+  `;
+}
+
+function adminCouponFinancePageSql(options: AdminPaymentOperationsQuery, take: number, skip: number) {
+  return Prisma.sql`
+    WITH
+    ${adminCouponFinanceActivityCteSql(options)},
+    "couponActivity" AS (
+      SELECT
+        snapshot."id",
+        snapshot."postedAt" AS "activityAt",
+        TRUE AS "grossIncluded",
+        FALSE AS "correctionIncluded"
+      FROM "couponSnapshots" snapshot
+      UNION ALL
+      SELECT
+        reversal."originalSettlementSnapshotId" AS "id",
+        reversal."occurredAt" AS "activityAt",
+        FALSE AS "grossIncluded",
+        TRUE AS "correctionIncluded"
+      FROM "couponReversals" reversal
+    )
+    SELECT
+      activity."id",
+      BOOL_OR(activity."grossIncluded") AS "grossIncluded",
+      BOOL_OR(activity."correctionIncluded") AS "correctionIncluded"
+    FROM "couponActivity" activity
+    GROUP BY activity."id"
+    ORDER BY MAX(activity."activityAt") ${adminCouponFinanceSortSql(options.sort)}, activity."id" ${adminCouponFinanceSortSql(options.sort)}
+    LIMIT ${take}
+    OFFSET ${skip}
+  `;
+}
+
+function adminCouponFinanceSummarySql(options: AdminPaymentOperationsQuery) {
+  return Prisma.sql`
+    WITH
+    ${adminCouponFinanceActivityCteSql(options)},
+    "couponSnapshotTotals" AS (
+      SELECT
+        COUNT(*)::bigint AS "couponSettlementCount",
+        COUNT(*) FILTER (
+          WHERE "settlementStatus" = ${BookingSettlementStatus.REVERSED}::"BookingSettlementStatus"
+        )::bigint AS "reversedSnapshotCount",
+        COALESCE(SUM(${adminJsonIntSql('bookingServiceAmount')}), 0)::bigint AS "bookingServiceAmount",
+        COALESCE(SUM(${adminJsonIntSql('customerPaidAmount')}), 0)::bigint AS "customerPaidAmount",
+        COALESCE(SUM(${adminJsonIntSql('settlementBaseAmount')}), 0)::bigint AS "settlementBaseAmount",
+        COALESCE(SUM(${adminJsonIntSql('couponDiscountAmount')}), 0)::bigint AS "couponDiscountAmount",
+        COALESCE(SUM(${adminJsonIntSql('companyCouponExpense')}), 0)::bigint AS "companyCouponExpense",
+        COALESCE(SUM(${adminJsonIntSql('partnerFundedCouponAmount')}), 0)::bigint AS "partnerFundedCouponAmount",
+        COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}), 0)::bigint AS "platformFeeDiscountAmount",
+        COALESCE(SUM(${adminJsonIntSql('reversedCouponDiscountAmount')}), 0)::bigint AS "reversedCouponDiscountAmount",
+        COALESCE(SUM(${adminJsonIntSql('reversedCompanyCouponExpense')}), 0)::bigint AS "reversedCompanyCouponExpense",
+        COALESCE(SUM(${adminJsonIntSql('partnerFundedCouponAmount')}) FILTER (
+          WHERE "settlementStatus" = ${BookingSettlementStatus.REVERSED}::"BookingSettlementStatus"
+        ), 0)::bigint AS "reversedPartnerFundedCouponAmount",
+        COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}) FILTER (
+          WHERE "settlementStatus" = ${BookingSettlementStatus.REVERSED}::"BookingSettlementStatus"
+        ), 0)::bigint AS "reversedPlatformFeeDiscountAmount",
+        COUNT(*) FILTER (WHERE "metadata" ? 'couponReviewFlag')::bigint AS "couponReviewFlagCount"
+      FROM "couponSnapshots"
+    ),
+    "couponReversalTotals" AS (
+      SELECT
+        COUNT(*)::bigint AS "couponReversalCount",
+        COALESCE(SUM(${adminJsonIntSql('reversedCouponDiscountAmount')}), 0)::bigint AS "reversedCouponDiscountAmount",
+        COALESCE(SUM(${adminJsonIntSql('reversedCompanyCouponExpense')}), 0)::bigint AS "reversedCompanyCouponExpense",
+        COALESCE(SUM(${adminJsonIntSql('partnerFundedCouponAmount')}), 0)::bigint AS "reversedPartnerFundedCouponAmount",
+        COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}), 0)::bigint AS "reversedPlatformFeeDiscountAmount"
+      FROM "couponReversals"
+    ),
+    "couponOverlapTotals" AS (
+      SELECT COUNT(*)::bigint AS "overlapCount"
+      FROM "couponReversals" reversal
+      INNER JOIN "couponSnapshots" snapshot
+        ON snapshot."id" = reversal."originalSettlementSnapshotId"
+    )
+    SELECT
+      snapshot."couponSettlementCount",
+      (snapshot."couponSettlementCount" + reversal."couponReversalCount" - overlap."overlapCount")::bigint AS "couponActivityCount",
+      (snapshot."reversedSnapshotCount" + reversal."couponReversalCount")::bigint AS "couponCorrectionCount",
+      snapshot."bookingServiceAmount",
+      snapshot."customerPaidAmount",
+      snapshot."settlementBaseAmount",
+      snapshot."couponDiscountAmount",
+      snapshot."companyCouponExpense",
+      snapshot."partnerFundedCouponAmount",
+      snapshot."platformFeeDiscountAmount",
+      (snapshot."reversedCouponDiscountAmount" + reversal."reversedCouponDiscountAmount")::bigint AS "reversedCouponDiscountAmount",
+      (snapshot."reversedCompanyCouponExpense" + reversal."reversedCompanyCouponExpense")::bigint AS "reversedCompanyCouponExpense",
+      (snapshot."reversedPartnerFundedCouponAmount" + reversal."reversedPartnerFundedCouponAmount")::bigint AS "reversedPartnerFundedCouponAmount",
+      (snapshot."reversedPlatformFeeDiscountAmount" + reversal."reversedPlatformFeeDiscountAmount")::bigint AS "reversedPlatformFeeDiscountAmount",
+      (snapshot."couponDiscountAmount" - snapshot."reversedCouponDiscountAmount" - reversal."reversedCouponDiscountAmount")::bigint AS "netCouponDiscountAmount",
+      (snapshot."companyCouponExpense" - snapshot."reversedCompanyCouponExpense" - reversal."reversedCompanyCouponExpense")::bigint AS "netCompanyCouponExpense",
+      (snapshot."partnerFundedCouponAmount" - snapshot."reversedPartnerFundedCouponAmount" - reversal."reversedPartnerFundedCouponAmount")::bigint AS "netPartnerFundedCouponAmount",
+      (snapshot."platformFeeDiscountAmount" - snapshot."reversedPlatformFeeDiscountAmount" - reversal."reversedPlatformFeeDiscountAmount")::bigint AS "netPlatformFeeDiscountAmount",
+      snapshot."couponReviewFlagCount"
+    FROM "couponSnapshotTotals" snapshot
+    CROSS JOIN "couponReversalTotals" reversal
+    CROSS JOIN "couponOverlapTotals" overlap
+  `;
+}
+
+export function adminCouponFinancePerformanceQueries(
+  options: AdminPaymentOperationsQuery = {},
+  take = 10,
+  skip = 0,
+) {
+  return [
+    { name: 'list-page', sql: adminCouponFinancePageSql(options, take, skip) },
+    { name: 'summary-aggregate', sql: adminCouponFinanceSummarySql(options) },
+  ] as const;
+}
+
+function adminCouponFinanceReversalSqlWhere(options: AdminPaymentOperationsQuery): Prisma.Sql {
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`(
+      "metadata" ? 'reversedCouponDiscountAmount'
+      OR "metadata" ? 'reversedCompanyCouponExpense'
+      OR "metadata" ? 'couponCodeSnapshot'
+      OR "metadata" ? 'couponId'
+    )`,
+  ];
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+  const period = normalizeOptionalAdminTaxPeriod(options.period);
+  if (dateRange?.gte instanceof Date) conditions.push(Prisma.sql`"occurredAt" >= ${dateRange.gte}`);
+  if (dateRange?.lte instanceof Date) conditions.push(Prisma.sql`"occurredAt" <= ${dateRange.lte}`);
+  if (period) conditions.push(Prisma.sql`"monthlyPeriod" = ${period}`);
+
+  const query = normalizeNullable(options.q);
+  if (query) {
+    const contains = `%${query}%`;
+    conditions.push(Prisma.sql`(
+      "bookingId" ILIKE ${contains}
+      OR "providerProfileId" ILIKE ${contains}
+      OR COALESCE("metadata"->>'couponCodeSnapshot', '') ILIKE ${contains}
+      OR COALESCE("metadata"->>'couponId', '') ILIKE ${contains}
+    )`);
+  }
+  const reviewSql = adminCouponFinanceReversalReviewSql(options.review);
+  if (reviewSql) conditions.push(reviewSql);
+  return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
+}
+
+function adminCouponFinanceReversalReviewSql(review: string | null | undefined): Prisma.Sql | null {
+  switch (normalizeNullable(review)) {
+    case 'coupon-review':
+      return Prisma.sql`"metadata" ? 'couponReviewFlag'`;
+    case 'needs-action':
+    case 'open':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.OPEN}::"BookingSettlementTaxStatus"`;
+    case 'declared':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.DECLARED}::"BookingSettlementTaxStatus"`;
+    case 'paid':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.PAID}::"BookingSettlementTaxStatus"`;
+    case 'closed':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.CLOSED}::"BookingSettlementTaxStatus"`;
+    case 'posted':
+      return Prisma.sql`"settlementStatus" = ${BookingSettlementStatus.POSTED}::"BookingSettlementStatus"`;
+    case 'reversed':
+      return Prisma.sql`TRUE`;
+    case 'cash':
+      return Prisma.sql`"paymentMethod" = ${PaymentMethod.CASH}::"PaymentMethod"`;
+    case 'non-cash':
+      return Prisma.sql`"paymentMethod" <> ${PaymentMethod.CASH}::"PaymentMethod"`;
+    default:
+      return null;
+  }
+}
+
 function adminCouponFinanceSortSql(value: string | null | undefined) {
   return normalizeNullable(value)?.toLowerCase() === 'oldest' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
 }
@@ -51238,6 +55929,52 @@ function adminPartnerWithholdingTaxSqlWhere(period: string): Prisma.Sql {
   `;
 }
 
+type AdminPartnerWithholdingEvidenceStatus = 'COMPLETE' | 'EXPLICIT_ZERO' | 'MIXED' | 'MISSING_EVIDENCE';
+
+export function adminPartnerWithholdingEvidenceStatus(input: {
+  readonly completeEvidenceCount: number;
+  readonly explicitZeroEvidenceCount: number;
+  readonly missingEvidenceCount: number;
+}): AdminPartnerWithholdingEvidenceStatus {
+  if (input.missingEvidenceCount > 0) return 'MISSING_EVIDENCE';
+  if (input.completeEvidenceCount > 0 && input.explicitZeroEvidenceCount > 0) return 'MIXED';
+  if (input.explicitZeroEvidenceCount > 0) return 'EXPLICIT_ZERO';
+  return 'COMPLETE';
+}
+
+function adminPartnerWithholdingEvidenceEventStatusSql(columns: {
+  readonly partnerPitRateBps: Prisma.Sql;
+  readonly partnerVatRateBps: Prisma.Sql;
+  readonly partnerWithholdingTotal: Prisma.Sql;
+  readonly taxPolicyVersionId: Prisma.Sql;
+  readonly taxRuleSnapshot: Prisma.Sql;
+}) {
+  const {
+    partnerPitRateBps,
+    partnerVatRateBps,
+    partnerWithholdingTotal,
+    taxPolicyVersionId,
+    taxRuleSnapshot,
+  } = columns;
+  return Prisma.sql`
+    CASE
+      WHEN ${taxPolicyVersionId} IS NULL
+        OR ${taxRuleSnapshot} IS NULL
+        OR jsonb_typeof(${taxRuleSnapshot}) <> 'object'
+        OR ${taxRuleSnapshot} = '{}'::jsonb
+        THEN 'MISSING_EVIDENCE'
+      WHEN ${partnerWithholdingTotal} = 0
+        AND ${partnerVatRateBps} = 0
+        AND ${partnerPitRateBps} = 0
+        THEN 'EXPLICIT_ZERO'
+      WHEN ${partnerWithholdingTotal} <> 0
+        AND (${partnerVatRateBps} > 0 OR ${partnerPitRateBps} > 0)
+        THEN 'COMPLETE'
+      ELSE 'MISSING_EVIDENCE'
+    END
+  `;
+}
+
 function adminPartnerWithholdingTaxActivityCteSql(period: string): Prisma.Sql {
   return Prisma.sql`
     "withholdingActivity" AS (
@@ -51251,26 +55988,64 @@ function adminPartnerWithholdingTaxActivityCteSql(period: string): Prisma.Sql {
         "partnerPayoutAmount"::bigint AS "partnerPayoutTotal",
         "partnerVatAmount"::bigint AS "partnerVatWithheldTotal",
         "partnerPitAmount"::bigint AS "partnerPitWithheldTotal",
-        "partnerWithholdingTotal"::bigint AS "totalPartnerTaxWithheld"
+        "partnerWithholdingTotal"::bigint AS "totalPartnerTaxWithheld",
+        ${adminPartnerWithholdingEvidenceEventStatusSql({
+          partnerPitRateBps: Prisma.sql`"partnerPitRateBps"`,
+          partnerVatRateBps: Prisma.sql`"partnerVatRateBps"`,
+          partnerWithholdingTotal: Prisma.sql`"partnerWithholdingTotal"`,
+          taxPolicyVersionId: Prisma.sql`"taxPolicyVersionId"`,
+          taxRuleSnapshot: Prisma.sql`"taxRuleSnapshot"`,
+        })} AS "withholdingEvidenceEventStatus"
       FROM "BookingSettlementSnapshot"
       ${adminPartnerWithholdingTaxSqlWhere(period)}
 
       UNION ALL
 
       SELECT
-        "providerProfileId",
-        "monthlyPeriod",
-        "currency",
+        reversal."providerProfileId",
+        reversal."monthlyPeriod",
+        reversal."currency",
         0::bigint AS "postedSettlementCount",
         1::bigint AS "reversalCount",
-        "partnerTaxableRevenue"::bigint AS "grossServiceRevenue",
-        "partnerPayoutAmount"::bigint AS "partnerPayoutTotal",
-        "partnerVatAmount"::bigint AS "partnerVatWithheldTotal",
-        "partnerPitAmount"::bigint AS "partnerPitWithheldTotal",
-        "partnerWithholdingTotal"::bigint AS "totalPartnerTaxWithheld"
-      FROM "BookingSettlementReversalEntry"
-    WHERE "monthlyPeriod" = ${period}
-        AND ("partnerTaxableRevenue" <> 0 OR "partnerWithholdingTotal" <> 0)
+        reversal."partnerTaxableRevenue"::bigint AS "grossServiceRevenue",
+        reversal."partnerPayoutAmount"::bigint AS "partnerPayoutTotal",
+        reversal."partnerVatAmount"::bigint AS "partnerVatWithheldTotal",
+        reversal."partnerPitAmount"::bigint AS "partnerPitWithheldTotal",
+        reversal."partnerWithholdingTotal"::bigint AS "totalPartnerTaxWithheld",
+        ${adminPartnerWithholdingEvidenceEventStatusSql({
+          partnerPitRateBps: Prisma.sql`original."partnerPitRateBps"`,
+          partnerVatRateBps: Prisma.sql`original."partnerVatRateBps"`,
+          partnerWithholdingTotal: Prisma.sql`reversal."partnerWithholdingTotal"`,
+          taxPolicyVersionId: Prisma.sql`original."taxPolicyVersionId"`,
+          taxRuleSnapshot: Prisma.sql`original."taxRuleSnapshot"`,
+        })} AS "withholdingEvidenceEventStatus"
+      FROM "BookingSettlementReversalEntry" reversal
+      INNER JOIN "BookingSettlementSnapshot" original
+        ON original."id" = reversal."originalSettlementSnapshotId"
+      WHERE reversal."monthlyPeriod" = ${period}
+        AND (reversal."partnerTaxableRevenue" <> 0 OR reversal."partnerWithholdingTotal" <> 0)
+    ),
+    "withholdingEvidenceByProvider" AS (
+      SELECT
+        activity."providerProfileId",
+        COUNT(*) FILTER (WHERE activity."withholdingEvidenceEventStatus" = 'COMPLETE')::bigint
+          AS "completeEvidenceCount",
+        COUNT(*) FILTER (WHERE activity."withholdingEvidenceEventStatus" = 'EXPLICIT_ZERO')::bigint
+          AS "explicitZeroEvidenceCount",
+        COUNT(*) FILTER (WHERE activity."withholdingEvidenceEventStatus" = 'MISSING_EVIDENCE')::bigint
+          AS "missingEvidenceCount",
+        CASE
+          WHEN COUNT(*) FILTER (WHERE activity."withholdingEvidenceEventStatus" = 'MISSING_EVIDENCE') > 0
+            THEN 'MISSING_EVIDENCE'
+          WHEN COUNT(*) FILTER (WHERE activity."withholdingEvidenceEventStatus" = 'COMPLETE') > 0
+            AND COUNT(*) FILTER (WHERE activity."withholdingEvidenceEventStatus" = 'EXPLICIT_ZERO') > 0
+            THEN 'MIXED'
+          WHEN COUNT(*) FILTER (WHERE activity."withholdingEvidenceEventStatus" = 'EXPLICIT_ZERO') > 0
+            THEN 'EXPLICIT_ZERO'
+          ELSE 'COMPLETE'
+        END AS "withholdingEvidenceStatus"
+      FROM "withholdingActivity" activity
+      GROUP BY activity."providerProfileId"
     )
   `;
 }
@@ -51527,6 +56302,20 @@ function assertMonthlyTaxClosingPaymentFeeEvidenceIsReady(
   }
 }
 
+function assertMonthlyTaxClosingPlatformVatEvidenceIsReady(
+  summary: { platformVatReviewFlagCount: number },
+  nextStatus: MonthlyTaxClosingStatus,
+) {
+  if (nextStatus === MonthlyTaxClosingStatus.DRAFT || nextStatus === MonthlyTaxClosingStatus.REVIEWED) {
+    return;
+  }
+  if (summary.platformVatReviewFlagCount > 0) {
+    throw new BadRequestException(
+      `Monthly close has ${summary.platformVatReviewFlagCount} settlement(s) with unexplained or unavailable platform VAT evidence. Review the exact VAT evidence queue before declaration.`,
+    );
+  }
+}
+
 function assertMonthlyTaxClosingPartnerDepositReconciliationIsReady(
   summary: { partnerDepositReconciliationOpenCount: number },
   nextStatus: MonthlyTaxClosingStatus,
@@ -51564,9 +56353,7 @@ function assertMonthlyTaxClosingPartnerPayoutReconciliationIsReady(
 }
 
 async function assertMonthlyTaxClosingPostedJournalsAreBalanced(
-  prisma:
-    | Pick<PrismaService, '$queryRaw'>
-    | Pick<Prisma.TransactionClient, '$queryRaw'>,
+  prisma: Pick<PrismaService, '$queryRaw'> | Pick<Prisma.TransactionClient, '$queryRaw'>,
   period: string,
   nextStatus: MonthlyTaxClosingStatus,
 ) {
@@ -51576,7 +56363,7 @@ async function assertMonthlyTaxClosingPostedJournalsAreBalanced(
 
   const [imbalancedJournal] = await prisma.$queryRaw<Array<{ id: string; sourceKey: string }>>(
     Prisma.sql`
-      ${adminAccountingJournalIntegrityCte({ period, review: 'posted' })}
+      ${adminAccountingJournalIntegrityCte({ period, range: 'all', review: 'posted' }, undefined, true)}
       SELECT integrity."id", integrity."sourceKey"
       FROM journal_integrity integrity
       WHERE integrity."integrityState" <> 'CLEAR'
@@ -51699,6 +56486,7 @@ type MonthlyTaxClosingPreflightBlockerCode =
   | 'PAYOUT_BANK_OUTFLOW_RECONCILIATION'
   | 'PAYOUT_RETURN_INFLOW_RECONCILIATION'
   | 'PAYMENT_FEE_EVIDENCE'
+  | 'PLATFORM_VAT_EVIDENCE'
   | 'POSTED_JOURNAL_DELTA'
   | 'RECONCILIATION_DELTA'
   | 'REMITTANCE_AMOUNT_MISMATCH'
@@ -51726,6 +56514,7 @@ function monthlyTaxClosingPreflight(input: {
   readonly payoutReturnInflowReconciliationOpenCount: number;
   readonly partnerWithholdingTotal: number;
   readonly paymentFeeReviewFlagCount: number;
+  readonly platformVatReviewFlagCount: number;
   readonly reconciliationDelta: number;
   readonly withholdingRemittanceJournal: MonthlyTaxClosingRemittanceJournalPreflight;
 }) {
@@ -51760,6 +56549,12 @@ function monthlyTaxClosingPreflight(input: {
       blockers.push({
         code: 'PAYMENT_FEE_EVIDENCE',
         message: `${input.paymentFeeReviewFlagCount} settlement(s) still need resolved payment fee policy evidence.`,
+      });
+    }
+    if (input.platformVatReviewFlagCount > 0) {
+      blockers.push({
+        code: 'PLATFORM_VAT_EVIDENCE',
+        message: `${input.platformVatReviewFlagCount} settlement(s) have unexplained or unavailable platform VAT evidence.`,
       });
     }
     if (input.partnerDepositReconciliationOpenCount > 0) {
@@ -52034,6 +56829,110 @@ function platformVatCategory(rateBps: number) {
   return 'MANUAL_REVIEW';
 }
 
+type AdminPlatformVatRegisterEvidenceStatus =
+  | 'POSITIVE_STANDARD_OR_REDUCED'
+  | 'EXPLICIT_ZERO_RULE'
+  | 'ZERO_FROM_POLICY'
+  | 'ZERO_UNEXPLAINED'
+  | 'EVIDENCE_UNAVAILABLE';
+
+export function adminPlatformVatRegisterEvidenceStatus(input: {
+  readonly companyOutputVat: number;
+  readonly platformFeePolicyVersionId?: string | null;
+  readonly platformFeeRuleSnapshot?: unknown;
+  readonly platformVatRateBps: number;
+}): AdminPlatformVatRegisterEvidenceStatus {
+  if (input.companyOutputVat > 0 || input.platformVatRateBps > 0) {
+    return 'POSITIVE_STANDARD_OR_REDUCED';
+  }
+  const ruleSnapshot = adminJsonObject(input.platformFeeRuleSnapshot);
+  const lines = Array.isArray(ruleSnapshot?.lines) ? ruleSnapshot.lines : [];
+  const hasExplicitZeroRule =
+    ruleSnapshot?.source === 'SERVICE_PAYOUT_RULE' &&
+    lines.length > 0 &&
+    lines.every((line) => adminJsonObject(line)?.vatBps === 0);
+  if (hasExplicitZeroRule) return 'EXPLICIT_ZERO_RULE';
+  if (input.platformFeePolicyVersionId) return 'ZERO_FROM_POLICY';
+  if (!ruleSnapshot) return 'EVIDENCE_UNAVAILABLE';
+  return 'ZERO_UNEXPLAINED';
+}
+
+function adminPlatformVatEvidenceStatusSql(columns: {
+  readonly companyOutputVat: Prisma.Sql;
+  readonly platformFeePolicyVersionId: Prisma.Sql;
+  readonly platformFeeRuleSnapshot: Prisma.Sql;
+  readonly platformVatRateBps: Prisma.Sql;
+}) {
+  const { companyOutputVat, platformFeePolicyVersionId, platformFeeRuleSnapshot, platformVatRateBps } =
+    columns;
+  const safeLines = Prisma.sql`CASE
+    WHEN jsonb_typeof(${platformFeeRuleSnapshot}->'lines') = 'array'
+    THEN ${platformFeeRuleSnapshot}->'lines'
+    ELSE '[]'::jsonb
+  END`;
+  return Prisma.sql`
+    CASE
+      WHEN ${companyOutputVat} > 0 OR ${platformVatRateBps} > 0
+        THEN 'POSITIVE_STANDARD_OR_REDUCED'
+      WHEN COALESCE(${platformFeeRuleSnapshot}->>'source', '') = 'SERVICE_PAYOUT_RULE'
+        AND jsonb_array_length(${safeLines}) > 0
+        AND NOT EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(${safeLines}) line
+          WHERE NOT CASE
+            WHEN COALESCE(line->>'vatBps', '') ~ '^-?[0-9]+$'
+            THEN (line->>'vatBps')::integer = 0
+            ELSE FALSE
+          END
+        )
+        THEN 'EXPLICIT_ZERO_RULE'
+      WHEN ${platformFeePolicyVersionId} IS NOT NULL THEN 'ZERO_FROM_POLICY'
+      WHEN ${platformFeeRuleSnapshot} IS NULL THEN 'EVIDENCE_UNAVAILABLE'
+      ELSE 'ZERO_UNEXPLAINED'
+    END
+  `;
+}
+
+function adminPlatformVatEvidenceCteSql(period: string) {
+  return Prisma.sql`
+    "platformVatEvidenceRecords" AS NOT MATERIALIZED (
+      SELECT
+        snapshot."id",
+        snapshot."companyOutputVat",
+        snapshot."platformFeePolicyVersionId",
+        snapshot."platformFeeRuleSnapshot",
+        snapshot."platformVatRateBps"
+      FROM "BookingSettlementSnapshot" snapshot
+      WHERE snapshot."monthlyPeriod" = ${period}
+        AND snapshot."settlementStatus"::text <> 'REVERSED'
+
+      UNION
+
+      SELECT
+        original."id",
+        original."companyOutputVat",
+        original."platformFeePolicyVersionId",
+        original."platformFeeRuleSnapshot",
+        original."platformVatRateBps"
+      FROM "BookingSettlementReversalEntry" reversal
+      INNER JOIN "BookingSettlementSnapshot" original
+        ON original."id" = reversal."originalSettlementSnapshotId"
+      WHERE reversal."monthlyPeriod" = ${period}
+    ),
+    "platformVatEvidenceClassified" AS NOT MATERIALIZED (
+      SELECT
+        evidence.*,
+        ${adminPlatformVatEvidenceStatusSql({
+          companyOutputVat: Prisma.sql`evidence."companyOutputVat"`,
+          platformFeePolicyVersionId: Prisma.sql`evidence."platformFeePolicyVersionId"`,
+          platformFeeRuleSnapshot: Prisma.sql`evidence."platformFeeRuleSnapshot"`,
+          platformVatRateBps: Prisma.sql`evidence."platformVatRateBps"`,
+        })} AS "evidenceStatus"
+      FROM "platformVatEvidenceRecords" evidence
+    )
+  `;
+}
+
 function adminPaymentOperationsWhere(
   options: AdminPaymentOperationsQuery,
 ): Prisma.PaymentWhereInput | undefined {
@@ -52115,7 +57014,20 @@ type AdminPaymentQueueSqlRow = {
 };
 
 type AdminPaymentQueueCountRow = { count: bigint | number };
-type AdminPaymentQueueIdRow = { id: string };
+type AdminPaymentQueueAgeSqlRow = {
+  all: bigint | number;
+  fourToTwentyFourHours: bigint | number;
+  oneToFourHours: bigint | number;
+  overTwentyFourHours: bigint | number;
+  underOneHour: bigint | number;
+};
+type AdminPaymentQueueIdRow = {
+  evidenceConflictAt?: Date | string | null;
+  evidenceState?: 'VERIFIED' | 'MISSING' | 'CONFLICT' | 'NOT_APPLICABLE';
+  id: string;
+  primaryQueue?: AdminPaymentPrimaryQueue;
+  verifiedCallbackAt?: Date | string | null;
+};
 
 function emptyAdminPaymentQueueAggregate(): AdminPaymentQueueSqlRow {
   return {
@@ -52142,8 +57054,14 @@ function emptyAdminPaymentQueueAggregate(): AdminPaymentQueueSqlRow {
 function adminPaymentOperationsCte(
   options: AdminPaymentOperationsQuery,
   updatedAtWhere?: Prisma.DateTimeFilter,
+  paymentId?: string,
 ) {
-  const filters: Prisma.Sql[] = [adminBookingProductionDataSql(Prisma.sql`booking`)];
+  const filters: Prisma.Sql[] = [
+    adminBookingProductionDataSql(Prisma.sql`booking`, {
+      fixture: adminPaymentBookingFixtureOwnerSql(),
+      legacyFixture: adminPaymentBookingLegacyFixtureOwnerSql(),
+    }),
+  ];
   const bounds = adminPaymentDateRangeBounds(options.range);
   const customerProfileId = normalizeNullable(options.customerProfileId);
   const method = normalizeAdminBookingSettlementGapPaymentMethod(options.paymentMethod);
@@ -52161,6 +57079,7 @@ function adminPaymentOperationsCte(
   if (method) filters.push(Prisma.sql`payment.method::text = ${method}`);
   if (paymentStatus) filters.push(Prisma.sql`payment.status::text = ${paymentStatus}`);
   if (bookingStatus) filters.push(Prisma.sql`booking.status::text = ${bookingStatus}`);
+  if (paymentId) filters.push(Prisma.sql`payment.id = ${paymentId}`);
   if (bookingUpdatedAt?.gte) filters.push(Prisma.sql`booking."updatedAt" >= ${bookingUpdatedAt.gte}`);
   if (bookingUpdatedAt?.gt) filters.push(Prisma.sql`booking."updatedAt" > ${bookingUpdatedAt.gt}`);
   if (bookingUpdatedAt?.lte) filters.push(Prisma.sql`booking."updatedAt" <= ${bookingUpdatedAt.lte}`);
@@ -52180,7 +57099,7 @@ function adminPaymentOperationsCte(
   }
 
   return Prisma.sql`
-    WITH payment_facts AS (
+    WITH payment_base AS (
       SELECT
         payment.id,
         payment."bookingId",
@@ -52188,50 +57107,78 @@ function adminPaymentOperationsCte(
         payment.status::text AS "paymentStatus",
         payment."providerRef",
         payment.amount,
+        payment."rawMeta",
         booking.status::text AS "bookingStatus",
         booking."createdAt" AS "bookingCreatedAt",
-        booking."updatedAt" AS "bookingUpdatedAt",
-        EXISTS (
-          SELECT 1 FROM "PaymentCallbackAttempt" callback
-          WHERE callback."paymentId" = payment.id
-            AND (
-              callback.outcome NOT IN ('ACCEPTED', 'REPLAY')
-              OR callback."signatureVerified" IS DISTINCT FROM TRUE
-              OR (callback."callbackAmount" IS NOT NULL AND callback."callbackAmount" <> payment.amount)
-            )
-        ) AS "evidenceConflict",
-        EXISTS (
-          SELECT 1 FROM "PaymentCallbackAttempt" callback
-          WHERE callback."paymentId" = payment.id
-            AND callback.outcome IN ('ACCEPTED', 'REPLAY')
-            AND callback."signatureVerified" = TRUE
-            AND (callback."callbackAmount" IS NULL OR callback."callbackAmount" = payment.amount)
-        ) AS "verifiedCallback",
-        EXISTS (
-          SELECT 1 FROM "CustomerWalletLedgerEntry" wallet
-          WHERE wallet."bookingId" = payment."bookingId"
-            AND wallet.amount < 0
-            AND wallet."sourceKey" LIKE '%' || payment."bookingId" || '%'
-        ) AS "walletVerified",
-        (
-          NULLIF(payment."rawMeta" #>> '{cashCollectedAt}', '') IS NOT NULL
-          AND NULLIF(payment."rawMeta" #>> '{cashCollectedBy}', '') IS NOT NULL
-          AND NULLIF(payment."rawMeta" #>> '{cashCollectionReference}', '') IS NOT NULL
-        ) AS "cashVerified",
-        EXISTS (
-          SELECT 1 FROM "ProviderEarning" earning
-          WHERE earning."bookingId" = payment."bookingId"
-            AND earning."netAmount" < 0
-            AND earning.status::text <> 'PAID'
-        ) AS "cashDebt",
-        (SELECT COUNT(*) FROM "Refund" refund WHERE refund."paymentId" = payment.id) AS "refundCount"
+        booking."updatedAt" AS "bookingUpdatedAt"
       FROM "Payment" payment
       JOIN "Booking" booking ON booking.id = payment."bookingId"
       JOIN "CustomerProfile" customer ON customer.id = booking."customerProfileId"
       JOIN "User" customer_user ON customer_user.id = customer."userId"
+      LEFT JOIN "ProviderProfile" preferred_partner ON preferred_partner.id = booking."preferredProviderId"
+      LEFT JOIN "User" preferred_partner_user ON preferred_partner_user.id = preferred_partner."userId"
       LEFT JOIN "ProviderProfile" partner ON partner.id = booking."selectedProviderId"
       LEFT JOIN "User" partner_user ON partner_user.id = partner."userId"
       WHERE ${Prisma.join(filters, ' AND ')}
+    ), callback_facts AS (
+      SELECT
+        base.id,
+        COALESCE(BOOL_OR(
+          callback.id IS NOT NULL
+            AND (
+              callback.outcome NOT IN ('ACCEPTED', 'REPLAY')
+              OR callback."signatureVerified" IS DISTINCT FROM TRUE
+              OR (callback."callbackAmount" IS NOT NULL AND callback."callbackAmount" <> base.amount)
+            )
+        ), FALSE) AS "evidenceConflict",
+        COALESCE(BOOL_OR(
+          callback.id IS NOT NULL
+            AND callback.outcome IN ('ACCEPTED', 'REPLAY')
+            AND callback."signatureVerified" = TRUE
+          AND (callback."callbackAmount" IS NULL OR callback."callbackAmount" = base.amount)
+        ), FALSE) AS "verifiedCallback"
+      FROM payment_base base
+      LEFT JOIN "PaymentCallbackAttempt" callback ON callback."paymentId" = base.id
+      GROUP BY base.id, base.amount
+    ), wallet_facts AS (
+      SELECT base."bookingId", TRUE AS "walletVerified"
+      FROM payment_base base
+      JOIN "CustomerWalletLedgerEntry" wallet
+        ON wallet."bookingId" = base."bookingId"
+            AND wallet.amount < 0
+        AND wallet."sourceKey" LIKE '%' || base."bookingId" || '%'
+      GROUP BY base."bookingId"
+    ), cash_debt_facts AS (
+      SELECT base."bookingId", TRUE AS "cashDebt"
+      FROM payment_base base
+      JOIN "ProviderEarning" earning
+        ON earning."bookingId" = base."bookingId"
+            AND earning."netAmount" < 0
+            AND earning.status::text <> 'PAID'
+      GROUP BY base."bookingId"
+    ), refund_facts AS (
+      SELECT base.id, COUNT(refund.id) AS "refundCount"
+      FROM payment_base base
+      JOIN "Refund" refund ON refund."paymentId" = base.id
+      GROUP BY base.id
+    ), payment_facts AS (
+      SELECT
+        base.*,
+        callback."evidenceConflict",
+        callback."verifiedCallback",
+        COALESCE(wallet."walletVerified", FALSE) AS "walletVerified",
+        (
+          NULLIF(base."rawMeta" #>> '{cashCollectedAt}', '') IS NOT NULL
+          AND NULLIF(base."rawMeta" #>> '{cashCollectedBy}', '') IS NOT NULL
+          AND NULLIF(base."rawMeta" #>> '{cashCollectionReference}', '') IS NOT NULL
+        ) AS "cashVerified",
+        COALESCE(cash_debt."cashDebt", FALSE) AS "cashDebt",
+        COALESCE(refund."refundCount", 0) AS "refundCount"
+      FROM payment_base base
+      JOIN callback_facts callback ON callback.id = base.id
+      LEFT JOIN wallet_facts wallet ON wallet."bookingId" = base."bookingId"
+      LEFT JOIN cash_debt_facts cash_debt ON cash_debt."bookingId" = base."bookingId"
+      LEFT JOIN refund_facts refund ON refund.id = base.id
     ), payment_scoped AS (
       SELECT *, CASE
         WHEN method IN ('MOMO', 'VNPAY', 'CARD', 'BANK_TRANSFER') AND "evidenceConflict" THEN 'CONFLICT'
@@ -52248,6 +57195,8 @@ function adminPaymentOperationsCte(
     ), payment_classified AS (
       SELECT *, CASE
         WHEN "evidenceState" = 'CONFLICT' THEN 'evidence-conflict'
+        WHEN "paymentStatus" = 'REFUNDED' THEN 'history-refunded'
+        WHEN "paymentStatus" = 'RELEASED' THEN 'history-released'
         WHEN method IN ('MOMO', 'VNPAY', 'CARD', 'BANK_TRANSFER') AND "evidenceState" = 'MISSING'
           THEN 'missing-gateway-evidence'
         WHEN method = 'CASH' AND "paymentStatus" = 'PENDING'
@@ -52270,13 +57219,39 @@ function adminPaymentOperationsCte(
           AND "bookingStatus" IN ('CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE')
           THEN 'failed-active'
         WHEN "paymentStatus" = 'CAPTURED' THEN 'history-captured'
-        WHEN "paymentStatus" = 'REFUNDED' THEN 'history-refunded'
-        WHEN "paymentStatus" = 'RELEASED' THEN 'history-released'
         WHEN "paymentStatus" = 'AUTHORIZED' THEN 'authorized-diagnostic'
         ELSE 'needs-action'
       END AS "primaryQueue"
       FROM payment_scoped
     )
+  `;
+}
+
+function adminPaymentBookingFixtureOwnerSql() {
+  return Prisma.sql`
+    customer_user."fixtureKind" IS NOT NULL
+    OR customer_user."fixtureRunId" IS NOT NULL
+    OR customer_user."fixtureExpiresAt" IS NOT NULL
+    OR preferred_partner_user."fixtureKind" IS NOT NULL
+    OR preferred_partner_user."fixtureRunId" IS NOT NULL
+    OR preferred_partner_user."fixtureExpiresAt" IS NOT NULL
+    OR partner_user."fixtureKind" IS NOT NULL
+    OR partner_user."fixtureRunId" IS NOT NULL
+    OR partner_user."fixtureExpiresAt" IS NOT NULL
+  `;
+}
+
+function adminPaymentBookingLegacyFixtureOwnerSql() {
+  return Prisma.sql`
+    LOWER(customer_user.id) LIKE 'smoke%'
+    OR LOWER(customer_user.id) LIKE 'seed-%'
+    OR LOWER(customer_user.id) LIKE 'audit\\_%' ESCAPE '\\'
+    OR LOWER(COALESCE(preferred_partner_user.id, '')) LIKE 'smoke%'
+    OR LOWER(COALESCE(preferred_partner_user.id, '')) LIKE 'seed-%'
+    OR LOWER(COALESCE(preferred_partner_user.id, '')) LIKE 'audit\\_%' ESCAPE '\\'
+    OR LOWER(COALESCE(partner_user.id, '')) LIKE 'smoke%'
+    OR LOWER(COALESCE(partner_user.id, '')) LIKE 'seed-%'
+    OR LOWER(COALESCE(partner_user.id, '')) LIKE 'audit\\_%' ESCAPE '\\'
   `;
 }
 
@@ -52302,11 +57277,112 @@ function adminPaymentOperationsPageSql(
   const direction = adminQueueSortDirection(options.sort) === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
   return Prisma.sql`
     ${adminPaymentOperationsCte(options, updatedAtWhere)}
-    SELECT id FROM payment_classified
+    SELECT
+      page.id,
+      (
+        SELECT callback."createdAt"
+        FROM "PaymentCallbackAttempt" callback
+        WHERE callback."paymentId" = page.id
+          AND (
+            callback.outcome NOT IN ('ACCEPTED', 'REPLAY')
+            OR callback."signatureVerified" IS DISTINCT FROM TRUE
+            OR (callback."callbackAmount" IS NOT NULL AND callback."callbackAmount" <> page.amount)
+          )
+        ORDER BY callback."createdAt" DESC, callback.id DESC
+        LIMIT 1
+      ) AS "evidenceConflictAt",
+      page."evidenceState",
+      page."primaryQueue",
+      (
+        SELECT callback."createdAt"
+        FROM "PaymentCallbackAttempt" callback
+        WHERE callback."paymentId" = page.id
+          AND callback.outcome IN ('ACCEPTED', 'REPLAY')
+          AND callback."signatureVerified" = TRUE
+          AND (callback."callbackAmount" IS NULL OR callback."callbackAmount" = page.amount)
+        ORDER BY callback."createdAt" DESC, callback.id DESC
+        LIMIT 1
+      ) AS "verifiedCallbackAt"
+    FROM (
+      SELECT id, amount, "bookingUpdatedAt", "evidenceState", "primaryQueue"
+      FROM payment_classified
     ${adminPaymentOperationsSqlFilter(options)}
     ORDER BY "bookingUpdatedAt" ${direction}, id ${direction}
     LIMIT ${take} OFFSET ${skip}
+    ) page
+    ORDER BY page."bookingUpdatedAt" ${direction}, page.id ${direction}
   `;
+}
+
+function adminPaymentOperationDecisionFactSql(paymentId: string) {
+  return Prisma.sql`
+    ${adminPaymentOperationsCte({}, undefined, paymentId)}
+    SELECT
+      classified.id,
+      (
+        SELECT callback."createdAt"
+        FROM "PaymentCallbackAttempt" callback
+        WHERE callback."paymentId" = classified.id
+          AND (
+            callback.outcome NOT IN ('ACCEPTED', 'REPLAY')
+            OR callback."signatureVerified" IS DISTINCT FROM TRUE
+            OR (callback."callbackAmount" IS NOT NULL AND callback."callbackAmount" <> classified.amount)
+          )
+        ORDER BY callback."createdAt" DESC, callback.id DESC
+        LIMIT 1
+      ) AS "evidenceConflictAt",
+      classified."evidenceState",
+      classified."primaryQueue",
+      (
+        SELECT callback."createdAt"
+        FROM "PaymentCallbackAttempt" callback
+        WHERE callback."paymentId" = classified.id
+          AND callback.outcome IN ('ACCEPTED', 'REPLAY')
+          AND callback."signatureVerified" = TRUE
+          AND (callback."callbackAmount" IS NULL OR callback."callbackAmount" = classified.amount)
+        ORDER BY callback."createdAt" DESC, callback.id DESC
+        LIMIT 1
+      ) AS "verifiedCallbackAt"
+    FROM payment_classified classified
+    WHERE classified.id = ${paymentId}
+    LIMIT 1
+  `;
+}
+
+type AdminPaymentDecisionCallbackAttempt = {
+  callbackAmount?: number | null;
+  createdAt?: Date | string | null;
+  outcome?: string | null;
+  signatureVerified?: boolean | null;
+};
+
+function adminPaymentDecisionCallbackAttempts(
+  row: AdminPaymentQueueIdRow | undefined,
+  amount: number,
+  fallback: readonly AdminPaymentDecisionCallbackAttempt[],
+): readonly AdminPaymentDecisionCallbackAttempt[] {
+  if (!row?.evidenceState) return fallback;
+  if (row.evidenceState === 'CONFLICT') {
+    return [
+      {
+        callbackAmount: amount,
+        createdAt: row.evidenceConflictAt ?? null,
+        outcome: 'REJECTED',
+        signatureVerified: true,
+      },
+    ];
+  }
+  if (row.evidenceState === 'VERIFIED' && row.verifiedCallbackAt) {
+    return [
+      {
+        callbackAmount: amount,
+        createdAt: row.verifiedCallbackAt,
+        outcome: 'ACCEPTED',
+        signatureVerified: true,
+      },
+    ];
+  }
+  return [];
 }
 
 function adminPaymentOperationsCountSql(
@@ -52318,6 +57394,49 @@ function adminPaymentOperationsCountSql(
     SELECT COUNT(*) AS count FROM payment_classified
     ${adminPaymentOperationsSqlFilter(options)}
   `;
+}
+
+function adminPaymentOperationsAgeAggregateSql(
+  options: AdminPaymentOperationsQuery,
+  updatedAtWhere?: Prisma.DateTimeFilter,
+  now = new Date(),
+) {
+  const oneHourAgo = new Date(now.getTime() - 60 * 60_000);
+  const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60_000);
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60_000);
+  const unboundedOptions = { ...options, age: 'all', sla: 'all' };
+
+  return Prisma.sql`
+    ${adminPaymentOperationsCte(unboundedOptions, updatedAtWhere)}
+    SELECT
+      COUNT(*) AS all,
+      COUNT(*) FILTER (
+        WHERE "bookingUpdatedAt" >= ${oneHourAgo} AND "bookingUpdatedAt" <= ${now}
+      ) AS "underOneHour",
+      COUNT(*) FILTER (
+        WHERE "bookingUpdatedAt" >= ${fourHoursAgo} AND "bookingUpdatedAt" < ${oneHourAgo}
+      ) AS "oneToFourHours",
+      COUNT(*) FILTER (
+        WHERE "bookingUpdatedAt" >= ${twentyFourHoursAgo} AND "bookingUpdatedAt" < ${fourHoursAgo}
+      ) AS "fourToTwentyFourHours",
+      COUNT(*) FILTER (WHERE "bookingUpdatedAt" < ${twentyFourHoursAgo}) AS "overTwentyFourHours"
+    FROM payment_classified
+    ${adminPaymentOperationsSqlFilter(unboundedOptions)}
+  `;
+}
+
+export function adminPaymentOperationsPerformanceQueries(
+  options: AdminPaymentOperationsQuery = {},
+  take = 10,
+  skip = 0,
+  now = new Date(),
+) {
+  return [
+    { name: 'list-page', sql: adminPaymentOperationsPageSql(options, take, skip) },
+    { name: 'summary-aggregate', sql: adminPaymentOperationsAggregateSql(options) },
+    { name: 'summary-current-count', sql: adminPaymentOperationsCountSql(options) },
+    { name: 'summary-age-buckets', sql: adminPaymentOperationsAgeAggregateSql(options, undefined, now) },
+  ] as const;
 }
 
 function adminPaymentOperationsAggregateSql(options: AdminPaymentOperationsQuery) {
@@ -52371,10 +57490,6 @@ function adminMergePaymentOperationsWhere(
   return base ? { AND: [base, next] } : next;
 }
 
-function adminPaymentCountArgs(where: Prisma.PaymentWhereInput | undefined): Prisma.PaymentCountArgs {
-  return where ? { where } : {};
-}
-
 function adminPaymentCallbackAttemptWhere(
   options: AdminPaymentCallbackAttemptQuery,
 ): Prisma.PaymentCallbackAttemptWhereInput | undefined {
@@ -52422,17 +57537,24 @@ const ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER = [
   'needs-action',
 ] as const;
 
-type AdminPaymentPrimaryQueue = typeof ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER[number];
+type AdminPaymentPrimaryQueue = (typeof ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER)[number];
 
 function normalizeAdminPaymentReview(review: string | null | undefined) {
   switch (normalizeNullable(review)) {
-    case 'callback-review': return 'evidence-conflict';
-    case 'stale-mismatch': return 'terminal-cash-cleanup';
-    case 'capture': return 'capture-ready';
-    case 'cash': return 'active-cash';
-    case 'missing-ref': return 'missing-gateway-evidence';
-    case 'all-authorized': return 'authorized';
-    default: return normalizeNullable(review);
+    case 'callback-review':
+      return 'evidence-conflict';
+    case 'stale-mismatch':
+      return 'terminal-cash-cleanup';
+    case 'capture':
+      return 'capture-ready';
+    case 'cash':
+      return 'active-cash';
+    case 'missing-ref':
+      return 'missing-gateway-evidence';
+    case 'all-authorized':
+      return 'authorized';
+    default:
+      return normalizeNullable(review);
   }
 }
 
@@ -52465,9 +57587,9 @@ function adminPaymentReviewWhere(review: string | null | undefined): Prisma.Paym
 function adminPaymentPrimaryQueueWhere(queue: AdminPaymentPrimaryQueue): Prisma.PaymentWhereInput {
   const index = ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER.indexOf(queue);
   const base = adminPaymentPrimaryQueueBaseWhere(queue);
-  const previous = ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER
-    .slice(0, index)
-    .map((candidate) => ({ NOT: adminPaymentPrimaryQueueBaseWhere(candidate) }));
+  const previous = ADMIN_PAYMENT_PRIMARY_QUEUE_ORDER.slice(0, index).map((candidate) => ({
+    NOT: adminPaymentPrimaryQueueBaseWhere(candidate),
+  }));
   return previous.length > 0 ? { AND: [base, ...previous] } : base;
 }
 
@@ -52557,10 +57679,14 @@ function adminPaymentPrimaryQueueBaseWhere(queue: AdminPaymentPrimaryQueue): Pri
         booking: { status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) } },
         status: PaymentStatus.FAILED,
       };
-    case 'history-captured': return { status: PaymentStatus.CAPTURED };
-    case 'history-refunded': return { status: PaymentStatus.REFUNDED };
-    case 'history-released': return { status: PaymentStatus.RELEASED };
-    case 'authorized-diagnostic': return { status: PaymentStatus.AUTHORIZED };
+    case 'history-captured':
+      return { status: PaymentStatus.CAPTURED };
+    case 'history-refunded':
+      return { status: PaymentStatus.REFUNDED };
+    case 'history-released':
+      return { status: PaymentStatus.RELEASED };
+    case 'authorized-diagnostic':
+      return { status: PaymentStatus.AUTHORIZED };
     case 'needs-action':
       return { status: { notIn: [PaymentStatus.CAPTURED, PaymentStatus.REFUNDED, PaymentStatus.RELEASED] } };
   }
@@ -52973,7 +58099,12 @@ function normalizeNotificationBoardSkip(value: string | undefined) {
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return 0;
   }
-  return Math.min(parsed, 10000);
+  if (parsed > ADMIN_NOTIFICATION_BOARD_MAX_SKIP) {
+    throw new BadRequestException(
+      `Notification skip must not exceed ${ADMIN_NOTIFICATION_BOARD_MAX_SKIP}. Narrow the date range or search filters.`,
+    );
+  }
+  return parsed;
 }
 
 function adminQueueSlaSqlCondition(
@@ -53049,12 +58180,9 @@ function addNotificationDeliveryHealth(
   return {
     deliveryGaps: current.deliveryGaps + history.deliveryGaps,
     failed: current.failed + history.failed,
-    noPushPathNotificationCount:
-      current.noPushPathNotificationCount + history.noPushPathNotificationCount,
-    noPushPathRecipientCount:
-      current.noPushPathRecipientCount + history.noPushPathRecipientCount,
-    staleRouteNotifications:
-      current.staleRouteNotifications + history.staleRouteNotifications,
+    noPushPathNotificationCount: current.noPushPathNotificationCount + history.noPushPathNotificationCount,
+    noPushPathRecipientCount: current.noPushPathRecipientCount + history.noPushPathRecipientCount,
+    staleRouteNotifications: current.staleRouteNotifications + history.staleRouteNotifications,
   };
 }
 
@@ -53871,7 +58999,12 @@ function normalizeAdminPushCampaignHistorySkip(value: string | undefined) {
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return 0;
   }
-  return Math.min(parsed, 10000);
+  if (parsed > ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_SKIP) {
+    throw new BadRequestException(
+      `Push campaign skip must not exceed ${ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_SKIP}. Narrow the history range.`,
+    );
+  }
+  return parsed;
 }
 
 function adminPushCampaignHistoryDateWhere(options: {
@@ -53994,9 +59127,9 @@ function notificationTemplateContractView<
     description: definition.description,
     openBehavior: notificationTemplateOpenBehavior(template.key),
     requiredVariables: [...definition.requiredVariables],
-    runtimeRoutes: NOTIFICATION_TEMPLATE_ROUTES
-      .filter((route) => route.templateKey === template.key)
-      .map((route) => ({ targetRole: route.targetRole, type: route.type })),
+    runtimeRoutes: NOTIFICATION_TEMPLATE_ROUTES.filter((route) => route.templateKey === template.key).map(
+      (route) => ({ targetRole: route.targetRole, type: route.type }),
+    ),
     variables: [...definition.variables],
   };
 }
@@ -54007,9 +59140,9 @@ function notificationTemplateIssuesForKey(template: {
   readonly key: string;
   readonly variables?: unknown;
 }) {
-  const routeIds = NOTIFICATION_TEMPLATE_ROUTES
-    .filter((route) => route.templateKey === template.key)
-    .map((route) => `${route.type}:${route.targetRole}`);
+  const routeIds = NOTIFICATION_TEMPLATE_ROUTES.filter((route) => route.templateKey === template.key).map(
+    (route) => `${route.type}:${route.targetRole}`,
+  );
   return [
     ...notificationTemplateMetadataIssues(template),
     ...notificationTemplateContractErrors().filter(
@@ -54028,10 +59161,14 @@ function notificationTemplateMetadataIssues(template: {
   if (!definition) return [`${template.key}: unexpected database template`];
   const issues: string[] = [];
   if (template.audience !== definition.audience) {
-    issues.push(`${template.key}: audience mismatch (database ${String(template.audience)}, catalog ${definition.audience})`);
+    issues.push(
+      `${template.key}: audience mismatch (database ${String(template.audience)}, catalog ${definition.audience})`,
+    );
   }
   if (template.channel !== definition.channel) {
-    issues.push(`${template.key}: channel mismatch (database ${String(template.channel)}, catalog ${definition.channel})`);
+    issues.push(
+      `${template.key}: channel mismatch (database ${String(template.channel)}, catalog ${definition.channel})`,
+    );
   }
   const databaseVariables = stringArray(template.variables);
   if (!sameStringSet(databaseVariables, definition.variables)) {
@@ -54046,8 +59183,10 @@ function notificationCopyEquals(
   left: { readonly body: string; readonly title: string },
   right: { readonly body: string; readonly title: string },
 ) {
-  return normalizeNotificationCopy(left.title) === normalizeNotificationCopy(right.title)
-    && normalizeNotificationCopy(left.body) === normalizeNotificationCopy(right.body);
+  return (
+    normalizeNotificationCopy(left.title) === normalizeNotificationCopy(right.title) &&
+    normalizeNotificationCopy(left.body) === normalizeNotificationCopy(right.body)
+  );
 }
 
 function normalizeNotificationCopy(value: string) {
@@ -54109,10 +59248,7 @@ function normalizeAdminPushTargetSegment(targetRole: Extract<Role, 'CUSTOMER' | 
   throw new BadRequestException(`Unsupported manual push target segment for ${targetRole}`);
 }
 
-function normalizeAdminPushLocale(
-  targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>,
-  value?: string,
-) {
+function normalizeAdminPushLocale(targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>, value?: string) {
   const locale = normalizeNullable(value)?.toLowerCase();
   if (!locale || !['en', 'vi', 'ko', 'ja', 'zh'].includes(locale)) {
     throw new BadRequestException('Manual push language is required');

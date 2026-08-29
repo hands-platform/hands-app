@@ -8,8 +8,10 @@ import {
   adminBookingListDateBounds,
   adminBookingListDefaultSort,
   adminBookingListFreshnessWhere,
+  adminBookingIsMatchingDelay,
   adminBookingListStatusGroupWhere,
   adminBookingListWhere,
+  adminBookingProductionDataSql,
   adminBookingProductionDataWhere,
   adminBookingUnknownOriginSql,
   adminBookingVerifiedProductionSql,
@@ -32,8 +34,11 @@ describe('admin booking list query', () => {
     expect(productionSql).toContain("'{smoke}' IS NULL");
     expect(productionSql).toContain("'{fixture}' IS NULL");
     expect(productionSql).toContain('booking_customer_user."fixtureKind" IS NOT NULL');
+    expect(productionSql).toContain('booking_customer_user."fixtureRunId" IS NOT NULL');
+    expect(productionSql).toContain('booking_customer_user."fixtureExpiresAt" IS NOT NULL');
     expect(unknownSql).toContain("<> 'SYNTHETIC'");
     expect(unknownSql).toContain('booking_partner_user."fixtureKind" IS NOT NULL');
+    expect(unknownSql).toContain('booking_partner_user."fixtureRunId" IS NOT NULL');
   });
   it('hides marked audit, smoke, and seed bookings from operating queues by default', () => {
     expect(adminBookingListWhere({})).toEqual(adminBookingProductionDataWhere());
@@ -44,7 +49,9 @@ describe('admin booking list query', () => {
             OR: expect.arrayContaining([
               { id: { startsWith: 'smoke', mode: 'insensitive' } },
               { id: { startsWith: 'seed-', mode: 'insensitive' } },
+              { id: { startsWith: 'audit_', mode: 'insensitive' } },
               { customerProfileId: { startsWith: 'smoke', mode: 'insensitive' } },
+              { customerProfileId: { startsWith: 'audit_', mode: 'insensitive' } },
             ]),
           },
         },
@@ -70,6 +77,42 @@ describe('admin booking list query', () => {
       ]),
     });
     expect(JSON.stringify(adminBookingProductionDataWhere())).not.toContain('string_contains":""');
+    expect(JSON.stringify(adminBookingProductionDataWhere())).toContain('"fixtureKind":null');
+    expect(JSON.stringify(adminBookingProductionDataWhere())).toContain('"fixtureRunId":null');
+    expect(JSON.stringify(adminBookingProductionDataWhere())).toContain('"fixtureExpiresAt":null');
+    const productionSql = adminBookingProductionDataSql().strings.join(' ');
+    expect(productionSql).toContain("NOT LIKE 'audit\\_%'");
+    expect(productionSql).toContain('booking_customer_user."fixtureKind" IS NOT NULL');
+  });
+
+  it('excludes legacy audit user ids without filtering production names', () => {
+    const productionWhere = adminBookingProductionDataWhere();
+
+    expect(productionWhere).toEqual({
+      AND: expect.arrayContaining([
+        {
+          customerProfile: {
+            is: {
+              user: {
+                is: expect.objectContaining({
+                  NOT: {
+                    OR: expect.arrayContaining([
+                      { id: { startsWith: 'audit_', mode: Prisma.QueryMode.insensitive } },
+                    ]),
+                  },
+                }),
+              },
+            },
+          },
+        },
+      ]),
+    });
+    expect(JSON.stringify(productionWhere)).not.toContain('fullName');
+
+    const productionSql = adminBookingProductionDataSql().strings.join(' ');
+    expect(productionSql).toContain("LOWER(booking_customer_user.id) LIKE 'audit\\_%'");
+    expect(productionSql).toContain("LOWER(booking_partner_user.id) LIKE 'audit\\_%'");
+    expect(productionSql).not.toMatch(/fullName[\s\S]{0,80}audit/i);
   });
 
   it('filters queue age by the same booking creation time used for stable ordering', () => {
@@ -237,6 +280,47 @@ describe('admin booking list query', () => {
       },
       selectedProviderId: { not: null },
     });
+  });
+
+  it('classifies in-memory matching delays with the same opened, expiry, and response rules', () => {
+    const now = new Date('2026-07-18T05:00:00.000Z');
+    const matchingDelayBefore = new Date('2026-07-18T04:45:00.000Z');
+    const snapshot = (overrides: Partial<Parameters<typeof adminBookingIsMatchingDelay>[0]> = {}) => ({
+      expiresAt: new Date('2026-07-18T05:10:00.000Z'),
+      openedAt: new Date('2026-07-18T04:40:00.000Z'),
+      participants: [],
+      status: BookingStatus.OPEN_MATCHING,
+      ...overrides,
+    });
+    const options = { matchingDelayBefore, now };
+
+    expect(adminBookingIsMatchingDelay(snapshot(), options)).toBe(true);
+    expect(
+      adminBookingIsMatchingDelay(
+        snapshot({
+          participants: [
+            { respondedAt: new Date('2026-07-18T04:42:00.000Z'), status: ParticipantStatus.JOINED },
+          ],
+        }),
+        options,
+      ),
+    ).toBe(false);
+    expect(
+      adminBookingIsMatchingDelay(
+        snapshot({ participants: [{ respondedAt: null, status: ParticipantStatus.JOINED }] }),
+        options,
+      ),
+    ).toBe(true);
+    expect(adminBookingIsMatchingDelay(snapshot({ openedAt: null }), options)).toBe(false);
+    expect(
+      adminBookingIsMatchingDelay(
+        snapshot({ expiresAt: new Date('2026-07-18T04:59:00.000Z'), openedAt: null }),
+        options,
+      ),
+    ).toBe(true);
+    expect(
+      adminBookingIsMatchingDelay(snapshot({ status: BookingStatus.MATCHED }), options),
+    ).toBe(false);
   });
 
   it('keeps every active matched lifecycle state in the handoff repair queue', () => {

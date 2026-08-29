@@ -127,7 +127,7 @@ for (const file of files) {
 const result = {
   ok: violations.length === 0,
   purpose:
-    'Static HANDS Vietnam scope guard: prevent accidental non-Vietnam region/currency defaults while allowing legitimate service names.',
+    'Static HANDS Vietnam scope guard: enforce the canonical Vietnam timezone and prevent accidental non-Vietnam region/currency defaults while allowing legitimate service names.',
   scannedFiles: files.length,
   violations,
 };

@@ -4,6 +4,7 @@ import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   BookingStatus,
+  CouponRedemptionState,
   EarningStatus,
   ParticipantStatus,
   PaymentAdminOperationStatus,
@@ -2243,6 +2244,7 @@ describe('BookingsService provider service lifecycle', () => {
     };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([]),
+      couponRedemption: couponRedemptionQueries(),
       booking: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
@@ -2317,6 +2319,13 @@ describe('BookingsService provider service lifecycle', () => {
           }),
         }),
       );
+      expect(tx.couponRedemption.updateMany).toHaveBeenCalledWith({
+        where: { bookingId: 'booking-1', state: CouponRedemptionState.RESERVED },
+        data: expect.objectContaining({
+          state: CouponRedemptionState.RELEASED,
+          releaseReason: 'BOOKING_PARTNER_CANCELLED',
+        }),
+      });
       expect(tx.booking.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -2542,6 +2551,7 @@ describe('BookingsService provider service lifecycle', () => {
       };
       const tx = {
         $queryRaw: vi.fn().mockResolvedValue([]),
+        couponRedemption: couponRedemptionQueries(),
         booking: {
           findUniqueOrThrow: vi.fn().mockResolvedValue({
             id: 'booking-1',
@@ -2658,6 +2668,7 @@ describe('BookingsService service completion', () => {
   it('reserves gateway capture and releases the claim only with the completed booking transaction', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
+      couponRedemption: couponRedemptionQueries(),
       $queryRaw: vi.fn().mockResolvedValue([]),
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: { findUnique: vi.fn().mockResolvedValue(approvedPartner()) },
@@ -2731,6 +2742,7 @@ describe('BookingsService service completion', () => {
   it('loads the immutable address snapshot before emitting the completed booking', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
+      couponRedemption: couponRedemptionQueries(),
       $queryRaw: vi.fn().mockResolvedValue([]),
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
@@ -2832,6 +2844,13 @@ describe('BookingsService service completion', () => {
       data: { status: PaymentStatus.CAPTURED },
       where: { id: 'payment-1', status: { in: [PaymentStatus.PENDING] } },
     });
+    expect(prisma.couponRedemption.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1', state: CouponRedemptionState.RESERVED },
+      data: expect.objectContaining({
+        state: CouponRedemptionState.CONSUMED,
+        consumedAt: expect.any(Date),
+      }),
+    });
     const completedAt = prisma.booking.updateMany.mock.calls[0]?.[0]?.data.closedAt;
     expect(completedAt).toBeInstanceOf(Date);
     expect(earnings.createForCompletedBooking).toHaveBeenCalledWith(
@@ -2845,6 +2864,7 @@ describe('BookingsService service completion', () => {
   it('records a booking-linked partner action location before completion when provided', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
+      couponRedemption: couponRedemptionQueries(),
       $queryRaw: vi.fn().mockResolvedValue([]),
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
@@ -3305,6 +3325,13 @@ describe('BookingsService customer cancellation', () => {
 
     await service.cancelCustomerBooking('booking-1', 'customer-user-1');
 
+    expect(prisma.couponRedemption.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1', state: CouponRedemptionState.RESERVED },
+      data: expect.objectContaining({
+        state: CouponRedemptionState.RELEASED,
+        releaseReason: 'BOOKING_CUSTOMER_CANCELLED',
+      }),
+    });
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         include: expect.objectContaining({
@@ -4517,6 +4544,13 @@ describe('BookingsService partner response wallet gates', () => {
       reasonDetail: 'Another confirmed appointment overlaps this request.',
     });
 
+    expect(prisma.couponRedemption.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1', state: CouponRedemptionState.RESERVED },
+      data: expect.objectContaining({
+        state: CouponRedemptionState.RELEASED,
+        releaseReason: 'BOOKING_PREFERRED_PARTNER_REJECTED',
+      }),
+    });
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -4913,9 +4947,19 @@ function attachTransaction<T extends Record<string, unknown>>(client: T) {
   if (!('providerService' in client)) {
     Object.assign(client, { providerService: providerServiceReadinessQueries() });
   }
+  if (!('couponRedemption' in client)) {
+    Object.assign(client, { couponRedemption: couponRedemptionQueries() });
+  }
   const transaction = vi.fn(async (callback: (transactionClient: T) => Promise<unknown>) => callback(client));
   Object.assign(client, { $transaction: transaction });
   return transaction;
+}
+
+function couponRedemptionQueries() {
+  return {
+    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    findUnique: vi.fn().mockResolvedValue(null),
+  };
 }
 
 describe('BookingsService backup notification evidence concurrency', () => {

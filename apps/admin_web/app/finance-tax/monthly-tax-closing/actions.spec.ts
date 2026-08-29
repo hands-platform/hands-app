@@ -129,4 +129,24 @@ describe('monthly tax closing actions', () => {
     );
     expect(mockedRevalidatePath).not.toHaveBeenCalled();
   });
+
+  it('surfaces the same failure path when the API rejects a future period review', async () => {
+    mockedAdminPatchOrThrow.mockRejectedValueOnce(new Error('Future period'));
+    const formData = new FormData();
+    formData.set('period', '2026-09');
+    formData.set('status', 'REVIEWED');
+    formData.set('confirmationPeriod', '2026-09');
+    formData.set('confirmationStatus', 'REVIEWED');
+
+    await updateMonthlyTaxClosingStatus(formData);
+
+    expect(mockedAdminPatchOrThrow).toHaveBeenCalledWith(
+      '/admin/monthly-tax-closings/2026-09/status',
+      expect.objectContaining({ status: 'REVIEWED' }),
+    );
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/finance-tax/monthly-tax-closing?period=2026-09&closingNotice=failed',
+    );
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
+  });
 });

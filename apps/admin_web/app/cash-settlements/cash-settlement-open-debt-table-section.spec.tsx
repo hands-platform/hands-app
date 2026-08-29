@@ -12,8 +12,8 @@ describe('CashSettlementOpenDebtTableSection', () => {
   it('renders five compact columns with remaining, original and allocated amounts', () => {
     const markup = renderToStaticMarkup(
       <CashSettlementOpenDebtTableSection
+        allOpenRowCount={89}
         filters={filters()}
-        globalRowCount={89}
         pagination={pagination([buildRow()])}
       />,
     );
@@ -33,6 +33,9 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(markup).toContain('170.000 VND');
     expect(markup).toContain('Allocated');
     expect(markup).toContain('70.000 VND');
+    expect(markup).toContain(
+      'aria-label="Review cash settlement for Partner One, booking bookin"',
+    );
     expect(markup).not.toContain('Owner / follow-up');
     expect(markup).not.toContain('No owner recorded');
     expect(markup).toContain(
@@ -72,8 +75,8 @@ describe('CashSettlementOpenDebtTableSection', () => {
   it('renders a queue-specific compact empty state without a table shell', () => {
     const markup = renderToStaticMarkup(
       <CashSettlementOpenDebtTableSection
+        allOpenRowCount={89}
         filters={{ ...filters(), queue: 'payment-check' }}
-        globalRowCount={89}
         pagination={pagination([])}
       />,
     );

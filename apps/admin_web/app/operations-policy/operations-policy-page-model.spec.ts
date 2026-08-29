@@ -53,21 +53,43 @@ describe('operations policy page model', () => {
     }
   });
 
-  it('loads bounded history and only the evidence each matching workspace needs', () => {
-    for (const matching of ['supply', 'simulation'] as const) {
-      const plan = buildOperationsPolicyLoadPlan({ details: 'matching', matching });
-      expect(new URL(plan.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
-      expect(plan.matchingPreviewHref).toBe(
-        matching === 'simulation' ? '/admin/operations-policy/matching-preview' : null,
-      );
-      if (matching === 'supply') {
-        expect(new URL(plan.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
-      } else {
-        expect(plan.providersHref).toBeNull();
-      }
-      expect(plan.policyAuditHref).toBeNull();
-      expect(plan.bookingGateAuditHref).toBeNull();
-    }
+  it('uses the authoritative preview for Supply and defers bounded samples until diagnostics open', () => {
+    const supply = buildOperationsPolicyLoadPlan({ details: 'matching', matching: 'supply' });
+    expect(supply.matchingPreviewHref).toBe('/admin/operations-policy/matching-preview');
+    expect(supply.settingsHref).toBeNull();
+    expect(supply.bookingsHref).toBeNull();
+    expect(supply.providersHref).toBeNull();
+    expect(supply.shouldRenderSupplyDiagnostics).toBe(false);
+
+    const diagnostics = buildOperationsPolicyLoadPlan({
+      details: 'matching',
+      diagnostics: 'complete',
+      matching: 'supply',
+    });
+    expect(diagnostics.settingsHref).toBe('/admin/operational-policy');
+    expect(new URL(diagnostics.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(new URL(diagnostics.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
+    expect(diagnostics.shouldRenderSupplyDiagnostics).toBe(true);
+  });
+
+  it('keeps the Simulation compatibility route but defers bounded history to its explicit subview', () => {
+    const plan = buildOperationsPolicyLoadPlan({ details: 'matching', matching: 'simulation' });
+    expect(plan.matchingPreviewHref).toBe('/admin/operations-policy/matching-preview');
+    expect(plan.settingsHref).toBeNull();
+    expect(plan.bookingsHref).toBeNull();
+    expect(plan.providersHref).toBeNull();
+    expect(plan.policyAuditHref).toBeNull();
+    expect(plan.bookingGateAuditHref).toBeNull();
+    expect(plan.shouldRenderMatchingHistory).toBe(false);
+
+    const history = buildOperationsPolicyLoadPlan({
+      details: 'matching',
+      history: 'review',
+      matching: 'simulation',
+    });
+    expect(history.settingsHref).toBe('/admin/operational-policy');
+    expect(new URL(history.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(history.shouldRenderMatchingHistory).toBe(true);
   });
 
   it('loads the server-filtered audit without an unnecessary settings request', () => {
@@ -129,6 +151,22 @@ describe('operations policy page model', () => {
     expect(plan.matchingPreviewHref).toBeNull();
     expect(plan.shouldRenderPermissionDenied).toBe(true);
     expect(plan.shouldRenderPolicyOverview).toBe(false);
+  });
+
+  it('allows scoped Operator audit with System Policy while keeping advanced sources restricted', () => {
+    const operator = buildOperationsPolicyLoadPlan(
+      { details: 'audit' },
+      { allowAdvancedAudit: false, allowFullDiagnostics: false, allowPolicyAudit: true },
+    );
+    expect(operator.policyAuditHref).toBe('/admin/operational-policy/audit?source=operator&take=8');
+    expect(operator.shouldRenderPermissionDenied).toBe(false);
+
+    const advanced = buildOperationsPolicyLoadPlan(
+      { audit: 'automated_smoke', details: 'audit' },
+      { allowAdvancedAudit: false, allowFullDiagnostics: false, allowPolicyAudit: true },
+    );
+    expect(advanced.policyAuditHref).toBeNull();
+    expect(advanced.shouldRenderPermissionDenied).toBe(true);
   });
 
   it('builds compatible top-level and legacy editor links', () => {

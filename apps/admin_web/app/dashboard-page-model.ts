@@ -35,6 +35,26 @@ export function buildStartShiftRankingAnalytics(
   };
 }
 
+export function startShiftRankingSectionTitle(analytics: AdminStartShiftRankingAnalytics) {
+  const hasPerformanceRankings = [
+    ...analytics.customerRankings.highestValue,
+    ...analytics.customerRankings.mostActive,
+    ...analytics.customerRankings.mostCompleted,
+    ...analytics.partnerRankings.fastestResponse,
+    ...analytics.partnerRankings.highestRated,
+    ...analytics.partnerRankings.mostActive,
+    ...analytics.partnerRankings.mostCompleted,
+  ].length > 0;
+  if (hasPerformanceRankings) return 'Customer and Partner leaders';
+
+  const hasCustomerAttention = analytics.customerRankings.needsAttention.length > 0;
+  const hasPartnerAttention = analytics.partnerRankings.needsAttention.length > 0;
+  if (hasCustomerAttention && hasPartnerAttention) return 'Customers and Partners needing attention';
+  if (hasCustomerAttention) return 'Customer needs attention';
+  if (hasPartnerAttention) return 'Partner needs attention';
+  return 'Customer and Partner leaders';
+}
+
 export function buildStartShiftDemandSupplyAnalytics(
   analytics: AdminStartShiftAnalytics,
 ): AdminStartShiftDemandSupplyAnalytics {

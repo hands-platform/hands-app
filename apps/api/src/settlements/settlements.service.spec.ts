@@ -1,6 +1,7 @@
 import {
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  CouponRedemptionState,
   EarningStatus,
   MonthlyTaxClosingStatus,
   PaymentFeePayer,
@@ -74,7 +75,9 @@ describe('SettlementsService', () => {
         },
         transactionClient as never,
       ),
-    ).rejects.toThrow('Closed monthly periods require reversal entries, not direct settlement snapshot edits.');
+    ).rejects.toThrow(
+      'Closed monthly periods require reversal entries, not direct settlement snapshot edits.',
+    );
 
     expect(transactionClient.$queryRaw).toHaveBeenCalledOnce();
     expect(transactionClient.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
@@ -176,7 +179,9 @@ describe('SettlementsService', () => {
         platformVatRateBps: 800,
         occurredAt: new Date('2026-07-13T03:02:00.000Z'),
       }),
-    ).rejects.toThrow('Closed monthly periods require reversal entries, not direct settlement snapshot edits.');
+    ).rejects.toThrow(
+      'Closed monthly periods require reversal entries, not direct settlement snapshot edits.',
+    );
 
     expect(prisma.bookingSettlementSnapshot.upsert).not.toHaveBeenCalled();
     expect(prisma.accountingJournalBatch.upsert).not.toHaveBeenCalled();
@@ -219,7 +224,9 @@ describe('SettlementsService', () => {
           platformVatRateBps: 800,
           occurredAt: new Date('2026-07-13T03:02:00.000Z'),
         }),
-      ).rejects.toThrow('Finalized monthly periods require reversal entries, not direct settlement snapshot edits.');
+      ).rejects.toThrow(
+        'Finalized monthly periods require reversal entries, not direct settlement snapshot edits.',
+      );
 
       expect(prisma.bookingSettlementSnapshot.upsert).not.toHaveBeenCalled();
       expect(prisma.accountingJournalBatch.upsert).not.toHaveBeenCalled();
@@ -354,6 +361,104 @@ describe('SettlementsService', () => {
     });
   });
 
+  it('snapshots the consumed coupon redemption identity with its original discount evidence', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockImplementation(({ create }) => Promise.resolve({ id: 'journal-1', ...create })),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockImplementation(({ create }) => Promise.resolve({ id: 'clearing-1', ...create })),
+      },
+      bookingSettlementSnapshot: {
+        upsert: vi
+          .fn()
+          .mockImplementation(({ create }) =>
+            Promise.resolve({ id: 'settlement-coupon-snapshot-1', ...create }),
+          ),
+      },
+      couponRedemption: {
+        findUnique: vi.fn().mockResolvedValue({
+          couponId: 'coupon-1',
+          currency: 'VND',
+          discountAmount: 60_000,
+          id: 'redemption-1',
+          state: CouponRedemptionState.CONSUMED,
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await service.upsertBookingSettlementSnapshot({
+      bookingId: 'booking-coupon-snapshot-1',
+      customerProfileId: 'customer-1',
+      providerProfileId: 'provider-1',
+      paymentMethod: 'CARD',
+      currency: 'VND',
+      customerPaymentAmount: 540_000,
+      partnerPayoutAmount: 430_000,
+      platformFeeGross: 128_000,
+      partnerVatRateBps: 500,
+      partnerPitRateBps: 200,
+      platformVatRateBps: 800,
+      metadata: {
+        companyCouponExpense: 60_000,
+        couponDiscountAmount: 60_000,
+        couponId: 'coupon-1',
+      },
+      occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+    });
+
+    expect(prisma.bookingSettlementSnapshot.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          metadata: expect.objectContaining({
+            couponDiscountAmount: 60_000,
+            couponId: 'coupon-1',
+            couponRedemptionId: 'redemption-1',
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('rejects settlement coupon metadata that does not match the consumed redemption', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: { upsert: vi.fn() },
+      couponRedemption: {
+        findUnique: vi.fn().mockResolvedValue({
+          couponId: 'coupon-authoritative',
+          currency: 'VND',
+          discountAmount: 60_000,
+          id: 'redemption-1',
+          state: CouponRedemptionState.CONSUMED,
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.upsertBookingSettlementSnapshot({
+        bookingId: 'booking-coupon-mismatch-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'provider-1',
+        paymentMethod: 'CARD',
+        customerPaymentAmount: 540_000,
+        partnerPayoutAmount: 430_000,
+        platformFeeGross: 128_000,
+        partnerVatRateBps: 500,
+        partnerPitRateBps: 200,
+        platformVatRateBps: 800,
+        metadata: {
+          companyCouponExpense: 60_000,
+          couponDiscountAmount: 60_000,
+          couponId: 'coupon-client-metadata',
+        },
+        occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+      }),
+    ).rejects.toThrow('Settlement coupon evidence does not match the consumed booking redemption.');
+    expect(prisma.bookingSettlementSnapshot.upsert).not.toHaveBeenCalled();
+  });
+
   it('rejects a replay that reuses a booking settlement key with different financial evidence', async () => {
     const prisma = {
       accountingJournalBatch: {
@@ -389,9 +494,7 @@ describe('SettlementsService', () => {
         platformVatRateBps: 800,
         occurredAt: new Date('2026-06-13T03:02:00.000Z'),
       }),
-    ).rejects.toThrow(
-      'A settlement snapshot already exists with different financial evidence.',
-    );
+    ).rejects.toThrow('A settlement snapshot already exists with different financial evidence.');
 
     expect(prisma.accountingJournalBatch.upsert).not.toHaveBeenCalled();
     expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
@@ -440,9 +543,7 @@ describe('SettlementsService', () => {
         platformVatRateBps: 800,
         occurredAt: new Date('2026-06-13T03:02:00.000Z'),
       }),
-    ).rejects.toThrow(
-      'A settlement journal already exists with different financial evidence.',
-    );
+    ).rejects.toThrow('A settlement journal already exists with different financial evidence.');
 
     expect(prisma.accountingJournalBatch.findUnique).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:booking-settlement:booking-journal-replay-1' },
@@ -489,9 +590,7 @@ describe('SettlementsService', () => {
         platformVatRateBps: 800,
         occurredAt: new Date('2026-06-13T03:02:00.000Z'),
       }),
-    ).rejects.toThrow(
-      'A payment clearing entry already exists with different financial evidence.',
-    );
+    ).rejects.toThrow('A payment clearing entry already exists with different financial evidence.');
 
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ update: {} }),
@@ -766,6 +865,7 @@ describe('SettlementsService', () => {
         bookingServiceAmount: 600_000,
         companyCouponExpense: 60_000,
         couponDiscountAmount: 60_000,
+        couponId: 'coupon-1',
         couponReversalStatus: 'NONE',
       },
       monthlyClosingId: null,
@@ -783,6 +883,18 @@ describe('SettlementsService', () => {
       taxStatus: BookingSettlementTaxStatus.OPEN,
     };
     const prisma = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ lockResult: '' }])
+        .mockResolvedValueOnce([
+          {
+            consumedAt: new Date('2026-06-13T03:02:00.000Z'),
+            couponId: 'coupon-1',
+            discountAmount: 60_000,
+            id: 'redemption-1',
+            state: CouponRedemptionState.CONSUMED,
+          },
+        ]),
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-1' }),
       },
@@ -794,6 +906,21 @@ describe('SettlementsService', () => {
         update: vi
           .fn()
           .mockResolvedValue({ ...existing, settlementStatus: BookingSettlementStatus.REVERSED }),
+      },
+      couponRedemption: {
+        findUnique: vi.fn().mockResolvedValue({
+          couponId: 'coupon-1',
+          currency: 'VND',
+          discountAmount: 60_000,
+          id: 'redemption-1',
+          state: CouponRedemptionState.CONSUMED,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      couponRedemptionReversalEvent: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: null } }),
+        create: vi.fn().mockResolvedValue({ id: 'coupon-reversal-event-1' }),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = new SettlementsService(prisma as never);
@@ -819,6 +946,7 @@ describe('SettlementsService', () => {
           bookingServiceAmount: 600_000,
           companyCouponExpense: 60_000,
           couponDiscountAmount: 60_000,
+          couponRedemptionId: 'redemption-1',
           couponReversalStatus: 'REVERSED',
           reversedCompanyCouponExpense: 60_000,
           reversedCouponDiscountAmount: 60_000,
@@ -861,43 +989,59 @@ describe('SettlementsService', () => {
         type: 'REFUND_REVERSAL',
       }),
     });
-  });
-
-  it.each([
-    MonthlyTaxClosingStatus.DECLARED,
-    MonthlyTaxClosingStatus.PAID,
-    MonthlyTaxClosingStatus.CLOSED,
-  ])('rejects refund settlement reversal into a %s target period', async (status) => {
-    const existing = {
-      id: 'settlement-1',
-      bookingId: 'booking-1',
-      currency: 'VND',
-      monthlyClosingId: 'original-closing-1',
-      monthlyPeriod: '2026-06',
-      settlementStatus: BookingSettlementStatus.POSTED,
-    };
-    const prisma = {
-      bookingSettlementSnapshot: {
-        findUnique: vi.fn().mockResolvedValue(existing),
-        update: vi.fn(),
+    expect(prisma.couponRedemptionReversalEvent.create).toHaveBeenCalledWith({
+      data: {
+        amount: 60_000,
+        couponRedemptionId: 'redemption-1',
+        occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+        reason: 'BOOKING_SETTLEMENT_REFUND_REVERSAL',
+        sourceKey: 'coupon-redemption:booking-settlement-reversal:settlement-coupon-1',
+        sourceReference: 'booking-settlement-snapshot:settlement-coupon-1',
       },
-      bookingSettlementReversalEntry: { upsert: vi.fn() },
-      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue({ status }) },
-    };
-    const service = new SettlementsService(prisma as never);
-
-    await expect(
-      service.reverseBookingSettlementSnapshotForRefund({
-        actorId: 'admin-1',
-        bookingId: 'booking-1',
-        occurredAt: new Date('2026-07-14T03:02:00.000Z'),
-        reason: 'Admin refund',
-      }),
-    ).rejects.toThrow('Refund settlement reversals require an open monthly period.');
-
-    expect(prisma.bookingSettlementSnapshot.update).not.toHaveBeenCalled();
-    expect(prisma.bookingSettlementReversalEntry.upsert).not.toHaveBeenCalled();
+    });
+    expect(prisma.couponRedemption.updateMany).toHaveBeenCalledWith({
+      where: { id: 'redemption-1', state: CouponRedemptionState.CONSUMED },
+      data: {
+        reversedAt: new Date('2026-06-14T03:02:00.000Z'),
+        state: CouponRedemptionState.REVERSED,
+      },
+    });
   });
+
+  it.each([MonthlyTaxClosingStatus.DECLARED, MonthlyTaxClosingStatus.PAID, MonthlyTaxClosingStatus.CLOSED])(
+    'rejects refund settlement reversal into a %s target period',
+    async (status) => {
+      const existing = {
+        id: 'settlement-1',
+        bookingId: 'booking-1',
+        currency: 'VND',
+        monthlyClosingId: 'original-closing-1',
+        monthlyPeriod: '2026-06',
+        settlementStatus: BookingSettlementStatus.POSTED,
+      };
+      const prisma = {
+        bookingSettlementSnapshot: {
+          findUnique: vi.fn().mockResolvedValue(existing),
+          update: vi.fn(),
+        },
+        bookingSettlementReversalEntry: { upsert: vi.fn() },
+        monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue({ status }) },
+      };
+      const service = new SettlementsService(prisma as never);
+
+      await expect(
+        service.reverseBookingSettlementSnapshotForRefund({
+          actorId: 'admin-1',
+          bookingId: 'booking-1',
+          occurredAt: new Date('2026-07-14T03:02:00.000Z'),
+          reason: 'Admin refund',
+        }),
+      ).rejects.toThrow('Refund settlement reversals require an open monthly period.');
+
+      expect(prisma.bookingSettlementSnapshot.update).not.toHaveBeenCalled();
+      expect(prisma.bookingSettlementReversalEntry.upsert).not.toHaveBeenCalled();
+    },
+  );
 
   it('reverses customer wallet settlement journals without creating bank payment clearing', async () => {
     const existing = {
@@ -1007,9 +1151,7 @@ describe('SettlementsService', () => {
         occurredAt: new Date('2026-06-14T03:02:00.000Z'),
         reason: 'Refund replay',
       }),
-    ).rejects.toThrow(
-      'A payment clearing refund reversal already exists with different financial evidence.',
-    );
+    ).rejects.toThrow('A payment clearing refund reversal already exists with different financial evidence.');
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ update: {} }),
     );
@@ -1066,9 +1208,7 @@ describe('SettlementsService', () => {
         occurredAt: new Date('2026-06-14T03:02:00.000Z'),
         reason: 'Refund journal replay',
       }),
-    ).rejects.toThrow(
-      'A settlement reversal journal already exists with different financial evidence.',
-    );
+    ).rejects.toThrow('A settlement reversal journal already exists with different financial evidence.');
 
     expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
   });
@@ -1134,7 +1274,8 @@ describe('SettlementsService', () => {
       reason: 'Refund after payout',
     });
 
-    const createEntries = prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.create?.entries?.create ?? [];
+    const createEntries =
+      prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.create?.entries?.create ?? [];
     expect(createEntries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1177,6 +1318,7 @@ describe('SettlementsService', () => {
       metadata: {
         companyCouponExpense: 60_000,
         couponDiscountAmount: 60_000,
+        couponId: 'coupon-closed-1',
         couponReversalStatus: 'NONE',
       },
       monthlyClosingId: 'closing-1',
@@ -1203,6 +1345,18 @@ describe('SettlementsService', () => {
       taxStatus: BookingSettlementTaxStatus.CLOSED,
     };
     const prisma = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ lockResult: '' }])
+        .mockResolvedValueOnce([
+          {
+            consumedAt: new Date('2026-06-13T03:02:00.000Z'),
+            couponId: 'coupon-closed-1',
+            discountAmount: 60_000,
+            id: 'redemption-closed-1',
+            state: CouponRedemptionState.CONSUMED,
+          },
+        ]),
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-1' }),
       },
@@ -1219,6 +1373,21 @@ describe('SettlementsService', () => {
       bookingSettlementSnapshot: {
         findUnique: vi.fn().mockResolvedValue(existing),
         update: vi.fn(),
+      },
+      couponRedemption: {
+        findUnique: vi.fn().mockResolvedValue({
+          couponId: 'coupon-closed-1',
+          currency: 'VND',
+          discountAmount: 60_000,
+          id: 'redemption-closed-1',
+          state: CouponRedemptionState.CONSUMED,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      couponRedemptionReversalEvent: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn().mockResolvedValue({ id: 'coupon-reversal-event-closed-1' }),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = new SettlementsService(prisma as never);
@@ -1246,6 +1415,7 @@ describe('SettlementsService', () => {
         customerProfileId: 'customer-1',
         metadata: expect.objectContaining({
           couponReversalStatus: 'REVERSED',
+          couponRedemptionId: 'redemption-closed-1',
           originalSettlementSnapshotId: 'settlement-closed-1',
           paymentFeeFixedAmount: 1_000,
           paymentFeePayer: PaymentFeePayer.HANDS,
@@ -1321,6 +1491,14 @@ describe('SettlementsService', () => {
         settlementReversalEntryId: 'reversal-entry-1',
         sourceKey: 'booking-payment-clearing:booking-closed-1:refund-reversal',
         type: 'REFUND_REVERSAL',
+      }),
+    });
+    expect(prisma.couponRedemptionReversalEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amount: 60_000,
+        couponRedemptionId: 'redemption-closed-1',
+        sourceKey: 'coupon-redemption:booking-settlement-reversal:settlement-closed-1',
+        sourceReference: 'booking-settlement-reversal-entry:reversal-entry-1',
       }),
     });
   });

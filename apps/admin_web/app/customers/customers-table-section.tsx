@@ -39,7 +39,7 @@ export function CustomersTableSection({
       description={
         needsActionView
           ? 'Failed payments, requested refunds, and reported reviews that require operator attention.'
-          : `Sorted by ${sortLabel}`
+          : 'Customer accounts matching the current filters.'
       }
       id="customer-directory"
       resultLabel={`${pagination.totalRows} ${pagination.totalRows === 1 ? 'customer' : 'customers'} · ${sortLabel}`}
@@ -85,7 +85,7 @@ export function CustomersTableSection({
               </td>
               <td>
                 {row.bookingStatusLabel === 'No open booking' && !row.lastSeenAt ? (
-                  <span className="muted">No booking · No app activity</span>
+                  <span className="muted">No open booking · No app activity</span>
                 ) : (
                   <div className="vuexy-customer-status-cell">
                     <StatusBadge tone={row.bookingStatusTone}>{row.bookingStatusLabel}</StatusBadge>
@@ -106,7 +106,7 @@ export function CustomersTableSection({
               </td>
               <td>
                 {usageNewUnbooked ? (
-                  <div className="vuexy-customer-booking-cell">
+                  <div className="vuexy-customer-booking-cell is-usage-new-unbooked">
                     <strong>No verified production booking</strong>
                     {row.bookingCount > 0 ? (
                       <span>{`${row.bookingCount} unverified or non-production ${row.bookingCount === 1 ? 'record' : 'records'} excluded`}</span>

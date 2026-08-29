@@ -9,6 +9,9 @@ describe('BookingCompletedCloseoutSection', () => {
 
     expect(css).toContain('.booking-post-match-operator-note > span');
     expect(css).not.toContain('.booking-post-match-operator-note span');
+    expect(css).toContain('.admin-disclosure[open] > .booking-completed-disclosure-summary');
+    expect(css).toContain('> .booking-completed-disclosure-chevron');
+    expect(css).toContain('transform: rotate(180deg)');
   });
 
   it('renders completed booking closeout guidance', () => {
@@ -30,6 +33,8 @@ describe('BookingCompletedCloseoutSection', () => {
     expect(rendered).toContain('normal closeout review');
     expect(markup).toContain('admin-disclosure');
     expect(markup).toContain('booking-completed-closeout-card');
+    expect(markup).toContain('booking-completed-disclosure-summary');
+    expect(markup).toContain('booking-completed-disclosure-chevron');
     expect(markup).toContain('aria-label="Completed closeout flow"');
     expect(markup).toContain('booking-post-match-decision-flow');
     expect(markup).toContain('booking-post-match-decision-step');

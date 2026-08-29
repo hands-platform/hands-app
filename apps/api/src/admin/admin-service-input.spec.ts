@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   PRICE_STEP_UNIT_VND,
+  SERVICE_CATALOG_DISPLAY_ORDER_MAX,
   normalizeServiceDurationSetInput,
   normalizeServiceCatalogGroupCommand,
   normalizeServiceInput,
@@ -176,6 +177,85 @@ describe('admin service input helpers', () => {
       }),
     ).toThrow(BadRequestException);
   });
+
+  it.each(['PUBLISH', 'HIDE', 'ARCHIVE'] as const)(
+    'requires a 12-character reason for the %s live intent',
+    (intent) => {
+      for (const reason of [undefined, 'x'.repeat(11)]) {
+        expect(() =>
+          normalizeServiceCatalogGroupCommand('aroma_massage', {
+            requestId: `request-${intent.toLowerCase()}`,
+            expectedVersion: 0,
+            intent,
+            reason,
+            nameTranslations: { en: 'Aroma Massage', vi: 'Massage hương thơm' },
+            priceStep: 100000,
+            displayOrder: 10,
+            durations: standardCatalogDurations(),
+          }),
+        ).toThrow(
+          expect.objectContaining({
+            response: expect.objectContaining({
+              fieldErrors: {
+                reason: 'Explain the operational impact in at least 12 characters.',
+              },
+            }),
+          }),
+        );
+      }
+    },
+  );
+
+  it.each([
+    ['group', -1, 'displayOrder'],
+    ['group', SERVICE_CATALOG_DISPLAY_ORDER_MAX + 1, 'displayOrder'],
+    ['duration', -1, 'duration60.displayOrder'],
+    [
+      'duration',
+      SERVICE_CATALOG_DISPLAY_ORDER_MAX + 1,
+      'duration60.displayOrder',
+    ],
+  ] as const)('rejects an out-of-range %s display order', (scope, value, field) => {
+    const input = {
+      requestId: `request-display-order-${scope}-${value}`,
+      expectedVersion: 0,
+      intent: 'SAVE_DRAFT' as const,
+      priceStep: 100000,
+      displayOrder: scope === 'group' ? value : 10,
+      durations: standardCatalogDurations().map((row) =>
+        scope === 'duration' && row.durationMin === 60
+          ? { ...row, displayOrder: value }
+          : row,
+      ),
+    };
+
+    expect(() => normalizeServiceCatalogGroupCommand('aroma_massage', input)).toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({
+          fieldErrors: expect.objectContaining({ [field]: expect.any(String) }),
+        }),
+      }),
+    );
+  });
+
+  it.each([0, 10, SERVICE_CATALOG_DISPLAY_ORDER_MAX])(
+    'accepts group and duration display order %s',
+    (displayOrder) => {
+      expect(
+        normalizeServiceCatalogGroupCommand('aroma_massage', {
+          requestId: `request-display-order-${displayOrder}`,
+          expectedVersion: 0,
+          intent: 'SAVE_DRAFT',
+          priceStep: 100000,
+          displayOrder,
+          durations: standardCatalogDurations().map((row) => ({ ...row, displayOrder })),
+        }),
+      ).toMatchObject({
+        displayOrder,
+        durations: expect.arrayContaining([expect.objectContaining({ displayOrder })]),
+      });
+    },
+  );
 });
 
 function standardCatalogDurations(

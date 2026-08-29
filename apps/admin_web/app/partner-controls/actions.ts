@@ -2,9 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { adminPatch, adminPost } from '../../lib/admin-api';
+import { adminPatch, adminPost, adminPostOrThrow } from '../../lib/admin-api';
+import { partnerControlHref } from './partner-control-page-load-plan';
 
 const MIN_REASON_LENGTH = 12;
+const MAX_REASON_LENGTH = 500;
+const ACTIVE_REPORT_QUEUE_HREF = '/partner-controls?details=reports';
 
 export type PartnerControlActionState = {
   readonly fieldErrors?: Record<string, string>;
@@ -15,23 +18,42 @@ export type PartnerControlActionState = {
 
 export type PartnerControlRestrictionActionState = PartnerControlActionState;
 
+export async function applyPartnerControlFilters(formData: FormData) {
+  const params = Object.fromEntries(
+    [
+      'controlType',
+      'details',
+      'newReport',
+      'partnerQ',
+      'q',
+      'review',
+      'sanction',
+      'severity',
+      'sort',
+      'status',
+    ].flatMap((name) => {
+      const value = readOptional(formData, name);
+      return value ? [[name, value] as const] : [];
+    }),
+  );
+  redirect(partnerControlHref(params, {}));
+}
+
 export async function createProviderReport(formData: FormData) {
-  const returnTo = partnerControlReturnTo(formData);
   const result = await saveProviderReport(formData);
   if (result.status === 'error') {
-    return redirect(partnerControlNoticeHref(returnTo, 'report-failed'));
+    return redirect(partnerControlNoticeHref(ACTIVE_REPORT_QUEUE_HREF, 'report-failed'));
   }
-  redirect(partnerControlNoticeHref(returnTo, 'report-saved'));
+  redirect(partnerControlNoticeHref(ACTIVE_REPORT_QUEUE_HREF, 'report-saved'));
 }
 
 export async function createProviderReportWithState(
   _previousState: PartnerControlActionState | null,
   formData: FormData,
 ): Promise<PartnerControlActionState> {
-  const returnTo = partnerControlReturnTo(formData);
   const result = await saveProviderReport(formData);
   if (result.status === 'error') return result;
-  redirect(partnerControlNoticeHref(returnTo, 'report-saved'));
+  redirect(partnerControlNoticeHref(ACTIVE_REPORT_QUEUE_HREF, 'report-saved'));
 }
 
 export async function updateProviderReport(formData: FormData) {
@@ -69,24 +91,41 @@ export async function createProviderSanctionWithState(
 
 async function saveProviderSanction(formData: FormData): Promise<PartnerControlRestrictionActionState> {
   const values = restrictionFormValues(formData);
+  let providerProfileId: string;
+  let type: string;
+  let reportId: string | null;
+  let expiresAt: string | null;
+  let reason: string;
+
   try {
     if (readOptional(formData, 'confirmation') !== 'confirmed') {
       throw new Error('Restriction confirmation is required');
     }
-    const providerProfileId = readRequired(formData, 'providerProfileId');
-    const type = readOptional(formData, 'type') ?? 'WARNING';
-    const reportId = readOptional(formData, 'reportId');
-    const expiresAt = restrictionExpiry(formData);
-    const reason = readReason(formData);
-    await adminPost(
+    providerProfileId = readRequired(formData, 'providerProfileId');
+    type = readOptional(formData, 'type') ?? 'WARNING';
+    if (!PROVIDER_SANCTION_TYPES.some((supportedType) => supportedType === type)) {
+      throw new Error('Unsupported restriction type');
+    }
+    reportId = readOptional(formData, 'reportId');
+    expiresAt = restrictionExpiry(formData);
+    reason = readReason(formData);
+  } catch {
+    return {
+      message: 'The restriction was not saved. Check confirmation, expiry, and evidence, then try again.',
+      status: 'error',
+      values,
+    };
+  }
+
+  try {
+    await adminPostOrThrow(
       `/admin/providers/${providerProfileId}/sanctions`,
       { type, reportId, expiresAt, reason },
-      null,
     );
     revalidatePartnerControls(providerProfileId);
   } catch {
     return {
-      message: 'The restriction was not saved. Check confirmation, expiry, and evidence, then try again.',
+      message: 'The Partner control service did not save the restriction. Your entries are preserved; check access and service availability, then retry.',
       status: 'error',
       values,
     };
@@ -192,7 +231,10 @@ function readReason(formData: FormData) {
   if (reason.length < MIN_REASON_LENGTH) {
     throw new Error(`Reason must be at least ${MIN_REASON_LENGTH} characters`);
   }
-  return reason.slice(0, 500);
+  if (reason.length > MAX_REASON_LENGTH) {
+    throw new Error(`Reason must be at most ${MAX_REASON_LENGTH} characters`);
+  }
+  return reason;
 }
 
 function readOptional(formData: FormData, name: string) {
@@ -228,12 +270,19 @@ function partnerControlNoticeHref(returnTo: string, notice: string) {
 
 function restrictionFormValues(formData: FormData) {
   return Object.fromEntries(
-    ['confirmation', 'expiresAt', 'noExpiry', 'reason', 'type'].flatMap((name) => {
+    ['confirmation', 'expiresAt', 'noExpiry', 'providerProfileId', 'reason', 'reportId', 'type'].flatMap((name) => {
       const value = readOptional(formData, name);
       return value ? [[name, value] as const] : [];
     }),
   );
 }
+
+const PROVIDER_SANCTION_TYPES = [
+  'WARNING',
+  'ACCOUNT_BLOCK',
+  'PAYOUT_HOLD',
+  'TRUST_BADGE_REMOVAL',
+] as const satisfies readonly string[];
 
 function reportFormValues(formData: FormData) {
   return Object.fromEntries(

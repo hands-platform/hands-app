@@ -53,7 +53,7 @@ type FinanceCloseoutPageProps = {
 };
 
 export const metadata: Metadata = {
-  title: 'Settlement Repair · HANDS Admin',
+  title: 'Settlement Repair',
 };
 
 export default async function FinanceCloseoutPage({ searchParams }: FinanceCloseoutPageProps) {

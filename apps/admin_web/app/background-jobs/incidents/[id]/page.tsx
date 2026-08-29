@@ -19,6 +19,7 @@ import {
   type AdminBackgroundJobReviewStatus,
 } from '../../../../lib/admin-api';
 import { adminWorkflowStatusLabel } from '../../../../lib/admin-copy';
+import { backgroundJobAuditActorLabel } from '../../background-job-audit-actor';
 
 type BackgroundJobIncidentPageProps = {
   readonly params?: Promise<{ readonly id?: string }>;
@@ -112,7 +113,7 @@ export default async function BackgroundJobIncidentPage({
                 />
               </td>
               <td>{incident.firstFailureJobId ?? 'Not retained'}</td>
-              <td>{incident.actor.fullName || incident.actor.email || incident.actor.id}</td>
+              <td>{backgroundJobAuditActorLabel(incident)}</td>
             </tr>
           </AdminDataTable>
         </AdminTableScroll>
@@ -139,7 +140,7 @@ export default async function BackgroundJobIncidentPage({
                 <td>{failure.jobId}</td>
                 <td><DateTimeText value={failure.firstSeenAt} /></td>
                 <td><DateTimeText value={failure.updatedAt} /></td>
-                <td>{failure.actor.fullName || failure.actor.email || failure.actor.id}</td>
+                <td>{backgroundJobAuditActorLabel(failure)}</td>
                 <td>{failure.reason ?? 'No operator note'}</td>
               </tr>
             ))}

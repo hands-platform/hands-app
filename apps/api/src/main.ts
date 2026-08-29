@@ -10,10 +10,12 @@ import { corsOriginFromEnv } from './security/cors-origin';
 import { apiRateLimitPolicies, rateLimitMiddleware } from './security/rate-limit.middleware';
 import { securityHeadersMiddleware } from './security/security-headers.middleware';
 import { trustProxyFromConfig } from './security/trust-proxy';
+import { assertSiteContentPreviewStartupConfig } from './site-content/site-content-preview-config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
+  assertSiteContentPreviewStartupConfig(config);
   app.enableShutdownHooks(['SIGINT', 'SIGTERM']);
   const redisIoAdapter = new RedisIoAdapter(
     app,

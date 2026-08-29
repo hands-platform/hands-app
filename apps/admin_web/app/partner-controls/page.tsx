@@ -3,6 +3,7 @@ import {
   type AdminPartnerControlProviderPage,
   type AdminProvider,
   type AdminProviderReport,
+  type AdminProviderReportAuditHistory,
   type AdminProviderReportPage,
   type AdminProviderSanction,
   type AdminProviderSanctionPage,
@@ -28,6 +29,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import {
+  AdminBasicTimeline,
   AdminDisclosure,
   AdminDisclosureCard,
   AdminNoticeCard,
@@ -39,6 +41,7 @@ import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
+  applyPartnerControlFilters,
   createProviderReportWithState,
   createProviderSanctionWithState,
   liftProviderSanction,
@@ -58,7 +61,8 @@ import {
 import {
   buildPartnerControlPageLoadPlan,
   partnerControlHref,
-  partnerControlWorkspaceHref,
+  partnerControlNewReportHref,
+  partnerControlReportReviewHref,
   type PartnerControlDetailsMode,
 } from './partner-control-page-load-plan';
 import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
@@ -67,15 +71,13 @@ import {
   type PartnerControlSummaryResponse,
 } from './partner-control-summary';
 import { partnerControlImpact, type PartnerControlBlockerKind } from './partner-control-policy';
-import {
-  PartnerControlActionForm,
-  PartnerControlRestrictionForm,
-} from './partner-control-restriction-form';
+import { PartnerControlActionForm, PartnerControlRestrictionForm } from './partner-control-restriction-form';
 
 type PartnerControlsSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const EMPTY_PROVIDER_PAGE: AdminPartnerControlProviderPage = { items: [], skip: 0, take: 10, totalCount: 0 };
 const EMPTY_REPORT_PAGE: AdminProviderReportPage = { items: [], skip: 0, take: 10, totalCount: 0 };
+const EMPTY_REPORT_AUDIT_HISTORY: AdminProviderReportAuditHistory = { items: [] };
 const EMPTY_SANCTION_PAGE: AdminProviderSanctionPage = { items: [], skip: 0, take: 10, totalCount: 0 };
 
 const REPORT_CATEGORIES = [
@@ -100,29 +102,32 @@ export default async function PartnerControlsPage({
     providerResult,
     reportResult,
     directReportResult,
+    reportAuditResult,
     sanctionResult,
     partnerSearchResult,
-  ] =
-    await Promise.all([
-      loadPlan.summaryHref
-        ? adminGetResult<PartnerControlSummaryResponse | null>(loadPlan.summaryHref, null)
-        : Promise.resolve({ data: null, ok: true, status: 200 }),
-      loadPlan.providersHref
-        ? adminGetResult<AdminPartnerControlProviderPage>(loadPlan.providersHref, EMPTY_PROVIDER_PAGE)
-        : Promise.resolve({ data: EMPTY_PROVIDER_PAGE, ok: true, status: 200 }),
-      loadPlan.reportsHref
-        ? adminGetResult<AdminProviderReportPage>(loadPlan.reportsHref, EMPTY_REPORT_PAGE)
-        : Promise.resolve({ data: EMPTY_REPORT_PAGE, ok: true, status: 200 }),
-      loadPlan.reportHref
-        ? adminGetResult<AdminProviderReport | null>(loadPlan.reportHref, null)
-        : Promise.resolve({ data: null, ok: true, status: 200 }),
-      loadPlan.sanctionsHref
-        ? adminGetResult<AdminProviderSanctionPage>(loadPlan.sanctionsHref, EMPTY_SANCTION_PAGE)
-        : Promise.resolve({ data: EMPTY_SANCTION_PAGE, ok: true, status: 200 }),
-      loadPlan.partnerSearchHref
-        ? adminGetResult<AdminPartnerControlProviderPage>(loadPlan.partnerSearchHref, EMPTY_PROVIDER_PAGE)
-        : Promise.resolve({ data: EMPTY_PROVIDER_PAGE, ok: true, status: 200 }),
-    ]);
+  ] = await Promise.all([
+    loadPlan.summaryHref
+      ? adminGetResult<PartnerControlSummaryResponse | null>(loadPlan.summaryHref, null)
+      : Promise.resolve({ data: null, ok: true, status: 200 }),
+    loadPlan.providersHref
+      ? adminGetResult<AdminPartnerControlProviderPage>(loadPlan.providersHref, EMPTY_PROVIDER_PAGE)
+      : Promise.resolve({ data: EMPTY_PROVIDER_PAGE, ok: true, status: 200 }),
+    loadPlan.reportsHref
+      ? adminGetResult<AdminProviderReportPage>(loadPlan.reportsHref, EMPTY_REPORT_PAGE)
+      : Promise.resolve({ data: EMPTY_REPORT_PAGE, ok: true, status: 200 }),
+    loadPlan.reportHref
+      ? adminGetResult<AdminProviderReport | null>(loadPlan.reportHref, null)
+      : Promise.resolve({ data: null, ok: true, status: 200 }),
+    loadPlan.reportAuditHref
+      ? adminGetResult<AdminProviderReportAuditHistory>(loadPlan.reportAuditHref, EMPTY_REPORT_AUDIT_HISTORY)
+      : Promise.resolve({ data: EMPTY_REPORT_AUDIT_HISTORY, ok: true, status: 200 }),
+    loadPlan.sanctionsHref
+      ? adminGetResult<AdminProviderSanctionPage>(loadPlan.sanctionsHref, EMPTY_SANCTION_PAGE)
+      : Promise.resolve({ data: EMPTY_SANCTION_PAGE, ok: true, status: 200 }),
+    loadPlan.partnerSearchHref
+      ? adminGetResult<AdminPartnerControlProviderPage>(loadPlan.partnerSearchHref, EMPTY_PROVIDER_PAGE)
+      : Promise.resolve({ data: EMPTY_PROVIDER_PAGE, ok: true, status: 200 }),
+  ]);
   const summary = buildPartnerControlSummaryFromServer(summaryResult.data) ?? [
     ['Reports needing review', 'Unavailable'],
     ['Active restrictions', 'Unavailable'],
@@ -142,6 +147,7 @@ export default async function PartnerControlsPage({
   const activeFilters = buildPartnerControlActiveFilters(filters).map((filter) => filter.label);
   const selectedReport = directReportResult.data;
   const creatingReport = readSearchParam(params.newReport) === '1' && !loadPlan.reportHref;
+  const pageTitle = partnerControlPageTitle(loadPlan.detailsMode);
 
   return (
     <>
@@ -176,9 +182,8 @@ export default async function PartnerControlsPage({
         description="Prioritized Partner reports, operating blockers, and account restrictions with exact server totals."
         metrics={loadPlan.shouldRenderSummary ? pageMetrics : []}
         metricsClassName="partner-control-summary-metrics"
-        title="Partner Controls"
+        title={pageTitle}
       >
-        <PartnerControlWorkspaceNavigation mode={loadPlan.detailsMode} params={params} />
         <PartnerControlLoadNotice
           mode={loadPlan.detailsMode}
           ok={partnerControlLoadOk(loadPlan.detailsMode, {
@@ -219,11 +224,17 @@ export default async function PartnerControlsPage({
                 <AdminTextLink href="/partner-controls?details=controls&review=location">
                   Location gaps {summaryResult.data?.locationGaps ?? 'Unavailable'}
                 </AdminTextLink>
-                <AdminTextLink href="/partner-controls?details=controls">
-                  KYC or bank gap {summaryResult.data?.onboardingGaps ?? 'Unavailable'}
+                <AdminTextLink href="/partner-controls?details=controls&review=kyc">
+                  KYC readiness gaps {summaryResult.data?.kycGaps ?? 'Unavailable'}
+                </AdminTextLink>
+                <AdminTextLink href="/partner-controls?details=controls&review=bank">
+                  Bank approval gaps {summaryResult.data?.bankGaps ?? 'Unavailable'}
                 </AdminTextLink>
               </AdminFilterChipGroup>
-              <p className="muted admin-mt-8">Optional tax records are context only and never an operating gate.</p>
+              <p className="muted admin-mt-8">
+                A Partner can appear in both lane totals. Optional tax records are context only and never an
+                operating gate.
+              </p>
             </AdminSection>
           </>
         ) : null}
@@ -255,21 +266,28 @@ export default async function PartnerControlsPage({
             <ReportFilters
               activeFilters={activeFilters}
               filters={filters}
-              newReportHref={partnerControlHref(params, { details: 'reports', newReport: '1' })}
+              newReportHref={partnerControlNewReportHref(params)}
             />
             {creatingReport ? (
               <NewPartnerReportPanel
-                params={params}
                 partnerOptions={partnerSearchResult.data.items}
                 partnerQ={readSearchParam(params.partnerQ)}
               />
             ) : null}
             {loadPlan.reportHref && (!directReportResult.ok || !selectedReport) ? (
               <AdminNoticeCard className="admin-mb-16" role="alert" tone="danger">
-                This report could not be loaded directly. Return to the report queue and retry before making a decision.
+                This report could not be loaded directly. Return to the report queue and retry before making a
+                decision.
               </AdminNoticeCard>
             ) : null}
-            {selectedReport ? <ReportReviewPanel params={params} report={selectedReport} /> : null}
+            {selectedReport ? (
+              <ReportReviewPanel
+                auditHistory={reportAuditResult.data}
+                auditHistoryOk={reportAuditResult.ok}
+                params={params}
+                report={selectedReport}
+              />
+            ) : null}
             <AdminSection
               className="admin-mb-16"
               description={`${reportResult.data.items.length} of ${reportResult.data.totalCount} reports match the server filters.`}
@@ -296,7 +314,7 @@ export default async function PartnerControlsPage({
               className="admin-mb-16"
               description={
                 filters.sanction === 'HISTORY'
-                  ? `${sanctionResult.data.items.length} of ${sanctionResult.data.totalCount} lifted or expired restrictions.`
+                  ? `${sanctionResult.data.items.length} of ${sanctionResult.data.totalCount} lifted or expired restrictions. Legacy records may not contain a lift reason.`
                   : `${sanctionResult.data.items.length} of ${sanctionResult.data.totalCount} active restrictions.`
               }
               id="partner-control-account-controls"
@@ -321,33 +339,11 @@ export default async function PartnerControlsPage({
   );
 }
 
-function PartnerControlWorkspaceNavigation({
-  mode,
-  params,
-}: {
-  readonly mode: PartnerControlDetailsMode;
-  readonly params: Record<string, string | string[] | undefined>;
-}) {
-  const workspaces: Array<[PartnerControlDetailsMode, string]> = [
-    ['summary', 'Summary'],
-    ['controls', 'Partner blockers'],
-    ['reports', 'Reports'],
-    ['sanctions', 'Account controls'],
-  ];
-  return (
-    <nav aria-label="Partner control workspaces" className="partner-control-workspace-tabs admin-mb-16">
-      {workspaces.map(([value, label]) => (
-        <AdminFormControlLink
-          aria-current={mode === value ? 'page' : undefined}
-          className={mode === value ? 'button-primary' : 'button-secondary'}
-          href={partnerControlWorkspaceHref(params, value)}
-          key={value}
-        >
-          {label}
-        </AdminFormControlLink>
-      ))}
-    </nav>
-  );
+function partnerControlPageTitle(mode: PartnerControlDetailsMode) {
+  if (mode === 'controls') return 'Partner Blockers';
+  if (mode === 'reports') return 'Reports';
+  if (mode === 'sanctions') return 'Account Controls';
+  return 'Action Queue';
 }
 
 function PartnerControlLoadNotice({
@@ -411,7 +407,7 @@ function PartnerBlockerFilters({
       id="partner-control-blocker-filters"
       title="Filter this queue"
     >
-      <AdminFormGrid action="/partner-controls" method="get">
+      <AdminFormGrid action={applyPartnerControlFilters} className="partner-control-filter-grid">
         <input name="details" type="hidden" value="controls" />
         <AdminFormSearch
           defaultValue={filters.q}
@@ -446,7 +442,7 @@ function PartnerBlockerFilters({
             { label: 'Newest first', value: 'newest' },
           ]}
         />
-        <AdminFormActionRow>
+        <AdminFormActionRow wide={false}>
           <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
           <AdminFormControlLink href="/partner-controls?details=controls">Reset</AdminFormControlLink>
         </AdminFormActionRow>
@@ -510,7 +506,7 @@ function PartnerBlockerTable({ providers }: { readonly providers: AdminProvider[
               <strong>{risk.ownerLabel}</strong>
               <br />
               <AdminTextLink href={partnerBlockerActionHref(provider, risk.kind)}>
-                {partnerBlockerActionLabel(provider, risk.kind, policy.nextAction)}
+                {risk.nextActionLabel}
               </AdminTextLink>
             </td>
           </tr>
@@ -546,7 +542,7 @@ function ReportFilters({
       id="partner-control-filters"
       title="Filter reports"
     >
-      <AdminFormGrid action="/partner-controls" method="get">
+      <AdminFormGrid action={applyPartnerControlFilters} className="partner-control-filter-grid">
         <input name="details" type="hidden" value="reports" />
         <AdminFormSearch
           defaultValue={filters.q}
@@ -560,7 +556,7 @@ function ReportFilters({
           labelVisibility="visible"
           name="status"
           options={[
-            { label: 'All statuses', value: '' },
+            { label: 'Needs review · Open + Investigating', value: '' },
             { label: 'Open', value: 'OPEN' },
             { label: 'Investigating', value: 'INVESTIGATING' },
             { label: 'Resolved', value: 'RESOLVED' },
@@ -592,7 +588,7 @@ function ReportFilters({
             { label: 'Newest first', value: 'newest' },
           ]}
         />
-        <AdminFormActionRow>
+        <AdminFormActionRow wide={false}>
           <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
           <AdminFormControlLink href="/partner-controls?details=reports">Reset</AdminFormControlLink>
         </AdminFormActionRow>
@@ -607,19 +603,13 @@ function ReportFilters({
 }
 
 function NewPartnerReportPanel({
-  params,
   partnerOptions,
   partnerQ,
 }: {
-  readonly params: Record<string, string | string[] | undefined>;
   readonly partnerOptions: AdminProvider[];
   readonly partnerQ: string;
 }) {
-  const returnTo = partnerControlHref(params, {
-    details: 'reports',
-    newReport: undefined,
-    notice: undefined,
-  });
+  const returnTo = '/partner-controls?details=reports';
   return (
     <AdminDisclosureCard
       className="admin-mb-16 partner-control-editor"
@@ -628,7 +618,7 @@ function NewPartnerReportPanel({
     >
       <summary>New Partner report</summary>
       <div className="partner-control-editor-body">
-        <AdminFormGrid action="/partner-controls" method="get">
+        <AdminFormGrid action={applyPartnerControlFilters} className="partner-control-filter-grid">
           <input name="details" type="hidden" value="reports" />
           <input name="newReport" type="hidden" value="1" />
           <AdminFormSearch
@@ -637,11 +627,15 @@ function NewPartnerReportPanel({
             name="partnerQ"
             placeholder="Name, phone, or Partner ID"
           />
-          <AdminFormActionRow>
+          <AdminFormActionRow wide={false}>
             <AdminFormControlButton type="submit">Find Partner</AdminFormControlButton>
             <AdminFormControlLink href="/partner-controls?details=reports">Cancel</AdminFormControlLink>
           </AdminFormActionRow>
         </AdminFormGrid>
+        <p className="muted admin-mt-8">
+          Up to 20 Partners are listed alphabetically. Search by name, phone, or Partner ID to narrow the
+          selection before creating a report.
+        </p>
         <p className="muted admin-mt-16">
           Record the observed event in Summary. Use Details for the evidence an operator should verify.
         </p>
@@ -688,7 +682,7 @@ function NewPartnerReportPanel({
           />
           <AdminFormInput
             className="admin-grid-span-2"
-            label="Summary"
+            label="Summary · Required · one-line incident description"
             labelVisibility="visible"
             maxLength={180}
             name="summary"
@@ -696,7 +690,7 @@ function NewPartnerReportPanel({
           />
           <AdminFormTextarea
             className="admin-grid-span-2"
-            label="Details"
+            label="Details · Evidence and context for the next operator"
             labelVisibility="visible"
             maxLength={2000}
             name="details"
@@ -742,14 +736,14 @@ function ReportTable({
             </AdminFilterChipGroup>
           </td>
           <td data-label="Owner">{operatorLabel(report.assignedAdmin)}</td>
-          <td data-label="Age / SLA">{reportAgeSlaLabel(report)}</td>
+          <td data-label="Age / SLA">
+            <ReportAgeSla report={report} />
+          </td>
           <td data-label="Last update">
             <DateTimeText value={report.updatedAt ?? report.createdAt} />
           </td>
           <td data-label="Review">
-            <AdminTextLink
-              href={partnerControlHref(params, { details: 'reports', reviewReportId: report.id })}
-            >
+            <AdminTextLink href={partnerControlReportReviewHref(params, report.id)}>
               Review report
             </AdminTextLink>
           </td>
@@ -760,9 +754,13 @@ function ReportTable({
 }
 
 function ReportReviewPanel({
+  auditHistory,
+  auditHistoryOk,
   params,
   report,
 }: {
+  readonly auditHistory: AdminProviderReportAuditHistory;
+  readonly auditHistoryOk: boolean;
   readonly params: Record<string, string | string[] | undefined>;
   readonly report: AdminProviderReport;
 }) {
@@ -782,6 +780,39 @@ function ReportReviewPanel({
           Partner: {providerName(report.providerProfile, report.providerProfileId)} · Created{' '}
           <DateTimeText value={report.createdAt} />
         </p>
+        <AdminDisclosure className="admin-mt-16 partner-control-report-audit" open>
+          <summary>Recent report changes · {auditHistory.items.length}</summary>
+          <div className="admin-mt-12">
+            <p className="muted">Most recent recorded create and update events. Read-only.</p>
+            {!auditHistoryOk ? (
+              <AdminNoticeCard className="admin-mt-12" role="status" tone="warning">
+                Report change history could not be loaded. Retry before relying on this timeline.
+              </AdminNoticeCard>
+            ) : auditHistory.items.length ? (
+              <AdminBasicTimeline
+                className="admin-mt-12"
+                compactMeta
+                items={auditHistory.items.map((entry) => ({
+                  detail:
+                    entry.changes.resolutionNote === undefined
+                      ? `By ${reportAuditActorLabel(entry.actor)}`
+                      : entry.changes.resolutionNote
+                        ? `By ${reportAuditActorLabel(entry.actor)} · Resolution: ${entry.changes.resolutionNote}`
+                        : `By ${reportAuditActorLabel(entry.actor)} · Resolution note cleared`,
+                  id: entry.id,
+                  meta: reportAuditChangeMeta(entry.changes),
+                  statusLabel: entry.action === 'provider_report.create' ? 'Created' : 'Updated',
+                  statusTone: entry.action === 'provider_report.create' ? 'success' : 'info',
+                  time: <DateTimeText value={entry.createdAt} />,
+                  title: entry.action === 'provider_report.create' ? 'Report created' : 'Report updated',
+                  tone: entry.action === 'provider_report.create' ? 'success' : 'info',
+                }))}
+              />
+            ) : (
+              <p className="muted admin-mt-12">No report change history was recorded.</p>
+            )}
+          </div>
+        </AdminDisclosure>
         <PartnerControlActionForm action={updateProviderReportWithState} className="admin-mt-16">
           <input name="reportId" type="hidden" value={report.id} />
           <input name="providerProfileId" type="hidden" value={report.providerProfileId} />
@@ -934,7 +965,7 @@ function RestrictionFilters({
       id="partner-control-restriction-filters"
       title="Filter account controls"
     >
-      <AdminFormGrid action="/partner-controls" method="get">
+      <AdminFormGrid action={applyPartnerControlFilters} className="partner-control-filter-grid">
         <input name="details" type="hidden" value="sanctions" />
         {history ? <input name="sanction" type="hidden" value="HISTORY" /> : null}
         <AdminFormSearch
@@ -966,16 +997,18 @@ function RestrictionFilters({
             { label: 'Oldest first', value: 'oldest' },
           ]}
         />
-        <AdminFormActionRow>
+        <AdminFormActionRow wide={false}>
           <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
-          <AdminFormControlLink href={partnerControlHref(params, {
-            details: 'sanctions',
-            q: undefined,
-            controlType: undefined,
-            sanction: history ? 'HISTORY' : undefined,
-            sanctionPage: undefined,
-            sort: undefined,
-          })}>
+          <AdminFormControlLink
+            href={partnerControlHref(params, {
+              details: 'sanctions',
+              q: undefined,
+              controlType: undefined,
+              sanction: history ? 'HISTORY' : undefined,
+              sanctionPage: undefined,
+              sort: undefined,
+            })}
+          >
             Reset
           </AdminFormControlLink>
         </AdminFormActionRow>
@@ -1030,7 +1063,7 @@ function RestrictionTable({
             {history ? (
               <>
                 <strong>Lift reason</strong>
-                <p>{sanctionLiftReason(sanction) || 'Not recorded for this historical action.'}</p>
+                <p>{sanctionLiftReason(sanction) || 'Legacy · not recorded'}</p>
               </>
             ) : null}
           </td>
@@ -1186,17 +1219,6 @@ function partnerBlockerActionHref(provider: AdminProvider, kind: PartnerControlB
   return `/partners/${provider.id}?section=full`;
 }
 
-function partnerBlockerActionLabel(
-  provider: AdminProvider,
-  kind: PartnerControlBlockerKind,
-  fallback: string,
-) {
-  if (kind !== 'KYC_READINESS') return fallback;
-  return !provider.kyc || provider.kyc.status === 'REJECTED'
-    ? 'Partner: submit missing KYC'
-    : 'Operator: review submitted KYC';
-}
-
 function riskAgeLabel(
   kind: PartnerControlBlockerKind,
   startedAt: string | null,
@@ -1215,13 +1237,21 @@ function riskAgeLabel(
 
 function reportAgeSlaLabel(report: AdminProviderReport) {
   if (report.status === 'RESOLVED' || report.status === 'DISMISSED') {
-    return report.resolvedAt
-      ? `Closed · ${new Date(report.resolvedAt).toLocaleString('en-GB')}`
-      : 'Closed · close time not tracked';
+    return 'Closed';
   }
   const sla = reportSlaHours(report.severity);
   const elapsed = Math.max(0, Date.now() - Date.parse(report.createdAt));
   return `${ageLabel(elapsed)} · ${sla}h SLA${elapsed >= sla * 3_600_000 ? ' overdue' : ''}`;
+}
+
+function ReportAgeSla({ report }: { readonly report: AdminProviderReport }) {
+  const label = reportAgeSlaLabel(report);
+  if (label !== 'Closed') return label;
+  return (
+    <>
+      Closed · <DateTimeText fallback="close time not tracked" value={report.resolvedAt} />
+    </>
+  );
 }
 
 function reportQueueTitle(params: Record<string, string | string[] | undefined>) {
@@ -1231,9 +1261,9 @@ function reportQueueTitle(params: Record<string, string | string[] | undefined>)
 function reportEmptyMessage(params: Record<string, string | string[] | undefined>) {
   const filtered = Boolean(
     readSearchParam(params.q) ||
-      readSearchParam(params.status) ||
-      readSearchParam(params.severity) ||
-      readSearchParam(params.review),
+    readSearchParam(params.status) ||
+    readSearchParam(params.severity) ||
+    readSearchParam(params.review),
   );
   return filtered ? 'No reports match the current filters.' : 'No reports need triage.';
 }
@@ -1285,6 +1315,18 @@ function maskedPhone(value?: string | null) {
 
 function operatorLabel(operator?: { fullName?: string | null; phone?: string | null } | null) {
   return operator?.fullName || (operator?.phone ? maskedPhone(operator.phone) : 'Unassigned');
+}
+
+function reportAuditActorLabel(actor: AdminProviderReportAuditHistory['items'][number]['actor']) {
+  return actor?.fullName || (actor?.id ? `Admin ${shortDisplayId(actor.id)}` : 'Unknown operator');
+}
+
+function reportAuditChangeMeta(changes: AdminProviderReportAuditHistory['items'][number]['changes']) {
+  return [
+    ...(changes.status ? [{ label: 'Status', value: changes.status }] : []),
+    ...(changes.severity ? [{ label: 'Severity', value: changes.severity }] : []),
+    ...(changes.category ? [{ label: 'Category', value: changes.category }] : []),
+  ];
 }
 
 function reportSeverityTone(severity: string) {

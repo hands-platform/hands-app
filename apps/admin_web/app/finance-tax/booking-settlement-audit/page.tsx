@@ -34,6 +34,7 @@ import {
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
   bookingSettlementAuditDetailHref,
   bookingSettlementAuditHref,
+  bookingSettlementReversalHref,
   buildBookingSettlementAuditExportHref,
   buildBookingSettlementSnapshotApiHref,
   buildBookingSettlementSnapshotSummaryApiHref,
@@ -51,6 +52,7 @@ import {
   settlementAuditBlockerLabel,
   settlementAuditBlockerShortLabel,
   settlementAuditDueLabel,
+  settlementAuditDueStatus,
   settlementAuditOwnerLabel,
   settlementAuditRemediationLabel,
   settlementAuditWorkflowStateLabel,
@@ -83,10 +85,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
       buildBookingSettlementSnapshotSummaryApiHref(globalFilters),
       emptyBookingSettlementSummary(),
     ),
-    adminGetResult<AdminBookingSettlementSnapshot[]>(
-      buildBookingSettlementSnapshotApiHref(filters),
-      [],
-    ),
+    adminGetResult<AdminBookingSettlementSnapshot[]>(buildBookingSettlementSnapshotApiHref(filters), []),
   ]);
   const queueSummary = queueSummaryResult.data;
   const globalSummary = globalSummaryResult.data;
@@ -151,8 +150,12 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
       <AdminFilterPanel
         className="admin-mb-16 booking-settlement-audit-filter-panel"
         description={filterDescription(filters, pagination, checkedAt)}
-        resultLabel={queueSummaryResult.ok ? `${pagination.totalRows} matching record(s)` : 'Count unavailable'}
-        resultTone={queueSummaryResult.ok ? bookingSettlementResultTone(filters.review, pagination.totalRows) : 'danger'}
+        resultLabel={
+          queueSummaryResult.ok ? `${pagination.totalRows} matching record(s)` : 'Count unavailable'
+        }
+        resultTone={
+          queueSummaryResult.ok ? bookingSettlementResultTone(filters.review, pagination.totalRows) : 'danger'
+        }
         title="Audit records"
       >
         <AdminFormShell
@@ -256,9 +259,23 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
 
       <FinanceTablePanel
         grouped
-        description={bookingSettlementTableDescription(filters.review)}
+        description={
+          filters.review === 'reversals' ? (
+            <>
+              {bookingSettlementTableDescription(filters.review)}{' '}
+              <AdminTextLink href={bookingSettlementReversalHref({ ...filters, page: 1, review: 'all' })}>
+                Open immutable closed-period corrections
+              </AdminTextLink>
+              .
+            </>
+          ) : (
+            bookingSettlementTableDescription(filters.review)
+          )
+        }
         resultLabel={queueSummaryResult.ok ? `${pagination.totalRows} row(s)` : 'Total unavailable'}
-        resultTone={queueSummaryResult.ok ? bookingSettlementResultTone(filters.review, pagination.totalRows) : 'danger'}
+        resultTone={
+          queueSummaryResult.ok ? bookingSettlementResultTone(filters.review, pagination.totalRows) : 'danger'
+        }
         title={reviewLabel(filters.review)}
       >
         {!snapshotsResult.ok || !queueSummaryResult.ok ? (
@@ -278,9 +295,13 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                       ? `No settlement records match "${filters.q}".`
                       : 'No settlement records match the current audit scope.'}
                   </strong>
-                  <p className="muted">Clear the search or reset the audit filters to return to the action backlog.</p>
+                  <p className="muted">
+                    Clear the search or reset the audit filters to return to the action backlog.
+                  </p>
                   <AdminFormActionRow wide={false}>
-                    {filters.q ? <AdminFormControlLink href={clearSearchHref}>Clear search</AdminFormControlLink> : null}
+                    {filters.q ? (
+                      <AdminFormControlLink href={clearSearchHref}>Clear search</AdminFormControlLink>
+                    ) : null}
                     <AdminFormControlLink href={resetHref}>Reset filters</AdminFormControlLink>
                   </AdminFormActionRow>
                 </div>
@@ -331,10 +352,16 @@ function BookingSettlementAuditRow({
       <td>
         <AdminTextLink href={detailHref}>Settlement {shortId(snapshot.id)}</AdminTextLink>
         <div className="admin-mt-6">
-          <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>Booking {shortId(snapshot.bookingId)}</AdminTextLink>
+          <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>
+            Booking {shortId(snapshot.bookingId)}
+          </AdminTextLink>
         </div>
-        <div className="muted"><DateTimeText value={snapshot.postedAt} /></div>
-        <div className="muted">{snapshot.paymentMethod} · {snapshot.monthlyPeriod}</div>
+        <div className="muted">
+          <DateTimeText value={snapshot.postedAt} />
+        </div>
+        <div className="muted">
+          {snapshot.paymentMethod} · {snapshot.monthlyPeriod}
+        </div>
         <div className="booking-settlement-audit-party-line">
           <strong>{financePersonName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
           <span aria-hidden="true">→</span>
@@ -347,7 +374,9 @@ function BookingSettlementAuditRow({
       <td>
         <div className="booking-settlement-audit-exposure-line">
           <span>Customer amount</span>
-          <strong><MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} /></strong>
+          <strong>
+            <MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} />
+          </strong>
         </div>
         <div className="booking-settlement-audit-exposure-line">
           <span>Allocation delta</span>
@@ -357,14 +386,18 @@ function BookingSettlementAuditRow({
         </div>
         <div className="booking-settlement-audit-exposure-line is-risk">
           <span>Amount at risk</span>
-          <strong><MoneyText amount={snapshot.auditAmountAtRisk ?? 0} currency={snapshot.currency} /></strong>
+          <strong>
+            <MoneyText amount={snapshot.auditAmountAtRisk ?? 0} currency={snapshot.currency} />
+          </strong>
         </div>
       </td>
       <td>
         {blocker ? (
           <>
             <strong>{settlementAuditBlockerLabel(blocker.code)}</strong>{' '}
-            {health.blockers.length > 1 ? <span className="muted">+ {health.blockers.length - 1} more</span> : null}
+            {health.blockers.length > 1 ? (
+              <span className="muted">+ {health.blockers.length - 1} more</span>
+            ) : null}
             <div className="booking-settlement-audit-reason-chips" aria-label="Integrity reasons">
               {health.blockers.map((item) => (
                 <StatusBadge key={item.code} tone={item.blockingCloseout === false ? 'warning' : 'danger'}>
@@ -380,6 +413,14 @@ function BookingSettlementAuditRow({
           <AuditCheckLine label="Journal" state={health.checks.canonicalJournal} />
           <AuditCheckLine label="Clearing" state={health.checks.canonicalClearing} />
           <AuditCheckLine label="Reversal" state={health.checks.reversal} />
+          {snapshot.platformVatEvidenceStatus ? (
+            <div className="booking-settlement-audit-check">
+              <span>Platform VAT</span>
+              <StatusBadge tone={platformVatEvidenceTone(snapshot.platformVatEvidenceStatus)}>
+                {platformVatEvidenceLabel(snapshot.platformVatEvidenceStatus)}
+              </StatusBadge>
+            </div>
+          ) : null}
         </div>
       </td>
       <td>
@@ -390,7 +431,9 @@ function BookingSettlementAuditRow({
             <div className="muted">{blocker.nextAction}</div>
             {blocker.remediationHref ? (
               <div className="admin-mt-6">
-                <AdminTextLink href={blocker.remediationHref}>{settlementAuditRemediationLabel(blocker.code)}</AdminTextLink>
+                <AdminTextLink href={blocker.remediationHref}>
+                  {settlementAuditRemediationLabel(blocker.code)}
+                </AdminTextLink>
               </div>
             ) : null}
           </>
@@ -424,7 +467,36 @@ function BookingSettlementAuditRow({
   );
 }
 
-function AuditCheckLine({ label, state }: { readonly label: string; readonly state: AdminSettlementAuditCheckState }) {
+function platformVatEvidenceLabel(
+  status: NonNullable<AdminBookingSettlementSnapshot['platformVatEvidenceStatus']>,
+) {
+  switch (status) {
+    case 'POSITIVE_STANDARD_OR_REDUCED':
+      return 'Positive VAT';
+    case 'EXPLICIT_ZERO_RULE':
+      return 'Explicit 0% rule';
+    case 'ZERO_FROM_POLICY':
+      return 'Policy-backed 0%';
+    case 'ZERO_UNEXPLAINED':
+      return 'Unexplained 0%';
+    case 'EVIDENCE_UNAVAILABLE':
+      return 'Evidence unavailable';
+  }
+}
+
+function platformVatEvidenceTone(
+  status: NonNullable<AdminBookingSettlementSnapshot['platformVatEvidenceStatus']>,
+) {
+  return status === 'ZERO_UNEXPLAINED' || status === 'EVIDENCE_UNAVAILABLE' ? 'danger' : 'success';
+}
+
+function AuditCheckLine({
+  label,
+  state,
+}: {
+  readonly label: string;
+  readonly state: AdminSettlementAuditCheckState;
+}) {
   return (
     <div className="booking-settlement-audit-check">
       <span>{label}</span>
@@ -445,17 +517,26 @@ function SettlementAuditCommandStrip({
   readonly taxHref: string;
 }) {
   const oldestAge = settlementAuditAgeLabel(summary.oldestActionRequiredAt, summary.checkedAt);
+  const dueStatus = settlementAuditDueStatus(
+    summary.overdueTaxCount ?? 0,
+    summary.taxDueDateUnknownCount ?? 0,
+  );
   return (
-    <AdminSurfaceBlock className="booking-settlement-audit-command-strip" ariaLabel="Global settlement backlog">
+    <AdminSurfaceBlock
+      className="booking-settlement-audit-command-strip"
+      ariaLabel="Global settlement backlog"
+    >
       <AdminTextLink href={integrityHref}>
         <span>Global action required</span>
         <strong>{summary.actionRequiredCount}</strong>
-        <small>{summary.integrityReasonCount ?? summary.actionRequiredCount} overlapping reason signal(s)</small>
+        <small>
+          {summary.integrityReasonCount ?? summary.actionRequiredCount} overlapping reason signal(s)
+        </small>
       </AdminTextLink>
       <AdminTextLink href={taxHref}>
-        <span>Overdue tax workflow</span>
-        <strong>{summary.overdueTaxCount ?? 0}</strong>
-        <small>{summary.taxDueDateUnknownCount ?? 0} due date(s) unknown</small>
+        <span>Tax due status</span>
+        <strong>{dueStatus.label}</strong>
+        <StatusBadge tone={dueStatus.tone}>{dueStatus.detail}</StatusBadge>
       </AdminTextLink>
       <AdminTextLink href={paymentHref}>
         <span>Payment evidence</span>
@@ -464,11 +545,14 @@ function SettlementAuditCommandStrip({
       </AdminTextLink>
       <AdminTextLink href={integrityHref}>
         <span>Amount at risk · global</span>
-        <strong><MoneyText amount={summary.amountAtRisk} currency={summary.currency} /></strong>
+        <strong>
+          <MoneyText amount={summary.amountAtRisk} currency={summary.currency} />
+        </strong>
         <small>{oldestAge ? `Oldest action ${oldestAge}` : 'No unresolved integrity age'}</small>
       </AdminTextLink>
       <p>
-        Generated {formatSettlementAuditTimestamp(summary.checkedAt)} · Asia/Ho_Chi_Minh · cards ignore table search and facets
+        Generated {formatSettlementAuditTimestamp(summary.checkedAt)} · Asia/Ho_Chi_Minh · cards ignore table
+        search and facets
       </p>
     </AdminSurfaceBlock>
   );
@@ -494,7 +578,11 @@ function AppliedAuditFilters({
 
   return (
     <div className="booking-settlement-audit-applied-filters" aria-label="Applied audit filters">
-      {labels.map((label) => <StatusBadge key={label} tone="neutral">{label}</StatusBadge>)}
+      {labels.map((label) => (
+        <StatusBadge key={label} tone="neutral">
+          {label}
+        </StatusBadge>
+      ))}
       <AdminTextLink href={resetHref}>Clear filters</AdminTextLink>
     </div>
   );
@@ -536,6 +624,7 @@ const BOOKING_SETTLEMENT_REASON_OPTIONS = [
   { label: 'Clearing', value: 'clearing' },
   { label: 'Bank match', value: 'bank-match' },
   { label: 'Fee policy', value: 'fee-policy' },
+  { label: 'Platform VAT', value: 'platform-vat' },
   { label: 'Coupon', value: 'coupon' },
   { label: 'Tax period', value: 'tax-period' },
   { label: 'Reversal', value: 'reversal' },
@@ -574,27 +663,46 @@ function filterDescription(
   return `${pieces.join(' · ')}.`;
 }
 
-function bookingSettlementTableDescription(review: typeof BOOKING_SETTLEMENT_AUDIT_REVIEW_LINKS[number]['review']) {
-  if (review === 'integrity-exceptions') return 'Unique records with allocation or evidence integrity blockers. Reason chips may overlap.';
-  if (review === 'payment-evidence') return 'Unique records with clearing, bank match, or payment fee evidence work.';
-  if (review === 'tax-workflow') return 'Tax workflow records, including normal, unknown, due soon, overdue, and blocked states.';
-  if (review === 'reversals') return 'All reversal signals, separated by evidence completeness and other integrity blockers.';
-  if (review === 'allocation-mismatch') return 'Records whose customer payment plus company coupon expense does not equal payout, withholding, and platform fee.';
-  if (review === 'journal-evidence') return 'Canonical settlement journal evidence that is missing, duplicate, unposted, or unbalanced.';
-  if (review === 'clearing-evidence') return 'Canonical clearing or bank reconciliation evidence that is missing, open, or amount-mismatched.';
-  if (review === 'reversal-incomplete') return 'Reversed records missing required reversal journal, clearing, or closed-period evidence.';
-  if (review === 'tax-evidence') return 'Tax workflow or accounting-period evidence that requires finance review.';
-  if (review === 'coupon-evidence') return 'Coupon-funded settlement allocation without the policy evidence required for audit.';
-  if (review === 'unknown') return 'Records whose available evidence is insufficient for a clear server decision.';
+function bookingSettlementTableDescription(
+  review: (typeof BOOKING_SETTLEMENT_AUDIT_REVIEW_LINKS)[number]['review'],
+) {
+  if (review === 'integrity-exceptions')
+    return 'Unique records with allocation or evidence integrity blockers. Reason chips may overlap.';
+  if (review === 'payment-evidence')
+    return 'Unique records with clearing, bank match, or payment fee evidence work.';
+  if (review === 'tax-workflow')
+    return 'Tax workflow records, including normal, unknown, due soon, overdue, and blocked states.';
+  if (review === 'reversals')
+    return 'All reversal signals, separated by evidence completeness and other integrity blockers.';
+  if (review === 'allocation-mismatch')
+    return 'Records whose customer payment plus company coupon expense does not equal payout, withholding, and platform fee.';
+  if (review === 'journal-evidence')
+    return 'Canonical settlement journal evidence that is missing, duplicate, unposted, or unbalanced.';
+  if (review === 'clearing-evidence')
+    return 'Canonical clearing or bank reconciliation evidence that is missing, open, or amount-mismatched.';
+  if (review === 'platform-vat-evidence')
+    return 'Settlement records with unexplained zero company VAT or unavailable retained platform VAT evidence.';
+  if (review === 'reversal-incomplete')
+    return 'Reversed records missing required reversal journal, clearing, or closed-period evidence.';
+  if (review === 'tax-evidence')
+    return 'Tax workflow or accounting-period evidence that requires finance review.';
+  if (review === 'coupon-evidence')
+    return 'Coupon-funded settlement allocation without the policy evidence required for audit.';
+  if (review === 'unknown')
+    return 'Records whose available evidence is insufficient for a clear server decision.';
   if (review === 'resolved') return 'Server-classified clear and reversal-evidenced records.';
-  if (review === 'reversed') return 'All reversed records, including evidenced and incomplete reversal lifecycles.';
+  if (review === 'reversed')
+    return 'All reversed records, including evidenced and incomplete reversal lifecycles.';
   return 'Posted settlement records in the selected scope.';
 }
 
-function bookingSettlementResultTone(review: typeof BOOKING_SETTLEMENT_AUDIT_REVIEW_LINKS[number]['review'], count: number) {
+function bookingSettlementResultTone(
+  review: (typeof BOOKING_SETTLEMENT_AUDIT_REVIEW_LINKS)[number]['review'],
+  count: number,
+) {
   if (review === 'resolved') return 'success' as const;
   if (review === 'all' || review === 'reversed') return 'info' as const;
-  return count > 0 ? 'warning' as const : 'success' as const;
+  return count > 0 ? ('warning' as const) : ('success' as const);
 }
 
 function auditStateTone(state: AdminSettlementAuditHealth['state']) {
@@ -613,7 +721,7 @@ function auditStateLabel(state: AdminSettlementAuditHealth['state']) {
 function auditCheckTone(state: AdminSettlementAuditCheckState) {
   if (state === 'PASS') return 'success' as const;
   if (state === 'FAIL') return 'danger' as const;
-  return state === 'UNKNOWN' ? 'warning' as const : 'neutral' as const;
+  return state === 'UNKNOWN' ? ('warning' as const) : ('neutral' as const);
 }
 
 function auditCheckLabel(state: AdminSettlementAuditCheckState) {

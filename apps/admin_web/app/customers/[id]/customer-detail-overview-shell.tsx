@@ -75,18 +75,20 @@ export function CustomerDetailOverviewShell({
           />
           <div className="customer-detail-identity-copy">
             <span>Profile and contact</span>
-            <h2>{name}</h2>
+            <h3>{name}</h3>
             <p>{subtitle}</p>
           </div>
         </div>
 
-        <AdminFilterChipGroup className="customer-detail-badges">
-          {statusBadges.map((badge) => (
-            <StatusBadge tone="info" key={badge}>
-              {badge}
-            </StatusBadge>
-          ))}
-        </AdminFilterChipGroup>
+        {statusBadges.length > 0 ? (
+          <AdminFilterChipGroup className="customer-detail-badges">
+            {statusBadges.map((badge) => (
+              <StatusBadge tone="info" key={badge}>
+                {badge}
+              </StatusBadge>
+            ))}
+          </AdminFilterChipGroup>
+        ) : null}
       </div>
 
       <div className="customer-detail-fact-list">

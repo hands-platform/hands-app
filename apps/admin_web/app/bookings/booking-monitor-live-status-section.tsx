@@ -78,6 +78,7 @@ export function BookingMonitorLiveStatusSection({
           generatedAt={dataGeneratedAt}
           partialSourceCount={dataPartialSourceCount}
           scope={dataScope}
+          scopeLabel={dataScope === 'all-open' ? 'Scope: All open bookings' : undefined}
           scopeEnd={dataScopeEnd}
           scopeStart={dataScopeStart}
           sourceState={dataSourceState}
@@ -120,7 +121,7 @@ function bookingMonitorRealtimeDetail(state: BookingMonitorRealtimeState) {
   }
 
   if (state === 'error') {
-    return 'Waiting for realtime connection';
+    return 'REST fallback refresh active while the socket reconnects';
   }
 
   return 'Opening realtime socket';

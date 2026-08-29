@@ -77,6 +77,7 @@ enum AdminOperatorPermissionCategory {
   NOTIFICATIONS_PUSH
   NOTIFICATIONS_DELIVERY
   NOTIFICATIONS_RETRY
+  NOTIFICATIONS_INCIDENTS
   SYSTEM
   SYSTEM_SERVICES
   SYSTEM_COUPONS
@@ -308,6 +309,13 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   RELEASED
+}
+
+enum CouponRedemptionState {
+  RESERVED
+  CONSUMED
+  RELEASED
+  REVERSED
 }
 
 enum PaymentMethod {
@@ -543,6 +551,18 @@ enum CompanyBankAccountDataScope {
   SYNTHETIC
 }
 
+enum CompanyBankAccountEvidenceKind {
+  OWNERSHIP
+  STATEMENT
+}
+
+enum CompanyBankAccountEvidenceStatus {
+  SUBMITTED
+  VERIFIED
+  REJECTED
+  REVOKED
+}
+
 enum CompanyBankTransactionType {
   INFLOW
   OUTFLOW
@@ -672,6 +692,8 @@ model User {
   customerProfile                  CustomerProfile?
   providerProfile                  ProviderProfile?
   notifications                    Notification[]
+  notificationDeliveryIncidentsOwned NotificationDeliveryIncident[] @relation("NotificationDeliveryIncidentOwner")
+  notificationDeliveryIncidentsResolved NotificationDeliveryIncident[] @relation("NotificationDeliveryIncidentResolver")
   pushDevices                      PushDevice[]
   chatMessages                     ChatMessage[]
   auditLogs                        AdminAuditLog[]                @relation("AdminActor")
@@ -704,6 +726,9 @@ model User {
   taxPolicyApprovalRequestsCreated TaxPolicyApprovalRequest[]     @relation("TaxPolicyApprovalRequestMaker")
   taxPolicyApprovalRequestsDecided TaxPolicyApprovalRequest[]     @relation("TaxPolicyApprovalRequestChecker")
   taxPoliciesApproved              TaxPolicyVersion[]             @relation("TaxPolicyApprover")
+  companyBankAccountEvidenceSubmitted CompanyBankAccountEvidence[] @relation("CompanyBankAccountEvidenceSubmitter")
+  companyBankAccountEvidenceReviewed CompanyBankAccountEvidence[] @relation("CompanyBankAccountEvidenceReviewer")
+  companyBankAccountEvidenceRevoked CompanyBankAccountEvidence[] @relation("CompanyBankAccountEvidenceRevoker")
 }
 
 model FinanceApproverAccessRequest {
@@ -716,6 +741,7 @@ model FinanceApproverAccessRequest {
   operatorReason          String
   requestedAt             DateTime                           @default(now())
   expectedTargetUpdatedAt DateTime
+  expectedPermissionVersion Int?
   status                  FinanceApproverAccessRequestStatus @default(PENDING)
   decidedByAdminId        String?
   decisionReason          String?
@@ -921,6 +947,7 @@ model CustomerProfile {
   referralRewards          ReferralReward[]              @relation("CustomerReferralWalletOwner")
   walletLedgerEntries      CustomerWalletLedgerEntry[]
   accountingJournalBatches AccountingJournalBatch[]
+  couponRedemptions        CouponRedemption[]
 }
 
 model CustomerFavoriteProvider {
@@ -1387,6 +1414,7 @@ model Booking {
   paymentClearingEntries      BookingPaymentClearingEntry[]
   referralRewards             ReferralReward[]
   providerRequestEvents       ProviderBookingRequestEvent[]
+  couponRedemption            CouponRedemption?
 
   @@index([customerProfileId, createdAt])
   @@index([preferredProviderId, createdAt])
@@ -1823,6 +1851,35 @@ model ProviderWalletBalanceSummary {
 
   @@id([providerProfileId, currency])
   @@index([currency, balance])
+}
+
+model PartnerWalletDebtSnapshot {
+  id         String                            @id
+  filterHash String
+  snapshotAt DateTime                          @db.Timestamptz(3)
+  expiresAt  DateTime                          @db.Timestamptz(3)
+  totalCount Int                               @default(0)
+  createdAt  DateTime                          @default(now()) @db.Timestamptz(3)
+  members    PartnerWalletDebtSnapshotMember[]
+
+  @@index([expiresAt])
+}
+
+model PartnerWalletDebtSnapshotMember {
+  snapshotId        String
+  providerProfileId String
+  balance           BigInt
+  displayName       String
+  legalName         String?
+  activityNickname  String?
+  city              String?
+  userFullName      String?
+  userPhone         String
+  userEmail         String?
+  snapshot          PartnerWalletDebtSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@id([snapshotId, providerProfileId])
+  @@index([snapshotId, balance, providerProfileId], map: "PartnerWalletDebtSnapshotMember_snapshotId_balance_providerProf")
 }
 
 model ProviderWalletWithdrawalRequest {
@@ -2440,9 +2497,42 @@ model CompanyBankAccount {
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
   transactions        CompanyBankTransaction[]
+  evidences           CompanyBankAccountEvidence[]
 
   @@index([status, currency])
   @@index([dataScope, status, currency])
+}
+
+model CompanyBankAccountEvidence {
+  id                 String                           @id @default(cuid())
+  bankAccountId      String
+  fileAssetId        String                           @unique
+  kind               CompanyBankAccountEvidenceKind
+  status             CompanyBankAccountEvidenceStatus @default(SUBMITTED)
+  version            Int                              @default(1)
+  contentSha256      String
+  evidenceHash       String                           @unique
+  submittedByAdminId String
+  submittedAt        DateTime                         @default(now())
+  reviewedByAdminId  String?
+  reviewedAt         DateTime?
+  revokedByAdminId   String?
+  revokedAt          DateTime?
+  revocationReason   String?
+  metadata           Json?
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
+  bankAccount        CompanyBankAccount               @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  fileAsset          FileAsset                        @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  submittedByAdmin   User                             @relation("CompanyBankAccountEvidenceSubmitter", fields: [submittedByAdminId], references: [id], onDelete: Restrict)
+  reviewedByAdmin    User?                            @relation("CompanyBankAccountEvidenceReviewer", fields: [reviewedByAdminId], references: [id], onDelete: Restrict)
+  revokedByAdmin     User?                            @relation("CompanyBankAccountEvidenceRevoker", fields: [revokedByAdminId], references: [id], onDelete: Restrict)
+
+  @@unique([bankAccountId, kind, version])
+  @@index([bankAccountId, kind, status, createdAt])
+  @@index([submittedByAdminId, submittedAt])
+  @@index([reviewedByAdminId, reviewedAt])
+  @@index([revokedByAdminId, revokedAt])
 }
 
 model CompanyBankTransaction {
@@ -2530,6 +2620,7 @@ model Notification {
   createdAt  DateTime               @default(now())
   user       User                   @relation(fields: [userId], references: [id])
   deliveries NotificationDelivery[]
+  deliveryIncidentMembers NotificationDeliveryIncidentMember[]
 
   @@index([userId, createdAt])
   @@index([userId, readAt, createdAt])
@@ -2568,11 +2659,76 @@ model NotificationDelivery {
   attemptedAt    DateTime     @default(now())
   notification   Notification @relation(fields: [notificationId], references: [id])
   pushDevice     PushDevice   @relation(fields: [pushDeviceId], references: [id])
+  incidentMembers NotificationDeliveryIncidentMember[]
 
   @@index([notificationId, attemptedAt])
+  @@index([notificationId, pushDeviceId, attemptedAt(sort: Desc), id(sort: Desc)], map: "NotificationDelivery_latest_per_device_idx")
   @@index([pushDeviceId, attemptedAt])
   @@index([provider, status, attemptedAt])
   @@index([status, attemptedAt])
+}
+
+enum NotificationDeliveryIncidentState {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+}
+
+enum NotificationDeliveryIncidentResolutionCode {
+  PROVIDER_RECOVERED
+  DEVICE_ROUTE_REFRESHED
+  CONFIGURATION_FIXED
+  RETRY_SUCCEEDED
+  FALSE_POSITIVE
+  CUSTOMER_CONTACTED
+  OTHER
+}
+
+model NotificationDeliveryIncident {
+  id                String                                     @id @default(cuid())
+  sourceKind        String                                     @default("DELIVERY_FAILURE")
+  sourceKey         String
+  occurrence        Int                                        @default(1)
+  dataScope         String
+  provider          String
+  failureCode       String
+  state             NotificationDeliveryIncidentState          @default(OPEN)
+  ownerAdminId      String?
+  resolutionCode    NotificationDeliveryIncidentResolutionCode?
+  resolutionNote    String?
+  firstObservedAt   DateTime
+  lastObservedAt    DateTime
+  lastVerifiedAt    DateTime?
+  resolvedAt        DateTime?
+  resolvedByAdminId String?
+  revision          Int                                        @default(1)
+  createdAt         DateTime                                   @default(now())
+  updatedAt         DateTime                                   @updatedAt
+  ownerAdmin        User?                                      @relation("NotificationDeliveryIncidentOwner", fields: [ownerAdminId], references: [id], onDelete: SetNull)
+  resolvedByAdmin   User?                                      @relation("NotificationDeliveryIncidentResolver", fields: [resolvedByAdminId], references: [id], onDelete: Restrict)
+  members           NotificationDeliveryIncidentMember[]
+
+  @@unique([sourceKey, occurrence])
+  @@index([state, lastObservedAt])
+  @@index([ownerAdminId, state, lastObservedAt])
+  @@index([dataScope, state, lastObservedAt])
+  @@index([provider, failureCode, state])
+}
+
+model NotificationDeliveryIncidentMember {
+  id             String                       @id @default(cuid())
+  incidentId     String
+  notificationId String
+  deliveryId     String
+  observedAt     DateTime
+  createdAt      DateTime                     @default(now())
+  incident       NotificationDeliveryIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  notification   Notification                 @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  delivery       NotificationDelivery         @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId, deliveryId])
+  @@index([notificationId, observedAt])
+  @@index([deliveryId])
 }
 
 enum NotificationTranslationStatus {
@@ -2704,6 +2860,7 @@ model FileAsset {
   providerVerification           ProviderVerification?           @relation(fields: [providerVerificationId], references: [id])
   providerDocument               ProviderDocument?
   manualWalletAdjustmentRequests ManualWalletAdjustmentRequest[] @relation("ManualWalletAdjustmentEvidence")
+  companyBankAccountEvidence     CompanyBankAccountEvidence?
   createdAt                      DateTime                        @default(now())
 
   @@index([ownerUserId, purpose, createdAt])
@@ -2728,15 +2885,61 @@ model LocationSnapshot {
 }
 
 model Coupon {
-  id          String    @id @default(cuid())
-  code        String    @unique
-  description String?
-  discount    Json
-  active      Boolean   @default(true)
-  startsAt    DateTime?
-  endsAt      DateTime?
+  id                         String             @id @default(cuid())
+  code                       String             @unique
+  description                String?
+  discount                   Json
+  active                     Boolean            @default(true)
+  startsAt                   DateTime?
+  endsAt                     DateTime?
+  maxRedemptions             Int?
+  grossBudgetAmount          BigInt?
+  perCustomerRedemptionLimit Int?
+  minimumOrderAmount         Int?
+  maximumDiscountAmount      Int?
+  currency                   String?
+  redemptions                CouponRedemption[]
 
   @@index([active, startsAt, endsAt])
+}
+
+model CouponRedemption {
+  id                String                          @id @default(cuid())
+  couponId          String
+  bookingId         String                          @unique
+  customerProfileId String
+  state             CouponRedemptionState           @default(RESERVED)
+  discountAmount    Int
+  currency          String                          @default("VND")
+  reservedAt        DateTime                        @default(now()) @db.Timestamptz(3)
+  consumedAt        DateTime?                       @db.Timestamptz(3)
+  releasedAt        DateTime?                       @db.Timestamptz(3)
+  reversedAt        DateTime?                       @db.Timestamptz(3)
+  releaseReason     String?
+  createdAt         DateTime                        @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                        @updatedAt @db.Timestamptz(3)
+  coupon            Coupon                          @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  booking           Booking                         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  customerProfile   CustomerProfile                 @relation(fields: [customerProfileId], references: [id], onDelete: Restrict)
+  reversals         CouponRedemptionReversalEvent[]
+
+  @@index([couponId, state])
+  @@index([couponId, customerProfileId, state])
+  @@index([customerProfileId, createdAt])
+}
+
+model CouponRedemptionReversalEvent {
+  id                 String           @id @default(cuid())
+  couponRedemptionId String
+  sourceKey          String           @unique
+  amount             Int
+  occurredAt         DateTime         @db.Timestamptz(3)
+  reason             String
+  sourceReference    String?
+  createdAt          DateTime         @default(now()) @db.Timestamptz(3)
+  redemption         CouponRedemption @relation(fields: [couponRedemptionId], references: [id], onDelete: Restrict)
+
+  @@index([couponRedemptionId, occurredAt])
 }
 
 model Refund {
@@ -2955,4 +3158,10 @@ model OperationalPolicySetting {
 
   @@index([category])
   @@index([updatedAt])
+}
+
+model OperationsHandoffOpenCaseRevision {
+  key       String   @id
+  revision  BigInt   @default(0)
+  updatedAt DateTime @updatedAt
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { type ChangeEventHandler, useActionState, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEventHandler, useActionState, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, Copy, KeyRound, PauseCircle, PlayCircle, ShieldCheck, XCircle } from 'lucide-react';
 
 import {
@@ -31,6 +31,7 @@ import {
   INITIAL_ADMIN_OPERATOR_ACTION_STATE,
   type AdminOperatorActionState,
 } from './action-state';
+import { formatOperatorCount } from './operator-copy';
 
 type OperatorAccessFormProps = {
   readonly activeSessionCount: number;
@@ -91,25 +92,53 @@ export function InitializeOperatorPermissionForm({
   );
 }
 
-export function InviteOperatorForm() {
+export function InviteOperatorForm({
+  targetUser,
+}: {
+  readonly targetUser?: {
+    readonly email: string | null;
+    readonly fullName: string | null;
+    readonly id: string;
+  };
+} = {}) {
   const [state, action, pending] = useActionState(inviteAdminOperator, INITIAL_ADMIN_OPERATOR_ACTION_STATE);
+  const emailHelpId = useId();
   return (
     <form action={action} className="operator-access-action-form">
       <ActionResult state={state} />
       <fieldset disabled={pending}>
         <div className="operator-access-field-grid">
-          <AdminFormInput
-            ariaInvalid={Boolean(state.fieldErrors?.email)}
-            autoComplete="email"
-            label="Admin email"
-            maxLength={160}
-            name="email"
-            placeholder="operator@hands.vn"
-            required
-            type="email"
-          />
-          <AdminFormInput label="Operator name" maxLength={120} name="fullName" placeholder="Full name" />
-          <AdminFormInput defaultValue="72" label="Invite expiry (hours)" max={168} min={1} name="expiresInHours" type="number" />
+          {targetUser ? (
+            <>
+              <input name="targetUserId" type="hidden" value={targetUser.id} />
+              <input name="email" type="hidden" value={targetUser.email ?? ''} />
+              <input name="fullName" type="hidden" value={targetUser.fullName ?? ''} />
+              <AdminFormStaticValue label="Verified existing User" labelVisibility="visible" value={targetUser.fullName ?? targetUser.email ?? targetUser.id} />
+              <AdminFormStaticValue label="Exact User ID" labelVisibility="visible" value={<code>{targetUser.id}</code>} />
+            </>
+          ) : (
+            <>
+              <div className="operator-access-field-with-help">
+                <AdminFormInput
+                  ariaDescribedBy={emailHelpId}
+                  ariaInvalid={Boolean(state.fieldErrors?.email)}
+                  autoComplete="email"
+                  label="Admin email"
+                  labelVisibility="visible"
+                  maxLength={160}
+                  name="email"
+                  placeholder="operator@hands.vn"
+                  required
+                  type="email"
+                />
+                <small className={state.fieldErrors?.email ? 'text-danger' : 'muted'} id={emailHelpId}>
+                  {state.fieldErrors?.email ?? 'Use the operator’s exact Admin sign-in email.'}
+                </small>
+              </div>
+              <AdminFormInput label="Operator name" labelVisibility="visible" maxLength={120} name="fullName" placeholder="Full name" />
+            </>
+          )}
+          <AdminFormInput defaultValue="72" label="Invite expiry (hours)" labelVisibility="visible" max={168} min={1} name="expiresInHours" type="number" />
         </div>
         <AdminFormCheckbox label="Grant Master Admin" name="masterAdminEnabled" value="true">
           <span>Grant Master Admin after invitation acceptance</span>
@@ -118,10 +147,12 @@ export function InviteOperatorForm() {
         <ReasonField error={state.fieldErrors?.reason} label="Reason for access" />
       </fieldset>
       <AdminInlineNotice role="note" tone="info">
-        <span>This flow creates a new operator invitation. Granting access to an existing user requires a server-verified user picker and is not available in this build.</span>
+        <span>{targetUser
+          ? 'This invitation is bound to the verified exact User ID. The server rechecks email uniqueness, fixture status, and credentials before creation.'
+          : 'This flow creates a new operator invitation. If this email already belongs to a User, use the separate existing-user flow.'}</span>
       </AdminInlineNotice>
       <AdminFormControlButton className="button-primary" disabled={pending} type="submit">
-        {pending ? 'Creating invitation…' : 'Create one-time invitation'}
+        {pending ? 'Creating invitation…' : targetUser ? 'Create linked one-time invitation' : 'Create one-time invitation'}
       </AdminFormControlButton>
     </form>
   );
@@ -129,28 +160,42 @@ export function InviteOperatorForm() {
 
 export function ReauthenticateOperatorForm() {
   const [state, action, pending] = useActionState(reauthenticateAdminOperator, INITIAL_ADMIN_OPERATOR_ACTION_STATE);
+  const passwordHelpId = useId();
+  const mfaHelpId = useId();
   return (
     <form action={action} className="operator-access-reauth-form">
       <div>
         <strong><KeyRound aria-hidden="true" size={16} /> Confirm high-risk changes</strong>
         <p className="muted">Password confirmation unlocks operator access changes for 10 minutes.</p>
       </div>
-      <AdminFormInput
-        ariaInvalid={Boolean(state.fieldErrors?.password)}
-        autoComplete="current-password"
-        label="Current password"
-        name="password"
-        required
-        type="password"
-      />
-      <AdminFormInput
-        autoComplete="one-time-code"
-        inputMode="numeric"
-        label="Authenticator or recovery code"
-        maxLength={32}
-        name="mfaCode"
-        placeholder="Required when MFA is enrolled"
-      />
+      <div className="operator-access-field-with-help">
+        <AdminFormInput
+          ariaDescribedBy={passwordHelpId}
+          ariaInvalid={Boolean(state.fieldErrors?.password)}
+          autoComplete="current-password"
+          label="Current password"
+          labelVisibility="visible"
+          name="password"
+          required
+          type="password"
+        />
+        <small className={state.fieldErrors?.password ? 'text-danger' : 'muted'} id={passwordHelpId}>
+          {state.fieldErrors?.password ?? 'Required for this high-risk access change.'}
+        </small>
+      </div>
+      <div className="operator-access-field-with-help">
+        <AdminFormInput
+          ariaDescribedBy={mfaHelpId}
+          autoComplete="one-time-code"
+          inputMode="numeric"
+          label="Authenticator or recovery code"
+          labelVisibility="visible"
+          maxLength={32}
+          name="mfaCode"
+          placeholder="Required when MFA is enrolled"
+        />
+        <small className="muted" id={mfaHelpId}>Required only after MFA enrollment.</small>
+      </div>
       <AdminFormControlButton className="button-secondary" disabled={pending} type="submit">
         {pending ? 'Confirming…' : 'Confirm password'}
       </AdminFormControlButton>
@@ -241,7 +286,7 @@ export function OperatorAccessForm({
           <span>Added: {changePreview.added.length ? changePreview.added.join(', ') : 'None'}</span>
           <span>Removed: {changePreview.removed.length ? changePreview.removed.join(', ') : 'None'}</span>
           <span>Role change: {changePreview.roleChanged ? (masterAdminEnabled ? 'Grant Master Admin' : 'Remove Master Admin') : 'None'}</span>
-          <span>Session impact: {activeSessionCount} active session(s) remain active after a permission update.</span>
+          <span>Session impact: {formatOperatorCount(activeSessionCount, 'active session')} remain active after a permission update.</span>
         </div>
         <ReasonField
           error={state.fieldErrors?.reason}
@@ -271,7 +316,7 @@ export function OperatorAccessForm({
             <div><dt>Permissions added</dt><dd>{changePreview.added.length ? changePreview.added.join(', ') : 'None'}</dd></div>
             <div><dt>Permissions removed</dt><dd>{changePreview.removed.length ? changePreview.removed.join(', ') : 'None'}</dd></div>
             <div><dt>High-risk permissions</dt><dd>{highRiskCount}</dd></div>
-            <div><dt>Session impact</dt><dd>{activeSessionCount} active session(s) remain active</dd></div>
+            <div><dt>Session impact</dt><dd>{formatOperatorCount(activeSessionCount, 'active session')} remain active</dd></div>
             <div><dt>Reason</dt><dd>{reason.trim() || 'Enter a reason before confirming.'}</dd></div>
           </dl>
           <div className="operator-access-review-actions">
@@ -308,7 +353,7 @@ export function InvitationActionForm({
         <input name="invitationId" type="hidden" value={invitationId} />
         <input name="mode" type="hidden" value={mode} />
         {mode === 'resend' ? (
-          <AdminFormInput defaultValue="72" label="Replacement expiry (hours)" max={168} min={1} name="expiresInHours" type="number" />
+          <AdminFormInput defaultValue="72" label="Replacement expiry (hours)" labelVisibility="visible" max={168} min={1} name="expiresInHours" type="number" />
         ) : null}
         <ReasonField error={state.fieldErrors?.reason} label={`${mode === 'revoke' ? 'Reason for revoking' : 'Reason for resending'} ${operatorName}'s invitation`} />
         <AdminFormCheckbox label={`Confirm ${mode}`} name="confirmation" required value="confirmed">
@@ -348,7 +393,7 @@ export function OperatorStatusForm({
           <p className="muted">
             {suspended
               ? 'Existing roles and direct permissions are preserved. The operator can sign in again.'
-              : `This blocks new Admin Web requests and revokes ${activeSessionCount} active session(s). The underlying user is not deleted.`}
+              : `This blocks new Admin Web requests and revokes ${formatOperatorCount(activeSessionCount, 'active session')}. The underlying user is not deleted.`}
           </p>
         </div>
       </div>
@@ -387,6 +432,7 @@ export function OffboardOperatorForm({
         <AdminFormInput
           ariaInvalid={Boolean(state.fieldErrors?.confirmationName)}
           label={`Enter “${operatorName}” to confirm`}
+          labelVisibility="visible"
           name="confirmationName"
           required
         />
@@ -489,11 +535,14 @@ function ReasonField({
   readonly label: string;
   readonly onChange?: ChangeEventHandler<HTMLTextAreaElement>;
 }) {
+  const helpId = useId();
   return (
     <div>
       <AdminFormTextarea
+        ariaDescribedBy={helpId}
         ariaInvalid={Boolean(error)}
         label={label}
+        labelVisibility="visible"
         maxLength={500}
         minLength={12}
         name="reason"
@@ -502,7 +551,7 @@ function ReasonField({
         required
         rows={4}
       />
-      <small className={error ? 'text-danger' : 'muted'}>{error ?? 'Required · 12–500 characters'}</small>
+      <small className={error ? 'text-danger' : 'muted'} id={helpId}>{error ?? 'Required · 12–500 characters'}</small>
     </div>
   );
 }

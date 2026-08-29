@@ -28,6 +28,7 @@
     { "group": "Growth & Communications", "key": "NOTIFICATIONS_PUSH", "label": "Push send", "scope": "Push audience filters, campaign send, and deep-link targets", "defaultOwner": "Support Admin", "risk": "elevated" },
     { "group": "Growth & Communications", "key": "NOTIFICATIONS_DELIVERY", "label": "Delivery evidence", "scope": "Push delivery log, failures, and notification history", "defaultOwner": "Support Admin", "risk": "standard" },
     { "group": "Growth & Communications", "key": "NOTIFICATIONS_RETRY", "label": "Notification retry", "scope": "Manual retry of unresolved notification delivery paths", "defaultOwner": "Support Admin", "risk": "elevated" },
+    { "group": "Growth & Communications", "key": "NOTIFICATIONS_INCIDENTS", "label": "Notification incident lifecycle", "scope": "Assign, resolve, and reopen persistent notification delivery incidents", "defaultOwner": "Platform Admin", "risk": "elevated" },
 
     { "group": "Policies", "key": "SYSTEM_SERVICES", "label": "Services", "scope": "Service catalog, duration options, pricing, and payout defaults", "defaultOwner": "Master Admin", "risk": "high" },
     { "group": "Growth & Communications", "key": "SYSTEM_COUPONS", "label": "Coupons", "scope": "Coupon creation, usage, edit, and delete workflows", "defaultOwner": "Master Admin", "risk": "elevated" },
@@ -50,7 +51,7 @@
     "CUSTOMERS": ["CUSTOMERS_DIRECTORY", "CUSTOMERS_DETAIL", "CUSTOMERS_REVIEWS"],
     "FINANCE": ["FINANCE_PAYMENT_CLEARING", "FINANCE_GENERAL_LEDGER", "FINANCE_BANK_RECONCILIATION", "FINANCE_WALLET_ADJUSTMENTS", "FINANCE_SETTLEMENTS", "FINANCE_TAX"],
     "GROWTH": ["GROWTH_MARKETING"],
-    "NOTIFICATIONS": ["NOTIFICATIONS_TEMPLATES", "NOTIFICATIONS_PUSH", "NOTIFICATIONS_DELIVERY", "NOTIFICATIONS_RETRY"],
+    "NOTIFICATIONS": ["NOTIFICATIONS_TEMPLATES", "NOTIFICATIONS_PUSH", "NOTIFICATIONS_DELIVERY", "NOTIFICATIONS_RETRY", "NOTIFICATIONS_INCIDENTS"],
     "PARTNERS": ["PARTNERS_DIRECTORY", "PARTNERS_UNAPPROVED", "PARTNERS_DETAIL", "PARTNERS_KYC"],
     "SYSTEM": ["SYSTEM_SERVICES", "SYSTEM_COUPONS", "SYSTEM_ADMIN_OPERATORS", "SYSTEM_POLICY", "SYSTEM_AUDIT"],
     "DEVELOPER_SYSTEM": ["DEVELOPER_SETUP", "DEVELOPER_HEALTH", "DEVELOPER_APP_SESSIONS_DIAGNOSTICS", "DEVELOPER_ROUTE_COMPAT"],

@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminTableCard } from '../../components/admin-table-panel';
 import { NotificationTableRowItem, type NotificationTableRow } from './notification-table-row';
 import type { NotificationTablePagination } from './notification-page-model';
@@ -44,6 +45,11 @@ export function NotificationsTableSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      {pagination && pagination.page === pagination.totalPages && pagination.totalRows > pagination.to ? (
+        <AdminInlineNotice tone="info">
+          Older records are beyond this browsing boundary. Narrow the date range or search filters to access them.
+        </AdminInlineNotice>
+      ) : null}
       {pagination && pagination.totalRows > 0 ? (
         <AdminTablePaginationFooter
           activePage={pagination.page}

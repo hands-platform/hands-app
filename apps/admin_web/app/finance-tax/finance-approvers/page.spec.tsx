@@ -38,8 +38,14 @@ describe('FinanceApproversPage', () => {
     expect(markup).toContain('1 / 2 required');
     expect(markup).not.toContain('Primary approval coverage');
     expect(markup).toContain('Independent backup available');
+    expect(markup).toContain('Production pending requests');
+    expect(markup).toContain('Production ready candidates');
+    expect(markup).toContain('Unknown high-privilege accounts');
+    expect(markup).toContain('Release-blocking accounts');
+    expect(markup).toContain('Finance category checker coverage');
+    expect(markup).toContain('Review unknown accounts');
     expect(markup).toContain('Active approvers');
-    expect(markup).toContain('Ready for request');
+    expect(markup).toContain('Production ready candidates');
     expect(markup).toContain('Pending requests');
     expect(markup).toContain('History');
     expect(markup).toContain('You');
@@ -73,8 +79,59 @@ describe('FinanceApproversPage', () => {
     }));
 
     expect(markup).toContain('Independent decision unavailable');
-    expect(markup).toContain('The requester cannot decide this access request');
+    expect(markup).toContain('The requester or target cannot decide this access request');
     expect(markup).not.toContain('Approve and execute');
+  });
+
+  it('shows requested and current permission versions while keeping stale approval disabled', async () => {
+    mockedAdminGetResult.mockImplementation(async (path: string) => {
+      if (path.endsWith('/summary')) {
+        return {
+          data: {
+            ...governanceSummary(),
+            currentActor: { ...governanceSummary().currentActor, id: 'checker-1' },
+          },
+          ok: true,
+          status: 200,
+        } as never;
+      }
+      if (path.includes('/requests')) {
+        const request = requestRecord();
+        return {
+          data: {
+            items: [
+              {
+                ...request,
+                targetPolicy: {
+                  ...request.targetPolicy,
+                  permissionVersion: 4,
+                  permissionVersionMatches: false,
+                },
+              },
+            ],
+            skip: 0,
+            take: 25,
+            totalCount: 1,
+          },
+          ok: true,
+          status: 200,
+        } as never;
+      }
+      return { data: null, ok: false, status: 500 } as never;
+    });
+
+    const markup = renderToStaticMarkup(
+      await FinanceApproversPage({
+        searchParams: Promise.resolve({ dialog: 'decision', requestId: 'request-1', view: 'pending' }),
+      }),
+    );
+
+    expect(markup).toContain('Requested permission version');
+    expect(markup).toContain('Current permission version');
+    expect(markup).toContain('Permission changed since request');
+    expect(markup).toContain('Approve unavailable');
+    expect(markup).toContain('Reject and close request');
+    expect(markup).toMatch(/value="APPROVE"[^>]*disabled=""/u);
   });
 
   it('keeps pending drawer return focus on the exact filtered request link', async () => {
@@ -114,7 +171,33 @@ describe('FinanceApproversPage', () => {
     expect(markup).toContain('Requested');
     expect(markup).toContain('View exact audit');
     expect(markup).toContain('targetPrefix=finance_approver_request%3Arequest-1');
+    expect(markup).toContain('Legacy attestation lifecycle');
+    expect(markup).toContain('Current');
+    expect(markup).toContain('Expires 8 Nov 2026');
+    expect(markup).toContain('targetPrefix=finance_approver_attestation%3Acandidate-1%3Aowner-review-1');
+    expect(markup).not.toContain('>View role history</a>');
     expect(markup).not.toContain('q=finance_approver');
+  });
+
+  it('uses a compact readiness strip and one consolidated candidate empty state', async () => {
+    mockedAdminGetResult.mockImplementation(async (path: string) => {
+      if (path.endsWith('/summary')) return { data: governanceSummary(), ok: true, status: 200 } as never;
+      if (path.includes('/operators')) {
+        return { data: { items: [], skip: 0, take: 25, totalCount: 0 }, ok: true, status: 200 } as never;
+      }
+      return { data: null, ok: false, status: 500 } as never;
+    });
+
+    const markup = renderToStaticMarkup(await FinanceApproversPage({
+      searchParams: Promise.resolve({ view: 'eligible' }),
+    }));
+
+    expect(markup).toContain('finance-approver-readiness-compact');
+    expect(markup).toContain('Selected source:');
+    expect(markup).toContain('No operators are available in this scope');
+    expect(markup.match(/<h2>Eligible operators<\/h2>/gu)).toHaveLength(1);
+    expect(markup).not.toContain('<h2>Ready for request</h2>');
+    expect(markup).not.toContain('<h2>Needs verification</h2>');
   });
 
   it('loads ready and verification candidate groups from separate server-policy queries', async () => {
@@ -152,6 +235,7 @@ describe('FinanceApproversPage', () => {
     }));
 
     expect(markup).toContain('View governance requirements');
+    expect(markup).toContain('Open Admin Operators');
     expect(markup).toContain('Production and legacy');
     expect(markup).toContain('Eligible operators');
     expect(markup).not.toContain('Verified production');
@@ -190,6 +274,9 @@ describe('FinanceApproversPage', () => {
     expect(pageSource).not.toContain('pushDevices');
     expect(pageSource).toContain('className="finance-approver-source-badge"');
     expect(globalStyles).toContain('.finance-approver-drawer .finance-approver-source-badge .pill');
+    expect(globalStyles).toContain('.calendar-drawer.finance-approver-drawer');
+    expect(globalStyles).toContain('.finance-approver-drawer > div');
+    expect(globalStyles).toContain('.finance-approver-drawer .operator-access-reauth-form');
     expect(globalStyles).toContain('overflow-wrap: anywhere');
   });
 });
@@ -198,6 +285,14 @@ function governanceSummary() {
   return {
     backupReady: false,
     blockers: [{ code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED', message: 'Assign 1 more verified real Finance approver through independent review.' }],
+    categoryCoverage: [
+      { category: 'FINANCE_PAYMENT_CLEARING', checkerCount: 1, ready: false, requiredCheckerCount: 2 },
+      { category: 'FINANCE_GENERAL_LEDGER', checkerCount: 1, ready: false, requiredCheckerCount: 2 },
+      { category: 'FINANCE_BANK_RECONCILIATION', checkerCount: 1, ready: false, requiredCheckerCount: 2 },
+      { category: 'FINANCE_WALLET_ADJUSTMENTS', checkerCount: 1, ready: false, requiredCheckerCount: 2 },
+      { category: 'FINANCE_SETTLEMENTS', checkerCount: 1, ready: false, requiredCheckerCount: 2 },
+      { category: 'FINANCE_TAX', checkerCount: 1, ready: false, requiredCheckerCount: 2 },
+    ],
     currentActor: {
       canDecide: true,
       canReadHistory: true,
@@ -208,6 +303,8 @@ function governanceSummary() {
     },
     eligibleCandidateCount: 1,
     fixtureExcludedCount: 12,
+    releaseBlockingAccountCount: 14,
+    unknownHighPrivilegeCount: 13,
     unattestedLegacyCount: 1,
     lastEvaluatedAt: '2026-08-11T05:00:00.000Z',
     pendingRequestCount: 1,
@@ -235,6 +332,7 @@ function operatorPage() {
         id: 'candidate-1',
         isCurrentActor: false,
         lastChangedAt: null,
+        legacyAttestationLifecycle: 'NOT_REQUIRED',
         mfaVerified: true,
         openFinanceWork: { available: false, count: null },
         pendingRequest: null,
@@ -263,6 +361,7 @@ function operatorPage() {
         id: 'maker-1',
         isCurrentActor: true,
         lastChangedAt: '2026-08-10T05:00:00.000Z',
+        legacyAttestationLifecycle: 'MISSING',
         mfaVerified: true,
         openFinanceWork: { available: false, count: null },
         pendingRequest: null,
@@ -297,6 +396,22 @@ function historyPage() {
         target: 'finance_approver_request:request-1',
       }],
     }],
+    legacyAttestationHistoryTruncated: false,
+    legacyAttestations: [{
+      action: 'admin_user.finance_approver.legacy_attestation.approved',
+      actor: { id: 'owner-1', email: 'owner@example.com', fullName: 'Policy Owner' },
+      actorId: 'owner-1',
+      auditHref: '/audit-log?range=all&sort=oldest&targetPrefix=finance_approver_attestation%3Acandidate-1%3Aowner-review-1',
+      createdAt: '2026-08-10T05:00:00.000Z',
+      expiresAt: '2026-11-08T05:00:00.000Z',
+      id: 'attestation-audit-1',
+      lifecycle: 'CURRENT',
+      metadata: {},
+      source: 'LEGACY',
+      target: 'finance_approver_attestation:candidate-1:owner-review-1',
+      targetUser: { id: 'candidate-1', email: 'candidate@example.com', fullName: 'Candidate Admin' },
+      targetUserId: 'candidate-1',
+    }],
     skip: 0,
     take: 25,
     totalCount: 1,
@@ -311,6 +426,7 @@ function requestRecord() {
     decidedByAdminId: null,
     decisionReason: null,
     executedAt: null,
+    expectedPermissionVersion: 3,
     expectedTargetUpdatedAt: '2026-08-11T04:55:00.000Z',
     id: 'request-1',
     idempotencyKey: 'finance-access:test-request-1',
@@ -330,8 +446,11 @@ function requestRecord() {
       attestationStatus: 'NOT_REQUIRED',
       blockers: [],
       credentialState: 'ACTIVE',
+      legacyAttestationLifecycle: 'NOT_REQUIRED',
       mfaVerified: true,
       permissionVersion: 3,
+      permissionVersionMatches: true,
+      requestedPermissionVersion: 3,
       ready: true,
     },
     updatedAt: '2026-08-11T05:00:00.000Z',

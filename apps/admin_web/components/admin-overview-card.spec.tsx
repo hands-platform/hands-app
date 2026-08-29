@@ -193,7 +193,7 @@ describe('AdminOverviewCommandCard', () => {
   });
 
   it('keeps shared mini metrics on the Vuexy compact surface token contract', () => {
-    const globals = readFileSync('app/globals.css', 'utf8');
+    const globals = readFileSync('app/globals.css', 'utf8').replace(/\r\n?/g, '\n');
     const metricBlock = cssRuleBlock(globals, '.admin-mini-metric {');
     const metricLabelBlock = cssRuleBlock(globals, '.admin-mini-metric > span {');
     const metricValueBlock = cssRuleBlock(globals, '.admin-mini-metric > strong {');
@@ -244,7 +244,7 @@ describe('AdminOverviewCommandCard', () => {
   });
 
   it('keeps shared summary cards on the Vuexy card rhythm token contract', () => {
-    const globals = readFileSync('app/globals.css', 'utf8');
+    const globals = readFileSync('app/globals.css', 'utf8').replace(/\r\n?/g, '\n');
     const gridBlock = cssRuleBlock(globals, '.admin-summary-card-grid {');
     const cardBlock = cssRuleBlock(globals, '.admin-summary-card {');
     const textBlock = cssRuleBlock(globals, '.admin-summary-card > span,');
@@ -356,7 +356,7 @@ describe('AdminOverviewCommandCard', () => {
   });
 
   it('keeps shared trace summaries on the Vuexy linked card token contract', () => {
-    const globals = readFileSync('app/globals.css', 'utf8');
+    const globals = readFileSync('app/globals.css', 'utf8').replace(/\r\n?/g, '\n');
     const itemBlock = cssRuleBlock(globals, '.service-trace-summary > div,\n.service-trace-summary > a {');
     const hoverBlock = cssRuleBlock(globals, '.service-trace-summary > a:hover,\n.service-trace-summary > a:focus-visible {');
     const valueBlock = cssRuleBlock(globals, '.service-trace-summary strong {');
@@ -374,7 +374,7 @@ describe('AdminOverviewCommandCard', () => {
   });
 
   it('does not let trace summary label selectors override scope badges', () => {
-    const globals = readFileSync('app/globals.css', 'utf8');
+    const globals = readFileSync('app/globals.css', 'utf8').replace(/\r\n?/g, '\n');
 
     expect(globals).toContain('.service-trace-summary span:not(.metric-card-scope)');
     expect(globals).not.toContain('.service-trace-summary span {');

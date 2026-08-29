@@ -72,6 +72,24 @@ describe('BankReconciliationPage', () => {
     });
   });
 
+  it('remounts only the Bank filter form when its URL-owned values change', () => {
+    expect(source).toContain('key={JSON.stringify([');
+    expect(source).toContain('transactionQuery,');
+    expect(source).toContain('bankTransactionDirection,');
+    expect(source).toContain('withdrawalCandidate,');
+    expect(source).toContain('reviewOwner,');
+  });
+
+  it('uses a Bank-only two-column search form without changing Payment Clearing filters', () => {
+    expect(source).toContain('className="filter-form admin-mb-12 bank-reconciliation-search-form"');
+    expect(globalCss).toMatch(
+      /\.finance-matching-operations-filter \.bank-reconciliation-search-form\s*{\s*grid-template-columns: minmax\(0, 1fr\) auto;/,
+    );
+    expect(globalCss).toMatch(
+      /\.finance-matching-operations-filter \.bank-reconciliation-search-form > \.admin-form-action-row\s*{\s*align-self: end;\s*grid-column: auto;/,
+    );
+  });
+
   it('uses the shared Vuexy text link atom for bank transaction navigation', () => {
     expect(source).toContain("import { AdminTextLink } from '../../../components/admin-text-link';");
     expect(source).toContain('<AdminTextLink');

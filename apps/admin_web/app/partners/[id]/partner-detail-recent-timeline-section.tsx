@@ -23,12 +23,14 @@ export type PartnerDetailRecentTimelineRecord = {
 };
 
 type PartnerDetailRecentTimelineSectionProps = {
+  readonly fullTimelineHref: string;
   readonly records: readonly PartnerDetailRecentTimelineRecord[];
 };
 
 const recentTimelineHeaders = ['Type', 'Event', 'Detail', 'Latest'];
 
 export function PartnerDetailRecentTimelineSection({
+  fullTimelineHref,
   records,
 }: PartnerDetailRecentTimelineSectionProps) {
   const visibleRecords = records.slice(0, 8);
@@ -38,7 +40,7 @@ export function PartnerDetailRecentTimelineSection({
       className="admin-mb-16"
       description="Latest factual partner events in the order operators need them: onboarding, app, location, booking, chat, finance, payout, document, tax, and staff records."
       footer={
-        <AdminTextLink href="#app-activity">
+        <AdminTextLink href={fullTimelineHref}>
           Open full timeline
         </AdminTextLink>
       }

@@ -159,6 +159,15 @@ describe('BackgroundJobsPage', () => {
     expect(markup).toContain('Next');
     expect(markup).not.toContain('Retry');
     expect(markup).not.toContain('secretPayload');
+    expect(markup.indexOf('<h2>Queue health</h2>')).toBeLessThan(
+      markup.indexOf('<h2>Recurring job incidents</h2>'),
+    );
+    expect(markup.indexOf('<h2>Recurring job incidents</h2>')).toBeLessThan(
+      markup.indexOf('<h2>Failed job records</h2>'),
+    );
+    expect(markup.indexOf('<h2>Failed job records</h2>')).toBeLessThan(
+      markup.indexOf('<h2>Queue health events</h2>'),
+    );
   });
 
   it('offers a manual capture action for an untracked retained failure', async () => {
@@ -403,6 +412,199 @@ describe('BackgroundJobsPage', () => {
     expect(markup).toContain(`value="${jobId}"`);
     expect(markup).toContain('page=2&amp;pageSize=5&amp;queue=bank-statement-escalation');
     expect(markup).toContain('jobId=repeat%3Abackground-job-failure-monitor%3A1783980324023');
+    expect(markup).toContain(
+      'jobId=repeat%3Abackground-job-failure-monitor%3A1783980324023">Refresh status',
+    );
+  });
+
+  it('renders nullable system audit actors without attributing them to a human operator', async () => {
+    mockedAdminGet.mockResolvedValue({
+      failedJobs: [],
+      failurePage: {
+        complete: true,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        page: 1,
+        pageSize: 10,
+        scannedCount: 0,
+        totalCount: 0,
+      },
+      generatedAt: '2026-07-14T03:05:00.000Z',
+      healthEvents: [{
+        actor: null,
+        actorKey: 'background-job-monitor',
+        actorLabelSnapshot: 'HANDS background monitor',
+        actorType: 'SYSTEM',
+        detectedAt: '2026-07-14T02:55:00.000Z',
+        event: 'ALERTED',
+        id: 'health-event-system',
+        oldestOpenJobAt: null,
+        oldestOpenJobState: null,
+        openJobLagMs: 300_000,
+        queueName: 'notification-retry',
+        recordedAt: '2026-07-14T02:55:01.000Z',
+        staleAfterMs: 120_000,
+      }],
+      healthEventPage: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        page: 1,
+        pageSize: 10,
+        totalCount: 1,
+      },
+      ok: false,
+      queues: [{
+        counts: { active: 0, delayed: 0, failed: 0, paused: 0, waiting: 0 },
+        expectedSchedulerId: null,
+        expectedSchedulerPresent: true,
+        label: 'Notification delivery',
+        lastCompletedAt: null,
+        lastFailedAt: null,
+        name: 'notification-retry',
+        nextScheduledAt: null,
+        oldestOpenJobAt: null,
+        oldestOpenJobState: null,
+        openJobLagMs: 0,
+        schedulerCount: 0,
+        staleAfterMs: 120_000,
+        status: 'HEALTHY',
+        workers: 1,
+      }],
+      recurringIncidents: [{
+        actor: null,
+        actorKey: null,
+        actorLabelSnapshot: null,
+        actorType: 'SYSTEM',
+        firstFailureAt: null,
+        firstFailureJobId: null,
+        id: 'incident-system',
+        jobName: 'background-job-failure-monitor',
+        openedAt: '2026-07-14T02:56:01.000Z',
+        queueName: 'bank-statement-escalation',
+        recoveredAt: null,
+        resolvedFailureCount: 0,
+        status: 'OPEN',
+      }],
+      recurringIncidentPage: {
+        complete: true,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        page: 1,
+        pageSize: 10,
+        scannedCount: 1,
+        totalCount: 1,
+      },
+      recurringIncidentSummary: {
+        complete: true,
+        openCount: 1,
+        recoveredCount: 0,
+        scannedCount: 1,
+      },
+    });
+
+    const markup = renderToStaticMarkup(await BackgroundJobsPage({}));
+
+    expect(markup).toContain('HANDS background monitor');
+    expect(markup).toContain('HANDS system');
+    expect(markup).not.toContain('Master Admin');
+  });
+
+  it('renders partial queue availability and incomplete review coverage without a healthy claim', async () => {
+    mockedAdminGet.mockResolvedValue({
+      availability: {
+        failureReviews: 'AVAILABLE',
+        healthEvents: 'UNAVAILABLE',
+        queues: 'PARTIAL',
+        recurringIncidents: 'UNAVAILABLE',
+      },
+      failedJobs: [],
+      failurePage: {
+        complete: false,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        page: 1,
+        pageSize: 10,
+        scannedCount: 0,
+        totalCount: null,
+        unavailableQueueNames: ['booking-timeouts'],
+      },
+      generatedAt: '2026-07-14T03:05:00.000Z',
+      healthEvents: [],
+      healthEventPage: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        page: 1,
+        pageSize: 10,
+        totalCount: 0,
+      },
+      ok: false,
+      queues: [{
+        availability: 'AVAILABLE',
+        counts: { active: 0, delayed: 0, failed: 6, paused: 0, waiting: 0 },
+        expectedSchedulerId: null,
+        expectedSchedulerPresent: true,
+        failureReviewCoverage: 'INCOMPLETE',
+        label: 'Payment status check',
+        lastCompletedAt: null,
+        lastFailedAt: null,
+        name: 'payment-status-check',
+        nextScheduledAt: null,
+        oldestOpenJobAt: null,
+        oldestOpenJobState: null,
+        openJobLagMs: 0,
+        schedulerCount: 0,
+        staleAfterMs: 120_000,
+        status: 'HEALTHY',
+        unresolvedFailureCount: 0,
+        workers: 1,
+      }, {
+        availability: 'UNAVAILABLE',
+        counts: { active: 0, delayed: 0, failed: 0, paused: 0, waiting: 0 },
+        expectedSchedulerId: null,
+        expectedSchedulerPresent: false,
+        failureReviewCoverage: 'UNAVAILABLE',
+        label: 'Booking timeout',
+        lastCompletedAt: null,
+        lastFailedAt: null,
+        name: 'booking-timeouts',
+        nextScheduledAt: null,
+        oldestOpenJobAt: null,
+        oldestOpenJobState: null,
+        openJobLagMs: 0,
+        schedulerCount: 0,
+        staleAfterMs: 120_000,
+        status: 'ATTENTION',
+        unresolvedFailureCount: 0,
+        workers: 0,
+      }],
+      recurringIncidents: [],
+      recurringIncidentPage: {
+        complete: true,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        page: 1,
+        pageSize: 10,
+        scannedCount: 0,
+        totalCount: 0,
+      },
+      recurringIncidentSummary: {
+        complete: true,
+        openCount: 0,
+        recoveredCount: 0,
+        scannedCount: 0,
+      },
+    });
+
+    const markup = renderToStaticMarkup(await BackgroundJobsPage({}));
+
+    expect(markup).toContain('Partial data — 1 queue unavailable');
+    expect(markup).toContain('PARTIAL');
+    expect(markup).toContain('UNAVAILABLE');
+    expect(markup).toContain('6 retained');
+    expect(markup).toContain('Review coverage incomplete · 0 visible unresolved');
+    expect(markup).toContain('Queue health audit history is unavailable');
+    expect(markup).toContain('Recurring incident audit evidence is unavailable');
+    expect(markup).not.toContain('Background job health unavailable');
   });
 
   it('shows an explicit error state when queue health is unavailable', async () => {

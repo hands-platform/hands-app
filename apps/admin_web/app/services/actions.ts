@@ -2,25 +2,42 @@
 
 import { revalidatePath, updateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { AdminApiRequestError, adminPatchOrThrow } from '../../lib/admin-api';
+import { adminPatchOrThrow } from '../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
 import {
   isValidServicePayout,
   isValidServicePriceStep,
   parseServiceInteger,
 } from './service-action-input';
+import {
+  serviceCatalogApiFailure,
+} from './service-catalog-action-result';
+import type {
+  ServiceCatalogActionState,
+  ServiceCatalogRefreshState,
+} from './service-catalog-action-state';
 
 const STANDARD_SERVICE_DURATIONS = [60, 90, 120] as const;
 const SERVICE_NAME_FIELDS = ['nameEn', 'nameVi', 'nameKo', 'nameJa', 'nameZh'] as const;
 const SERVICE_NAME_KEYS = ['en', 'vi', 'ko', 'ja', 'zh'] as const;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-export type ServiceCatalogActionState = {
-  readonly status: 'idle' | 'error';
-  readonly message?: string;
-  readonly fieldErrors?: Readonly<Record<string, string>>;
-};
-
-export const initialServiceCatalogActionState: ServiceCatalogActionState = { status: 'idle' };
+export async function refreshServiceCatalog(
+  _previousState: ServiceCatalogRefreshState,
+): Promise<ServiceCatalogRefreshState> {
+  void _previousState;
+  const access = await getCurrentAdminOperatorAccess();
+  if (!hasAdminOperatorCategory(access, 'SYSTEM_SERVICES')) {
+    return {
+      message: 'Service Catalog access is required to refresh live catalog data.',
+      status: 'error',
+    };
+  }
+  updateTag('service-catalog');
+  revalidatePath('/services');
+  return { message: 'Service Catalog data refreshed.', status: 'refreshed' };
+}
 
 export async function saveServiceCatalogGroup(
   _previousState: ServiceCatalogActionState,
@@ -103,6 +120,7 @@ export async function saveServiceCatalogGroup(
     return {
       status: 'error',
       message: apiFailure.message,
+      reauthRequired: apiFailure.reauthRequired,
       fieldErrors: apiFailure.fieldErrors,
     };
   }
@@ -148,43 +166,4 @@ function slugifyServiceKey(value: string) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
-}
-
-function serviceCatalogApiFailure(error: unknown) {
-  if (!(error instanceof AdminApiRequestError)) {
-    return { message: 'Service catalog could not be saved. Retry after checking the API connection.' };
-  }
-  const payload = readRecord(error.payload);
-  const nested = readRecord(payload?.message);
-  const fieldErrorsValue = readRecord(nested?.fieldErrors ?? payload?.fieldErrors);
-  const fieldErrors = fieldErrorsValue
-    ? Object.fromEntries(
-        Object.entries(fieldErrorsValue).filter(
-          (entry): entry is [string, string] => typeof entry[1] === 'string',
-        ),
-      )
-    : undefined;
-  const errorCode =
-    (typeof nested?.code === 'string' && nested.code) ||
-    (typeof payload?.code === 'string' && payload.code) ||
-    null;
-  const message =
-    (typeof nested?.message === 'string' && nested.message) ||
-    (typeof payload?.message === 'string' && payload.message) ||
-    (error.status === 409
-      ? 'This service changed after the drawer opened. Reload and compare the latest values.'
-      : 'The API rejected this catalog change. Review the fields and retry.');
-  return {
-    message,
-    fieldErrors:
-      errorCode === 'SERVICE_CATALOG_GROUP_KEY_EXISTS'
-        ? { ...fieldErrors, serviceGroupKey: 'This service key is already in use.' }
-        : fieldErrors,
-  };
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
 }

@@ -32,7 +32,9 @@ export function buildTaxPolicyLoadPlan(params: TaxPolicyParams): TaxPolicyLoadPl
   const provenance = firstParam(params.provenance)?.trim();
   const filters = new URLSearchParams();
   if (provenance) filters.set('provenance', provenance);
-  if (view === 'history') {
+  if (view === 'current' || view === 'drafts') {
+    filters.set('source', firstParam(params.source) === 'test-legacy' ? 'test-legacy' : 'production');
+  } else if (view === 'history') {
     filters.set('source', firstParam(params.source) === 'test-legacy' ? 'test-legacy' : 'production');
     for (const key of ['q', 'lifecycle', 'effectiveFrom', 'effectiveTo'] as const) {
       const value = firstParam(params[key])?.trim();
@@ -97,7 +99,7 @@ export function buildTaxPolicyLoadPlan(params: TaxPolicyParams): TaxPolicyLoadPl
       ? `/admin/tax-policy-integrity-records?${integrity.toString()}`
       : undefined,
     integritySummaryHref: view === 'integrity'
-      ? '/admin/tax-policy-integrity-summary'
+      ? `/admin/tax-policy-integrity-summary?source=${encodeURIComponent(issueSource)}`
       : undefined,
     recentEarningsHref: view === 'integrity'
       ? `/admin/earnings?range=30d&take=${TAX_POLICY_INTEGRITY_SAMPLE_SIZE}`
@@ -106,8 +108,8 @@ export function buildTaxPolicyLoadPlan(params: TaxPolicyParams): TaxPolicyLoadPl
   };
 }
 
-export function buildTaxPolicyEditorHref(policyId: string) {
-  return `/tax-policy?view=drafts&policyId=${encodeURIComponent(policyId)}#tax-policy-${encodeURIComponent(policyId)}`;
+export function buildTaxPolicyEditorHref(policyId: string, source = 'production') {
+  return `/tax-policy?view=drafts&source=${encodeURIComponent(source)}&policyId=${encodeURIComponent(policyId)}#tax-policy-${encodeURIComponent(policyId)}`;
 }
 
 export function buildTaxPolicyPageHref(
@@ -141,9 +143,9 @@ function auditSource(value?: string) {
 }
 
 function integritySource(value?: string) {
-  return value === 'production' || value === 'test' || value === 'legacy' || value === 'unknown'
+  return value === 'all' || value === 'production' || value === 'test' || value === 'legacy' || value === 'unknown'
     ? value
-    : 'all';
+    : 'production';
 }
 
 function firstParam(value: string | string[] | undefined) {

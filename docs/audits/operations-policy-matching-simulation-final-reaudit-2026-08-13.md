@@ -1,6 +1,6 @@
 # Operations Policy · Matching Simulation 최종 재감사 보고서
 
-- 감사 일자: 2026-08-13 (Asia/Bangkok)
+- 감사 일자: 2026-08-13 (Asia/Ho_Chi_Minh)
 - 대상: `/operations-policy?details=matching&matching=simulation`
 - 검수 기준: 실제 운영자 판단 흐름, 화면·문구·상태·행동·코드 계산 계약·API 표본·테스트
 - 화면 범위: 1440×1000, 1600×1000 데스크톱만 검수

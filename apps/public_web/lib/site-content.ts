@@ -46,6 +46,7 @@ export type PublicSiteSectionRenderModel = {
   subtitle: string | null;
   body: string | null;
   imageUrl: string | null;
+  imageAlt: string | null;
   actionLabel: string | null;
   actionHref: string | null;
   items: PublicSiteContentItem[];
@@ -89,7 +90,7 @@ export async function fetchPublicSitePage(
   const path = publicSiteTemplatePath(requestedPath, site);
   const query = new URLSearchParams({ site, locale, path });
   const response = await fetch(`${API_BASE_URL}/public/site-pages/resolve?${query}`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 300, tags: [publicSitePageCacheTag(site, locale, path)] },
   });
   if (response.status === 404) {
     return null;
@@ -106,16 +107,46 @@ export async function fetchPublicSitePreview(token: string) {
     headers: { authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
-    throw new Error(`Public site preview request failed with ${response.status}`);
+    throw new PublicSitePreviewError(response.status);
   }
   return response.json() as Promise<PublicSitePage>;
+}
+
+export class PublicSitePreviewError extends Error {
+  constructor(readonly status: number) {
+    super(`Public site preview request failed with ${status}`);
+    this.name = 'PublicSitePreviewError';
+  }
+}
+
+export async function fetchManagedPublicSitePage(
+  previewToken: string | undefined,
+  site: PublicSiteKey,
+  locale: PublicSiteLocale,
+  path: string,
+) {
+  if (!previewToken) {
+    return { isPreview: false, previewRecovery: false, page: await fetchPublicSitePage(site, locale, path) };
+  }
+  try {
+    const preview = await fetchPublicSitePreview(previewToken);
+    if (preview.site === site && preview.locale === locale && preview.path === path) {
+      return { isPreview: true, previewRecovery: false, page: preview };
+    }
+    return { isPreview: false, previewRecovery: true, page: await fetchPublicSitePage(site, locale, path) };
+  } catch (error) {
+    if (error instanceof PublicSitePreviewError && error.status === 401) {
+      return { isPreview: false, previewRecovery: true, page: await fetchPublicSitePage(site, locale, path) };
+    }
+    throw error;
+  }
 }
 
 export async function fetchPublishedRoutes(site: PublicSiteKey, locale: PublicSiteLocale) {
   const query = new URLSearchParams({ site, locale });
   try {
     const response = await fetch(`${API_BASE_URL}/public/site-pages/routes?${query}`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 300, tags: [publicSiteRoutesCacheTag(site, locale)] },
     });
     if (!response.ok) {
       return [] as PublishedRoute[];
@@ -128,4 +159,25 @@ export async function fetchPublishedRoutes(site: PublicSiteKey, locale: PublicSi
 
 export function publicSiteTemplatePath(path: string, site: PublicSiteKey = 'MAIN') {
   return publicSiteTemplatePathFromManifest(site, path);
+}
+
+export function publicSitePageCacheTag(site: PublicSiteKey, locale: PublicSiteLocale, path: string) {
+  return `public-site:page:${site}:${locale}:${encodeURIComponent(publicSiteTemplatePath(path, site))}`;
+}
+
+export function publicSiteRoutesCacheTag(site: PublicSiteKey, locale: PublicSiteLocale) {
+  return `public-site:routes:${site}:${locale}`;
+}
+
+export function publicSiteNewsCacheTag(site: PublicSiteKey, locale: PublicSiteLocale) {
+  return `public-site:news:${site}:${locale}`;
+}
+
+export function publicSiteCacheTags(site: PublicSiteKey, locale: PublicSiteLocale, path: string) {
+  const tags = [
+    publicSitePageCacheTag(site, locale, path),
+    publicSiteRoutesCacheTag(site, locale),
+  ];
+  if (path === '/news' || path.startsWith('/news/')) tags.push(publicSiteNewsCacheTag(site, locale));
+  return tags;
 }

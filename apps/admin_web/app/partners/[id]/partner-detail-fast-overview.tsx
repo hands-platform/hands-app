@@ -22,7 +22,10 @@ import {
 import { bookingServiceLabel, type PartnerDetailBooking } from './partner-detail-record-helpers';
 import { partnerOpsPillClass, type PartnerOpsTone } from './partner-detail-tone';
 import type { PartnerDispatchPolicy, ProviderDetail } from './partner-detail-types';
-import { buildPartnerDetailWorkspaceHref } from './partner-detail-workspace-model';
+import {
+  buildPartnerDetailTargetHref,
+  buildPartnerDetailWorkspaceHref,
+} from './partner-detail-workspace-model';
 
 type PartnerFastOverviewKycEvidence = {
   readonly allRequiredApproved: boolean;
@@ -48,7 +51,10 @@ type PartnerDetailFastOverviewProps = {
   readonly dispatchPolicy: PartnerDispatchPolicy;
   readonly kycEvidence: PartnerFastOverviewKycEvidence;
   readonly latestAccessAt?: string | null;
+  readonly operationalPolicyAvailable?: boolean;
+  readonly operationalPolicyFailureStatus?: number | null;
   readonly payoutOps: PartnerFastOverviewPayoutOps;
+  readonly policyRetryHref?: string;
   readonly provider: ProviderDetail;
   readonly servicePricing: PartnerFastOverviewServicePricing;
 };
@@ -59,7 +65,10 @@ export function PartnerDetailFastOverview({
   dispatchPolicy,
   kycEvidence,
   latestAccessAt,
+  operationalPolicyAvailable = true,
+  operationalPolicyFailureStatus,
   payoutOps,
+  policyRetryHref,
   provider,
   servicePricing,
 }: PartnerDetailFastOverviewProps) {
@@ -106,8 +115,15 @@ export function PartnerDetailFastOverview({
     todayWorkingHoursLabel: provider.availabilitySummary?.todayWindowLabel,
     withinWorkingHours: provider.availabilitySummary?.withinWorkingHours,
   });
-  const openChecks = openPartnerOperationalChecks(checks).slice(0, 5);
-  const actionItems: PartnerDetailFastActionItem[] = openChecks.map((check) => ({
+  const visibleChecks = operationalPolicyAvailable
+    ? checks
+    : checks.filter((check) => check.domain !== 'WORK');
+  const allOpenChecks = [
+    ...new Map(
+      openPartnerOperationalChecks(visibleChecks).map((check) => [check.id, check] as const),
+    ).values(),
+  ];
+  const actionItems: PartnerDetailFastActionItem[] = allOpenChecks.slice(0, 5).map((check) => ({
     area: partnerOperationalDomainLabel(check.domain),
     completion: completionCondition(check),
     href: resolveOverviewCheckHref(provider.id, check),
@@ -133,7 +149,9 @@ export function PartnerDetailFastOverview({
       'Approval',
       approvalChecks,
       buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'approval'),
-      approvalChecks.some((check) => check.open) ? 'Profile or KYC approval is incomplete.' : 'Profile and KYC are approved.',
+      approvalChecks.some((check) => check.open)
+        ? 'Profile or KYC approval is incomplete.'
+        : 'Profile and KYC are approved.',
     ),
     statusLane(
       'Service',
@@ -151,43 +169,95 @@ export function PartnerDetailFastOverview({
       'Wallet',
       financeChecks,
       buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'finance'),
-      cashDebt > 0 ? <><MoneyText amount={cashDebt} /> owed by Partner. {payoutReason}</> : provider.activitySummary?.walletBalance && provider.activitySummary.walletBalance > 0 ? <><MoneyText amount={provider.activitySummary.walletBalance} /> held for Partner. {payoutReason}</> : payoutReason,
+      cashDebt > 0 ? (
+        <>
+          <MoneyText amount={cashDebt} /> owed by Partner. {payoutReason}
+        </>
+      ) : provider.activitySummary?.walletBalance && provider.activitySummary.walletBalance > 0 ? (
+        <>
+          <MoneyText amount={provider.activitySummary.walletBalance} /> held for Partner. {payoutReason}
+        </>
+      ) : (
+        payoutReason
+      ),
     ),
   ];
   const workspaceLinks: PartnerDetailFastOverviewLink[] = [
-    workspaceLink('Approval & profile', buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'approval'), approvalChecks),
-    workspaceLink('Work readiness', buildPartnerDetailWorkspaceHref(provider.id, 'access', 'readiness'), checks.filter((check) => check.domain === 'WORK')),
-    { detail: `${bookingArchive.length} linked booking record(s).`, href: buildPartnerDetailWorkspaceHref(provider.id, 'bookings', 'journey'), label: 'Booking evidence', status: `${bookingArchive.length} records`, tone: bookingArchive.length ? 'pill-info' : 'pill-neutral' },
+    workspaceLink(
+      'Approval & profile',
+      buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'approval'),
+      approvalChecks,
+    ),
+    operationalPolicyAvailable
+      ? workspaceLink(
+          'Work readiness',
+          buildPartnerDetailWorkspaceHref(provider.id, 'access', 'readiness'),
+          checks.filter((check) => check.domain === 'WORK'),
+        )
+      : {
+          detail: 'Operational policy data could not be loaded.',
+          href: buildPartnerDetailWorkspaceHref(provider.id, 'access', 'readiness'),
+          label: 'Work readiness',
+          status: 'Unavailable',
+          tone: 'pill-warn',
+        },
+    {
+      detail: `${bookingArchive.length} linked booking record(s).`,
+      href: buildPartnerDetailWorkspaceHref(provider.id, 'bookings', 'journey'),
+      label: 'Booking evidence',
+      status: `${bookingArchive.length} records`,
+      tone: bookingArchive.length ? 'pill-info' : 'pill-neutral',
+    },
     workspaceLink('Money', buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'finance'), financeChecks),
-    { detail: 'Operator notes, reviews, reports, and account controls.', href: buildPartnerDetailWorkspaceHref(provider.id, 'control', 'records'), label: 'History & controls', status: 'Open', tone: 'pill-info' },
+    {
+      detail: 'Operator notes, reviews, reports, and account controls.',
+      href: buildPartnerDetailWorkspaceHref(provider.id, 'control', 'records'),
+      label: 'History & controls',
+      status: 'Open',
+      tone: 'pill-info',
+    },
   ];
 
   return (
     <PartnerDetailFastOverviewSection
       accountControlsHref={buildPartnerControlDetailsHref('sanctions', { q: provider.id })}
+      actionIssueCount={allOpenChecks.length}
       actionItems={actionItems}
       activityItems={[
         {
-          at: latestBooking ? <DateTimeText fallback="Missing" value={latestBooking.updatedAt ?? latestBooking.createdAt} /> : undefined,
-          detail: latestBooking ? `${shortRecordId(latestBooking.id)} / ${latestBooking.status} / ${bookingServiceLabel(latestBooking)}` : 'No linked booking record.',
+          at: latestBooking ? (
+            <DateTimeText fallback="Missing" value={latestBooking.updatedAt ?? latestBooking.createdAt} />
+          ) : undefined,
+          detail: latestBooking
+            ? `${shortRecordId(latestBooking.id)} / ${latestBooking.status} / ${bookingServiceLabel(latestBooking)}`
+            : 'No linked booking record.',
           label: 'Latest booking',
         },
         {
-          at: provider.currentLocationUpdatedAt ? <DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} /> : undefined,
-          detail: provider.currentLocationUpdatedAt ? locationAgeLabel(provider.currentLocationUpdatedAt) : 'No saved Partner location.',
+          at: provider.currentLocationUpdatedAt ? (
+            <DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />
+          ) : undefined,
+          detail: provider.currentLocationUpdatedAt
+            ? locationAgeLabel(provider.currentLocationUpdatedAt)
+            : 'No saved Partner location.',
           label: 'Location',
         },
         {
           at: latestAccessAt ? <DateTimeText fallback="Missing" value={latestAccessAt} /> : undefined,
-          detail: latestAccessAt ? 'Latest recorded Partner app activity.' : 'No Partner app activity recorded.',
+          detail: latestAccessAt
+            ? 'Latest recorded Partner app activity.'
+            : 'No Partner app activity recorded.',
           label: 'App access',
         },
       ]}
       chatHref={`/chat-archive?q=${encodeURIComponent(provider.id)}`}
       currentStatus={availabilityCheck?.status ?? provider.status}
       fullHref={`/partners/${provider.id}?section=full`}
+      operationalPolicyAvailable={operationalPolicyAvailable}
+      operationalPolicyFailureStatus={operationalPolicyFailureStatus}
       partnerName={partnerName}
       phone={provider.user?.phone}
+      policyRetryHref={policyRetryHref}
       subtitle={`${provider.user?.phone ?? 'No phone'} / ${provider.city ?? 'No city'}`}
       workItems={workItems}
       workspaceLinks={workspaceLinks}
@@ -227,6 +297,12 @@ function workspaceLink(
 }
 
 function resolveOverviewCheckHref(partnerId: string, check: PartnerOperationalCheck) {
+  if (check.id === 'kyc-approval') {
+    return buildPartnerDetailTargetHref(partnerId, 'documents');
+  }
+  if (check.id === 'bookable-services') {
+    return buildPartnerDetailTargetHref(partnerId, 'service-pricing');
+  }
   if (check.domain === 'APPROVAL' || check.domain === 'ACCOUNT') {
     return buildPartnerDetailWorkspaceHref(partnerId, 'dossier', 'approval');
   }
@@ -238,16 +314,27 @@ function resolveOverviewCheckHref(partnerId: string, check: PartnerOperationalCh
 
 function completionCondition(check: PartnerOperationalCheck) {
   switch (check.id) {
-    case 'account-control': return 'The account hold is released after the recorded issue is resolved.';
-    case 'profile-approval': return 'Required identity and public profile fields are approved.';
-    case 'kyc-approval': return 'KYC and every required identity document are approved.';
-    case 'bookable-services': return 'At least one approved, enabled service can be booked.';
-    case 'location-freshness': return 'A Partner location is saved within the current freshness policy.';
-    case 'push-reachability': return 'At least one enabled Partner push device is reachable.';
-    case 'app-activity': return 'Partner app activity is recorded within seven days.';
-    case 'availability-reason': return 'Partner availability matches the linked booking and saved work intent.';
-    case 'cash-debt': return 'The Partner receivable is fully settled.';
-    case 'payout-hold': return 'The payout hold is released with an audit reason.';
-    default: return 'The source record no longer reports this issue.';
+    case 'account-control':
+      return 'The account hold is released after the recorded issue is resolved.';
+    case 'profile-approval':
+      return 'Required identity and public profile fields are approved.';
+    case 'kyc-approval':
+      return 'KYC and every required identity document are approved.';
+    case 'bookable-services':
+      return 'At least one approved, enabled service can be booked.';
+    case 'location-freshness':
+      return 'A Partner location is saved within the current freshness policy.';
+    case 'push-reachability':
+      return 'At least one enabled Partner push device is reachable.';
+    case 'app-activity':
+      return 'Partner app activity is recorded within seven days.';
+    case 'availability-reason':
+      return 'Partner availability matches the linked booking and saved work intent.';
+    case 'cash-debt':
+      return 'The Partner receivable is fully settled.';
+    case 'payout-hold':
+      return 'The payout hold is released with an audit reason.';
+    default:
+      return 'The source record no longer reports this issue.';
   }
 }

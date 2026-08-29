@@ -1,7 +1,7 @@
 'use client';
 
 import { Save, X } from 'lucide-react';
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from 'react';
 
 import {
   AdminFormActionRow,
@@ -16,18 +16,21 @@ import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminNotePanel, AdminNoticeCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
+import { DateTimeText } from '../../components/date-time-text';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { operationalPolicyAnchor } from '../../lib/operations-policy';
-import { initialOperationsPolicyActionState, updateOperationalPolicy } from './actions';
+import { initialOperationsPolicyActionState } from './action-state';
+import { updateOperationalPolicy } from './actions';
 import { policyImpactDetails } from './policy-impact-details';
 import { policyDisplayValue } from './policy-value-display';
 
 type OperationsPolicyFormProps = {
+  readonly returnHref: string;
   readonly setting: AdminOperationalPolicySetting;
 };
 
-export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
+export function OperationsPolicyForm({ returnHref, setting }: OperationsPolicyFormProps) {
   const draftStorageKey = `operations-policy:draft:${setting.key}`;
   const valueType = typeof setting.value;
   const isNumber = valueType === 'number';
@@ -72,6 +75,16 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
     !validation.reason &&
     !validation.confirmed &&
     !validation.confirmationLabel;
+  const submitPolicyAction = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitAttempted(true);
+    const formData = new FormData(event.currentTarget);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    if (submitter instanceof HTMLButtonElement && submitter.name) {
+      formData.append(submitter.name, submitter.value);
+    }
+    startTransition(() => formAction(formData));
+  };
 
   useEffect(() => {
     if (actionState.status === 'error') errorSummaryRef.current?.focus();
@@ -166,7 +179,7 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
       className="card admin-card operations-policy-change-form"
       id={operationalPolicyAnchor(setting.key)}
       noValidate
-      onSubmit={() => setSubmitAttempted(true)}
+      onSubmit={submitPolicyAction}
     >
       <input type="hidden" name="key" value={setting.key} />
       <input type="hidden" name="label" value={setting.label} />
@@ -177,7 +190,7 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
       <input type="hidden" name="risk" value={risk} />
       <AdminSectionHeader
         actions={
-          <AdminFormControlLink className="button-secondary" href="/operations-policy">
+          <AdminFormControlLink className="button-secondary" href={returnHref}>
             <X size={16} aria-hidden="true" />
             Close
           </AdminFormControlLink>
@@ -222,6 +235,16 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
           <AdminNoticeCard role="alert" tone="danger">
             <strong>Policy change not saved</strong>
             <p>{actionState.message}</p>
+            {actionState.reauthRequired ? (
+              <AdminFormControlButton
+                aria-controls="admin-reauthentication-panel"
+                className="button-secondary admin-mt-10"
+                onClick={openIdentityConfirmation}
+                type="button"
+              >
+                Confirm identity
+              </AdminFormControlButton>
+            ) : null}
           </AdminNoticeCard>
         </div>
       ) : null}
@@ -250,7 +273,7 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
             </div>
             <div>
               <dt>Effective at</dt>
-              <dd>{actionState.success.effectiveAt}</dd>
+              <dd><DateTimeText fallback="Invalid effective time" value={actionState.success.effectiveAt} /></dd>
             </div>
             <div>
               <dt>Reason</dt>
@@ -258,6 +281,9 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
             </div>
           </dl>
           <AdminFormActionRow className="admin-mt-12">
+            <AdminFormControlLink className="button-secondary" href={returnHref}>
+              Back to filtered policies
+            </AdminFormControlLink>
             <AdminFormControlLink className="button-secondary" href={actionState.success.auditHref}>
               Open audit record
             </AdminFormControlLink>
@@ -423,12 +449,21 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
           <Save size={16} aria-hidden="true" />
           {isPending ? 'Saving policy…' : 'Save policy change'}
         </AdminFormControlButton>
-        <AdminFormControlLink className="button-secondary" href="/operations-policy">
+        <AdminFormControlLink className="button-secondary" href={returnHref}>
           Cancel
         </AdminFormControlLink>
       </AdminFormActionRow>
     </form>
   );
+}
+
+function openIdentityConfirmation() {
+  const menu = document.getElementById('admin-reauthentication-menu');
+  if (!(menu instanceof HTMLDetailsElement)) return;
+  menu.open = true;
+  window.requestAnimationFrame(() => {
+    menu.querySelector<HTMLInputElement>('input[name="password"]')?.focus();
+  });
 }
 
 export function validatePolicyChange(

@@ -3,7 +3,7 @@ import { CustomersTableSection } from './customers-table-section';
 import type { CustomerFilters } from './customer-filters';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
-const globalsCss = readFileSync('app/globals.css', 'utf8');
+const globalsCss = readFileSync('app/globals.css', 'utf8').replace(/\r\n?/g, '\n');
 
 describe('CustomersTableSection', () => {
   it('uses the shared Vuexy empty-state atom', () => {
@@ -107,6 +107,9 @@ describe('CustomersTableSection', () => {
     const rendered = textContent(section).replace(/\s+/g, ' ');
 
     expect(rendered).toContain('Customer directory');
+    expect(rendered).toContain('Customer accounts matching the current filters.');
+    expect(rendered).toContain('12 customers · last booking');
+    expect(rendered).not.toContain('Sorted by last booking');
     expect(rendered).toContain('Customer One');
     expect(rendered).toContain('+84*******00');
     expect(rendered).not.toContain('+84900000000');
@@ -161,6 +164,58 @@ describe('CustomersTableSection', () => {
       ]),
     );
     expect(classNamesIn(section)).not.toContain('vuexy-customer-actions vuexy-customer-actions-row');
+  });
+
+  it('keeps complex customer states readable in the desktop table', () => {
+    const rendered = textContent(
+      CustomersTableSection({
+        allCustomerCount: 3,
+        filters: buildFilters({ view: 'all' }),
+        pagination: pagination([
+          {
+            ...buildRow(),
+            bookingStatusLabel: 'In service',
+            bookingStatusTone: 'info',
+            bookingUpdatedAt: '2026-06-13T08:00:00.000Z',
+            id: 'active-customer',
+            name: 'Active Booking Customer',
+          },
+          {
+            ...buildRow(),
+            id: 'multi-issue-customer',
+            name: 'Multiple Issue Customer',
+            openSignals: [
+              { label: 'Payment failed 2', tone: 'danger' },
+              { label: 'Refund requests 3', tone: 'warning' },
+              { label: 'Reported reviews 4', tone: 'danger' },
+            ],
+          },
+          {
+            ...buildRow(),
+            historySignals: [
+              { label: 'No-show 2', tone: 'neutral' },
+              { label: 'Customer cancellations 5', tone: 'neutral' },
+            ],
+            id: 'long-name-customer',
+            name: 'Nguyen Thi Minh Anh With An Intentionally Long Customer Name',
+          },
+        ]),
+        sortLabel: 'Newest customers',
+      }),
+    );
+
+    expect(rendered).toContain('In service');
+    expect(rendered).toContain('Booking updated');
+    expect(rendered).toContain('App seen');
+    expect(rendered).toContain('Payment failed 2');
+    expect(rendered).toContain('Refund requests 3');
+    expect(rendered).toContain('Reported reviews 4');
+    expect(rendered).toContain('Nguyen Thi Minh Anh With An Intentionally Long Customer Name');
+    expect(rendered).toContain('No-show 2 / Customer cancellations 5');
+    expect(globalsCss).toContain('.vuexy-customer-attention-list {');
+    expect(globalsCss).toContain('flex-wrap: wrap;');
+    expect(globalsCss).toContain('.vuexy-customer-person .vuexy-booking-person-link {');
+    expect(globalsCss).toContain('white-space: normal;');
   });
 
   it('renders the empty state when no customers match filters', () => {
@@ -234,7 +289,7 @@ describe('CustomersTableSection', () => {
       allCustomerCount: 1,
       filters: buildFilters({ view: 'all' }),
       pagination: pagination([row]),
-      sortLabel: 'Newest first',
+      sortLabel: 'Newest customers',
     });
 
     expect(textContent(section)).toContain('Customer detail access required');
@@ -246,14 +301,26 @@ describe('CustomersTableSection', () => {
       CustomersTableSection({
         allCustomerCount: 1,
         filters: buildFilters({ segment: 'usage-new-unbooked', view: 'all' }),
-        pagination: pagination([{ ...buildRow(), bookingCount: 6, completedBookings: 0 }]),
-        sortLabel: 'Newest first',
+        pagination: pagination([{ ...buildRow(), bookingCount: 6, completedBookings: 0, lastSeenAt: null }]),
+        sortLabel: 'Newest customers',
       }),
     );
 
     expect(rendered).toContain('No verified production booking');
     expect(rendered).toContain('6 unverified or non-production records excluded');
+    expect(rendered).toContain('No open booking · No app activity');
+    expect(rendered).not.toContain('No booking · No app activity');
     expect(rendered).not.toContain('0 completed · 6 total');
+    expect(classNamesIn(
+      CustomersTableSection({
+        allCustomerCount: 1,
+        filters: buildFilters({ segment: 'usage-new-unbooked', view: 'all' }),
+        pagination: pagination([{ ...buildRow(), bookingCount: 6, completedBookings: 0, lastSeenAt: null }]),
+        sortLabel: 'Newest customers',
+      }),
+    )).toContain('vuexy-customer-booking-cell is-usage-new-unbooked');
+    expect(globalsCss).toContain('.vuexy-customer-booking-cell.is-usage-new-unbooked strong {');
+    expect(globalsCss).toContain('white-space: normal;');
   });
 });
 

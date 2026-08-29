@@ -121,7 +121,7 @@ npm.cmd run verify:local
   - `components/admin-surface-css.spec`: parser matches a focus rule instead of the expected grid rule.
   - Admin navigation: stale Finance company-bank expectation.
   - Finance closeout: expected 70d while current output is 72d.
-- `npm.cmd run verify:local`: attempted and failed on repository-wide pre-existing gates, including setup-doctor external-copy markers, final-authority Operations Policy markers, Vietnam Bangkok wording, notification retry contract, API domain smoke assertion, missing Supabase `FINANCE_EVIDENCE`, the three Admin failures above, and existing finance-approver release blockers.
+- `npm.cmd run verify:local`: attempted and failed on repository-wide pre-existing gates, including setup-doctor external-copy markers, final-authority Operations Policy markers, noncanonical Vietnam timezone wording, notification retry contract, API domain smoke assertion, missing Supabase `FINANCE_EVIDENCE`, the three Admin failures above, and existing finance-approver release blockers.
 - Impeccable detector: exited 1 with six warnings in unrelated shared CSS selectors; no Marketing component/scoped selector finding.
 
 These failures were not weakened, suppressed, or modified as part of this focused remediation.

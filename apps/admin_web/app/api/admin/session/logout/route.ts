@@ -33,17 +33,15 @@ export async function POST(request: Request) {
         { headers: NO_STORE_HEADERS, status: sessionEnded ? 200 : 503 },
       );
 
-  if (sessionEnded) {
-    response.cookies.set({
-      httpOnly: true,
-      maxAge: 0,
-      name: adminWebSessionCookieName(),
-      path: '/',
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      value: '',
-    });
-  }
+  response.cookies.set({
+    httpOnly: true,
+    maxAge: 0,
+    name: adminWebSessionCookieName(),
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    value: '',
+  });
 
   return response;
 }

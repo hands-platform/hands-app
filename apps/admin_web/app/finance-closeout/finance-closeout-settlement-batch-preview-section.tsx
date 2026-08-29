@@ -74,15 +74,24 @@ export function FinanceCloseoutSettlementBatchPreviewSection({
                 </StatusBadge>
                 <span>{repairModeLabel(preview.repairMode)}</span>
                 <span className="muted">{primaryReviewReason(preview)}</span>
-                {preview.blockers.length + preview.policyReasons.length > 1 ? (
+                {financeCloseoutSettlementReviewReasons(preview).length > 1 ? (
                   <details className="finance-closeout-comparison-details">
                     <summary>All review reasons</summary>
                     <ul>
-                      {preview.blockers.map((blocker) => (
-                        <li key={blocker.code}>{blocker.message}</li>
+                      {financeCloseoutSettlementReviewReasons(preview).map((reason) => (
+                        <li key={reason.key}>{reason.message}</li>
                       ))}
-                      {preview.policyReasons.map((reason, index) => (
-                        <li key={`${preview.policyExceptionCodes[index] ?? 'policy'}-${index}`}>{reason}</li>
+                    </ul>
+                  </details>
+                ) : null}
+                {preview.blockers.length || preview.policyReasons.length ? (
+                  <details className="finance-closeout-comparison-details">
+                    <summary>Technical details</summary>
+                    <ul>
+                      {financeCloseoutSettlementReviewReasons(preview).map((reason) => (
+                        <li key={`technical-${reason.key}`}>
+                          <code>{reason.codes.join(' · ')}</code> · {reason.message}
+                        </li>
                       ))}
                     </ul>
                   </details>
@@ -179,11 +188,37 @@ function partnerLabel(preview: AdminBookingSettlementGapRepairPreview) {
 }
 
 function primaryReviewReason(preview: AdminBookingSettlementGapRepairPreview) {
-  return (
-    preview.blockers[0]?.message ||
-    preview.policyReasons[0] ||
-    'Technical and policy evidence passed.'
-  );
+  return financeCloseoutSettlementReviewReasons(preview)[0]?.message ?? 'Technical and policy evidence passed.';
+}
+
+export function financeCloseoutSettlementReviewReasons(
+  preview: Pick<
+    AdminBookingSettlementGapRepairPreview,
+    'blockers' | 'policyExceptionCodes' | 'policyReasons'
+  >,
+) {
+  const reasons = [
+    ...preview.blockers.map((blocker) => ({ code: blocker.code, message: blocker.message })),
+    ...preview.policyReasons.map((message, index) => ({
+      code: preview.policyExceptionCodes[index] ?? `POLICY_REASON_${index + 1}`,
+      message,
+    })),
+  ];
+  const deduplicated = new Map<string, { codes: string[]; key: string; message: string }>();
+  for (const reason of reasons) {
+    const normalizedMessage = reason.message.trim().replace(/\s+/gu, ' ').toLocaleLowerCase('en');
+    const existing = deduplicated.get(normalizedMessage);
+    if (existing) {
+      if (!existing.codes.includes(reason.code)) existing.codes.push(reason.code);
+      continue;
+    }
+    deduplicated.set(normalizedMessage, {
+      codes: [reason.code],
+      key: `${reason.code}:${normalizedMessage}`,
+      message: reason.message.trim().replace(/\s+/gu, ' '),
+    });
+  }
+  return Array.from(deduplicated.values());
 }
 
 function repairModeLabel(mode: AdminBookingSettlementGapRepairPreview['repairMode']) {

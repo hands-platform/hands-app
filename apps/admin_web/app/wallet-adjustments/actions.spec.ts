@@ -193,12 +193,49 @@ describe('wallet adjustment server actions', () => {
     formData.set('operationalCause', 'Confirmed customer support case');
     formData.set('expectedCorrection', 'Credit the approved compensation once');
     formData.set('monthlyPeriod', '2026-08');
-    formData.set('redirectTo', '/customers/customer-1#customer-wallet-adjustment-request');
+    formData.set(
+      'redirectTo',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai#customer-wallet-adjustment-request',
+    );
 
     await createManualWalletAdjustment(formData);
 
     expect(mockedRedirect).toHaveBeenCalledWith(
-      '/customers/customer-1?walletAdjustmentNotice=requested#customer-wallet-adjustment-request',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&walletAdjustmentNotice=requested#customer-wallet-adjustment-request',
+    );
+  });
+
+  it('preserves the customer list return on wallet validation failure', async () => {
+    const formData = validPartnerForm();
+    formData.set('ownerType', 'CUSTOMER');
+    formData.set('ownerId', 'customer-1');
+    formData.set('amount', '0');
+    formData.set(
+      'redirectTo',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai#customer-wallet-adjustment-request',
+    );
+
+    await createManualWalletAdjustment(formData);
+
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&walletAdjustmentNotice=failed#customer-wallet-adjustment-request',
+    );
+  });
+
+  it.each([
+    'https://evil.example/customers/customer-1',
+    '//evil.example/customers/customer-1',
+    '/customers\\customer-1',
+  ])('falls back to the customer directory for an unsafe wallet redirect: %s', async (redirectTo) => {
+    const formData = validPartnerForm();
+    formData.set('ownerType', 'CUSTOMER');
+    formData.set('ownerId', 'customer-1');
+    formData.set('redirectTo', redirectTo);
+
+    await createManualWalletAdjustment(formData);
+
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/customers/customer-1?returnTo=%2Fcustomers&walletAdjustmentNotice=requested#customer-wallet-adjustment-request',
     );
   });
 

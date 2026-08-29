@@ -33,6 +33,7 @@ describe('admin operator permission catalog', () => {
       'NOTIFICATIONS_PUSH',
       'NOTIFICATIONS_DELIVERY',
       'NOTIFICATIONS_RETRY',
+      'NOTIFICATIONS_INCIDENTS',
       'SYSTEM_SERVICES',
       'SYSTEM_COUPONS',
       'SYSTEM_ADMIN_OPERATORS',

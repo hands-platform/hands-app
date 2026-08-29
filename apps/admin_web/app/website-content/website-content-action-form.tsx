@@ -16,15 +16,24 @@ type WebsiteContentAction = (
 export function WebsiteContentActionForm({
   action,
   children,
+  disabled = false,
+  fieldsClassName,
   submitLabel,
 }: {
   action: WebsiteContentAction;
   children: ReactNode;
+  disabled?: boolean;
+  fieldsClassName?: string;
   submitLabel: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const errorRef = useRef<HTMLDivElement>(null);
   const fieldErrors = state.fieldErrors ?? {};
+  const formDisabled = disabled || !Children.toArray(children).some((child) => {
+    if (!isValidElement(child)) return false;
+    const props = child.props as { disabled?: boolean; name?: string; type?: string };
+    return Boolean(props.name) && props.type !== 'hidden' && props.disabled !== true;
+  });
 
   useEffect(() => {
     if (state.status !== 'error') return;
@@ -64,11 +73,11 @@ export function WebsiteContentActionForm({
           </div>
         </AdminNoticeCard>
       ) : null}
-      <fieldset className="website-content-action-fields form-grid-wide" disabled={pending}>
+      <fieldset className={`website-content-action-fields form-grid-wide${fieldsClassName ? ` ${fieldsClassName}` : ''}`} disabled={pending || formDisabled}>
         {fields}
       </fieldset>
       <AdminFormActionRow>
-        <AdminFormControlButton className="button-primary" disabled={pending} type="submit">
+        <AdminFormControlButton className="button-primary" disabled={pending || formDisabled} type="submit">
           {pending ? 'Saving…' : submitLabel}
         </AdminFormControlButton>
       </AdminFormActionRow>

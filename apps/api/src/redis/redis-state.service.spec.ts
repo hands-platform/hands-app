@@ -288,6 +288,23 @@ describe('RedisStateService rate-limit buckets', () => {
     redis.del.mockReset().mockResolvedValue(1);
   });
 
+  it('increments one shared Redis key and preserves its original window atomically', async () => {
+    redis.eval.mockResolvedValue([5, 42_000]);
+    const service = createService();
+
+    await expect(
+      service.consumeRateLimit('admin-reauthentication:admin-1:session-1', 15 * 60_000),
+    ).resolves.toMatchObject({ count: 5 });
+
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining("local count = redis.call('INCR', KEYS[1])"),
+      1,
+      'rate-limit:admin-reauthentication:admin-1:session-1',
+      15 * 60_000,
+    );
+    expect(redis.eval.mock.calls[0]?.[0]).toContain("if count == 1 or ttl < 0 then");
+  });
+
   it('clears only the requested namespaced rate-limit bucket', async () => {
     const service = createService();
 

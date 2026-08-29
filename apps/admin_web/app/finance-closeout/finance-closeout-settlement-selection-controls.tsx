@@ -73,14 +73,18 @@ export function FinanceCloseoutSettlementSelectionForm({
   );
 }
 
-export function FinanceCloseoutSettlementSelectionAction() {
+export function FinanceCloseoutSettlementSelectionAction({
+  statusId = 'settlement-comparison-selection-status',
+}: {
+  readonly statusId?: string;
+} = {}) {
   const { selectedIds } = useSettlementSelection();
   const selectedCount = selectedIds.size;
 
   return (
     <>
       <AdminFormControlButton
-        aria-describedby="settlement-comparison-selection-status"
+        aria-describedby={statusId}
         className="button-secondary"
         disabled={selectedCount === 0}
         type="submit"
@@ -90,7 +94,7 @@ export function FinanceCloseoutSettlementSelectionAction() {
       <span
         aria-live="polite"
         className="muted finance-closeout-selection-status"
-        id="settlement-comparison-selection-status"
+        id={statusId}
       >
         Select up to {MAX_SETTLEMENT_COMPARISON_SELECTION} records. {selectedCount} selected.
       </span>

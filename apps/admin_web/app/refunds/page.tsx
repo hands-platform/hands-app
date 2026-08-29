@@ -35,7 +35,7 @@ const REFUND_PAGE_SIZE = 10;
 const REFUND_PAGE_SIZE_MAX = 50;
 const REFUND_RESET_HREF = DEFAULT_REFUND_QUEUE_HREF;
 
-export const metadata: Metadata = { title: 'Refunds | HANDS Admin' };
+export const metadata: Metadata = { title: 'Refunds' };
 
 const EMPTY_REFUND_QUEUE_META: AdminRefundQueueMeta = {
   completedCount: 0,
@@ -102,6 +102,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
           }
           oldestOpenHref={refundHref({ ...filters, page: 1, review: 'open', sla: 'all', sort: 'oldest' })}
           otherReview={meta.reviewRequiredCount}
+          otherReviewHref={refundHref({ ...filters, page: 1, review: 'other', sla: 'all' })}
           reconciliationRequired={meta.stateMismatchCount}
           reconciliationHref={refundHref({ ...filters, page: 1, review: 'state-mismatch', sla: 'all' })}
           refreshHref={currentHref}
@@ -119,6 +120,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
       <RefundFilterBoardSection
         ageCounts={meta.queueAgeCounts}
         ageHref={(age) => refundHref({ ...filters, age, page: 1 })}
+        clearCustomerScopeHref={refundHref({ ...filters, customerProfileId: '', page: 1 })}
         filters={filters}
         queueSla={meta.queueSla}
         resetHref={REFUND_RESET_HREF}
@@ -222,8 +224,15 @@ function buildRefundTableRows(refunds: readonly AdminRefundOperationsRow[], retu
   return refunds.map((refund) => {
     const metadata = refundMetadata(refund.metadata);
     const checklistRows = refundChecklist(refund, metadata);
-    const checklistCompleted = checklistRows.filter((row) => row.pillClass === 'pill-success').length;
-    const blockerCount = checklistRows.filter((row) => row.pillClass === 'pill-danger').length;
+    const requiredRows = checklistRows.filter((row) => row.required);
+    const checklistCompleted = requiredRows.filter((row) => row.pillClass === 'pill-success').length;
+    const notRequiredCount = checklistRows.length - requiredRows.length;
+    const actionBlockerCount = checklistRows.filter(
+      (row) => row.pillClass === 'pill-danger' && row.missingCategory === 'action-blocker',
+    ).length;
+    const historicalGapCount = checklistRows.filter(
+      (row) => row.pillClass === 'pill-danger' && row.missingCategory === 'historical-evidence',
+    ).length;
     const customerProfileId = refund.booking?.customerProfile?.id;
     const action = refundPrimaryAction(refund, returnTo);
 
@@ -243,10 +252,17 @@ function buildRefundTableRows(refunds: readonly AdminRefundOperationsRow[], retu
         refund.booking?.customerProfile?.user?.fullName ??
         refund.booking?.customerProfile?.user?.phone ??
         'Customer not included',
-      evidenceBlockerLabel: blockerCount > 0
-        ? `${blockerCount} control gap${blockerCount === 1 ? '' : 's'}`
-        : 'No control gaps in the current record',
-      evidenceLabel: `${checklistCompleted}/${checklistRows.length} control facts available`,
+      evidenceBlockerLabel: [
+        actionBlockerCount > 0
+          ? `${actionBlockerCount} action blocker${actionBlockerCount === 1 ? '' : 's'}`
+          : 'No action blockers',
+        historicalGapCount > 0
+          ? `${historicalGapCount} historical evidence item${historicalGapCount === 1 ? '' : 's'} unavailable`
+          : 'Historical evidence complete',
+      ].join(' · '),
+      evidenceLabel: `${checklistCompleted}/${requiredRows.length} required facts available${
+        notRequiredCount > 0 ? ` · ${notRequiredCount} not required` : ''
+      }`,
       id: refund.id,
       opsHint: refund.nextAction,
       opsTone: refundOpsTone(refund),
@@ -298,6 +314,7 @@ function refundChecklist(
             metadata.requestedAt ? `requested ${formatDateTime(metadata.requestedAt)}` : null,
           ].filter(Boolean).join(' · ')
         : 'Request source, maker, and request time are not recorded in refund metadata.',
+      'historical-evidence',
     ),
     gatewayExpected
       ? evidenceCheck(
@@ -311,13 +328,16 @@ function refundChecklist(
           detail: `${refund.payment?.method ?? 'This payment method'} does not require gateway callback evidence.`,
           label: 'Payment channel evidence',
           pillClass: 'pill-neutral',
+          required: false,
           status: 'Not required',
         },
     refund.stateMismatchReason
       ? {
           detail: refund.stateMismatchReason,
           label: 'State alignment',
+          missingCategory: 'action-blocker',
           pillClass: 'pill-danger',
+          required: true,
           status: 'Mismatch',
         }
       : evidenceCheck(
@@ -328,11 +348,18 @@ function refundChecklist(
   ];
 }
 
-function evidenceCheck(label: string, complete: boolean, detail: string): RefundChecklistRow {
+function evidenceCheck(
+  label: string,
+  complete: boolean,
+  detail: string,
+  missingCategory: RefundChecklistRow['missingCategory'] = 'action-blocker',
+): RefundChecklistRow {
   return {
     detail,
     label,
+    missingCategory: complete ? undefined : missingCategory,
     pillClass: complete ? 'pill-success' : 'pill-danger',
+    required: true,
     status: complete ? 'Available' : 'Missing',
   };
 }
@@ -440,6 +467,7 @@ function readRefundReview(value: string | string[] | undefined) {
     review === 'requested' ||
     review === 'processing' ||
     review === 'state-mismatch' ||
+    review === 'other' ||
     review === 'completed' ||
     review === 'rejected'
     ? review

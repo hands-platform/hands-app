@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
 import type { AdminPaymentActionDecision, AdminPaymentEvidenceSummary } from '../../lib/admin-api';
-import { shortId } from '../../lib/admin-format';
+import { formatMoney, shortId } from '../../lib/admin-format';
 import type { StatusBadgeTone } from '../../components/status-badge';
+import { paymentProviderReferenceCopy } from './payment-method-copy';
 
 export type PaymentConfirmationAction = 'capture' | 'refund' | 'release' | 'sync';
 
@@ -12,7 +13,11 @@ export type PaymentActionConfirmation = {
   readonly confirmLabel: string;
   readonly description: string;
   readonly disabled: boolean;
-  readonly facts: readonly { readonly label: string; readonly value: string }[];
+  readonly facts: readonly {
+    readonly format?: 'datetime';
+    readonly label: string;
+    readonly value: string | null;
+  }[];
   readonly idempotencyKey: string;
   readonly paymentId: string;
   readonly policyVersion: string;
@@ -56,11 +61,14 @@ export function paymentActionConfirmHref(
   action: PaymentConfirmationAction,
   returnTo = '/payments',
 ) {
-  const params = new URLSearchParams({
-    confirm: action,
-    paymentId,
-    returnTo: paymentReturnTo(returnTo),
-  });
+  const safeReturnTo = paymentReturnTo(returnTo);
+  const returnUrl = new URL(safeReturnTo, 'http://admin.local');
+  const params = returnUrl.pathname === '/payments'
+    ? new URLSearchParams(returnUrl.search)
+    : new URLSearchParams();
+  params.set('confirm', action);
+  params.set('paymentId', paymentId);
+  params.set('returnTo', safeReturnTo);
   return `/payments?${params.toString()}`;
 }
 
@@ -120,12 +128,12 @@ function paymentConfirmationFacts(
     { label: 'Amount / method', value: `${formatPaymentAmount(payment)} · ${payment.method?.replaceAll('_', ' ') ?? 'Unknown method'}` },
     { label: 'Before', value: `Payment ${beforePayment} · Booking ${bookingStatus}` },
     { label: 'Expected after', value: expectedPaymentActionResult(action, beforePayment, bookingStatus) },
-    { label: 'Gateway reference', value: payment.providerRef ?? 'Not recorded' },
+    { label: 'Gateway reference', value: paymentProviderReferenceCopy(payment.method, payment.providerRef) },
     { label: 'Evidence', value: payment.evidence ? `${payment.evidence.label} · ${payment.evidence.reason}` : 'Unavailable' },
-    { label: 'Evidence verified', value: payment.evidence?.verifiedAt ?? 'Not recorded' },
+    { format: 'datetime' as const, label: 'Evidence verified', value: payment.evidence?.verifiedAt ?? null },
     { label: 'Required evidence', value: decision?.requiredEvidence.join(', ') || 'None specified' },
     { label: 'Policy', value: decision?.policyVersion ?? 'Unavailable' },
-    { label: 'Policy evaluated', value: payment.evaluatedAt ?? 'Not recorded' },
+    { format: 'datetime' as const, label: 'Policy evaluated', value: payment.evaluatedAt ?? null },
     { label: 'Actor', value: 'Current signed-in Admin · recorded by the server' },
   ];
 }
@@ -158,5 +166,5 @@ export function paymentReturnTo(value: unknown) {
 }
 
 function formatPaymentAmount(payment: PaymentActionRecord) {
-  return `${payment.amount.toLocaleString('en-US')} ${payment.currency}`;
+  return formatMoney(payment.amount, payment.currency);
 }

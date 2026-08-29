@@ -7,6 +7,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormActionRow,
+  AdminFormCheckbox,
   AdminFormDateTime,
   AdminFormGrid,
   AdminFormInput,
@@ -19,9 +20,9 @@ import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   createProviderReport,
-  createProviderSanction,
   updateProviderReport,
 } from '../../partner-controls/actions';
+import { PartnerDetailAccountControlForm } from './partner-detail-account-control-form';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -67,6 +68,7 @@ export type PartnerAccountControlRow = {
 type PartnerDetailReportsControlsSectionProps = {
   readonly accountControls: readonly PartnerAccountControlRow[];
   readonly payoutHold?: PartnerReportControlPayoutHold | null;
+  readonly partnerName: string;
   readonly providerId: string;
   readonly reports: readonly PartnerReportRow[];
   readonly reportsDeskHref: string;
@@ -75,6 +77,7 @@ type PartnerDetailReportsControlsSectionProps = {
 export function PartnerDetailReportsControlsSection({
   accountControls,
   payoutHold,
+  partnerName,
   providerId,
   reports,
   reportsDeskHref,
@@ -179,7 +182,11 @@ export function PartnerDetailReportsControlsSection({
           </AdminTableScroll>
           <PartnerDetailVuexyTableFooter rowCount={payoutHold ? 1 : 0} />
         </div>
-        <AdminFormGrid action={createProviderSanction}>
+        <PartnerDetailAccountControlForm
+          confirmLabel="Apply account control"
+          partnerId={providerId}
+          partnerName={partnerName}
+        >
           <input type="hidden" name="providerProfileId" value={providerId} />
           <AdminFormSelect
             defaultValue="PAYOUT_HOLD"
@@ -203,11 +210,19 @@ export function PartnerDetailReportsControlsSection({
             placeholder="Clear operator reason, visible in audit and payout controls"
             required
           />
+          <AdminFormCheckbox
+            className="full-span"
+            label="No expiry"
+            name="noExpiry"
+            value="true"
+          >
+            No expiry · keep active until an operator lifts it
+          </AdminFormCheckbox>
           <AdminFormActionRow className="actions full-span">
             <AdminFormControlButton type="submit">Apply account control</AdminFormControlButton>
             <AdminFormControlLink href="/payouts">Open payouts</AdminFormControlLink>
           </AdminFormActionRow>
-        </AdminFormGrid>
+        </PartnerDetailAccountControlForm>
       </AdminTaskCard>
       <AdminDetailGrid>
         <div>
@@ -311,7 +326,7 @@ export function PartnerDetailReportsControlsSection({
           <PartnerDetailVuexyTableFooter rowCount={accountControls.length} />
         </div>
       </AdminDetailGrid>
-      <PartnerReportCommandPanel providerId={providerId} reports={reports} />
+      <PartnerReportCommandPanel partnerName={partnerName} providerId={providerId} reports={reports} />
     </PartnerDetailVuexyTablePanel>
   );
 }
@@ -332,9 +347,11 @@ function ControlTimeline({
 }
 
 function PartnerReportCommandPanel({
+  partnerName,
   providerId,
   reports,
 }: {
+  readonly partnerName: string;
   readonly providerId: string;
   readonly reports: readonly PartnerReportRow[];
 }) {
@@ -384,7 +401,13 @@ function PartnerReportCommandPanel({
               <AdminFormControlButton type="submit">Update report</AdminFormControlButton>
             </AdminFormActionRow>
           </AdminFormGrid>
-          <AdminFormGrid action={createProviderSanction} className="compact-form partner-report-command-form">
+          <PartnerDetailAccountControlForm
+            className="compact-form partner-report-command-form"
+            confirmLabel="Apply linked control"
+            partnerId={providerId}
+            partnerName={partnerName}
+            reportOptions={reportSelectOptions(reports)}
+          >
             <input type="hidden" name="providerProfileId" value={providerId} />
             <AdminFormSelect
               defaultValue={firstReport.id}
@@ -410,10 +433,23 @@ function PartnerReportCommandPanel({
               placeholder="Control reason"
               required
             />
+            <AdminFormDateTime
+              label="Expires at"
+              labelVisibility="visible"
+              name="expiresAt"
+            />
+            <AdminFormCheckbox
+              className="full-span"
+              label="No expiry"
+              name="noExpiry"
+              value="true"
+            >
+              No expiry · keep active until an operator lifts it
+            </AdminFormCheckbox>
             <AdminFormActionRow className="actions full-span">
               <AdminFormControlButton type="submit">Apply linked control</AdminFormControlButton>
             </AdminFormActionRow>
-          </AdminFormGrid>
+          </PartnerDetailAccountControlForm>
         </>
       ) : (
         <ReportsControlsEmptyState message="No report commands are available until a report is recorded." />

@@ -32,9 +32,9 @@ describe('ProviderOnboardingController admin tax policy listing', () => {
     const onboarding = { taxPolicyIntegritySummary: vi.fn().mockReturnValue({ total: 0 }) };
     const controller = new ProviderOnboardingController(onboarding as never);
 
-    controller.taxPolicyIntegritySummary({ id: 'admin-1' } as never);
+    controller.taxPolicyIntegritySummary({ id: 'admin-1' } as never, 'unknown');
 
-    expect(onboarding.taxPolicyIntegritySummary).toHaveBeenCalledWith('admin-1');
+    expect(onboarding.taxPolicyIntegritySummary).toHaveBeenCalledWith('admin-1', { source: 'unknown' });
   });
 
   it('passes exact audit event and evidence source filters to the service', () => {

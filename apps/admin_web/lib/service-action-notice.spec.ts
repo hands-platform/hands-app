@@ -35,8 +35,8 @@ describe('service action notice', () => {
         status: 'saved',
       }),
     ).toMatchObject({
-      actionHref: '/audit-log?target=service_group%3Afoot',
-      actionLabel: 'Open audit change set',
+      actionHref: '/services?evidence=foot',
+      actionLabel: 'Open service change evidence',
       title: 'Service group published',
     });
   });

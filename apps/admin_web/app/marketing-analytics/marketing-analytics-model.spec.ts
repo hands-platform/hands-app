@@ -14,6 +14,7 @@ import {
   marketingAnalyticsSpendLedgerPageHref,
   marketingAnalyticsSpendLedgerPaging,
   marketingSpendDailyApiPath,
+  marketingSpendMissingDateHref,
   marketingSpendPanelHref,
   normalizeMarketingSpendDraft,
   normalizeMarketingAnalyticsFilters,
@@ -279,6 +280,26 @@ describe('marketing analytics model', () => {
     expect(marketingAnalyticsSpendLedgerPageHref(filters, 2)).toBe(
       '/marketing-analytics?range=30d&view=campaigns&source=google&platform=android&regionCode=hcm&campaignId=launch-hcm&spendPage=2#marketing-spend-ledger',
     );
+  });
+
+  it('prefills only the oldest missing spend date while preserving the selected scope', () => {
+    const href = marketingSpendMissingDateHref(
+      {
+        campaignId: 'launch-hcm',
+        platform: 'android',
+        range: '30d',
+        regionCode: 'hcm',
+        source: 'google',
+        view: 'campaigns',
+      },
+      '2026-07-28',
+    );
+
+    expect(href).toBe(
+      '/marketing-analytics?range=30d&view=campaigns&source=google&platform=android&regionCode=hcm&campaignId=launch-hcm&spend=add&spendDate=2026-07-28#marketing-spend-panel',
+    );
+    expect(href).not.toContain('spendSource=');
+    expect(href).not.toContain('spendPlatform=');
   });
 
   it('moves an opened spend editor into the campaigns workspace', () => {

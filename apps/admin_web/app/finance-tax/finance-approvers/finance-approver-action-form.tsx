@@ -9,6 +9,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../../components/admin-inline-notice';
+import { AdminReauthenticateOperatorForm } from '../../../components/admin-reauthenticate-operator-form';
 import type { FinanceApproverActionState } from './actions';
 import {
   FINANCE_APPROVER_FORM_SUCCESS_EVENT,
@@ -24,6 +25,7 @@ type FinanceApproverActionFormProps = {
     previousState: FinanceApproverActionState,
     formData: FormData,
   ) => Promise<FinanceApproverActionState>;
+  readonly approveDisabled?: boolean;
   readonly cancelHref: string;
   readonly children: ReactNode;
   readonly mode: 'decision' | 'request';
@@ -32,6 +34,7 @@ type FinanceApproverActionFormProps = {
 
 export function FinanceApproverActionForm({
   action,
+  approveDisabled = false,
   cancelHref,
   children,
   mode,
@@ -56,7 +59,9 @@ export function FinanceApproverActionForm({
   }
 
   return (
-    <form action={formAction} className="finance-approver-action-form">
+    <>
+      {state.reauthRequired ? <AdminReauthenticateOperatorForm /> : null}
+      <form action={formAction} className="finance-approver-action-form">
       {state.status === 'error' ? (
         <div ref={resultRef} tabIndex={-1}>
           <AdminInlineNotice role="alert" tone="danger">
@@ -116,11 +121,11 @@ export function FinanceApproverActionForm({
               type="submit"
               value="REJECT"
             >
-              Reject request
+              Reject and close request
             </AdminFormControlButton>
             <AdminFormControlButton
               className="button-primary"
-              disabled={pending}
+              disabled={pending || approveDisabled}
               name="decision"
               type="submit"
               value="APPROVE"
@@ -130,7 +135,8 @@ export function FinanceApproverActionForm({
           </>
         )}
       </AdminDrawerActionFooter>
-    </form>
+      </form>
+    </>
   );
 }
 

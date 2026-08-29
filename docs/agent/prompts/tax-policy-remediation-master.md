@@ -569,8 +569,8 @@ blocking references
 필수 조합:
 
 ```text
-Browser Asia/Bangkok + Server UTC
-Browser UTC + Server Asia/Bangkok
+Browser Asia/Ho_Chi_Minh + Server UTC
+Browser UTC + Server Asia/Ho_Chi_Minh
 Browser America/New_York + Server UTC
 Stored Z instant → display → unchanged submit → same Z instant
 Vietnam midnight boundary

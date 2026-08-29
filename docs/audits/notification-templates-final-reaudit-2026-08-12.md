@@ -1,7 +1,7 @@
 # Notification Templates 최종 재감사 보고서
 
 - 감사 대상: `http://localhost:3101/notifications/templates`
-- 감사일: 2026-08-12 (Asia/Bangkok)
+- 감사일: 2026-08-12 (Asia/Ho_Chi_Minh)
 - 화면 기준: 1440px 이상 데스크톱만 검사
 - 제외 범위: 1024px 이하 화면, 모바일·태블릿 반응형
 - 감사 방식: 로그인된 실제 화면 캡처, 키보드 조작, DOM·스타일 확인, API/웹 소스 추적, 로컬 데이터베이스 집계 조회, 관련 테스트 실행

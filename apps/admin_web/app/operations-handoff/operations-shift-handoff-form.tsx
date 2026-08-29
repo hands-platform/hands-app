@@ -9,6 +9,7 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import {
   AdminFormActionRow,
@@ -70,6 +71,7 @@ export function OperationsShiftHandoffForm({
       : effectiveIncomingOperatorId;
   const selectedCount = selectedCaseRefs.length;
   const remainingCount = Math.max(0, openCases.openCount - selectedCount);
+  const hasMatchingOpenCases = openCases.pagination.totalRows > 0;
   const canSend = Boolean(
     outgoingShift.trim() &&
     effectiveIncomingOperatorId &&
@@ -145,93 +147,106 @@ export function OperationsShiftHandoffForm({
         />
       </AdminFormGridFields>
 
-      <div className="operations-handoff-selection-toolbar">
-        <div>
-          <strong>Cases to hand over</strong>
-          <p className="muted">
-            {selectedCount > 0
-              ? `${selectedCount} selected · ${remainingCount} remain open`
-              : `${openCases.openCount} open across your permitted queues`}
-          </p>
-        </div>
-        <AdminFormControlButton
-          className="button-secondary"
-          disabled={openCases.items.length === 0}
-          onClick={() => setSelectedCaseRefs(openCases.items.map(caseRef))}
-          type="button"
-        >
-          Select visible page
-        </AdminFormControlButton>
-      </div>
+      {openCases.openCount > 0 ? (
+        hasMatchingOpenCases ? (
+          <>
+            <div className="operations-handoff-selection-toolbar">
+              <div>
+                <strong>Cases to hand over</strong>
+                <p className="muted">
+                  {selectedCount > 0
+                    ? `${selectedCount} selected · ${remainingCount} remain open`
+                    : `${openCases.openCount} open across your permitted queues`}
+                </p>
+                <p className="muted">
+                  Select visible page selects up to 25 cases. Changing pages clears this selection.
+                </p>
+              </div>
+              <AdminFormControlButton
+                className="button-secondary"
+                disabled={openCases.items.length === 0}
+                onClick={() => setSelectedCaseRefs(openCases.items.map(caseRef))}
+                type="button"
+              >
+                Select visible page
+              </AdminFormControlButton>
+            </div>
 
-      <AdminTableScroll ariaLabel="Selectable open handoff cases">
-        <AdminDataTable
-          className="operations-handoff-case-table"
-          emptyMessage={
-            openCases.openCount === 0
-              ? 'No open cases are waiting for handoff.'
-              : 'No open cases match this search.'
-          }
-          headers={['Select', 'Queue / case', 'Occurred', 'Age / SLA', 'Amount', 'State', 'Owner', 'Action']}
-          rowCount={openCases.items.length}
-        >
-          {openCases.items.map((item) => {
-            const value = caseRef(item);
-            return (
-              <tr key={value}>
-                <td>
-                  <AdminFormCheckbox
-                    checked={selectedCaseRefs.includes(value)}
-                    label={`Select ${item.queueLabel} ${item.caseId}`}
-                    onChange={(event) => toggleCase(value, event.target.checked)}
-                  />
-                </td>
-                <td>
-                  <strong>{item.queueLabel}</strong>
-                  <span className="muted admin-table-cell-secondary">{item.caseId}</span>
-                </td>
-                <td>{formatDateTime(item.occurredAt)}</td>
-                <td>
-                  {ageLabel(item.ageMinutes)} / {item.slaMinutes}m
-                </td>
-                <td>{item.currency ? formatMoney(item.amount, item.currency) : '—'}</td>
-                <td>
-                  <StatusBadge tone={item.overdue ? 'danger' : 'warning'}>{item.state}</StatusBadge>
-                </td>
-                <td>{item.owner || 'Unassigned'}</td>
-                <td>
-                  <a className="text-link" href={item.href}>{`Open ${item.queueLabel.toLowerCase()}`}</a>
-                </td>
-              </tr>
-            );
-          })}
-        </AdminDataTable>
-      </AdminTableScroll>
+            <AdminTableScroll ariaLabel="Selectable open handoff cases">
+              <AdminDataTable
+                className="operations-handoff-case-table"
+                emptyMessage={null}
+                headers={['Select', 'Queue / case', 'Occurred', 'Age / SLA', 'Amount', 'State', 'Action']}
+                rowCount={openCases.items.length}
+              >
+                {openCases.items.map((item) => {
+                  const value = caseRef(item);
+                  return (
+                    <tr key={value}>
+                      <td>
+                        <AdminFormCheckbox
+                          checked={selectedCaseRefs.includes(value)}
+                          label={`Select ${item.queueLabel} ${item.caseId}`}
+                          onChange={(event) => toggleCase(value, event.target.checked)}
+                        />
+                      </td>
+                      <td>
+                        <strong>{item.queueLabel}</strong>
+                        <span className="muted admin-table-cell-secondary">{item.caseId}</span>
+                      </td>
+                      <td>{formatDateTime(item.occurredAt)}</td>
+                      <td>
+                        {ageLabel(item.ageMinutes)} / {item.slaMinutes}m
+                      </td>
+                      <td>{item.currency ? formatMoney(item.amount, item.currency) : '—'}</td>
+                      <td>
+                        <StatusBadge tone={item.overdue ? 'danger' : 'warning'}>{item.state}</StatusBadge>
+                      </td>
+                      <td>
+                        <a className="text-link" href={item.href}>{`Open ${item.queueLabel.toLowerCase()}`}</a>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </AdminDataTable>
+            </AdminTableScroll>
 
-      <AdminTablePaginationFooter
-        activePage={openCases.pagination.page}
-        ariaLabel="Open handoff cases pagination"
-        from={
-          openCases.items.length ? (openCases.pagination.page - 1) * openCases.pagination.pageSize + 1 : 0
-        }
-        itemLabel="open cases"
-        onPageChange={(page) => {
-          if (
-            selectedCaseRefs.length > 0 &&
-            !window.confirm('Changing pages clears the cases selected on this page. Continue?')
-          )
-            return;
-          setSelectedCaseRefs([]);
-          router.push(openCasePageHref(openCaseBaseHref, page));
-        }}
-        to={
-          openCases.items.length
-            ? (openCases.pagination.page - 1) * openCases.pagination.pageSize + openCases.items.length
-            : 0
-        }
-        totalPages={openCases.pagination.totalPages}
-        totalRows={openCases.pagination.totalRows}
-      />
+            <AdminTablePaginationFooter
+              activePage={openCases.pagination.page}
+              ariaLabel="Open handoff cases pagination"
+              from={
+                openCases.items.length
+                  ? (openCases.pagination.page - 1) * openCases.pagination.pageSize + 1
+                  : 0
+              }
+              itemLabel="open cases"
+              onPageChange={(page) => {
+                if (
+                  selectedCaseRefs.length > 0 &&
+                  !window.confirm('Changing pages clears the cases selected on this page. Continue?')
+                )
+                  return;
+                setSelectedCaseRefs([]);
+                router.push(openCasePageHref(openCaseBaseHref, page));
+              }}
+              to={
+                openCases.items.length
+                  ? (openCases.pagination.page - 1) * openCases.pagination.pageSize +
+                    openCases.items.length
+                  : 0
+              }
+              totalPages={openCases.pagination.totalPages}
+              totalRows={openCases.pagination.totalRows}
+            />
+          </>
+        ) : (
+          <AdminEmptyState
+            framed
+            message="Change or reset the filters to return to the full open queue."
+            title="No open cases match the current filters."
+          />
+        )
+      ) : null}
 
       <details className="operations-handoff-owner-override">
         <summary>Advanced follow-up owner override</summary>
@@ -294,6 +309,11 @@ export function OperationsShiftHandoffForm({
           </p>
           <p className="muted">{note || 'No handoff note for a clear queue.'}</p>
         </div>
+      ) : null}
+      {isPreviewing && remainingCount > 0 ? (
+        <AdminInlineNotice role="status" tone="warning">
+          {remainingCount} cases will remain open and require another handoff.
+        </AdminInlineNotice>
       ) : null}
       {actionState ? (
         <AdminInlineNotice

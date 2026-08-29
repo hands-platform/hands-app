@@ -58,6 +58,11 @@ function CurrentShiftHandoff(props: CurrentHandoffProps) {
   const assignedTotal = handoffTotal(props.assignedData);
   const waitingTotal = handoffTotal(props.waitingData);
   const queuesAvailable = assignedTotal !== null && waitingTotal !== null;
+  const showNoOpenHandoffs =
+    queuesAvailable &&
+    assignedTotal === 0 &&
+    waitingTotal === 0 &&
+    props.openCases?.openCount !== 0;
 
   return (
     <>
@@ -73,7 +78,7 @@ function CurrentShiftHandoff(props: CurrentHandoffProps) {
           <HandoffSummaryValue label="Waiting for others" value={waitingTotal} />
           <HandoffSummaryValue label="Open cases" value={props.openCases?.openCount ?? null} />
         </div>
-        {queuesAvailable && assignedTotal === 0 && waitingTotal === 0 ? (
+        {showNoOpenHandoffs ? (
           <AdminEmptyState
             framed
             message="No open handoff is assigned to you or waiting for another operator."
@@ -101,7 +106,7 @@ function CurrentShiftHandoff(props: CurrentHandoffProps) {
         />
       ) : null}
 
-      {props.filterContent}
+      {props.openCases?.openCount === 0 ? null : props.filterContent}
       <AdminSection
         description="Choose who receives the shift and which open cases need follow-up."
         id="create-shift-handoff"
@@ -295,9 +300,6 @@ function ShiftHandoffHistory({ data, historyBaseHref }: HandoffHistoryProps) {
           message="No handoff records match the current filters."
           title="No handoff history"
         />
-        <AdminFormControlLink className="button-secondary" href="/operations-handoff?view=history">
-          Reset filters
-        </AdminFormControlLink>
       </AdminSection>
     );
   }

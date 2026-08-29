@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   AdminOperatorPermissionCategory,
+  AdminAuditActorType,
   BookingStatus,
   PaymentMethod,
   PaymentStatus,
@@ -79,6 +80,16 @@ type BackgroundQueueDefinition = {
 
 type BackgroundQueueStatus = 'ATTENTION' | 'HEALTHY' | 'RUNNING' | 'STALE';
 type BackgroundFailureReviewStatus = 'ACKNOWLEDGED' | 'NEW' | 'RESOLVED' | 'UNTRACKED';
+type BackgroundDataAvailability = 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
+type BackgroundFailureReviewCoverage = 'COMPLETE' | 'INCOMPLETE' | 'UNAVAILABLE';
+type BackgroundQueueSnapshot = Awaited<ReturnType<typeof backgroundQueueSnapshot>>;
+
+const BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT = {
+  actor: { select: { email: true, fullName: true, id: true } },
+  actorKey: true,
+  actorLabelSnapshot: true,
+  actorType: true,
+} as const;
 
 const FAILED_JOB_LIMIT_PER_QUEUE = 5;
 const FAILED_JOB_LIST_DEFAULT_PAGE_SIZE = 10;
@@ -157,40 +168,90 @@ export class AdminBackgroundJobsService {
     const generatedAt = new Date();
     const definitions = this.queueDefinitions();
     const queues = await Promise.all(
-      definitions.map((definition) => backgroundQueueSnapshot(definition, generatedAt)),
+      definitions.map(async (definition) => {
+        try {
+          return await backgroundQueueSnapshot(definition, generatedAt);
+        } catch {
+          return unavailableBackgroundQueueSnapshot(definition);
+        }
+      }),
     );
     const failedJobs = queues
       .flatMap((queue) => queue.failedJobs)
       .sort((left, right) => dateTimeMs(right.failedAt) - dateTimeMs(left.failedAt));
-    const reviewedFailedJobs = await this.withFailureReviewState(failedJobs);
-    const reviewedQueues = queues.map((queue) => ({
-      ...queue,
-      status: backgroundQueueStatus({
-        active: queue.counts.active,
-        expectedSchedulerPresent: queue.expectedSchedulerPresent,
-        failed: queueHasUnresolvedFailure(queue, reviewedFailedJobs) ? 1 : 0,
-        stale: queue.openJobLagMs > queue.staleAfterMs,
-        workers: queue.workers,
-      }),
-    }));
-    const [failurePage, healthEventPage, recurringIncidentPage, recurringIncidentSummary] = await Promise.all([
-      this.failurePage(definitions, reviewedQueues, input, generatedAt),
-      this.queueHealthEventPage(input, generatedAt),
-      this.recurringIncidentPage(input, generatedAt),
-      this.recurringIncidentSummary(input, generatedAt),
+    const queueReviewResult = await this.failureReviewState(failedJobs);
+    const reviewedFailedJobs = queueReviewResult.items;
+    const reviewedQueues = queues.map((queue) => {
+      const unresolvedFailureCount = queueUnresolvedFailureCount(queue.name, reviewedFailedJobs);
+      const failureReviewCoverage = backgroundFailureReviewCoverage(
+        queue,
+        queueReviewResult.availability,
+      );
+      return {
+        ...queue,
+        failureReviewCoverage,
+        unresolvedFailureCount,
+        status: backgroundQueueStatus({
+          active: queue.counts.active,
+          expectedSchedulerPresent: queue.expectedSchedulerPresent,
+          failed: unresolvedFailureCount,
+          stale: queue.openJobLagMs > queue.staleAfterMs,
+          workers: queue.workers,
+        }),
+      };
+    });
+    const [failureEvidence, healthEventEvidence, recurringIncidentEvidence, recurringSummaryEvidence] = await Promise.all([
+      this.failurePage(definitions, reviewedQueues, input, generatedAt)
+        .then((data) => ({ availability: 'AVAILABLE' as const, data }))
+        .catch(() => ({ availability: 'UNAVAILABLE' as const, data: unavailableFailurePage(input) })),
+      this.queueHealthEventPage(input, generatedAt)
+        .then((data) => ({ availability: 'AVAILABLE' as const, data }))
+        .catch(() => ({ availability: 'UNAVAILABLE' as const, data: unavailableHealthEventPage(input) })),
+      this.recurringIncidentPage(input, generatedAt)
+        .then((data) => ({ availability: 'AVAILABLE' as const, data }))
+        .catch(() => ({ availability: 'UNAVAILABLE' as const, data: unavailableRecurringIncidentPage(input) })),
+      this.recurringIncidentSummary(input, generatedAt)
+        .then((data) => ({ availability: 'AVAILABLE' as const, data }))
+        .catch(() => ({ availability: 'UNAVAILABLE' as const, data: unavailableRecurringIncidentSummary() })),
     ]);
+    const failurePage = failureEvidence.data;
+    const healthEventPage = healthEventEvidence.data;
+    const recurringIncidentPage = recurringIncidentEvidence.data;
+    const recurringIncidentSummary = recurringSummaryEvidence.data;
+    const queueAvailability = aggregateQueueAvailability(reviewedQueues);
+    const failureReviewAvailability = queueReviewResult.availability === 'AVAILABLE' &&
+      failurePage.reviewAvailability === 'AVAILABLE'
+      ? 'AVAILABLE' as const
+      : 'UNAVAILABLE' as const;
+    const recurringIncidentAvailability = recurringIncidentEvidence.availability === 'AVAILABLE' &&
+      recurringSummaryEvidence.availability === 'AVAILABLE'
+      ? 'AVAILABLE' as const
+      : 'UNAVAILABLE' as const;
+    const evidenceComplete = queueAvailability === 'AVAILABLE' &&
+      failureReviewAvailability === 'AVAILABLE' &&
+      healthEventEvidence.availability === 'AVAILABLE' &&
+      recurringIncidentAvailability === 'AVAILABLE' &&
+      reviewedQueues.every((queue) => queue.failureReviewCoverage === 'COMPLETE');
 
     return {
+      availability: {
+        failureReviews: failureReviewAvailability,
+        healthEvents: healthEventEvidence.availability,
+        queues: queueAvailability,
+        recurringIncidents: recurringIncidentAvailability,
+      },
       failedJobs: failurePage.items,
       failurePage: failurePage.page,
       generatedAt,
       healthEvents: healthEventPage.items,
       healthEventPage: healthEventPage.page,
-      ok: reviewedQueues.every((queue) => !['ATTENTION', 'STALE'].includes(queue.status)),
+      ok: evidenceComplete && reviewedQueues.every((queue) => !['ATTENTION', 'STALE'].includes(queue.status)),
       queues: reviewedQueues.map((queue) => ({
+        availability: queue.availability,
         counts: queue.counts,
         expectedSchedulerId: queue.expectedSchedulerId,
         expectedSchedulerPresent: queue.expectedSchedulerPresent,
+        failureReviewCoverage: queue.failureReviewCoverage,
         label: queue.label,
         lastCompletedAt: queue.lastCompletedAt,
         lastFailedAt: queue.lastFailedAt,
@@ -202,6 +263,7 @@ export class AdminBackgroundJobsService {
         schedulerCount: queue.schedulerCount,
         staleAfterMs: queue.staleAfterMs,
         status: queue.status,
+        unresolvedFailureCount: queue.unresolvedFailureCount,
         workers: queue.workers,
       })),
       recurringIncidents: recurringIncidentPage.items,
@@ -218,7 +280,7 @@ export class AdminBackgroundJobsService {
     const opened = await this.prisma.adminAuditLog.findFirst({
       where: { action: BACKGROUND_JOB_RECURRING_INCIDENT_OPENED_ACTION, id: incidentId },
       select: {
-        actor: { select: { email: true, fullName: true, id: true } },
+        ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
         createdAt: true,
         id: true,
         metadata: true,
@@ -236,7 +298,7 @@ export class AdminBackgroundJobsService {
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: {
-          actor: { select: { email: true, fullName: true, id: true } },
+          ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
           createdAt: true,
           id: true,
           metadata: true,
@@ -272,7 +334,7 @@ export class AdminBackgroundJobsService {
         take: pageSize,
         select: {
           action: true,
-          actor: { select: { email: true, fullName: true, id: true } },
+          ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
           createdAt: true,
           id: true,
           metadata: true,
@@ -291,7 +353,7 @@ export class AdminBackgroundJobsService {
           orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
           select: {
             action: true,
-            actor: { select: { email: true, fullName: true, id: true } },
+            ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
             createdAt: true,
             metadata: true,
             target: true,
@@ -347,7 +409,7 @@ export class AdminBackgroundJobsService {
           id: true,
           metadata: true,
           target: true,
-          actor: { select: { email: true, fullName: true, id: true } },
+          ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
         },
       }),
     ]);
@@ -387,7 +449,7 @@ export class AdminBackgroundJobsService {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: BACKGROUND_JOB_RECURRING_INCIDENT_FILTER_SCAN_LIMIT,
         select: {
-          actor: { select: { email: true, fullName: true, id: true } },
+          ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
           createdAt: true,
           id: true,
           metadata: true,
@@ -426,7 +488,7 @@ export class AdminBackgroundJobsService {
       skip: (page - 1) * pageSize,
       take: pageSize,
       select: {
-        actor: { select: { email: true, fullName: true, id: true } },
+        ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
         createdAt: true,
         id: true,
         metadata: true,
@@ -468,7 +530,7 @@ export class AdminBackgroundJobsService {
           },
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           select: {
-            actor: { select: { email: true, fullName: true, id: true } },
+            ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
             createdAt: true,
             id: true,
             metadata: true,
@@ -518,7 +580,11 @@ export class AdminBackgroundJobsService {
 
   private async failurePage(
     definitions: BackgroundQueueDefinition[],
-    queues: Array<Awaited<ReturnType<typeof backgroundQueueSnapshot>> & { status: BackgroundQueueStatus }>,
+    queues: Array<BackgroundQueueSnapshot & {
+      failureReviewCoverage: BackgroundFailureReviewCoverage;
+      status: BackgroundQueueStatus;
+      unresolvedFailureCount: number;
+    }>,
     input: BackgroundJobHealthQueryDto,
     generatedAt: Date,
   ) {
@@ -538,15 +604,23 @@ export class AdminBackgroundJobsService {
           FAILED_JOB_LIST_MAX_SCAN_PER_QUEUE,
           Math.max(pageSize + 1, requestedRows * 4),
         );
-    const jobsByQueue = await Promise.all(selectedDefinitions.map(async (definition) => ({
-      jobs: await definition.queue.getJobs('failed', 0, scanLimit - 1, false),
-      queueName: definition.queue.name,
-    })));
-    const reviewed = await this.withFailureReviewState(
+    const jobsByQueue = await Promise.all(selectedDefinitions.map(async (definition) => {
+      try {
+        return {
+          available: true,
+          jobs: await definition.queue.getJobs('failed', 0, scanLimit - 1, false),
+          queueName: definition.queue.name,
+        };
+      } catch {
+        return { available: false, jobs: [], queueName: definition.queue.name };
+      }
+    }));
+    const reviewResult = await this.failureReviewState(
       jobsByQueue
         .flatMap(({ jobs, queueName }) => jobs.map((job) => backgroundFailedJob(queueName, job)))
         .sort((left, right) => dateTimeMs(right.failedAt) - dateTimeMs(left.failedAt)),
     );
+    const reviewed = reviewResult.items;
     const cutoffMs = backgroundFailureRangeCutoff(range, generatedAt);
     const filtered = reviewed.filter((failure) => (
       (!jobIdFilter || failure.id === jobIdFilter) &&
@@ -554,7 +628,8 @@ export class AdminBackgroundJobsService {
       (cutoffMs === null || dateTimeMs(failure.failedAt) >= cutoffMs)
     ));
     const offset = (page - 1) * pageSize;
-    const complete = jobsByQueue.every(({ jobs, queueName }) => {
+    const complete = jobsByQueue.every(({ available, jobs, queueName }) => {
+      if (!available) return false;
       const failedCount = queues.find((queue) => queue.name === queueName)?.counts.failed ?? jobs.length;
       if (jobs.length >= failedCount) return true;
       if (cutoffMs === null || jobs.length === 0) return false;
@@ -571,8 +646,37 @@ export class AdminBackgroundJobsService {
         pageSize,
         scannedCount: reviewed.length,
         totalCount: complete ? filtered.length : null,
+        unavailableQueueNames: jobsByQueue
+          .filter(({ available }) => !available)
+          .map(({ queueName }) => queueName),
       },
+      reviewAvailability: reviewResult.availability,
     };
+  }
+
+  private async failureReviewState<T extends ReturnType<typeof backgroundFailedJob>>(failedJobs: T[]) {
+    try {
+      return {
+        availability: 'AVAILABLE' as const,
+        items: await this.withFailureReviewState(failedJobs),
+      };
+    } catch {
+      return {
+        availability: 'UNAVAILABLE' as const,
+        items: failedJobs.map((failure) => ({
+          ...failure,
+          review: {
+            actor: null,
+            actorKey: null,
+            actorLabelSnapshot: null,
+            actorType: null,
+            reason: null,
+            status: 'UNTRACKED' as const,
+            updatedAt: null,
+          },
+        })),
+      };
+    }
   }
 
   async syncFailureNotifications(now = new Date()) {
@@ -1433,7 +1537,7 @@ export class AdminBackgroundJobsService {
             target: true,
             createdAt: true,
             metadata: true,
-            actor: { select: { id: true, email: true, fullName: true } },
+            ...BACKGROUND_JOB_AUDIT_ATTRIBUTION_SELECT,
           },
         })
       : [];
@@ -1446,6 +1550,9 @@ export class AdminBackgroundJobsService {
         ...failure,
         review: {
           actor: review?.actor ?? null,
+          actorKey: review?.actorKey ?? null,
+          actorLabelSnapshot: review?.actorLabelSnapshot ?? null,
+          actorType: review?.actorType ?? null,
           reason: review ? jsonString(jsonObject(review.metadata).reason) : null,
           status: backgroundFailureReviewStatus(review?.action),
           updatedAt: review?.createdAt.toISOString() ?? null,
@@ -1608,7 +1715,6 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
     workers,
     schedulers,
     completedJobs,
-    failedJobs,
     waitingJobs,
     activeJobs,
     delayedJobs,
@@ -1617,11 +1723,15 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
     definition.queue.getWorkersCount(),
     definition.queue.getJobSchedulers(0, 9, true),
     definition.queue.getJobs('completed', 0, 0, false),
-    definition.queue.getJobs('failed', 0, FAILED_JOB_LIMIT_PER_QUEUE - 1, false),
     definition.queue.getJobs('waiting', 0, 0, true),
     definition.queue.getJobs('active', 0, 0, true),
     definition.queue.getJobs('delayed', 0, 0, true),
   ]);
+  const failureRead = await definition.queue
+    .getJobs('failed', 0, FAILED_JOB_LIMIT_PER_QUEUE - 1, false)
+    .then((jobs) => ({ available: true as const, jobs }))
+    .catch(() => ({ available: false as const, jobs: [] as Job[] }));
+  const failedJobs = failureRead.jobs;
   const oldestOpenJob = backgroundQueueOpenJobLag(
     now,
     waitingJobs[0],
@@ -1642,6 +1752,7 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
   });
 
   return {
+    availability: 'AVAILABLE' as BackgroundDataAvailability,
     counts: {
       active: counts.active ?? 0,
       delayed: counts.delayed ?? 0,
@@ -1651,6 +1762,7 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
     },
     expectedSchedulerId: definition.expectedSchedulerIds?.[0] ?? null,
     expectedSchedulerPresent,
+    failureScanAvailable: failureRead.available,
     failedJobs: failedJobs.map((job) => backgroundFailedJob(definition.queue.name, job)),
     label: definition.label,
     lastCompletedAt: jobFinishedAt(completedJobs[0]),
@@ -1665,6 +1777,47 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
     status,
     workers,
   };
+}
+
+function unavailableBackgroundQueueSnapshot(definition: BackgroundQueueDefinition): BackgroundQueueSnapshot {
+  return {
+    availability: 'UNAVAILABLE',
+    counts: { active: 0, delayed: 0, failed: 0, paused: 0, waiting: 0 },
+    expectedSchedulerId: definition.expectedSchedulerIds?.[0] ?? null,
+    expectedSchedulerPresent: false,
+    failedJobs: [],
+    failureScanAvailable: false,
+    label: definition.label,
+    lastCompletedAt: null,
+    lastFailedAt: null,
+    name: definition.queue.name,
+    nextScheduledAt: null,
+    oldestOpenJobAt: null,
+    oldestOpenJobState: null,
+    openJobLagMs: 0,
+    schedulerCount: 0,
+    staleAfterMs: definition.staleAfterMs,
+    status: 'ATTENTION',
+    workers: 0,
+  };
+}
+
+function aggregateQueueAvailability(
+  queues: Array<{ availability: BackgroundDataAvailability }>,
+): BackgroundDataAvailability {
+  const availableCount = queues.filter((queue) => queue.availability === 'AVAILABLE').length;
+  if (availableCount === queues.length) return 'AVAILABLE';
+  return availableCount === 0 ? 'UNAVAILABLE' : 'PARTIAL';
+}
+
+function backgroundFailureReviewCoverage(
+  queue: BackgroundQueueSnapshot,
+  reviewAvailability: 'AVAILABLE' | 'UNAVAILABLE',
+): BackgroundFailureReviewCoverage {
+  if (queue.availability !== 'AVAILABLE' || !queue.failureScanAvailable) return 'UNAVAILABLE';
+  if (queue.counts.failed === 0) return 'COMPLETE';
+  if (reviewAvailability === 'UNAVAILABLE') return 'UNAVAILABLE';
+  return queue.failedJobs.length >= queue.counts.failed ? 'COMPLETE' : 'INCOMPLETE';
 }
 
 function durableScanCursor(
@@ -1916,15 +2069,68 @@ function backgroundFailureRangeCutoff(
   return durationMs === null ? null : now.getTime() - durationMs;
 }
 
-function queueHasUnresolvedFailure(
-  queue: Awaited<ReturnType<typeof backgroundQueueSnapshot>>,
+function queueUnresolvedFailureCount(
+  queueName: string,
   failures: Array<ReturnType<typeof backgroundFailedJob> & {
     review: { status: BackgroundFailureReviewStatus };
   }>,
 ) {
-  const retainedFailures = failures.filter((failure) => failure.queueName === queue.name);
-  return queue.counts.failed > retainedFailures.length ||
-    retainedFailures.some((failure) => failure.review.status !== 'RESOLVED');
+  return failures.filter(
+    (failure) => failure.queueName === queueName && failure.review.status !== 'RESOLVED',
+  ).length;
+}
+
+function unavailableFailurePage(input: BackgroundJobHealthQueryDto) {
+  const page = input.page ?? 1;
+  const pageSize = input.pageSize ?? FAILED_JOB_LIST_DEFAULT_PAGE_SIZE;
+  return {
+    items: [],
+    page: {
+      complete: false,
+      hasNextPage: false,
+      hasPreviousPage: page > 1,
+      page,
+      pageSize,
+      scannedCount: 0,
+      totalCount: null,
+      unavailableQueueNames: [],
+    },
+    reviewAvailability: 'UNAVAILABLE' as const,
+  };
+}
+
+function unavailableHealthEventPage(input: BackgroundJobHealthQueryDto) {
+  const page = input.eventPage ?? 1;
+  return {
+    items: [],
+    page: {
+      hasNextPage: false,
+      hasPreviousPage: page > 1,
+      page,
+      pageSize: input.pageSize ?? FAILED_JOB_LIST_DEFAULT_PAGE_SIZE,
+      totalCount: 0,
+    },
+  };
+}
+
+function unavailableRecurringIncidentPage(input: BackgroundJobHealthQueryDto) {
+  const page = input.incidentPage ?? 1;
+  return {
+    items: [],
+    page: {
+      complete: false,
+      hasNextPage: false,
+      hasPreviousPage: page > 1,
+      page,
+      pageSize: input.pageSize ?? FAILED_JOB_LIST_DEFAULT_PAGE_SIZE,
+      scannedCount: 0,
+      totalCount: null,
+    },
+  };
+}
+
+function unavailableRecurringIncidentSummary() {
+  return { complete: false, openCount: 0, recoveredCount: 0, scannedCount: 0 };
 }
 
 function normalizeBackgroundJobIdentifier(value: string, label: string) {
@@ -2017,6 +2223,9 @@ function boundedJsonString(value: Prisma.JsonValue | undefined, maxLength: numbe
 function backgroundQueueHealthEvent(row: {
   action: string;
   actor: { email: string | null; fullName: string | null; id: string } | null;
+  actorKey: string | null;
+  actorLabelSnapshot: string | null;
+  actorType: AdminAuditActorType | null;
   createdAt: Date;
   id: string;
   metadata: Prisma.JsonValue | null;
@@ -2026,6 +2235,9 @@ function backgroundQueueHealthEvent(row: {
   const queueName = jsonString(metadata.queueName) ?? row.target.replace('background_job_queue_health:', '');
   return {
     actor: row.actor,
+    actorKey: row.actorKey,
+    actorLabelSnapshot: row.actorLabelSnapshot,
+    actorType: row.actorType,
     detectedAt: jsonString(metadata.detectedAt),
     event: row.action === BACKGROUND_JOB_QUEUE_STALE_ALERT_ACTION ? 'ALERTED' as const : 'RECOVERED' as const,
     id: row.id,
@@ -2040,6 +2252,9 @@ function backgroundQueueHealthEvent(row: {
 
 type BackgroundRecurringIncidentAuditRow = {
   actor: { email: string | null; fullName: string | null; id: string } | null;
+  actorKey: string | null;
+  actorLabelSnapshot: string | null;
+  actorType: AdminAuditActorType | null;
   createdAt: Date;
   id: string;
   metadata: Prisma.JsonValue | null;
@@ -2055,6 +2270,9 @@ function backgroundRecurringIncidentEpisode(
   const targetParts = opened.target.split(':');
   return {
     actor: opened.actor,
+    actorKey: opened.actorKey,
+    actorLabelSnapshot: opened.actorLabelSnapshot,
+    actorType: opened.actorType,
     firstFailureAt: jsonString(openedMetadata.firstFailureAt),
     firstFailureJobId: jsonString(openedMetadata.firstFailureJobId),
     id: opened.id,
@@ -2072,6 +2290,9 @@ function backgroundRecurringIncidentFailure(
   latestReview: {
     action: string;
     actor: { email: string | null; fullName: string | null; id: string } | null;
+    actorKey: string | null;
+    actorLabelSnapshot: string | null;
+    actorType: AdminAuditActorType | null;
     createdAt: Date;
     metadata: Prisma.JsonValue | null;
     target: string;
@@ -2080,7 +2301,10 @@ function backgroundRecurringIncidentFailure(
   const originMetadata = jsonObject(origin.metadata);
   const reviewMetadata = jsonObject(latestReview?.metadata);
   return {
-    actor: latestReview?.actor ?? origin.actor,
+    actor: latestReview ? latestReview.actor : origin.actor,
+    actorKey: latestReview ? latestReview.actorKey : origin.actorKey,
+    actorLabelSnapshot: latestReview ? latestReview.actorLabelSnapshot : origin.actorLabelSnapshot,
+    actorType: latestReview ? latestReview.actorType : origin.actorType,
     firstSeenAt: origin.createdAt.toISOString(),
     jobId: jsonString(originMetadata.jobId) ?? origin.target.split(':').slice(2).join(':'),
     reason: jsonString(reviewMetadata.reason),

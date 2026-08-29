@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
 describe('Admin workspace header CSS', () => {
   it('keeps topbar icon buttons on the Vuexy medium IconButton rhythm', () => {

@@ -38,6 +38,7 @@ import {
 } from '../lib/admin-format';
 import { type AdminDateRange, dateRangeLabel } from '../lib/date-range';
 import { getCurrentAdminOperatorAccess } from '../lib/admin-operator-access';
+import { shiftHandoffLaunchEnabled } from '../lib/launch-features';
 import {
   buildDashboardDataHrefs,
   buildDashboardDetailsHref,
@@ -46,6 +47,7 @@ import {
   buildStartShiftDemandSupplyAnalytics,
   buildStartShiftRankingAnalytics,
   buildDashboardViewMode,
+  startShiftRankingSectionTitle,
 } from './dashboard-page-model';
 import {
   DashboardDataScopeStatus,
@@ -221,6 +223,7 @@ function StartShiftActionGrid({
           value={item.value}
           variant="ops-task"
         >
+          {item.scopeLabel ? <StatusBadge tone="info">{item.scopeLabel}</StatusBadge> : null}
           <AdminQueueMeta
             assignee={item.assigneeLabel}
             impact={item.impactLabel}
@@ -302,7 +305,8 @@ function startShiftCommandItem(item: PrioritizedStartShiftAction): OperationsCom
     detail: action.count > 0 ? action.operatorAction : `Clear. ${action.operatorAction}`,
     href: startShiftActionHref(item),
     impactAmount: action.amount,
-    isLiveBlock: item.category === 'customer' && item.scope !== 'legacy',
+    isLiveBlock: action.key === 'matching-delays' && item.scope !== 'legacy',
+    isServiceBlock: action.key === 'payment-holds' && item.scope !== 'legacy',
     lane: action.label,
     nextCases: nextCaseIds?.map((caseId) => startShiftNextCase(action.key, caseId)),
     impactLabel: amountContext || undefined,
@@ -616,7 +620,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     ...(dashboardSummaryState === 'unavailable' ? [] : exactActionQueueItems),
     ...operationsAttentionItems,
   ].slice(0, 5);
-  const prioritizedAnalyticsActions = prioritizeStartShiftActions(startShiftCommandAnalytics?.needsAction ?? []);
+  const prioritizedAnalyticsActions = prioritizeStartShiftActions(
+    startShiftCommandAnalytics?.needsAction ?? [],
+  );
   const analyticsActionQueues = splitStartShiftActions(prioritizedAnalyticsActions);
   const analyticsImmediateCommandItems = prioritizedAnalyticsActions.map(startShiftCommandItem);
   const immediateCommandItems = startShiftCommandAnalytics
@@ -629,7 +635,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     ? analyticsActionQueues.legacy.map(startShiftCommandItem)
     : [];
   const immediateCommandHrefs = new Set(
-    (startShiftCommandAnalytics ? analyticsImmediateCommandItems : immediateCommandItems).map((item) => item.href),
+    (startShiftCommandAnalytics ? analyticsImmediateCommandItems : immediateCommandItems).map(
+      (item) => item.href,
+    ),
   );
   const immediateCommandKeys = new Set(
     startShiftCommandAnalytics
@@ -697,6 +705,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       oldestLabel: lane.oldestOccurredAt ? relativeTimeLabel(lane.oldestOccurredAt) : undefined,
       owner: 'Finance',
       overdueCount: lane.over48h.count,
+      scopeLabel: 'Open work · All dates',
       status: lane.status,
       tone: lane.tone,
       unassignedCount: lane.unassigned.count,
@@ -841,14 +850,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     financeReviewWorkloadState,
   ]);
   const moneyOpenStatusLabel = [
-    financeReviewOver48hCount > 0 ? `${financeReviewOver48hCount} overdue` : null,
-    financeReviewUnassignedCount > 0 ? `${financeReviewUnassignedCount} unassigned` : null,
-    settlementBacklogCount + historicalMoneyCaseCount > 0
-      ? `${settlementBacklogCount + historicalMoneyCaseCount} backlog`
+    `${financeReviewOpenCount} open Finance reviews`,
+    financeReviewOver48hCount > 0
+      ? `${financeReviewOver48hCount} of ${financeReviewOpenCount} over 48h`
       : null,
-    financeReviewOpenAmount + historicalImpactAmount > 0
-      ? `${money(financeReviewOpenAmount + historicalImpactAmount, 'VND')} exposed`
+    financeReviewUnassignedCount > 0
+      ? `${financeReviewUnassignedCount} of ${financeReviewOpenCount} unassigned`
       : null,
+    settlementBacklogCount > 0
+      ? adminCountLabel(settlementBacklogCount, 'settlement backlog case', 'settlement backlog cases')
+      : null,
+    historicalMoneyCaseCount > 0
+      ? adminCountLabel(historicalMoneyCaseCount, 'historical money case', 'historical money cases')
+      : null,
+    financeReviewOpenAmount > 0 ? `${money(financeReviewOpenAmount, 'VND')} under Finance review` : null,
+    historicalImpactAmount > 0 ? `${money(historicalImpactAmount, 'VND')} historical exposure` : null,
   ]
     .filter((label): label is string => Boolean(label))
     .join(' · ');
@@ -862,7 +878,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     settlementBacklogCount > 0 ||
     historicalMoneyCaseCount > 0;
   const operatorLabel =
-    currentOperatorAccess?.fullName?.trim() || currentOperatorAccess?.email?.trim() || 'Signed-in operator';
+    currentOperatorAccess?.fullName?.trim() ||
+    currentOperatorAccess?.email?.trim() ||
+    (currentOperatorAccess?.id
+      ? `Operator ${shortDisplayId(currentOperatorAccess.id)}`
+      : 'Operator identity unavailable');
   const additionalWorkState = dashboardSummaryState;
   return (
     <AdminPageTemplate
@@ -896,7 +916,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <StatusBadge tone={totalSlaOverdueCount > 0 ? 'danger' : 'success'}>
             SLA overdue {totalSlaOverdueCount}
           </StatusBadge>
-          <AdminTextLink href="/operations-handoff">Open handoff</AdminTextLink>
+          {shiftHandoffLaunchEnabled() ? (
+            <AdminTextLink href="/operations-handoff">Open handoff</AdminTextLink>
+          ) : null}
         </div>
       </nav>
 
@@ -958,10 +980,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         id="dashboard-open-queues"
         status={
           <StatusBadge tone={openQueueItems.length > 0 ? 'warning' : 'success'}>
-            {adminCountLabel(openQueueItems.length, 'queue')}
+            {adminCountLabel(openQueueItems.length, 'more queue', 'more queues')}
           </StatusBadge>
         }
-        title="Open queues"
+        title="Remaining queues"
       >
         {openQueueItems.length > 0 ? (
           <StartShiftActionGrid className="start-shift-action-grid" items={openQueueItems} />
@@ -1007,7 +1029,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <AdminSection
         actions={<AdminFormControlLink href="/finance-overview">Open finance</AdminFormControlLink>}
-        className="admin-mt-20"
+        className="admin-mt-20 start-shift-compact-section"
         id="dashboard-money-status"
         status={
           <StatusBadge
@@ -1031,7 +1053,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <AdminEmptyState
           message={
             hasMoneyRisk
-              ? 'Finance work is prioritized in Next action and Open queues above.'
+              ? 'Finance work is prioritized in Next action and Remaining queues above.'
               : 'No money queue needs action.'
           }
           title={hasMoneyRisk ? 'Use the prioritized finance queues' : 'Money checks clear'}
@@ -1045,7 +1067,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <AdminFormControlLink href={dashboardRefreshHref}>Refresh</AdminFormControlLink>
             )
           }
-          className="admin-mt-20"
+          className="admin-mt-20 start-shift-compact-section"
           id="dashboard-today-work"
           status={
             <StatusBadge
@@ -1076,7 +1098,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <AdminEmptyState framed message="Work queues could not be verified." title="Data unavailable" />
           ) : additionalWorkItems.length > 0 ? (
             <DashboardTraceSummary
-              className="start-shift-metric-strip"
+              className={`start-shift-metric-strip${additionalWorkItems.length <= 2 ? ' is-compact' : ''}`}
               defaultKind="action"
               defaultScope="Pending"
               metrics={additionalWorkItems.map((item) => ({
@@ -1144,7 +1166,8 @@ async function StartShiftAnalyticsSections({
         (bucket.platformFee ?? 0) > 0 ||
         (bucket.partnerNetAmount ?? 0) > 0 ||
         (bucket.refundAmount ?? 0) > 0,
-    ) || Object.values(analytics.customerPulse).some((value) => value > 0)),
+    ) ||
+      Object.values(analytics.customerPulse).some((value) => value > 0)),
   );
   const chartState =
     sourceState === 'unavailable'
@@ -1156,8 +1179,9 @@ async function StartShiftAnalyticsSections({
           : 'empty';
   const hasPerformanceRankings = Boolean(
     analytics &&
-    [...Object.values(analytics.customerRankings), ...Object.values(analytics.partnerRankings)]
-      .some((rows) => rows.length > 0),
+    [...Object.values(analytics.customerRankings), ...Object.values(analytics.partnerRankings)].some(
+      (rows) => rows.length > 0,
+    ),
   );
   const hasDemandSupplyDetails = Boolean(
     analytics &&
@@ -1175,9 +1199,13 @@ async function StartShiftAnalyticsSections({
         className="admin-mt-20"
         id="dashboard-today-result"
         status={
-          <StatusBadge tone={chartState === 'unavailable' ? 'danger' : chartState === 'stale' ? 'warning' : 'info'}>
-            {chartState === 'unavailable' ? 'Data unavailable' : chartState === 'stale' ? 'Stale' : selectedRangeLabel}
-          </StatusBadge>
+          chartState === 'unavailable' ? (
+            <StatusBadge tone="danger">Data unavailable</StatusBadge>
+          ) : chartState === 'stale' ? (
+            <StatusBadge tone="warning">Stale</StatusBadge>
+          ) : range === 'today' ? null : (
+            <StatusBadge tone="info">{selectedRangeLabel}</StatusBadge>
+          )
         }
         title={range === 'today' ? 'Today result' : 'Period result'}
       >
@@ -1209,7 +1237,7 @@ async function StartShiftAnalyticsSections({
           className="admin-mt-20"
           id="dashboard-performance-leaders"
           status={<StatusBadge tone="info">{selectedRangeLabel}</StatusBadge>}
-          title="Customer and Partner leaders"
+          title={startShiftRankingSectionTitle(rankingAnalytics)}
         >
           <StartShiftRankingWidgets analytics={rankingAnalytics} rangeLabel={selectedRangeLabel} />
         </AdminSection>
@@ -1225,7 +1253,11 @@ async function StartShiftAnalyticsSections({
           }
           className="admin-mt-20"
           id="dashboard-demand-supply"
-          status={<StatusBadge tone={readyPartners > 0 ? 'success' : 'warning'}>{readyPartners} ready now</StatusBadge>}
+          status={
+            <StatusBadge tone={readyPartners > 0 ? 'success' : 'warning'}>
+              {readyPartners} ready now
+            </StatusBadge>
+          }
           title="Demand and supply"
         >
           <StartShiftDemandSupplyWidgets analytics={demandSupplyAnalytics} readyPartners={readyPartners} />

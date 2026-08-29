@@ -61,10 +61,7 @@ import {
   vnpaySignatureCandidates,
 } from './payment-callback.helpers';
 import { PAYMENT_STATUS_CHECK_QUEUE_NAME, paymentStatusCheckJob } from './payment-status.queue';
-import {
-  paymentCaptureAuditMetadata,
-  paymentRefundAuditMetadata,
-} from './payment-admin-audit';
+import { paymentCaptureAuditMetadata, paymentRefundAuditMetadata } from './payment-admin-audit';
 import { paymentCaptureUpdateData, paymentRefundRequestCreateData } from './payment-admin-data';
 import {
   paymentCaptureSourceStatuses,
@@ -72,10 +69,7 @@ import {
   transitionPaymentStatus,
 } from './payment-status-transition';
 import { paymentRefundEarningCancellationAudit } from './payment-refund-audit';
-import {
-  PAYMENT_REFUND_STATUS_QUEUE_NAME,
-  paymentRefundStatusJob,
-} from './payment-refund-status.queue';
+import { PAYMENT_REFUND_STATUS_QUEUE_NAME, paymentRefundStatusJob } from './payment-refund-status.queue';
 import { paymentUpdatedNotification } from './payments.notifications';
 import {
   type PaymentActionDecisionRecord,
@@ -146,15 +140,11 @@ export class PaymentsService {
       {
         isProduction: this.config.get<string>('NODE_ENV') === 'production',
         allowPlaceholder:
-          this.config
-            .get<string>('ALLOW_PLACEHOLDER_PAYMENT_AUTHORIZATIONS')
-            ?.trim()
-            .toLowerCase() === 'true',
+          this.config.get<string>('ALLOW_PLACEHOLDER_PAYMENT_AUTHORIZATIONS')?.trim().toLowerCase() ===
+          'true',
         allowRedirectMethods:
-          this.config
-            .get<string>('CUSTOMER_APP_PAYMENT_REDIRECT_FLOW_ENABLED')
-            ?.trim()
-            .toLowerCase() === 'true',
+          this.config.get<string>('CUSTOMER_APP_PAYMENT_REDIRECT_FLOW_ENABLED')?.trim().toLowerCase() ===
+          'true',
       },
     );
 
@@ -350,7 +340,10 @@ export class PaymentsService {
             rawPayload: body,
           });
           const adapter = this.adapterFor(paymentMethod);
-          if (adapter.mode === 'GATEWAY' && isGatewayAuthorizationReady(existing.status)) {
+          if (
+            adapter.mode === 'GATEWAY' &&
+            (isGatewayAuthorizationReady(existing.status) || existing.status === PaymentStatus.FAILED)
+          ) {
             await this.scheduleGatewayStatusCheck(existing.id);
           }
           return { ok: true, replay: true };
@@ -393,7 +386,10 @@ export class PaymentsService {
       });
       const payment = transition.payment;
       await this.notifyPaymentUpdated(payment.id);
-      if (adapter.mode === 'GATEWAY' && isGatewayAuthorizationReady(payment.status)) {
+      if (
+        adapter.mode === 'GATEWAY' &&
+        (isGatewayAuthorizationReady(payment.status) || payment.status === PaymentStatus.FAILED)
+      ) {
         await this.scheduleGatewayStatusCheck(payment.id);
       }
       return { ok: true, replay: !transition.transitioned };
@@ -455,6 +451,9 @@ export class PaymentsService {
     }
     const adapter = this.adapterFor(payment.method);
     if (isTerminalPaymentStatus(payment.status)) {
+      if (adapter.mode === 'GATEWAY' && payment.status === PaymentStatus.FAILED) {
+        await this.scheduleGatewayStatusCheck(payment.id);
+      }
       return {
         skipped: true,
         reason: 'TERMINAL_STATUS',
@@ -476,9 +475,7 @@ export class PaymentsService {
         rawMeta: toJsonOrUndefined({
           ...asJsonObject(payment.rawMeta),
           ...asJsonObject(operation.rawMeta),
-          ...(adapter.mode === 'GATEWAY'
-            ? gatewayAuthorizationEvidence(status, 'STATUS_QUERY')
-            : {}),
+          ...(adapter.mode === 'GATEWAY' ? gatewayAuthorizationEvidence(status, 'STATUS_QUERY') : {}),
         }),
       },
       fromStatuses: [payment.status],
@@ -486,13 +483,15 @@ export class PaymentsService {
       targetStatus: status,
     });
     await this.notifyPaymentUpdated(updated.id);
+    if (adapter.mode === 'GATEWAY' && updated.status === PaymentStatus.FAILED) {
+      await this.scheduleGatewayStatusCheck(updated.id);
+    }
 
     return {
       paymentId,
       bookingId: updated.bookingId,
       status: updated.status,
-      bookingRecoveryReady:
-        adapter.mode === 'GATEWAY' && isGatewayAuthorizationReady(updated.status),
+      bookingRecoveryReady: adapter.mode === 'GATEWAY' && isGatewayAuthorizationReady(updated.status),
     };
   }
 
@@ -1148,7 +1147,11 @@ export class PaymentsService {
         where: { id: paymentId },
         include: { refunds: true },
       });
-      await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
+      await this.admin.writeAudit(
+        actorId,
+        'payment.refund',
+        `payment:${paymentId}`,
+        {
         ...paymentRefundAuditMetadata(
           finalizedPayment,
           paymentRefundEarningCancellationAudit(earningCancellation),
@@ -1156,7 +1159,10 @@ export class PaymentsService {
         approvalAdminId,
         requestedByAdminId,
         settlementReversal,
-      }, undefined, tx);
+        },
+        undefined,
+        tx,
+      );
       return finalizedPayment;
     });
     await this.notifyPaymentUpdated(payment.id);
@@ -1172,7 +1178,11 @@ export class PaymentsService {
       where: { id: bookingId },
       select: { status: true },
     });
-    if (!REFUND_BOOKING_SOURCE_STATUSES.includes(booking.status as (typeof REFUND_BOOKING_SOURCE_STATUSES)[number])) {
+    if (
+      !REFUND_BOOKING_SOURCE_STATUSES.includes(
+        booking.status as (typeof REFUND_BOOKING_SOURCE_STATUSES)[number],
+      )
+    ) {
       throw new ConflictException({
         code: 'BOOKING_NOT_REFUNDABLE',
         message: `Booking ${bookingId} cannot be refunded from status ${booking.status}`,
@@ -1190,10 +1200,7 @@ export class PaymentsService {
     }
   }
 
-  private async recordRefundGatewayFailure(
-    refund: { id: string; metadata: unknown },
-    error: unknown,
-  ) {
+  private async recordRefundGatewayFailure(refund: { id: string; metadata: unknown }, error: unknown) {
     try {
       await this.prisma.refund.updateMany({
         where: { id: refund.id, status: 'APPROVAL_PROCESSING' },
@@ -1256,13 +1263,16 @@ export class PaymentsService {
     throw new BadRequestException('Unsupported payment method');
   }
 
-  private async releaseCustomerWalletPayment(payment: {
+  private async releaseCustomerWalletPayment(
+    payment: {
     amount: number;
     bookingId: string;
     currency: string;
     id: string;
     status: PaymentStatus;
-  }, existingTx?: Prisma.TransactionClient) {
+    },
+    existingTx?: Prisma.TransactionClient,
+  ) {
     if (payment.status !== PaymentStatus.AUTHORIZED) {
       throw paymentTransitionConflict(payment.id, payment.status, PaymentStatus.RELEASED);
     }
@@ -1687,16 +1697,20 @@ export class PaymentsService {
     const activeClaim = await this.prisma.paymentAdminOperationClaim.findFirst({
       where: {
         paymentId: input.paymentId,
-        status: { in: [PaymentAdminOperationStatus.IN_PROGRESS, PaymentAdminOperationStatus.REVIEW_REQUIRED] },
+        status: {
+          in: [PaymentAdminOperationStatus.IN_PROGRESS, PaymentAdminOperationStatus.REVIEW_REQUIRED],
+        },
       },
       orderBy: { createdAt: 'desc' },
       select: { id: true, status: true },
     });
     throw new ConflictException({
-      code: activeClaim?.status === PaymentAdminOperationStatus.REVIEW_REQUIRED
+      code:
+        activeClaim?.status === PaymentAdminOperationStatus.REVIEW_REQUIRED
         ? 'PAYMENT_ACTION_REVIEW_REQUIRED'
         : 'PAYMENT_ACTION_IN_PROGRESS',
-      message: activeClaim?.status === PaymentAdminOperationStatus.REVIEW_REQUIRED
+      message:
+        activeClaim?.status === PaymentAdminOperationStatus.REVIEW_REQUIRED
         ? 'A previous payment action has an uncertain provider result and requires review.'
         : 'Another payment action is already in progress.',
       operationClaimId: activeClaim?.id ?? null,
@@ -1802,9 +1816,7 @@ export class PaymentsService {
 }
 
 async function lockPaymentBookingLifecycle(tx: Prisma.TransactionClient, bookingId: string) {
-  await tx.$queryRaw(
-    Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`,
-  );
+  await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`);
 }
 
 function paymentActionState(record: AdminPaymentActionRecord) {
@@ -1814,10 +1826,7 @@ function paymentActionState(record: AdminPaymentActionRecord) {
   };
 }
 
-function paymentActionReceiptFromAudit(
-  auditId: string,
-  value: unknown,
-): PaymentActionReceipt | null {
+function paymentActionReceiptFromAudit(auditId: string, value: unknown): PaymentActionReceipt | null {
   const receipt = asJsonObject(value);
   const receiptAuditId = stringValue(receipt.auditId) || auditId;
   const action = stringValue(receipt.action);
@@ -1939,8 +1948,7 @@ function refundAuditContext(metadata: unknown, refundId: string) {
     actorId: approvalAdminId,
     approvalAdminId,
     occurredAt,
-    requestedByAdminId:
-      stringValue(record.requestedByAdminId) || stringValue(record.actorId) || null,
+    requestedByAdminId: stringValue(record.requestedByAdminId) || stringValue(record.actorId) || null,
   };
 }
 
@@ -1955,12 +1963,14 @@ function paymentActionRequestHash(input: {
   reason: string | null;
 }) {
   return createHash('sha256')
-    .update(JSON.stringify({
+    .update(
+      JSON.stringify({
       action: input.action,
       actorId: input.actorId,
       paymentId: input.paymentId,
       reason: input.reason,
-    }))
+      }),
+    )
     .digest('hex');
 }
 
@@ -1969,10 +1979,7 @@ function safePaymentActionErrorMessage(error: unknown) {
   return message.replace(/[\r\n\t]+/g, ' ').slice(0, 500);
 }
 
-function assertCustomerWalletLedgerReplay(
-  existing: object,
-  expected: object,
-) {
+function assertCustomerWalletLedgerReplay(existing: object, expected: object) {
   const existingRecord = existing as Record<string, unknown>;
   const expectedRecord = expected as Record<string, unknown>;
   const fields = [
@@ -1991,9 +1998,7 @@ function assertCustomerWalletLedgerReplay(
       isDeepStrictEqual(existingRecord[field] ?? null, expectedRecord[field] ?? null),
   );
   if (!matches) {
-    throw new ConflictException(
-      'A customer wallet entry already exists with different financial evidence.',
-    );
+    throw new ConflictException('A customer wallet entry already exists with different financial evidence.');
   }
 }
 
@@ -2057,15 +2062,11 @@ async function advanceRefundStatus(
 function paymentRefundRequestContext(metadata: unknown) {
   const record = asJsonObject(metadata);
   return {
-    requestedByAdminId:
-      stringValue(record.requestedByAdminId) || stringValue(record.actorId) || null,
+    requestedByAdminId: stringValue(record.requestedByAdminId) || stringValue(record.actorId) || null,
   };
 }
 
-function assertIndependentPaymentRefundApprover(
-  requestedByAdminId: string | null,
-  approvalAdminId: string,
-) {
+function assertIndependentPaymentRefundApprover(requestedByAdminId: string | null, approvalAdminId: string) {
   if (requestedByAdminId === approvalAdminId) {
     throw new BadRequestException('Payment refund requires approval from a different admin');
   }

@@ -57,4 +57,29 @@ describe('operational policy audit source', () => {
       ),
     ).toThrow(ForbiddenException);
   });
+
+  it('rejects even correctly signed smoke automation in production', () => {
+    const productionEnvironment = {
+      API_SMOKE_AUDIT_SECRET: 'production-smoke-audit-secret',
+      NODE_ENV: 'production',
+    };
+    const signature = operationalPolicySmokeSignature(
+      productionEnvironment.API_SMOKE_AUDIT_SECRET,
+      'production-run',
+      'production',
+      false,
+    );
+
+    expect(() =>
+      operationalPolicyAuditContextFromHeaders(
+        {
+          'x-hands-smoke-environment': 'production',
+          'x-hands-smoke-restoration': 'false',
+          'x-hands-smoke-run-id': 'production-run',
+          'x-hands-smoke-signature': signature,
+        },
+        productionEnvironment,
+      ),
+    ).toThrow('Operational policy smoke automation is disabled in production');
+  });
 });

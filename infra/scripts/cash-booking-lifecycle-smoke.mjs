@@ -37,6 +37,7 @@ import { io as createSocket } from 'socket.io-client';
 
 import { runAdminWebDirectSmoke } from './lib/admin-web-direct-smoke.mjs';
 import { loadMergedEnv } from './lib/env-file.mjs';
+import { financeApproverSmokeAttestationEvents } from './lib/finance-approver-smoke-attestation.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
@@ -484,7 +485,9 @@ async function seed() {
         categories: [
           AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
           AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
           AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
           AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
         ],
       },
@@ -538,16 +541,19 @@ async function seed() {
       },
     ],
   });
-  await prisma.adminAuditLog.create({
-    data: {
-      actorId: ids.actor,
-      action: 'admin_user.finance_approver.legacy_attestation.approved',
-      target: `finance_approver_attestation:${ids.approver}:${runId}`,
-      metadata: {
-        attestorId: ids.approver,
-        sourceReference: `disposable-lifecycle:${runId}`,
-      },
-    },
+  await prisma.adminAuditLog.createMany({
+    data: financeApproverSmokeAttestationEvents({
+      categories: [
+        AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+        AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+        AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+      ],
+      checkerId: ids.actor,
+      effectiveAt: now,
+      runId,
+      sourceReference: `disposable-lifecycle:${runId}`,
+      targetUserId: ids.approver,
+    }),
   });
   await prisma.customerProfile.create({
     data: { id: ids.customerProfile, userId: ids.customerUser },
@@ -686,6 +692,12 @@ function couponFixture(id, code, value, now) {
     active: true,
     startsAt: new Date(now.getTime() - 60_000),
     endsAt: new Date(now.getTime() + 60 * 60_000),
+    maxRedemptions: 10,
+    grossBudgetAmount: 5_000_000n,
+    perCustomerRedemptionLimit: 1,
+    minimumOrderAmount: 0,
+    maximumDiscountAmount: 500_000,
+    currency: 'VND',
     discount: {
       type: 'percent',
       value,
@@ -2050,7 +2062,7 @@ async function verifyAdminWebEvidence({ debtBookingId, debtSettlement, refund, r
         'Journal Batch Detail',
         'Journal batch overview',
         'Journal evidence hub',
-        'Balanced',
+        'Entry debit = credit · Pass',
         bankTransactionReference,
       ],
     },
@@ -2070,9 +2082,9 @@ async function verifyAdminWebEvidence({ debtBookingId, debtSettlement, refund, r
       path: `/finance-tax/booking-settlement-audit/${refund.settlementSnapshotId}`,
       markers: [
         'Booking Settlement Audit Detail',
-        'Settlement record overview',
-        'Settlement evidence hub',
-        'Accounting amount breakdown',
+        'Identity',
+        'Canonical evidence',
+        'Allocation equation',
         'CASH',
         'REVERSED',
         refundedBookingId,
@@ -2085,14 +2097,19 @@ async function verifyAdminWebEvidence({ debtBookingId, debtSettlement, refund, r
         'Journal Batch Detail',
         'Journal batch overview',
         'Journal evidence hub',
-        'Balanced',
+        'Entry debit = credit · Pass',
         refundedBookingId,
         refund.settlementSnapshotId,
       ],
     },
   ];
 
-  await runAdminWebDirectSmoke({ env, pages: directPages, repoRoot });
+  await runAdminWebDirectSmoke({
+    env,
+    pages: directPages,
+    repoRoot,
+    session: { sessionId: ids.actorSession, userId: ids.actor },
+  });
 
   return {
     checkedPages: directPages.length,

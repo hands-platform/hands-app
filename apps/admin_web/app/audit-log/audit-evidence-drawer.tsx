@@ -58,7 +58,7 @@ export function AuditEvidenceDrawer({
 
   return (
     <>
-      <AdminDrawerBackdropButton aria-label="Close evidence details" onClick={onClose} />
+      <AdminDrawerBackdropButton aria-hidden="true" onClick={onClose} tabIndex={-1} />
       <AdminDrawerSurface
         ariaLabel="Audit evidence details"
         ariaLabelledBy={titleId}

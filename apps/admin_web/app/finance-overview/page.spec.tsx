@@ -275,6 +275,15 @@ describe('FinanceOverviewPage', () => {
     expect(commandMarkup).not.toContain('finance-overview-principle-grid');
     expect(flowMarkup).toContain('finance-overview-principle-grid');
     expect(flowMarkup).toContain('finance-overview-section-grid');
+    expect(flowMarkup).toContain('Payment and gateway states recorded in the selected range');
+    expect(flowMarkup).toContain('Open Payments');
+    expect(flowMarkup).toContain('/payments?range=7d');
+    expect(flowMarkup).toContain('Open Payments for Last 7 days');
+    expect(flowMarkup).not.toContain('Current status');
+    expect(flowMarkup).toContain('2026-07');
+    expect(flowMarkup).not.toContain('tax + profiles');
+    expect(flowMarkup).toContain('Current: 0 · Previous: 0 · Delta: No activity in either period');
+    expect(flowMarkup).toContain('Links open current-range records');
     expect(flowMarkup).not.toContain('Needs Action Now');
     expect(queuesMarkup).toContain('Current Open Backlog');
     expect(queuesMarkup).not.toContain('Period Performance');
@@ -358,6 +367,8 @@ describe('FinanceOverviewPage', () => {
     expect(queuesMarkup).toContain('finance-overview-queue-owner is-unassigned');
     expect(queuesMarkup).toContain('Not available');
     expect(queuesMarkup).toContain('class="finance-overview-queue-action">Open');
+    expect(queuesMarkup).toContain('Impact 800.000 VND.');
+    expect(queuesMarkup).not.toMatch(/3 unassigned\.[^<]*Owner Finance operations, 3 unassigned\./);
     expect(markup).toContain('Strong withdrawal candidates');
     expect(markup).toContain('Withdrawal candidates to review');
     expect(markup).toContain(
@@ -619,7 +630,7 @@ describe('FinanceOverviewPage', () => {
   });
 
   it('builds only the visible finance sections for the overview payload', () => {
-    expect(pageSource).toContain('buildFinanceOverviewPageSections');
+    expect(pageSource).toContain('buildFinanceOverviewPageSections(overviewInput, filters.range)');
     expect(pageSource).not.toContain(
       'buildFinanceOverviewVisibleSections(buildFinanceOverviewSections(overviewInput))',
     );

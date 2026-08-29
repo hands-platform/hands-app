@@ -73,6 +73,22 @@ describe('MetricCard', () => {
     expect(content[1].props.children).toBe('Create blocks');
   });
 
+  it('allows a neutral scope while retaining the metric risk kind', () => {
+    const card = MetricCard({
+      helper: 'Negative wallet blocks payout release.',
+      kind: 'risk',
+      label: 'Debt gates',
+      scope: 'All partners',
+      scopeKind: 'record',
+      value: 10,
+    });
+    const content = card.props.children.props.children[1].props.children;
+
+    expect(content[0].props.className).toBe('metric-card-scope is-record');
+    expect(content[0].props.children).toBe('All partners');
+    expect(content[2].props.className).toBe('metric-card-value is-risk');
+  });
+
   it('infers the scope from helper copy when the label is generic', () => {
     const card = MetricCard({
       helper: 'Payout batches in the selected range.',

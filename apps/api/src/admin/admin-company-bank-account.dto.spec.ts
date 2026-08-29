@@ -1,7 +1,10 @@
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 
-import { CreateCompanyBankAccountDto } from './admin.dto';
+import {
+  CreateCompanyBankAccountDto,
+  CreateCompanyBankAccountEvidenceReviewDto,
+} from './admin.dto';
 
 const pipe = new ValidationPipe({ transform: true, whitelist: true });
 
@@ -96,5 +99,40 @@ describe('CreateCompanyBankAccountDto', () => {
 
     expect(JSON.stringify(response)).toContain('accountNumberMasked is server-managed');
     expect(JSON.stringify(response)).not.toContain(unsafeValue);
+  });
+});
+
+describe('CreateCompanyBankAccountEvidenceReviewDto', () => {
+  const request = {
+    expectedAccountUpdatedAt: '2026-08-28T05:00:00.000Z',
+    fileAssetId: 'finance-evidence-file-1',
+    idempotencyKey: 'company-bank-evidence-1',
+    intent: 'CLASSIFY_PRODUCTION',
+    operatorReason: 'Reviewed corporate ownership evidence',
+  };
+
+  it('accepts the two explicit non-operational evidence review intents', async () => {
+    for (const intent of ['CLASSIFY_PRODUCTION', 'VERIFY_STATEMENT']) {
+      await expect(
+        pipe.transform(
+          { ...request, intent },
+          { metatype: CreateCompanyBankAccountEvidenceReviewDto, type: 'body' },
+        ),
+      ).resolves.toMatchObject({ ...request, intent });
+    }
+  });
+
+  it('rejects forged evidence outcomes and malformed account versions', async () => {
+    await expect(
+      pipe.transform(
+        {
+          ...request,
+          expectedAccountUpdatedAt: 'not-a-date',
+          intent: 'ACTIVATE',
+          verificationStatus: 'VERIFIED',
+        },
+        { metatype: CreateCompanyBankAccountEvidenceReviewDto, type: 'body' },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

@@ -5,11 +5,14 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGet, adminGetResult } from '../../lib/admin-api';
+import type { AdminBookingSettlementReversalEntry } from '../../lib/admin-api';
 import BankReconciliationDetailPage from './bank-reconciliation/[id]/page';
 import BookingSettlementAuditDetailPage from './booking-settlement-audit/[id]/page';
 import GeneralLedgerDetailPage from './general-ledger/[id]/page';
 import PaymentClearingDetailPage from './payment-clearing/[id]/page';
-import SettlementReversalDetailPage from './settlement-reversals/[id]/page';
+import SettlementReversalDetailPage, {
+  payoutRefundReceivableEvidence,
+} from './settlement-reversals/[id]/page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
@@ -32,6 +35,19 @@ describe('finance detail pages', () => {
       ok: true,
       status: 200,
     }));
+  });
+
+  it('renders an explicit settlement reversal upstream error instead of a not-found conclusion', async () => {
+    mockedAdminGetResult.mockResolvedValue({ data: null, ok: false, status: 500 });
+
+    const page = await SettlementReversalDetailPage({
+      params: Promise.resolve({ id: 'reversal-upstream-failure' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Settlement reversal evidence unavailable');
+    expect(markup).toContain('No closeout conclusion has been inferred');
+    expect(markup).not.toContain('Evidence complete');
   });
 
   it('scopes finance operating path typography to direct path-node children', () => {
@@ -273,6 +289,24 @@ describe('finance detail pages', () => {
       accountingJournalBatches: [
         {
           id: 'reversal-journal-1',
+          integrity: {
+            blockerCodes: ['HEADER_ENTRY_MISMATCH', 'FORMULA_DELTA'],
+            checkedAt: '2026-08-26T00:00:00.000Z',
+            checks: {
+              entriesBalanced: 'PASS',
+              formula: 'FAIL',
+              headerBalanced: 'PASS',
+              headerMatchesEntries: 'FAIL',
+              monthlyPeriod: 'PASS',
+              postedEntries: 'PASS',
+            },
+            discrepancyAmount: 110000,
+            entryCount: 4,
+            entryCredit: 390000,
+            entryDebit: 390000,
+            formulaDelta: 12000,
+            state: 'BLOCKED',
+          },
           metadata: {
             partnerRefundReceivableAmount: 430000,
             refundAfterPartnerPayout: true,
@@ -280,8 +314,8 @@ describe('finance detail pages', () => {
           postedAt: '2026-07-01T11:05:00.000Z',
           sourceKey: 'journal:reversal:1',
           status: 'POSTED',
-          totalCredit: 600000,
-          totalDebit: 600000,
+          totalCredit: 500000,
+          totalDebit: 500000,
         },
       ],
       bookingId: 'booking-1',
@@ -368,6 +402,17 @@ describe('finance detail pages', () => {
       providerEarningId: 'earning-1',
       providerProfileId: 'provider-1',
       reason: 'Refund after payout',
+      reversalEvidence: {
+        bankMatchState: 'FAIL',
+        blockerCodes: ['REVERSAL_STATUS_MISMATCH', 'BANK_MATCH_INCOMPLETE'],
+        clearingState: 'FAIL',
+        journalState: 'FAIL',
+        ledgerState: 'NOT_APPLICABLE',
+        matchedAmount: 250000,
+        policy: { externalClearingRequired: true, ledgerType: 'EXTERNAL_CLEARING' },
+        state: 'FAIL',
+        unmatchedAmount: 350000,
+      },
       settlementStatus: 'REVERSED',
       sourceKey: 'seed-finance-smoke-reversal',
       taxStatus: 'REVERSED',
@@ -381,7 +426,7 @@ describe('finance detail pages', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-settlement-reversals/reversal-1', null);
     expect(markup).toContain('Settlement Reversal Detail');
-    expect(markup).toContain('Refund after payout evidence');
+    expect(markup).toContain('Settlement reversal evidence');
     expect(markup).toContain('Reversal ID reversal');
     expect(markup).not.toContain('Reversal reversal ·');
     expect(markup).toContain('Settlement reversal operating path');
@@ -390,16 +435,20 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Journal / clearing');
     expect(markup).toContain('Closeout action');
     expect(markup).toContain('Next closeout action');
-    expect(markup).toContain('Clearing open');
+    expect(markup).toContain('Clearing FAIL');
     expect(markup).toContain('Paid payout refund');
     expect(markup).toContain('Partner receivable treatment');
     expect(markup).toContain('Partner receivable / negative wallet');
     expect(markup).toContain('Receivable amount');
     expect(markup).toContain('430.000 VND');
-    expect(markup).toContain('Journal balance check');
-    expect(markup).toContain('Debit');
-    expect(markup).toContain('Credit');
-    expect(markup).toContain('600.000 VND');
+    expect(markup).toContain('Paid payout and receivable evidence retained');
+    expect(markup).toContain('Journal integrity check');
+    expect(markup).toContain('Header debit');
+    expect(markup).toContain('Entry credit');
+    expect(markup).toContain('Maximum discrepancy');
+    expect(markup).toContain('110.000 VND');
+    expect(markup).toContain('Formula delta');
+    expect(markup).toContain('12.000 VND');
     expect(markup).toContain('Bank clearing check');
     expect(markup).toContain('Reversal journal record');
     expect(markup).toContain('Payment clearing record');
@@ -433,7 +482,8 @@ describe('finance detail pages', () => {
     );
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
-    expect(markup).toContain('Balanced');
+    expect(markup).toContain('Amounts offset');
+    expect(markup).not.toContain('Balanced');
     expect(markup).toContain('Delta');
     expect(markup).toContain('0 VND');
     expect(markup).toContain('/finance-tax/booking-settlement-audit/settlement-1');
@@ -441,11 +491,70 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('/bookings/booking-1');
     expect(markup).toContain('/partners/provider-1?section=full');
-    expect(markup).toContain('Clearing open');
-    expect(markup).toContain('Journal POSTED · Clearing OPEN');
+    expect(markup).toContain('Clearing FAIL');
+    expect(markup).toContain(
+      'Journal POSTED · Integrity BLOCKED · Ledger NOT_APPLICABLE · Clearing FAIL · Bank FAIL',
+    );
+    expect(markup).toContain('Journal blocked');
+    expect(markup).not.toContain('Evidence complete');
+    expect(markup).not.toContain('Ready for closeout review');
     expect(markup).toContain('finance-detail-info-item');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).not.toContain('<section class="card admin-mb-16">');
+  });
+
+  it('does not infer partner receivable treatment from reason text or contradictory metadata', () => {
+    const reversal = {
+      accountingJournalBatches: [
+        {
+          id: 'journal-1',
+          metadata: { partnerRefundReceivableAmount: 390000, refundAfterPartnerPayout: true },
+        },
+      ],
+      metadata: {},
+      partnerPayoutAmount: -390000,
+      reason: 'Refund after payout',
+    } as AdminBookingSettlementReversalEntry;
+
+    expect(payoutRefundReceivableEvidence(reversal)).toEqual({
+      evidenceLabel: 'Paid payout and receivable evidence retained',
+      receivableAmount: 390000,
+      refundAfterPaidPayout: true,
+      treatment: 'Partner receivable / negative wallet',
+    });
+    expect(
+      payoutRefundReceivableEvidence({
+        ...reversal,
+        accountingJournalBatches: [{ id: 'journal-1', metadata: { refundAfterPartnerPayout: false } }],
+      } as AdminBookingSettlementReversalEntry),
+    ).toEqual({
+      evidenceLabel: 'Unpaid payout liability reversal retained',
+      receivableAmount: 0,
+      refundAfterPaidPayout: false,
+      treatment: 'Partner wallet liability reversal',
+    });
+    expect(
+      payoutRefundReceivableEvidence({
+        ...reversal,
+        metadata: { refundAfterPayout: false },
+      } as AdminBookingSettlementReversalEntry),
+    ).toEqual({
+      evidenceLabel: 'Contradictory retained payout evidence — review required',
+      receivableAmount: null,
+      refundAfterPaidPayout: null,
+      treatment: 'Partner receivable treatment unknown',
+    });
+    expect(
+      payoutRefundReceivableEvidence({
+        ...reversal,
+        accountingJournalBatches: [{ id: 'journal-legacy-1' }],
+      } as AdminBookingSettlementReversalEntry),
+    ).toEqual({
+      evidenceLabel: 'Retained payout evidence unavailable — review required',
+      receivableAmount: null,
+      refundAfterPaidPayout: null,
+      treatment: 'Partner receivable treatment unknown',
+    });
   });
 
   it('renders payment clearing detail evidence and related navigation', async () => {
@@ -741,7 +850,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Finance record');
     expect(markup).not.toContain('Finance source');
     expect(markup).toContain('Journal batch');
-    expect(markup).toContain('Double-entry');
+    expect(markup).toContain('Entry balance');
+    expect(markup).toContain('Entry debit = credit · Pass');
     expect(markup).toContain('Monthly close');
     expect(markup).toContain('Resolve recorded integrity blockers');
     expect(markup).toContain('Finance record');
@@ -749,13 +859,24 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Linked settlement');
     expect(markup).toContain('Settlement payment fee');
     expect(markup).toContain('10.000 VND');
-    expect(markup).toContain('CARD · 150 bps +');
+    expect(markup).toContain('Recorded fee');
+    expect(markup).toContain('Method');
+    expect(markup).toContain('Basis');
+    expect(markup).toContain('150 bps +');
     expect(markup).toContain('1.000 VND');
-    expect(markup).toContain('HANDS / OPERATING_EXPENSE');
+    expect(markup).toContain('Policy');
+    expect(markup).toContain('Payer');
+    expect(markup).toContain('Treatment');
+    expect(markup).toContain('HANDS');
+    expect(markup).toContain('OPERATING_EXPENSE');
     expect(markup).toContain('Bank reconciliation evidence');
     expect(markup).toContain('Integrity result');
     expect(markup).toContain('BLOCKED');
     expect(markup).toContain('Closeout blockers');
+    expect(markup).toContain('Operator next action');
+    expect(markup).toContain('Compare the retained settlement allocation and fee or tax evidence with the journal entries.');
+    expect(markup).toContain('Open settlement record');
+    expect(markup).toContain('No journal values are changed from this screen.');
     expect(markup).toContain('Formula delta');
     expect(markup).toContain('42.000 VND');
     expect(markup).toContain('Monthly close status');
@@ -780,6 +901,9 @@ describe('finance detail pages', () => {
     expect(markup).not.toContain('<section class="card admin-mb-16">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
+    expect(markup).toContain('general-ledger-technical-id');
+    expect(markup).toContain('Payment Callback');
+    expect(markup).toContain('PAYMENT_CALLBACK');
   });
 
   it('renders paid-disbursement reversal evidence without exposing raw metadata', async () => {
@@ -834,6 +958,29 @@ describe('finance detail pages', () => {
         state: 'CLEAR',
       },
       monthlyPeriod: '2026-07',
+      operatorEvidence: {
+        approval: {
+          action: 'payment.refund.approval.claim',
+          approvedAt: '2026-07-16T09:55:00.000Z',
+          approvalAdminId: 'finance-approver-1',
+          approver: {
+            email: 'finance.approver@hands.test',
+            fullName: 'Finance Approver',
+            id: 'finance-approver-1',
+            roles: ['ADMIN', 'FINANCE_APPROVER'],
+          },
+          paymentId: 'payment-refund-1',
+          refundId: 'refund-1',
+          requestedByAdminId: 'requester-1',
+        },
+        recordedBy: {
+          email: 'finance.operator@hands.test',
+          fullName: 'Finance Operator',
+          id: 'finance-operator-2',
+          roles: ['ADMIN', 'FINANCE_APPROVER'],
+        },
+        recordedByAdminId: 'finance-operator-2',
+      },
       payment: null,
       postedAt: '2026-07-16T10:00:00.000Z',
       settlementReversalEntry: {
@@ -877,8 +1024,17 @@ describe('finance detail pages', () => {
     expect(markup).toContain('The receiving bank returned the transfer.');
     expect(markup).toContain('Reversal posted');
     expect(markup).toContain('Reversal recorded by');
-    expect(markup).toContain('finance-operator-2');
-    expect(markup).toContain('No canonical approval field is recorded on this reversal.');
+    expect(markup).toContain('Finance Operator');
+    expect(markup).toContain('finance.operator@hands.test');
+    expect(markup).toContain('ADMIN, FINANCE_APPROVER');
+    expect(markup).toContain('Finance Approver');
+    expect(markup).toContain('finance.approver@hands.test');
+    expect(markup).toContain('Approved');
+    expect(markup).toContain('Refund refund-1');
+    expect(markup).toContain('Payment payment-');
+    expect(markup).not.toContain('Approval evidence unavailable');
+    expect(markup).not.toContain('finance-operator-2');
+    expect(markup).not.toContain('No canonical approval field is recorded on this reversal.');
     expect(markup).not.toContain('BANK-RETURN-501');
   });
 

@@ -1,4 +1,7 @@
-import type { AdminBookingSettlementGapDryRun } from '../../lib/admin-api';
+import type {
+  AdminBookingSettlementDryRunTotals,
+  AdminBookingSettlementGapDryRun,
+} from '../../lib/admin-api';
 import { AdminDataTable, AdminTableSubstack } from '../../components/admin-data-table';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -34,7 +37,10 @@ export function FinanceCloseoutSettlementDryRunSection({
   }
 
   const currency = 'VND';
-  const allBalanced = report.counts.journalBalanced === report.evaluated;
+  const allExpectedAvailable = report.totals.availability === 'ALL_AVAILABLE';
+  const noExpectedAvailable = report.totals.availability === 'UNAVAILABLE';
+  const allBalanced =
+    allExpectedAvailable && report.counts.journalBalanced === report.totals.computedCount;
   const allEvaluated = report.evaluated === report.totalMatched && !report.truncated;
 
   return (
@@ -103,16 +109,24 @@ export function FinanceCloseoutSettlementDryRunSection({
             <tr>
               <td>Journal balance</td>
               <td>
-                <StatusBadge tone={allBalanced && !report.counts.reconciliationReview ? 'success' : 'danger'}>
-                  {report.counts.journalBalanced} balanced · {report.counts.reconciliationReview} delta review
-                </StatusBadge>
+                {allExpectedAvailable ? (
+                  <StatusBadge tone={allBalanced && !report.counts.reconciliationReview ? 'success' : 'danger'}>
+                    {report.counts.journalBalanced} balanced · {report.counts.reconciliationReview} delta review
+                  </StatusBadge>
+                ) : (
+                  <ExpectedAccountingCoverageBadge totals={report.totals} />
+                )}
               </td>
               <td>
                 <AdminTableSubstack>
-                  <span>
-                    Debit <MoneyText amount={report.totals.journalTotalDebit} currency={currency} /> · Credit{' '}
-                    <MoneyText amount={report.totals.journalTotalCredit} currency={currency} />
-                  </span>
+                  {noExpectedAvailable ? null : (
+                    <span>
+                      {report.totals.availability === 'PARTIAL' ? 'Partial total · ' : null}
+                      Debit <MoneyText amount={report.totals.journalTotalDebit} currency={currency} /> · Credit{' '}
+                      <MoneyText amount={report.totals.journalTotalCredit} currency={currency} />
+                    </span>
+                  )}
+                  <ExpectedAccountingCoverageNote subject="journal amounts" totals={report.totals} />
                   <span className="muted">
                     A non-zero reconstruction delta is posted to an explicit review account and must block monthly close.
                   </span>
@@ -122,15 +136,24 @@ export function FinanceCloseoutSettlementDryRunSection({
             <tr>
               <td>Payment fee evidence</td>
               <td>
-                <StatusBadge tone={report.counts.paymentFeeDefaulted ? 'warning' : 'success'}>
-                  {report.counts.paymentFeePolicyMatched} policy · {report.counts.paymentFeeDefaulted} defaulted
-                </StatusBadge>
+                {allExpectedAvailable ? (
+                  <StatusBadge tone={report.counts.paymentFeeDefaulted ? 'warning' : 'success'}>
+                    {report.counts.paymentFeePolicyMatched} policy · {report.counts.paymentFeeDefaulted} defaulted
+                  </StatusBadge>
+                ) : (
+                  <ExpectedAccountingCoverageBadge totals={report.totals} />
+                )}
               </td>
               <td>
                 <AdminTableSubstack>
-                  <span>
-                    Expected processing fee <MoneyText amount={report.totals.paymentProcessingFee} currency={currency} />.
-                  </span>
+                  {noExpectedAvailable ? null : (
+                    <span>
+                      {report.totals.availability === 'PARTIAL' ? 'Partial total · ' : null}
+                      Expected processing fee{' '}
+                      <MoneyText amount={report.totals.paymentProcessingFee} currency={currency} />.
+                    </span>
+                  )}
+                  <ExpectedAccountingCoverageNote subject="payment-fee amounts" totals={report.totals} />
                   {report.counts.paymentFeeDefaulted ? (
                     <AdminTextLink href="/finance-tax/payment-fees">
                       Review payment fee policy and activation blockers
@@ -144,16 +167,24 @@ export function FinanceCloseoutSettlementDryRunSection({
             <tr>
               <td>Company output VAT</td>
               <td>
-                <StatusBadge tone={report.counts.platformVatUnexplainedZero ? 'warning' : 'success'}>
-                  {report.counts.companyOutputVatPositive} positive · {report.counts.companyOutputVatZero} zero
-                </StatusBadge>
+                {allExpectedAvailable ? (
+                  <StatusBadge tone={report.counts.platformVatUnexplainedZero ? 'warning' : 'success'}>
+                    {report.counts.companyOutputVatPositive} positive · {report.counts.companyOutputVatZero} zero
+                  </StatusBadge>
+                ) : (
+                  <ExpectedAccountingCoverageBadge totals={report.totals} />
+                )}
               </td>
               <td>
                 <AdminTableSubstack>
-                  <span>
-                    Expected output VAT <MoneyText amount={report.totals.companyOutputVat} currency={currency} /> from
-                    retained historical platform-fee evidence.
-                  </span>
+                  {noExpectedAvailable ? null : (
+                    <span>
+                      {report.totals.availability === 'PARTIAL' ? 'Partial total · ' : null}
+                      Expected output VAT <MoneyText amount={report.totals.companyOutputVat} currency={currency} /> from
+                      retained historical platform-fee evidence.
+                    </span>
+                  )}
+                  <ExpectedAccountingCoverageNote subject="output-VAT amounts" totals={report.totals} />
                   <span className="muted">
                     Retained service VAT rule {report.counts.platformVatExplicitZeroServiceRule} · Policy zero{' '}
                     {report.counts.platformVatZeroFromPolicy} · Unexplained zero{' '}
@@ -165,19 +196,29 @@ export function FinanceCloseoutSettlementDryRunSection({
             <tr>
               <td>Expected money flow</td>
               <td>
-                <StatusBadge tone="info">Read only</StatusBadge>
+                {allExpectedAvailable ? (
+                  <StatusBadge tone="info">Read only</StatusBadge>
+                ) : (
+                  <ExpectedAccountingCoverageBadge totals={report.totals} />
+                )}
               </td>
               <td>
                 <AdminTableSubstack>
-                  <span>
-                    Customer payment <MoneyText amount={report.totals.customerPaymentAmount} currency={currency} /> · Partner
-                    payout <MoneyText amount={report.totals.partnerPayoutAmount} currency={currency} />
-                  </span>
-                  <span className="muted">
-                    Withholding <MoneyText amount={report.totals.partnerWithholdingTotal} currency={currency} /> · Platform
-                    gross <MoneyText amount={report.totals.platformFeeGross} currency={currency} /> · Net revenue{' '}
-                    <MoneyText amount={report.totals.platformFeeNetRevenue} currency={currency} />
-                  </span>
+                  {noExpectedAvailable ? null : (
+                    <>
+                      <span>
+                        {report.totals.availability === 'PARTIAL' ? 'Partial total · ' : null}
+                        Customer payment <MoneyText amount={report.totals.customerPaymentAmount} currency={currency} /> ·{' '}
+                        Partner payout <MoneyText amount={report.totals.partnerPayoutAmount} currency={currency} />
+                      </span>
+                      <span className="muted">
+                        Withholding <MoneyText amount={report.totals.partnerWithholdingTotal} currency={currency} /> · Platform
+                        gross <MoneyText amount={report.totals.platformFeeGross} currency={currency} /> · Net revenue{' '}
+                        <MoneyText amount={report.totals.platformFeeNetRevenue} currency={currency} />
+                      </span>
+                    </>
+                  )}
+                  <ExpectedAccountingCoverageNote subject="money-flow amounts" totals={report.totals} />
                 </AdminTableSubstack>
               </td>
             </tr>
@@ -189,7 +230,9 @@ export function FinanceCloseoutSettlementDryRunSection({
               <td>
                 <AdminTableSubstack>
                   <span>Payment: {groupedCounts(report.paymentMethods, 'None')}</span>
-                  <span className="muted">Monthly close: {groupedCounts(report.periodStatuses, 'None')}</span>
+                  <span className="muted">
+                    Monthly close: {operatorPeriodStatusGroupedCounts(report.periodStatuses, 'None')}
+                  </span>
                 </AdminTableSubstack>
               </td>
             </tr>
@@ -225,14 +268,20 @@ export function FinanceCloseoutSettlementDryRunSection({
                 </td>
                 <td>
                   <AdminTableSubstack>
-                    <span>
-                      Customer <MoneyText amount={batch.totals.customerPaymentAmount} currency={currency} /> · Partner{' '}
-                      <MoneyText amount={batch.totals.partnerPayoutAmount} currency={currency} />
-                    </span>
-                    <span className="muted">
-                      Fee gross <MoneyText amount={batch.totals.platformFeeGross} currency={currency} /> · Withholding{' '}
-                      <MoneyText amount={batch.totals.partnerWithholdingTotal} currency={currency} />
-                    </span>
+                    {batch.totals.availability === 'UNAVAILABLE' ? null : (
+                      <>
+                        <span>
+                          {batch.totals.availability === 'PARTIAL' ? 'Partial total · ' : null}
+                          Customer <MoneyText amount={batch.totals.customerPaymentAmount} currency={currency} /> · Partner{' '}
+                          <MoneyText amount={batch.totals.partnerPayoutAmount} currency={currency} />
+                        </span>
+                        <span className="muted">
+                          Fee gross <MoneyText amount={batch.totals.platformFeeGross} currency={currency} /> · Withholding{' '}
+                          <MoneyText amount={batch.totals.partnerWithholdingTotal} currency={currency} />
+                        </span>
+                      </>
+                    )}
+                    <ExpectedAccountingCoverageNote subject="batch flow amounts" totals={batch.totals} />
                   </AdminTableSubstack>
                 </td>
                 <td>
@@ -257,6 +306,39 @@ export function FinanceCloseoutSettlementDryRunSection({
   );
 }
 
+function ExpectedAccountingCoverageBadge({
+  totals,
+}: {
+  readonly totals: AdminBookingSettlementDryRunTotals;
+}) {
+  return <StatusBadge tone="warning">{expectedAccountingCoverageLabel(totals)}</StatusBadge>;
+}
+
+function ExpectedAccountingCoverageNote({
+  subject,
+  totals,
+}: {
+  readonly subject: string;
+  readonly totals: AdminBookingSettlementDryRunTotals;
+}) {
+  if (totals.availability === 'ALL_AVAILABLE') return null;
+
+  const unavailableCount = totals.totalCount - totals.computedCount;
+  return (
+    <span className="muted">
+      {totals.availability === 'UNAVAILABLE'
+        ? `Expected ${subject} unavailable for ${unavailableCount} record(s). No unavailable amount is represented as 0 VND.`
+        : `${totals.computedCount} of ${totals.totalCount} record(s) are computable; ${unavailableCount} unavailable record(s) are excluded from this partial total.`}
+    </span>
+  );
+}
+
+function expectedAccountingCoverageLabel(totals: AdminBookingSettlementDryRunTotals) {
+  return `${totals.availability === 'UNAVAILABLE' ? 'Unavailable' : 'Partial'} · ${totals.computedCount} of ${
+    totals.totalCount
+  } computable`;
+}
+
 function groupedCounts(groups: Record<string, number>, emptyLabel: string) {
   const entries = Object.entries(groups).sort(([left], [right]) => left.localeCompare(right));
   return entries.length ? entries.map(([label, count]) => `${label}: ${count}`).join(' · ') : emptyLabel;
@@ -267,6 +349,32 @@ function operatorGroupedCounts(groups: Record<string, number>, emptyLabel: strin
   return entries.length
     ? entries.map(([label, count]) => `${operatorCodeLabel(label)}: ${count}`).join(' · ')
     : emptyLabel;
+}
+
+function operatorPeriodStatusGroupedCounts(groups: Record<string, number>, emptyLabel: string) {
+  const entries = Object.entries(groups).sort(([left], [right]) => left.localeCompare(right));
+  return entries.length
+    ? entries.map(([label, count]) => `${financeCloseoutPeriodStatusLabel(label)}: ${count}`).join(' · ')
+    : emptyLabel;
+}
+
+export function financeCloseoutPeriodStatusLabel(status: string) {
+  switch (status) {
+    case 'OPEN_OR_UNLINKED':
+      return 'Open or not linked';
+    case 'CLOSED':
+      return 'Closed';
+    case 'DECLARED':
+      return 'Declared';
+    case 'DRAFT':
+      return 'Draft';
+    case 'PAID':
+      return 'Paid';
+    case 'REVIEWED':
+      return 'Reviewed';
+    default:
+      return operatorCodeLabel(status);
+  }
 }
 
 function operatorCodeLabel(code: string) {

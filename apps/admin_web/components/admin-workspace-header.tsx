@@ -336,7 +336,7 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
             </div>
             ) : null}
         </div>
-        <details className="topbar-menu topbar-reauth-menu">
+        <details className="topbar-menu topbar-reauth-menu" id="admin-reauthentication-menu">
           <summary
             aria-label="Confirm identity for high-risk changes"
             className="topbar-icon-chip"
@@ -344,7 +344,7 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
           >
             <KeyRound aria-hidden="true" size={18} />
           </summary>
-          <div className="topbar-dropdown topbar-reauth-panel">
+          <div className="topbar-dropdown topbar-reauth-panel" id="admin-reauthentication-panel">
             <AdminReauthenticateOperatorForm />
           </div>
         </details>

@@ -41,6 +41,18 @@ describe('AppSessionsCheckQueueSection', () => {
     expect(classNamesIn(section)).toContain('empty-state');
   });
 
+  it('does not claim a global clear state for an empty current-page sample', () => {
+    const section = AppSessionsCheckQueueSection({
+      items: [],
+      scopeLabel: 'Current page',
+    });
+
+    const rendered = textContent(section);
+    expect(rendered).toContain('Current page review queue');
+    expect(rendered).toContain('No issue on this page');
+    expect(rendered).not.toContain('No session check');
+  });
+
   it('uses the shared StatusBadge atom for the check queue status', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/app-sessions/app-sessions-check-queue-section.tsx'),

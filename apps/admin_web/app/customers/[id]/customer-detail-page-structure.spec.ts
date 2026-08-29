@@ -11,8 +11,8 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('CustomerBookingOperationBoard');
     expect(pageSource).toContain('CustomerBookingOperationBoard');
     expect(pageSource).toContain('customer-chat-history-section');
-    expect(pageSource).toContain('chatHistoryPage');
-    expect(pageSource).toContain('AdminTablePaginationFooter');
+    expect(pageSource).not.toContain('chatHistoryPage');
+    expect(pageSource).not.toContain('AdminTablePaginationFooter');
     expect(pageSource).toContain('const shouldRenderReviewRecords =');
     expect(pageSource).toContain('{shouldRenderReviewRecords ? (');
     expect(pageSource).toContain('const recordChatBookings = buildCustomerChatArchiveBookings(bookings)');

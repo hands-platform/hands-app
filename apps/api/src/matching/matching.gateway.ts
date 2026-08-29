@@ -38,10 +38,11 @@ export class MatchingGateway implements OnGatewayConnection {
       await client.join(SOCKET_ROOMS.user(user.id));
       if (
         user.roles.includes(Role.ADMIN) &&
-        adminOperatorHasRequiredCategory(
-          user.adminPermissionCategories ?? [],
-          AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
-        )
+        (user.roles.includes(Role.MASTER_ADMIN) ||
+          adminOperatorHasRequiredCategory(
+            user.adminPermissionCategories ?? [],
+            AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
+          ))
       ) {
         await client.join(SOCKET_ROOMS.adminBookings());
       }
@@ -213,10 +214,11 @@ export class MatchingGateway implements OnGatewayConnection {
 
   private async canAccessBookingRoom(bookingId: string, user: AuthenticatedUser) {
     if (user.roles.includes(Role.ADMIN)) {
-      return adminOperatorHasRequiredCategory(
-        user.adminPermissionCategories ?? [],
-        AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
-      );
+      return user.roles.includes(Role.MASTER_ADMIN) ||
+        adminOperatorHasRequiredCategory(
+          user.adminPermissionCategories ?? [],
+          AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
+        );
     }
 
     if (user.roles.includes(Role.CUSTOMER)) {

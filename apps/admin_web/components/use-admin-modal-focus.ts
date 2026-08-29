@@ -33,8 +33,8 @@ export function useAdminModalFocus(
         returnFocusRef?.current ??
         (document.activeElement instanceof HTMLElement ? document.activeElement : null);
       const returnFocus = returnFocusRef?.current ?? previousFocus;
-      const focusable = modalFocusableElements(container);
-      (focusable[0] ?? container).focus();
+      container.scrollTop = 0;
+      container.focus({ preventScroll: true });
       const background = disableModalBackground(container);
 
       function handleKeyDown(event: KeyboardEvent) {
@@ -55,7 +55,10 @@ export function useAdminModalFocus(
 
         const first = currentFocusable[0]!;
         const last = currentFocusable.at(-1)!;
-        if (event.shiftKey && document.activeElement === first) {
+        if (!event.shiftKey && document.activeElement === container) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
           event.preventDefault();
           last.focus();
         } else if (!event.shiftKey && document.activeElement === last) {
@@ -68,7 +71,7 @@ export function useAdminModalFocus(
       cleanup = () => {
         container.removeEventListener('keydown', handleKeyDown);
         restoreModalBackground(background);
-        returnFocus?.focus();
+        returnFocus?.focus({ preventScroll: true });
       };
     }, 0);
 

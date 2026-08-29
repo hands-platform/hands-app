@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
+import type { ReactNode } from 'react';
 
 import type { AdminBookingSettlementReversalEntry } from '../../../../lib/admin-api';
-import { adminGet } from '../../../../lib/admin-api';
+import { adminGetResult } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminTextLink } from '../../../../components/admin-text-link';
+import { AdminErrorState } from '../../../../components/admin-surface';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { readPlainRecord, shortId } from '../../../../lib/admin-format';
@@ -15,41 +17,67 @@ import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   bookingSettlementAuditDetailHref,
-  bookingSettlementReversalHref,
   buildBookingSettlementReversalDetailApiHref,
   buildBookingSettlementReversalEvidenceState,
   buildBookingSettlementReversalTraceLinks,
   generalLedgerDetailHref,
   monthlyTaxClosingHref,
   paymentClearingDetailHref,
+  safeBookingSettlementReversalReturnTo,
   TAX_SETTLEMENT_DEFAULT_TAKE,
 } from '../../tax-settlement-page-model';
 
 type SettlementReversalDetailPageProps = {
   readonly params?: Promise<{ readonly id?: string }>;
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function SettlementReversalDetailPage({ params }: SettlementReversalDetailPageProps) {
-  const id = (await params)?.id;
+export default async function SettlementReversalDetailPage({
+  params,
+  searchParams,
+}: SettlementReversalDetailPageProps) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([
+    params ?? Promise.resolve<{ readonly id?: string }>({}),
+    searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({}),
+  ]);
+  const id = resolvedParams.id;
   if (!id) {
     notFound();
   }
+  const returnToParam = resolvedSearchParams.returnTo;
+  const returnTo = safeBookingSettlementReversalReturnTo(
+    Array.isArray(returnToParam) ? returnToParam[0] : returnToParam,
+  );
 
-  const reversal = await adminGet<AdminBookingSettlementReversalEntry | null>(
+  const reversalResult = await adminGetResult<AdminBookingSettlementReversalEntry | null>(
     buildBookingSettlementReversalDetailApiHref(id),
     null,
   );
-  if (!reversal) {
+  if (!reversalResult.ok && reversalResult.status === 404) {
     notFound();
   }
+  if (!reversalResult.ok || !reversalResult.data) {
+    return (
+      <AdminPageTemplate
+        actions={<AdminFormControlLink href={returnTo}>Back to reversals</AdminFormControlLink>}
+        description="The settlement reversal evidence could not be loaded. No closeout conclusion has been inferred."
+        title="Settlement Reversal Detail"
+      >
+        <AdminErrorState
+          action={<AdminFormControlLink href={returnTo}>Back to reversals</AdminFormControlLink>}
+          message="Retry the reversal record before making an accounting or closeout decision."
+          title="Settlement reversal evidence unavailable"
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const reversal = reversalResult.data;
 
   const evidenceState = buildBookingSettlementReversalEvidenceState(reversal);
   const evidenceLinks = buildBookingSettlementReversalTraceLinks(reversal);
   const originalSettlement = reversal.originalSettlementSnapshot ?? null;
   const reversalJournal = reversal.accountingJournalBatches?.[0] ?? null;
-  const journalBalanceDelta = reversalJournal
-    ? Math.abs(reversalJournal.totalDebit - reversalJournal.totalCredit)
-    : null;
+  const journalIntegrity = reversalJournal?.integrity ?? null;
   const reversalClearing = reversal.paymentClearingEntries?.[0] ?? null;
   const bankClearing = bankClearingEvidence(reversalClearing, reversal.currency);
   const allocationDelta = reversalAllocationDelta(reversal);
@@ -69,30 +97,49 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   return (
     <AdminPageTemplate
       actions={
-        <AdminFormControlLink
-          className="button-secondary"
-          href={bookingSettlementReversalHref({ page: 1, range: '30d', review: 'all', take: 25 })}
-        >
+        <AdminFormControlLink className="button-secondary" href={returnTo}>
           Back to reversals
         </AdminFormControlLink>
       }
       description="Single closed-period settlement reversal record with refund, journal, clearing, and original settlement evidence."
       metrics={[
-        { helper: 'Reversal settlement state.', kind: 'record', label: 'Settlement', scope: 'Reversal record', value: reversal.settlementStatus },
-        { helper: 'Tax reversal state.', kind: 'record', label: 'Tax status', scope: 'Reversal record', value: reversal.taxStatus },
+        {
+          helper: 'Reversal settlement state.',
+          kind: 'record',
+          label: 'Settlement',
+          scope: 'Reversal record',
+          value: reversal.settlementStatus,
+        },
+        {
+          helper: 'Tax reversal state.',
+          kind: 'record',
+          label: 'Tax status',
+          scope: 'Reversal record',
+          value: reversal.taxStatus,
+        },
         {
           helper: 'Customer payment amount reversed by this record.',
           kind: 'record',
           label: 'Customer reversal',
           scope: 'Reversal record',
-          value: <MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />,
+          value: (
+            <>
+              <MoneyText amount={Math.abs(reversal.customerPaymentAmount)} currency={reversal.currency} />{' '}
+              reversed
+            </>
+          ),
         },
         {
           helper: 'Partner payout amount reversed by this record.',
           kind: 'record',
           label: 'Partner reversal',
           scope: 'Reversal record',
-          value: <MoneyText amount={reversal.partnerPayoutAmount} currency={reversal.currency} />,
+          value: (
+            <>
+              <MoneyText amount={Math.abs(reversal.partnerPayoutAmount)} currency={reversal.currency} />{' '}
+              offset
+            </>
+          ),
         },
       ]}
       title="Settlement Reversal Detail"
@@ -100,13 +147,13 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
       <FinanceTablePanel
         description={
           <>
-            Reversal ID {shortId(reversal.id)} · Occurred <DateTimeText value={reversal.occurredAt} /> · Period{' '}
-            {reversal.monthlyPeriod}
+            Reversal ID {shortId(reversal.id)} · Occurred <DateTimeText value={reversal.occurredAt} /> ·
+            Period {reversal.monthlyPeriod}
           </>
         }
         resultLabel={evidenceState.label}
         resultTone={evidenceState.tone}
-        title="Refund after payout evidence"
+        title="Settlement reversal evidence"
       >
         <FinanceOperatingPath
           ariaLabel="Settlement reversal operating path"
@@ -123,7 +170,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                 </>
               ),
               label: 'Reversal impact',
-              value: allocationDelta === 0 ? 'Balanced' : 'Review required',
+              value: allocationDelta === 0 ? 'Amounts offset' : 'Review required',
             },
             {
               detail: evidenceState.detail,
@@ -184,7 +231,13 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           <FinanceDetailInfoItem label="Next closeout action" value={nextCloseoutAction} />
           <FinanceDetailInfoItem
             label="Paid payout refund"
-            value={payoutRefundEvidence.refundAfterPaidPayout ? 'Yes' : 'No'}
+            value={
+              payoutRefundEvidence.refundAfterPaidPayout === null
+                ? 'Review required'
+                : payoutRefundEvidence.refundAfterPaidPayout
+                  ? 'Yes'
+                  : 'No'
+            }
           />
           <FinanceDetailInfoItem
             label="Partner receivable treatment"
@@ -192,32 +245,49 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem
             label="Receivable amount"
-            value={<MoneyText amount={payoutRefundEvidence.receivableAmount} currency={reversal.currency} />}
+            value={
+              payoutRefundEvidence.receivableAmount === null ? (
+                'Evidence unavailable'
+              ) : (
+                <MoneyText amount={payoutRefundEvidence.receivableAmount} currency={reversal.currency} />
+              )
+            }
           />
+          <FinanceDetailInfoItem label="Receivable evidence" value={payoutRefundEvidence.evidenceLabel} />
           <FinanceDetailInfoItem
             label="Bank clearing check"
             value={
               reversalClearing ? (
-                <>
-                  {bankClearing.label}
-                  <span className="muted admin-block">
-                    Matched <MoneyText amount={bankClearing.matchedAmount} currency={bankClearing.currency} />
-                  </span>
-                  <span className="muted admin-block">
-                    Remaining <MoneyText amount={bankClearing.remainingAmount} currency={bankClearing.currency} />
-                  </span>
+                <EvidenceBreakdown
+                  headline={bankClearing.label}
+                  items={[
+                    {
+                      label: 'Matched',
+                      value: (
+                        <MoneyText amount={bankClearing.matchedAmount} currency={bankClearing.currency} />
+                      ),
+                    },
+                    {
+                      label: 'Remaining',
+                      value: (
+                        <MoneyText amount={bankClearing.remainingAmount} currency={bankClearing.currency} />
+                      ),
+                    },
+                  ]}
+                >
                   {bankClearing.latestActiveMatch ? (
                     <AdminTextLink
-                      className="admin-block"
                       href={`/finance-tax/bank-reconciliation/${bankClearing.latestActiveMatch.bankTransactionId}`}
                     >
                       {bankClearing.latestActiveMatch.bankTransaction?.transferRef ??
                         shortId(bankClearing.latestActiveMatch.bankTransactionId)}
                     </AdminTextLink>
                   ) : null}
-                </>
+                </EvidenceBreakdown>
+              ) : reversal.reversalEvidence?.policy.externalClearingRequired === false ? (
+                'External clearing not required'
               ) : (
-                'No clearing'
+                'Clearing evidence missing'
               )
             }
           />
@@ -252,56 +322,110 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
 
       <FinanceTablePanel
         description="Amounts below are the reversal entry values. They should offset the original posted settlement through journal and clearing evidence, not by editing the closed record."
-        resultLabel={<MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />}
-        resultTone="warning"
+        resultLabel={
+          <>
+            <MoneyText amount={Math.abs(reversal.customerPaymentAmount)} currency={reversal.currency} />{' '}
+            reversed
+          </>
+        }
+        resultTone={evidenceState.tone}
         title="Reversal accounting impact"
       >
         <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Customer payment reversal"
-            value={<MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.customerPaymentAmount)} currency={reversal.currency} />{' '}
+                reversed
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Partner payout reversal"
-            value={<MoneyText amount={reversal.partnerPayoutAmount} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.partnerPayoutAmount)} currency={reversal.currency} />{' '}
+                offset
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Partner taxable revenue"
-            value={<MoneyText amount={reversal.partnerTaxableRevenue} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.partnerTaxableRevenue)} currency={reversal.currency} />{' '}
+                offset
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Partner VAT"
-            value={<MoneyText amount={reversal.partnerVatAmount} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.partnerVatAmount)} currency={reversal.currency} />{' '}
+                reversed
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Partner PIT"
-            value={<MoneyText amount={reversal.partnerPitAmount} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.partnerPitAmount)} currency={reversal.currency} />{' '}
+                reversed
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Total partner withholding"
-            value={<MoneyText amount={reversal.partnerWithholdingTotal} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.partnerWithholdingTotal)} currency={reversal.currency} />{' '}
+                reversed
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Platform fee gross"
-            value={<MoneyText amount={reversal.platformFeeGross} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.platformFeeGross)} currency={reversal.currency} /> offset
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Platform net revenue"
-            value={<MoneyText amount={reversal.platformFeeNetRevenue} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.platformFeeNetRevenue)} currency={reversal.currency} />{' '}
+                offset
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Company output VAT"
-            value={<MoneyText amount={reversal.companyOutputVat} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.companyOutputVat)} currency={reversal.currency} />{' '}
+                reversed
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Payment processing fee"
-            value={<MoneyText amount={reversal.paymentProcessingFee} currency={reversal.currency} />}
+            value={
+              <>
+                <MoneyText amount={Math.abs(reversal.paymentProcessingFee)} currency={reversal.currency} />{' '}
+                reversed
+              </>
+            }
           />
           <FinanceDetailInfoItem
             label="Reversal allocation check"
             value={
               <>
-                {allocationDelta === 0 ? 'Balanced' : 'Review required'}
+                {allocationDelta === 0 ? 'Amounts offset' : 'Review required'}
                 <span className="muted admin-block">
                   Delta <MoneyText amount={allocationDelta} currency={reversal.currency} />
                 </span>
@@ -309,23 +433,64 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             }
           />
           <FinanceDetailInfoItem
-            label="Journal balance check"
+            label="Journal integrity check"
             value={
-              reversalJournal ? (
-                <>
-                  {journalBalanceDelta === 0 ? 'Balanced' : 'Review required'}
-                  <span className="muted admin-block">
-                    Debit <MoneyText amount={reversalJournal.totalDebit} currency={reversal.currency} />
-                  </span>
-                  <span className="muted admin-block">
-                    Credit <MoneyText amount={reversalJournal.totalCredit} currency={reversal.currency} />
-                  </span>
-                  {journalBalanceDelta ? (
-                    <span className="muted admin-block">
-                      Delta <MoneyText amount={journalBalanceDelta} currency={reversal.currency} />
-                    </span>
-                  ) : null}
-                </>
+              reversalJournal && journalIntegrity ? (
+                <EvidenceBreakdown
+                  headline={
+                    journalIntegrity.state === 'CLEAR'
+                      ? 'Clear'
+                      : journalIntegrity.state === 'BLOCKED'
+                        ? 'Review required'
+                        : 'Evidence unavailable'
+                  }
+                  items={[
+                    {
+                      label: 'Header debit',
+                      value: <MoneyText amount={reversalJournal.totalDebit} currency={reversal.currency} />,
+                    },
+                    {
+                      label: 'Header credit',
+                      value: <MoneyText amount={reversalJournal.totalCredit} currency={reversal.currency} />,
+                    },
+                    {
+                      label: 'Entry debit',
+                      value: <MoneyText amount={journalIntegrity.entryDebit} currency={reversal.currency} />,
+                    },
+                    {
+                      label: 'Entry credit',
+                      value: <MoneyText amount={journalIntegrity.entryCredit} currency={reversal.currency} />,
+                    },
+                    ...(journalIntegrity.discrepancyAmount > 0
+                      ? [
+                          {
+                            label: 'Maximum discrepancy',
+                            value: (
+                              <MoneyText
+                                amount={journalIntegrity.discrepancyAmount}
+                                currency={reversal.currency}
+                              />
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(journalIntegrity.formulaDelta != null
+                      ? [
+                          {
+                            label: 'Formula delta',
+                            value: (
+                              <MoneyText
+                                amount={journalIntegrity.formulaDelta}
+                                currency={reversal.currency}
+                              />
+                            ),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              ) : reversalJournal ? (
+                'Integrity unavailable'
               ) : (
                 'No journal'
               )
@@ -351,11 +516,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem
             label="Reversal period"
-            value={
-              <AdminTextLink href={reversalMonthlyClosingHref}>
-                {reversal.monthlyPeriod}
-              </AdminTextLink>
-            }
+            value={<AdminTextLink href={reversalMonthlyClosingHref}>{reversal.monthlyPeriod}</AdminTextLink>}
           />
           <FinanceDetailInfoItem
             label="Original closing"
@@ -370,7 +531,10 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             value={originalSettlement?.postedAt ? <DateTimeText value={originalSettlement.postedAt} /> : '-'}
           />
           <FinanceDetailInfoItem label="Original tax status" value={originalSettlement?.taxStatus ?? '-'} />
-          <FinanceDetailInfoItem label="Original booking status" value={originalSettlement?.booking?.status ?? '-'} />
+          <FinanceDetailInfoItem
+            label="Original booking status"
+            value={originalSettlement?.booking?.status ?? '-'}
+          />
           <FinanceDetailInfoItem label="Correction method" value="Reversal entry only" />
           <FinanceDetailInfoItem label="Direct edit allowed" value="No" />
         </FinanceDetailGrid>
@@ -384,28 +548,50 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         title="Reversal evidence links"
       >
         <FinanceDataTable
-            emptyMessage="No reversal evidence links are available."
-            headers={['Evidence', 'Record', 'Status', 'Record key']}
-            rowCount={evidenceLinks.length}
-          >
-            {evidenceLinks.map((link) => (
-              <tr key={link.label}>
-                <td>
-                  <AdminTextLink href={link.href}>
-                    {link.label}
-                  </AdminTextLink>
-                </td>
-                <td>{link.value}</td>
-                <td>{evidenceStatusForLink(link.label, reversal)}</td>
-                <td>{evidenceSourceForLink(link.label, reversal)}</td>
-              </tr>
-            ))}
-          </FinanceDataTable>
+          emptyMessage="No reversal evidence links are available."
+          headers={['Evidence', 'Record', 'Status', 'Record key']}
+          rowCount={evidenceLinks.length}
+        >
+          {evidenceLinks.map((link) => (
+            <tr key={link.label}>
+              <td>
+                <AdminTextLink href={link.href}>{link.label}</AdminTextLink>
+              </td>
+              <td>{link.value}</td>
+              <td>{evidenceStatusForLink(link.label, reversal)}</td>
+              <td>{evidenceSourceForLink(link.label, reversal)}</td>
+            </tr>
+          ))}
+        </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }
 
+function EvidenceBreakdown({
+  children,
+  headline,
+  items,
+}: {
+  readonly children?: ReactNode;
+  readonly headline: ReactNode;
+  readonly items: readonly { readonly label: string; readonly value: ReactNode }[];
+}) {
+  return (
+    <div className="finance-evidence-breakdown">
+      <strong>{headline}</strong>
+      <dl>
+        {items.map((item) => (
+          <div key={item.label}>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {children ? <div className="admin-mt-8">{children}</div> : null}
+    </div>
+  );
+}
 
 function reversalAllocationDelta(reversal: AdminBookingSettlementReversalEntry) {
   return (
@@ -471,29 +657,58 @@ function reversalCloseoutLabel(
   return 'Ready for closeout review';
 }
 
-function payoutRefundReceivableEvidence(reversal: AdminBookingSettlementReversalEntry) {
+export function payoutRefundReceivableEvidence(reversal: AdminBookingSettlementReversalEntry) {
   const reversalMetadata = readPlainRecord(reversal.metadata);
   const journalMetadata = readPlainRecord(reversal.accountingJournalBatches?.[0]?.metadata);
-  const refundAfterPaidPayout =
-    booleanMetadata(journalMetadata, 'refundAfterPartnerPayout') ||
-    booleanMetadata(reversalMetadata, 'refundAfterPartnerPayout') ||
-    booleanMetadata(reversalMetadata, 'refundAfterPayout') ||
-    booleanMetadata(reversalMetadata, 'reversalAffectsPartnerReceivable');
-  const receivableAmount =
+  const journalPaidPayout = booleanMetadata(journalMetadata, 'refundAfterPartnerPayout');
+  const reversalPaidPayout =
+    booleanMetadata(reversalMetadata, 'refundAfterPartnerPayout') ??
+    booleanMetadata(reversalMetadata, 'refundAfterPayout');
+  const retainedAmount =
     numberMetadata(journalMetadata, 'partnerRefundReceivableAmount') ??
-    numberMetadata(reversalMetadata, 'partnerRefundReceivableAmount') ??
-    (refundAfterPaidPayout ? Math.abs(reversal.partnerPayoutAmount) : 0);
+    numberMetadata(reversalMetadata, 'partnerRefundReceivableAmount');
+  const contradictory =
+    (journalPaidPayout !== null && reversalPaidPayout !== null && journalPaidPayout !== reversalPaidPayout) ||
+    ((journalPaidPayout === false || reversalPaidPayout === false) && (retainedAmount ?? 0) > 0);
+
+  if (contradictory) {
+    return {
+      evidenceLabel: 'Contradictory retained payout evidence — review required',
+      receivableAmount: null,
+      refundAfterPaidPayout: null,
+      treatment: 'Partner receivable treatment unknown',
+    };
+  }
+
+  const refundAfterPaidPayout = journalPaidPayout ?? reversalPaidPayout;
+  if (refundAfterPaidPayout === true) {
+    return {
+      evidenceLabel: 'Paid payout and receivable evidence retained',
+      receivableAmount: retainedAmount ?? Math.abs(reversal.partnerPayoutAmount),
+      refundAfterPaidPayout: true,
+      treatment: 'Partner receivable / negative wallet',
+    };
+  }
+  if (refundAfterPaidPayout === false) {
+    return {
+      evidenceLabel: 'Unpaid payout liability reversal retained',
+      receivableAmount: 0,
+      refundAfterPaidPayout: false,
+      treatment: 'Partner wallet liability reversal',
+    };
+  }
 
   return {
-    receivableAmount,
-    refundAfterPaidPayout,
-    treatment: refundAfterPaidPayout
-      ? 'Partner receivable / negative wallet'
-      : 'Partner wallet liability reversal',
+    evidenceLabel: 'Retained payout evidence unavailable — review required',
+    receivableAmount: null,
+    refundAfterPaidPayout: null,
+    treatment: 'Partner receivable treatment unknown',
   };
 }
 
-type ReversalClearingEntry = NonNullable<AdminBookingSettlementReversalEntry['paymentClearingEntries']>[number];
+type ReversalClearingEntry = NonNullable<
+  AdminBookingSettlementReversalEntry['paymentClearingEntries']
+>[number];
 
 function bankClearingEvidence(clearing: ReversalClearingEntry | null, fallbackCurrency: string) {
   const matches = clearing?.bankReconciliationMatches ?? [];
@@ -527,7 +742,8 @@ function latestActiveClearingMatch(clearing: ReversalClearingEntry | null) {
 }
 
 function booleanMetadata(record: Record<string, unknown> | null, key: string) {
-  return record?.[key] === true;
+  const value = record?.[key];
+  return typeof value === 'boolean' ? value : null;
 }
 
 function numberMetadata(record: Record<string, unknown> | null, key: string) {

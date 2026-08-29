@@ -10,24 +10,7 @@ import {
   adminGetResult,
   adminPatchOrThrow,
 } from '../../lib/admin-api';
-
-export type OperationsPolicyActionState = {
-  readonly fieldErrors?: Partial<Record<'confirmationLabel' | 'confirmed' | 'reason' | 'value', string>>;
-  readonly message?: string;
-  readonly status: 'idle' | 'error' | 'success';
-  readonly success?: {
-    readonly after: string;
-    readonly auditId: string | null;
-    readonly auditHref: string;
-    readonly before: string;
-    readonly changedBy: string;
-    readonly effectiveAt: string;
-    readonly policy: string;
-    readonly reason: string;
-  };
-};
-
-export const initialOperationsPolicyActionState: OperationsPolicyActionState = { status: 'idle' };
+import type { OperationsPolicyActionState } from './action-state';
 
 export async function updateOperationalPolicy(
   _previousState: OperationsPolicyActionState,
@@ -119,7 +102,7 @@ export async function updateOperationalPolicy(
         after: String(saved.value),
         auditId: saved.auditId ?? null,
         auditHref: saved.auditId
-          ? `/audit-log?bucket=Operations%2FPolicy&event=${encodeURIComponent(saved.auditId)}&range=all&sort=newest`
+          ? `/operations-policy?details=audit#policy-audit-${encodeURIComponent(saved.auditId)}`
           : '/operations-policy?details=audit',
         before: String(expectedValue),
         changedBy: saved.updatedBy?.fullName ?? saved.updatedBy?.phone ?? 'Current operator',
@@ -143,6 +126,13 @@ export async function updateOperationalPolicy(
         );
       }
       if (error.status === 401 || error.status === 403) {
+        if (readApiCode(error.payload) === 'RECENT_REAUTH_REQUIRED') {
+          return policyActionError(
+            'Confirm your password and MFA for this Admin session, then retry the unchanged policy draft.',
+            undefined,
+            true,
+          );
+        }
         return policyActionError('Your session does not have permission to change this policy.');
       }
       if (error.status === 400) {
@@ -178,8 +168,9 @@ export async function updateOperationalPolicy(
 function policyActionError(
   message: string,
   fieldErrors?: OperationsPolicyActionState['fieldErrors'],
+  reauthRequired = false,
 ): OperationsPolicyActionState {
-  return { fieldErrors, message, status: 'error' };
+  return { fieldErrors, message, ...(reauthRequired ? { reauthRequired: true } : {}), status: 'error' };
 }
 
 function normalizeReason(value: string) {
@@ -208,4 +199,10 @@ function readApiMessage(payload: unknown) {
   const message = (payload as { message?: unknown }).message;
   if (Array.isArray(message)) return message.map(String).join(' ').toLowerCase();
   return typeof message === 'string' ? message.toLowerCase() : '';
+}
+
+function readApiCode(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return '';
+  const code = (payload as { code?: unknown }).code;
+  return typeof code === 'string' ? code : '';
 }

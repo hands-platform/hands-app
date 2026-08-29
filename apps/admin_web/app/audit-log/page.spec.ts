@@ -47,14 +47,81 @@ describe('AuditLogPage', () => {
     expect(markup).toContain('This is not an empty result.');
     expect(markup).toContain('request-audit-1');
     expect(markup).not.toContain('Showing 0 of 0 events');
+    expect(markup).not.toContain('Export CSV');
+    expect(markup).not.toContain('Export JSON');
+    expect(markup).toContain('Refresh now');
   });
 
-  it('distinguishes permission denial from source failure', async () => {
-    mockedAdminGetResult.mockResolvedValue({ data: workspace([]), error: 'forbidden', ok: false, status: 403 } as never);
+  it.each([401, 403])('distinguishes %s permission denial from source failure', async (status) => {
+    mockedAdminGetResult.mockResolvedValue({ data: workspace([]), error: 'forbidden', ok: false, status } as never);
 
     const markup = renderToStaticMarkup(await AuditLogPage({ searchParams: Promise.resolve({}) }));
     expect(markup).toContain('Audit access denied');
     expect(markup).toContain('cannot read audit evidence');
+    expect(markup).not.toContain('Export CSV');
+    expect(markup).not.toContain('Export JSON');
+  });
+
+  it('keeps export available for a successful empty result with the active evidence scope', async () => {
+    mockedAdminGetResult.mockResolvedValue(ok(workspace([])) as never);
+
+    const markup = renderToStaticMarkup(await AuditLogPage({
+      searchParams: Promise.resolve({
+        bucket: 'Operations/Policy',
+        eventId: 'missing-event',
+        range: 'all',
+        view: 'MONEY_POLICY',
+      }),
+    }));
+
+    expect(markup).toContain('Export CSV');
+    expect(markup).toContain('Export JSON');
+    expect(markup).toContain('format=csv');
+    expect(markup).toContain('format=json');
+    expect(markup).toContain('eventId=missing-event');
+    expect(markup).toContain('bucket=Operations%2FPolicy');
+  });
+
+  it('uses identical cursor destinations in the compact top and retained bottom pagers', async () => {
+    const page = workspace([eventFixture()]);
+    page.totalCount = 66;
+    page.cursor = { next: 'cursor-next', previous: 'cursor-previous' };
+    mockedAdminGetResult.mockResolvedValue(ok(page) as never);
+
+    const markup = renderToStaticMarkup(await AuditLogPage({
+      searchParams: Promise.resolve({ cursor: 'cursor-current', range: 'all' }),
+    }));
+
+    for (const [label, cursor] of [
+      ['Previous page', 'cursor-previous'],
+      ['Next page', 'cursor-next'],
+    ]) {
+      const expected = `href="/audit-log?view=ALL&amp;range=all&amp;sort=newest&amp;cursor=${cursor}">${label}`;
+      expect(markup.split(expected)).toHaveLength(3);
+    }
+    const firstPage = 'href="/audit-log?view=ALL&amp;range=all&amp;sort=newest">First page';
+    expect(markup.split(firstPage)).toHaveLength(3);
+  });
+
+  it('renders the supported current-open recurring incident state without changing the raw table', async () => {
+    const page = workspace([eventFixture()]);
+    page.actionableIncidents = [{
+      href: '/background-jobs/incidents/incident-open-1',
+      id: 'incident-open-1',
+      label: 'Notification retry queue',
+      openedAt: '2026-08-28T01:00:00.000Z',
+      source: 'system_monitor',
+      target: 'background_job_recurring_incident:notification:retry',
+    }];
+    mockedAdminGetResult.mockResolvedValue(ok(page) as never);
+
+    const markup = renderToStaticMarkup(await AuditLogPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('1 open');
+    expect(markup).toContain('Notification retry queue');
+    expect(markup).toContain('background_job_recurring_incident:notification:retry');
+    expect(markup).toContain('Review incident');
+    expect(markup).toContain('Booking completed');
   });
 
   it('renders a notification-specific empty state with a return path', async () => {
@@ -85,6 +152,45 @@ describe('AuditLogPage', () => {
     expect(markup).toContain('Clear refinements');
     expect(markup).toContain('Exit policy scope');
     expect(markup).toContain('bucket=Operations%2FPolicy');
+  });
+
+  it('keeps exact evidence filters visibly and implicitly labelled after values are entered', async () => {
+    mockedAdminGetResult.mockResolvedValue(ok(workspace([])) as never);
+
+    const markup = renderToStaticMarkup(await AuditLogPage({
+      searchParams: Promise.resolve({
+        correlationId: 'correlation-exact',
+        eventId: 'event-exact',
+        objectType: 'booking',
+        requestId: 'request-exact',
+      }),
+    }));
+
+    for (const [label, name, value] of [
+      ['Object type', 'objectType', 'booking'],
+      ['Event ID', 'eventId', 'event-exact'],
+      ['Correlation ID', 'correlationId', 'correlation-exact'],
+      ['Request ID', 'requestId', 'request-exact'],
+    ]) {
+      expect(markup).toMatch(new RegExp(
+        `<label class="admin-form-search admin-form-control-labeled">[\\s\\S]*?<span class="admin-form-label">${label}</span>[\\s\\S]*?<input[^>]*name="${name}"[^>]*value="${value}"`,
+      ));
+    }
+  });
+
+  it('preserves the requested Booking context when clearing refinements', async () => {
+    mockedAdminGetResult.mockResolvedValue(ok(workspace([eventFixture()])) as never);
+
+    const markup = renderToStaticMarkup(await AuditLogPage({
+      searchParams: Promise.resolve({ bucket: 'Booking', q: 'booking.chat.search', range: 'all' }),
+    }));
+
+    const requestHref = String(mockedAdminGetResult.mock.calls[0]?.[0]);
+    expect(requestHref).toContain('bucket=Booking');
+    expect(requestHref).toContain('q=booking.chat.search');
+    expect(requestHref).toContain('range=all');
+    expect(markup).toContain('Clear refinements');
+    expect(markup).toContain('href="/audit-log?view=ALL&amp;range=all&amp;sort=newest&amp;bucket=Booking"');
   });
 });
 

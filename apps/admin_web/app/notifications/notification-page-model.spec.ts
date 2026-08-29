@@ -152,8 +152,10 @@ describe('notification page model', () => {
 
     expect(row?.incident).toMatchObject({
       href: '/notifications?issue=failed&failureProvider=FCM&failureCode=messaging%2Fmismatched-credential',
+      manageHref: '/notifications?incidentProvider=FCM&incidentFailureCode=messaging%2Fmismatched-credential',
       ownerLabel: 'Developer / System',
       provider: 'FCM',
+      sourceKey: 'delivery-failure:v1:production:FCM:messaging%2Fmismatched-credential',
     });
   });
   it('builds notification summary counts from delivery and alert records', () => {
@@ -1184,6 +1186,36 @@ describe('notification page model', () => {
     });
   });
 
+  it('keeps the final accessible notification page truthful without generating an unsupported skip', () => {
+    const notifications = Array.from({ length: 10 }, (_, index) =>
+      notification({
+        deliveries: [],
+        id: `boundary-notification-${index + 1}`,
+        type: 'booking.requested',
+      }),
+    );
+    const model = buildNotificationPageModel({
+      notificationSummary: {
+        generatedAt: '2026-08-27T00:00:00.000Z',
+        totalCount: 84_216,
+      },
+      notifications,
+      operationalPolicies: [],
+      params: { page: '1001', range: 'all', review: 'all' },
+    });
+
+    expect(model.notificationPagination).toMatchObject({
+      from: 10_001,
+      page: 1001,
+      to: 10_010,
+      totalPages: 1001,
+      totalRows: 84_216,
+    });
+    expect(buildNotificationApiHref({ page: '1002', range: 'all', review: 'all' })).toBe(
+      '/admin/notifications?take=10&skip=10000',
+    );
+  });
+
   it('uses server notification summary metrics instead of the currently loaded page rows', () => {
     const model = buildNotificationPageModel({
       notifications: [],
@@ -1697,6 +1729,9 @@ describe('notification page model', () => {
 
     expect(rows[0]?.incident?.href).toBe(
       '/notifications?issue=failed&scope=history&failureProvider=FCM_HTTP_V1&failureCode=INVALID_ARGUMENT&dataScope=unknown',
+    );
+    expect(rows[0]?.incident?.manageHref).toBe(
+      '/notifications?dataScope=unknown&incidentProvider=FCM_HTTP_V1&incidentFailureCode=INVALID_ARGUMENT',
     );
   });
 

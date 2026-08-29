@@ -1,0 +1,4 @@
+{
+  "highPrivilegeRoles": ["FINANCE_APPROVER", "MASTER_ADMIN"],
+  "releaseBlockingProvenances": ["FIXTURE", null]
+}

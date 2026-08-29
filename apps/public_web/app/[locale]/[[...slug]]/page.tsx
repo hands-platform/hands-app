@@ -10,6 +10,7 @@ import { ReferralIntroPage } from '../../../components/referral-intro-page';
 import { PublicDocumentPage, publicDocumentDefinition } from '../../../components/public-document-page';
 import { PublicNewsDetailPage, PublicNewsListPage } from '../../../components/public-news-pages';
 import { PublicSiteSection } from '../../../components/public-site-section';
+import { CmsPreviewStatus } from '../../../components/cms-preview-status';
 import { HandsSiteFooter, HandsSiteHeader } from '../../../components/hands-site-chrome';
 import { fallbackNewsArticle, newsArticleFromPage } from '../../../lib/public-news';
 import {
@@ -20,8 +21,7 @@ import {
 } from '../../../lib/public-partners';
 import {
   CMS_PREVIEW_COOKIE,
-  fetchPublicSitePage,
-  fetchPublicSitePreview,
+  fetchManagedPublicSitePage,
   isPublicSiteLocale,
   publicSiteBaseUrl,
   publicSiteKeyForRequest,
@@ -148,11 +148,14 @@ export default async function PublicManagedPage({
     redirect(`/vi${path === '/' ? '' : path}`);
   }
   const query = await searchParams;
-  const { page } = await managedPageForRoute(site, locale, path);
+  const { isPreview, page, previewRecovery } = await managedPageForRoute(site, locale, path);
+  const previewStatus = isPreview || previewRecovery
+    ? <CmsPreviewStatus invalid={previewRecovery} returnTo={`/${locale}${path === '/' ? '' : path}`} />
+    : null;
   if (page && path.startsWith('/news/')) {
     const article = newsArticleFromPage(page);
     if (!article) notFound();
-    return <PublicNewsDetailPage article={article} locale={locale} />;
+    return <>{previewStatus}<PublicNewsDetailPage article={article} locale={locale} /></>;
   }
   if (!page) {
     if ((site === 'PARTNER_RECRUITMENT' && path === '/') || path === '/partner-support') {
@@ -204,6 +207,7 @@ export default async function PublicManagedPage({
 
   return (
     <div className="hands-site public-managed-page">
+      {previewStatus}
       <HandsSiteHeader
         currentPath={path}
         locale={locale}
@@ -219,29 +223,13 @@ export default async function PublicManagedPage({
   );
 }
 
-async function previewPageForRoute(
-  token: string,
-  site: Awaited<ReturnType<typeof publicSiteKeyForRequest>>,
-  locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh',
-  path: string,
-) {
-  const page = await fetchPublicSitePreview(token);
-  return page.site === site && page.locale === locale && page.path === path ? page : null;
-}
-
 async function managedPageForRoute(
   site: Awaited<ReturnType<typeof publicSiteKeyForRequest>>,
   locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh',
   path: string,
 ) {
   const previewToken = (await cookies()).get(CMS_PREVIEW_COOKIE)?.value;
-  const previewPage = previewToken
-    ? await previewPageForRoute(previewToken, site, locale, path)
-    : null;
-  return {
-    isPreview: Boolean(previewPage),
-    page: previewPage ?? await fetchPublicSitePage(site, locale, path),
-  };
+  return fetchManagedPublicSitePage(previewToken, site, locale, path);
 }
 
 function routePath(slug?: string[]) {

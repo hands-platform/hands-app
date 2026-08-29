@@ -20,6 +20,7 @@ import {
   buildPaymentOperationsApiHref,
   buildPaymentPageHref,
   buildPaymentPageModel,
+  buildPaymentResetHref,
   buildPaymentServerPagination,
   buildPaymentSummaryApiHref,
 } from './payment-page-model';
@@ -188,8 +189,14 @@ export default async function PaymentsPage({ searchParams }: { readonly searchPa
         paymentStatus={model.filters.paymentStatus}
         q={model.filters.q}
         rangeLabel={model.dateRangeLabel}
+        resetHref={buildPaymentResetHref(model.filters)}
         review={model.filters.review}
         reviewLinks={model.reviewLinks}
+        historyAliasCounts={summaryResult.ok ? {
+          all: Object.values(summaryResult.data.queueCounts ?? {}).reduce((total, count) => total + (count ?? 0), 0),
+          authorized: summaryResult.data.authorized,
+          'callback-verified': summaryResult.data.callbackVerified,
+        } : undefined}
         queueCounts={summaryResult.ok ? summaryResult.data.queueCounts : undefined}
         totalCount={summaryResult.ok ? model.totalCount : model.payments.length}
         sort={model.filters.sort}

@@ -10,7 +10,10 @@ const { mockedRedirect } = vi.hoisted(() => ({
   }),
 }));
 
-vi.mock('next/navigation', () => ({ redirect: mockedRedirect }));
+vi.mock('next/navigation', () => ({
+  redirect: mockedRedirect,
+  usePathname: () => '/reviews/partner-customer-evaluations',
+}));
 
 vi.mock('../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
@@ -31,6 +34,9 @@ describe('PartnerCustomerEvaluationsPage', () => {
 
     expect(markup).toContain('Partner Notes About Customers');
     expect(markup).toContain('Internal · Not customer-visible');
+    expect(markup).toContain(
+      'Internal notes Partners submit when they mark a service complete. These notes are not customer-visible.',
+    );
     expect(markup).toContain('Partner note search');
     expect(markup).toContain('All dates');
     expect(markup).toContain('A retained internal Partner note.');
@@ -39,6 +45,20 @@ describe('PartnerCustomerEvaluationsPage', () => {
       [],
     );
     expect(String(mockedAdminGetResult.mock.calls[0]?.[0])).not.toContain('from=');
+  });
+
+  it('uses plain-language confirmation reason copy', async () => {
+    const page = await PartnerCustomerEvaluationsPage({
+      searchParams: Promise.resolve({
+        confirm: 'moderate',
+        noteId: 'partner-note-1',
+        targetStatus: 'REPORTED',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Reason for this change');
+    expect(markup).not.toContain('Review-state reason');
   });
 
   it('keeps Today explicit in API date boundaries', async () => {
@@ -95,6 +115,29 @@ describe('PartnerCustomerEvaluationsPage', () => {
     expect(markup).not.toContain('No Partner notes were submitted in this period.');
   });
 
+  it('measures the page-one summary-to-list request start order with deferred responses', async () => {
+    const summaryResponse = deferredResult({ data: summary(), ok: true, status: 200 });
+    const listResponse = deferredResult({ data: [note()], ok: true, status: 200 });
+    const started: string[] = [];
+
+    mockedAdminGetResult.mockImplementation((href) => {
+      if (String(href).includes('/summary')) {
+        started.push('summary');
+        return summaryResponse.promise as never;
+      }
+      started.push('list');
+      return listResponse.promise as never;
+    });
+
+    const pagePromise = PartnerCustomerEvaluationsPage({ searchParams: Promise.resolve({}) });
+    await vi.waitFor(() => expect(started).toEqual(['summary']));
+
+    summaryResponse.resolve();
+    await vi.waitFor(() => expect(started).toEqual(['summary', 'list']));
+    listResponse.resolve();
+    await pagePromise;
+  });
+
   it('canonicalizes page 99 and the canonical last page loads its rows', async () => {
     mockedAdminGetResult.mockResolvedValueOnce({ data: summary({ retained: 25, totalCount: 25 }), ok: true, status: 200 });
 
@@ -143,5 +186,17 @@ function note(input: Record<string, unknown> = {}) {
     providerProfile: { id: 'partner-1', displayName: 'Partner One' },
     status: 'PUBLISHED',
     ...input,
+  };
+}
+
+function deferredResult<T>(value: T) {
+  let resolvePromise: ((result: T) => void) | undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return {
+    promise,
+    resolve: () => resolvePromise?.(value),
   };
 }

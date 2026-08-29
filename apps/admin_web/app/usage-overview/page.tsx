@@ -44,6 +44,7 @@ import {
   buildUsageActionPriorities,
   normalizeUsageOverviewRange,
   usageOverviewRangeOptions,
+  usageOverviewEmptyRangeAction,
   usageOverviewWithDefaults,
   usageOverviewCustomHref,
   usageOverviewHref,
@@ -225,24 +226,36 @@ function UsageDataTrustNotice({ overview }: { readonly overview: AdminUsageOverv
   return (
     <div className="usage-overview-trust-stack" role="status" aria-label="Data health">
       <div className="usage-overview-data-health">
-        <div>
+        <div className={`usage-overview-data-health-item${usageUnavailable || usageDelayed ? ' is-warning' : ''}`}>
           <span>Usage telemetry</span>
-          <strong>{usageUnavailable ? 'Data unavailable' : usageDelayed ? 'Delayed' : 'Available'}</strong>
+          <strong>
+            {usageUnavailable || usageDelayed ? <AlertTriangle aria-hidden="true" size={14} /> : null}
+            {usageUnavailable ? 'Data unavailable' : usageDelayed ? 'Delayed' : 'Available'}
+          </strong>
           <small>{usageTime ? `Through ${formatUsageDateTime(usageTime)} ICT` : 'No production aggregate timestamp'}</small>
         </div>
-        <div>
+        <div className={`usage-overview-data-health-item${usageGuaranteed ? '' : ' is-warning'}`}>
           <span>Usage provenance</span>
-          <strong>{usageGuaranteed ? 'Production verified' : 'Verification incomplete'}</strong>
+          <strong>
+            {usageGuaranteed ? null : <AlertTriangle aria-hidden="true" size={14} />}
+            {usageGuaranteed ? 'Production verified' : 'Verification incomplete'}
+          </strong>
           <small>{overview.provenance.unknownUsageAggregateCount > 0 ? `${number(overview.provenance.unknownUsageAggregateCount)} unknown rows excluded` : 'Server-owned origin required'}</small>
         </div>
-        <div>
+        <div className={`usage-overview-data-health-item${bookingGuaranteed ? '' : ' is-warning'}`}>
           <span>Booking records</span>
-          <strong>{bookingGuaranteed ? 'Production verified' : 'Verification incomplete'}</strong>
+          <strong>
+            {bookingGuaranteed ? null : <AlertTriangle aria-hidden="true" size={14} />}
+            {bookingGuaranteed ? 'Production verified' : 'Verification incomplete'}
+          </strong>
           <small>{overview.provenance.unknownBookingCount > 0 ? `${number(overview.provenance.unknownBookingCount)} unknown records excluded` : 'Explicit production origin required'}</small>
         </div>
-        <div>
+        <div className={`usage-overview-data-health-item${usageDelayed ? ' is-warning' : ''}`}>
           <span>Report generated</span>
-          <strong>{formatUsageDateTime(overview.freshness.reportGeneratedAt)} ICT</strong>
+          <strong>
+            {usageDelayed ? <AlertTriangle aria-hidden="true" size={14} /> : null}
+            {formatUsageDateTime(overview.freshness.reportGeneratedAt)} ICT
+          </strong>
           <small>{usageDelayed ? 'Usage exceeds the 48-hour freshness threshold' : 'Booking and usage sources are evaluated separately'}</small>
         </div>
       </div>
@@ -261,6 +274,9 @@ function UsageDataTrustNotice({ overview }: { readonly overview: AdminUsageOverv
 function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverview }) {
   const previous = overview.comparison.totals;
   const usageAvailable = !['unknown', 'failed'].includes(overview.freshness.usageStatus);
+  const bookingAvailable = overview.provenance.booking === 'guaranteed';
+  const bookingExcludedCount = overview.provenance.unknownBookingCount;
+  const emptyRangeAction = usageOverviewEmptyRangeAction(overview.range);
   const kpis = [
     [
       'active-customers',
@@ -269,6 +285,7 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
       usageAvailable ? previous.activeCustomerCount : null,
       Users,
       'primary',
+      'usage',
     ],
     [
       'partner-views',
@@ -277,6 +294,7 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
       usageAvailable ? previous.partnerProfileViewCount : null,
       Eye,
       'info',
+      'usage',
     ],
     [
       'created-bookings',
@@ -285,6 +303,7 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
       previous.createdBookingCount,
       CalendarCheck,
       'warning',
+      'booking',
     ],
     [
       'unresolved-bookings',
@@ -293,6 +312,7 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
       previous.unresolvedCount,
       AlertTriangle,
       'danger',
+      'booking',
     ],
   ] as const;
 
@@ -301,46 +321,89 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
       <ActionPriorities overview={overview} />
 
       <AdminOverviewCommandGrid ariaLabel="Period health">
-        {kpis.map(([key, label, current, previousValue, Icon, tone]) => (
+        {kpis.map(([key, label, current, previousValue, Icon, tone, source]) => (
           <AdminKpiCard
             className={`usage-overview-kpi-card is-${tone}`}
-            helper={current === null || previousValue === null ? 'Data unavailable' : `${periodDelta(current, previousValue).label} vs previous equal period`}
+            helper={
+              source === 'booking' && !bookingAvailable
+                ? bookingSubsetDetail(bookingExcludedCount)
+                : current === null || previousValue === null
+                  ? 'Data unavailable'
+                  : `${periodDelta(current, previousValue).label} vs previous equal period`
+            }
             icon={Icon}
             iconSize={18}
             key={key}
             kind="period"
             label={label}
             scope={overview.rangeLabel}
-            value={current === null ? '—' : number(current)}
+            value={
+              current === null
+                ? '—'
+                : source === 'booking' && !bookingAvailable
+                  ? `${number(current)} verified`
+                  : number(current)
+            }
           />
         ))}
       </AdminOverviewCommandGrid>
 
-      <UniqueCustomerReach overview={overview} usageAvailable={usageAvailable} />
-      <BookingOutcomes overview={overview} />
+      <UniqueCustomerReach
+        bookingAvailable={bookingAvailable}
+        bookingExcludedCount={bookingExcludedCount}
+        overview={overview}
+        usageAvailable={usageAvailable}
+      />
+      <BookingOutcomes
+        bookingAvailable={bookingAvailable}
+        bookingExcludedCount={bookingExcludedCount}
+        overview={overview}
+      />
 
       <AdminSection
         actions={<Activity aria-hidden="true" size={18} />}
         className="usage-overview-trend-card"
-        description={`${overview.appliedRange.granularity === 'hourly' ? 'Hourly' : 'Daily'} activity in Vietnam time. Booking outcomes above are the current status of bookings created in-period; completed activity below uses closedAt.`}
+        description={`${overview.appliedRange.granularity === 'hourly' ? 'Hourly' : 'Daily'} activity in Vietnam time. Booking outcomes above are the current status of bookings created in-period; completed activity below uses closedAt.${bookingAvailable ? '' : ` ${bookingSourceDetail(bookingExcludedCount)}.`}`}
         statusLabel={overview.rangeLabel}
         title="Activity trends"
       >
-        <UsageOverviewTrendChartDeferred rows={overview.behavior.trend} usageAvailable={usageAvailable} />
+        <UsageOverviewTrendChartDeferred
+          bookingAvailable={bookingAvailable}
+          bookingExcludedCount={bookingExcludedCount}
+          rows={overview.behavior.trend}
+          usageAvailable={usageAvailable}
+        />
       </AdminSection>
 
       <AdminOverviewGrid ariaLabel="Customer period and current base" variant="insight">
-        <PeriodCustomers overview={overview} />
+        <PeriodCustomers
+          bookingAvailable={bookingAvailable}
+          bookingExcludedCount={bookingExcludedCount}
+          overview={overview}
+        />
         <RetentionCard overview={overview} usageAvailable={usageAvailable} />
-        <CurrentCustomerBase overview={overview} usageAvailable={usageAvailable} />
+        <CurrentCustomerBase
+          bookingAvailable={bookingAvailable}
+          bookingExcludedCount={bookingExcludedCount}
+          overview={overview}
+          usageAvailable={usageAvailable}
+        />
       </AdminOverviewGrid>
 
       <CustomerRankingTable rows={overview.customerRankings.slice(0, 5)} />
       <PartnerRankingTable rows={overview.partnerRankings.slice(0, 5)} />
 
       <AdminOverviewGrid ariaLabel="Demand and service patterns" variant="behavior">
-        <PopularServices overview={overview} />
-        <RegionTopFive overview={overview} />
+        <PopularServices
+          bookingAvailable={bookingAvailable}
+          bookingExcludedCount={bookingExcludedCount}
+          overview={overview}
+        />
+        <RegionTopFive
+          bookingAvailable={bookingAvailable}
+          bookingExcludedCount={bookingExcludedCount}
+          overview={overview}
+        />
       </AdminOverviewGrid>
     </>
   );
@@ -350,12 +413,14 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
   return (
     <>
       <AdminSection
-        actions={
-          <>
-            <AdminTextLink href="/usage-overview?range=7d">Use last 7 days</AdminTextLink>
-          </>
+        actions={emptyRangeAction ? (
+          <AdminTextLink href={emptyRangeAction.href}>{emptyRangeAction.label}</AdminTextLink>
+        ) : undefined}
+        description={
+          bookingAvailable
+            ? 'No stored app usage or booking event was recorded in the selected reporting period. Check the range, event collection, and aggregate freshness before treating this as zero demand.'
+            : `No stored app usage or verified production booking activity was recorded in the selected reporting period. ${bookingSourceDetail(bookingExcludedCount)}.`
         }
-        description="No stored app usage or booking event was recorded in the selected reporting period. Check the range, event collection, and aggregate freshness before treating this as zero demand."
         statusLabel="No data"
         statusTone="neutral"
         title="No tracked usage in this period"
@@ -408,7 +473,7 @@ function ActionPriorities({ overview }: { readonly overview: AdminUsageOverview 
       actions={<AlertTriangle aria-hidden="true" size={18} />}
       bodyClassName="usage-overview-action-list"
       className="usage-overview-action-card"
-      description="Counts and filters use the same reporting-period contract as their destination lists."
+      description="These queues contain records from the selected reporting period. Open a queue to review the exact customers or bookings."
       statusLabel={
         priorities.length > 0
           ? `${priorities.length} ${priorities.length === 1 ? 'queue' : 'queues'}`
@@ -449,7 +514,17 @@ function ActionPriorities({ overview }: { readonly overview: AdminUsageOverview 
   );
 }
 
-function UniqueCustomerReach({ overview, usageAvailable }: { readonly overview: AdminUsageOverview; readonly usageAvailable: boolean }) {
+function UniqueCustomerReach({
+  bookingAvailable,
+  bookingExcludedCount,
+  overview,
+  usageAvailable,
+}: {
+  readonly bookingAvailable: boolean;
+  readonly bookingExcludedCount: number;
+  readonly overview: AdminUsageOverview;
+  readonly usageAvailable: boolean;
+}) {
   return (
     <AdminSection
       actions={<MousePointerClick aria-hidden="true" size={18} />}
@@ -459,26 +534,45 @@ function UniqueCustomerReach({ overview, usageAvailable }: { readonly overview: 
       statusLabel="Unique customers"
       title="Unique-customer reach"
     >
-      {overview.funnel.map((step, index) => (
-        <AdminCard className="usage-overview-funnel-step" key={step.key}>
-          <span>{step.label}</span>
-          <strong>{usageAvailable ? number(step.count) : '—'}</strong>
-          <small>
-            {!usageAvailable
-              ? 'Data unavailable'
-              : index === 0
-              ? 'unique customers'
-              : step.conversionRate === null
-                ? 'N/A · no previous-step customers'
-                : `${number(step.conversionRate)}% of previous reached set`}
-          </small>
-        </AdminCard>
-      ))}
+      {overview.funnel.map((step, index) => {
+        const bookingStep = step.key === 'booking' || step.key === 'completed';
+        return (
+          <AdminCard className="usage-overview-funnel-step" key={step.key}>
+            <span>{step.label}</span>
+            <strong>
+              {!bookingStep && !usageAvailable
+                ? '—'
+                : bookingStep && !bookingAvailable
+                  ? `${number(step.count)} verified`
+                  : number(step.count)}
+            </strong>
+            <small>
+              {!bookingStep && !usageAvailable
+                ? 'Data unavailable'
+                : bookingStep && !bookingAvailable
+                  ? bookingSubsetDetail(bookingExcludedCount)
+                  : index === 0
+                    ? 'unique customers'
+                    : step.conversionRate === null
+                      ? 'N/A · no previous-step customers'
+                      : `${number(step.conversionRate)}% of previous reached set`}
+            </small>
+          </AdminCard>
+        );
+      })}
     </AdminSection>
   );
 }
 
-function BookingOutcomes({ overview }: { readonly overview: AdminUsageOverview }) {
+function BookingOutcomes({
+  bookingAvailable,
+  bookingExcludedCount,
+  overview,
+}: {
+  readonly bookingAvailable: boolean;
+  readonly bookingExcludedCount: number;
+  readonly overview: AdminUsageOverview;
+}) {
   const outcomes = overview.bookingQuality;
   const reconciled =
     overview.totals.completedBookingCount +
@@ -492,23 +586,24 @@ function BookingOutcomes({ overview }: { readonly overview: AdminUsageOverview }
     <AdminSection
       actions={<CalendarCheck aria-hidden="true" size={18} />}
       className="usage-overview-outcomes-card"
-      description="Mutually exclusive current status as of report generation for booking records created in the reporting period."
-      statusLabel={reconciled ? 'Cohort reconciled' : 'Source mismatch'}
+      description={`Mutually exclusive current status as of report generation for booking records created in the reporting period.${bookingAvailable ? '' : ` ${bookingSourceDetail(bookingExcludedCount)}.`}`}
+      statusLabel={bookingAvailable ? (reconciled ? 'Cohort reconciled' : 'Source mismatch') : 'Verified cohort only'}
+      statusTone={bookingAvailable ? undefined : 'warning'}
       title="Booking outcomes"
     >
       <AdminMiniMetricStrip
         className="usage-overview-booking-outcome-list"
         metrics={[
-          { label: 'Created in period', tone: 'primary', value: number(outcomes.createdBookingCount) },
-          { label: 'Completed', tone: 'success', value: number(overview.totals.completedBookingCount) },
-          { label: 'Cancelled', tone: 'warning', value: number(outcomes.cancellationCount) },
-          { label: 'No-show', tone: 'danger', value: number(outcomes.noShowCount) },
-          { label: 'Expired', tone: 'warning', value: number(outcomes.expiredCount) },
-          { label: 'Refunded', tone: 'danger', value: number(outcomes.refundCount) },
+          { label: 'Created in period', tone: 'primary', value: bookingMetricValue(outcomes.createdBookingCount, bookingAvailable) },
+          { label: 'Completed', tone: 'success', value: bookingMetricValue(overview.totals.completedBookingCount, bookingAvailable) },
+          { label: 'Cancelled', tone: 'warning', value: bookingMetricValue(outcomes.cancellationCount, bookingAvailable) },
+          { label: 'No-show', tone: 'danger', value: bookingMetricValue(outcomes.noShowCount, bookingAvailable) },
+          { label: 'Expired', tone: 'warning', value: bookingMetricValue(outcomes.expiredCount, bookingAvailable) },
+          { label: 'Refunded', tone: 'danger', value: bookingMetricValue(outcomes.refundCount, bookingAvailable) },
           {
             label: 'Still open / unresolved',
             tone: outcomes.unresolvedCount > 0 ? 'danger' : 'success',
-            value: number(outcomes.unresolvedCount),
+            value: bookingMetricValue(outcomes.unresolvedCount, bookingAvailable),
           },
         ]}
       />
@@ -516,28 +611,47 @@ function BookingOutcomes({ overview }: { readonly overview: AdminUsageOverview }
   );
 }
 
-function PeriodCustomers({ overview }: { readonly overview: AdminUsageOverview }) {
+function PeriodCustomers({
+  bookingAvailable,
+  bookingExcludedCount,
+  overview,
+}: {
+  readonly bookingAvailable: boolean;
+  readonly bookingExcludedCount: number;
+  readonly overview: AdminUsageOverview;
+}) {
   return (
     <MetricSection
+      description={bookingAvailable ? undefined : `${bookingSourceDetail(bookingExcludedCount)}.`}
       icon={Users}
       metrics={[
         ['New customers', overview.customerLifecycle.newCustomerCount, 'info'],
-        ['Customers with completed work', overview.customerLifecycle.completedCustomerCount, 'success'],
-        ['2+ completions in period', overview.customerLifecycle.repeatCustomerCount, 'success'],
+        [bookingAvailable ? 'Customers with completed work' : 'Customers with verified completed work', bookingMetricValue(overview.customerLifecycle.completedCustomerCount, bookingAvailable), 'success'],
+        [bookingAvailable ? '2+ completions in period' : '2+ verified completions in period', bookingMetricValue(overview.customerLifecycle.repeatCustomerCount, bookingAvailable), 'success'],
       ]}
       title="Period customers"
     />
   );
 }
 
-function CurrentCustomerBase({ overview, usageAvailable }: { readonly overview: AdminUsageOverview; readonly usageAvailable: boolean }) {
+function CurrentCustomerBase({
+  bookingAvailable,
+  bookingExcludedCount,
+  overview,
+  usageAvailable,
+}: {
+  readonly bookingAvailable: boolean;
+  readonly bookingExcludedCount: number;
+  readonly overview: AdminUsageOverview;
+  readonly usageAvailable: boolean;
+}) {
   const usageThrough = overview.freshness.usageAggregatedThroughAt;
   return (
     <MetricSection
-      description="Usage-derived snapshot. Reporting-period comparison does not apply."
+      description={`Usage-derived snapshot. Reporting-period comparison does not apply.${bookingAvailable ? '' : ` ${bookingSourceDetail(bookingExcludedCount)}.`}`}
       icon={Users}
       metrics={[
-        ['Never booked', overview.customerLifecycle.neverBookedCustomerCount, 'warning'],
+        [bookingAvailable ? 'Never booked' : 'No verified production booking', overview.customerLifecycle.neverBookedCustomerCount, 'warning'],
         ['Inactive 30d', usageAvailable ? overview.customerLifecycle.churnRiskCustomerCount : '—', 'danger'],
         ['Seen today', usageAvailable ? overview.customerLifecycle.activeTodayCustomerCount : '—', 'info'],
         ['Seen in 7d', usageAvailable ? overview.customerLifecycle.active7dCustomerCount : '—', 'primary'],
@@ -676,12 +790,21 @@ function PartnerRankingTable({ rows }: { readonly rows: readonly AdminUsageOverv
   );
 }
 
-function PopularServices({ overview }: { readonly overview: AdminUsageOverview }) {
+function PopularServices({
+  bookingAvailable,
+  bookingExcludedCount,
+  overview,
+}: {
+  readonly bookingAvailable: boolean;
+  readonly bookingExcludedCount: number;
+  readonly overview: AdminUsageOverview;
+}) {
   return (
     <AdminSection
       actions={<Trophy aria-hidden="true" size={18} />}
       bodyClassName="usage-overview-compact-list"
       className="usage-overview-behavior-card"
+      description={bookingAvailable ? undefined : `${bookingSourceDetail(bookingExcludedCount)}.`}
       title="Popular services"
     >
       {overview.behavior.popularServices.length > 0 ? (
@@ -699,13 +822,25 @@ function PopularServices({ overview }: { readonly overview: AdminUsageOverview }
           </div>
         ))
       ) : (
-        <span className="muted">No service demand in this period.</span>
+        <span className="muted">
+          {bookingAvailable
+            ? 'No service demand in this period.'
+            : `No verified production service demand in this period. ${bookingSourceDetail(bookingExcludedCount)}.`}
+        </span>
       )}
     </AdminSection>
   );
 }
 
-function RegionTopFive({ overview }: { readonly overview: AdminUsageOverview }) {
+function RegionTopFive({
+  bookingAvailable,
+  bookingExcludedCount,
+  overview,
+}: {
+  readonly bookingAvailable: boolean;
+  readonly bookingExcludedCount: number;
+  readonly overview: AdminUsageOverview;
+}) {
   const vietnamRange = ['today', 'yesterday', '7d', '30d'].includes(overview.range) ? overview.range : null;
   return (
     <AdminSection
@@ -718,7 +853,7 @@ function RegionTopFive({ overview }: { readonly overview: AdminUsageOverview }) 
       }
       bodyClassName="usage-overview-compact-list"
       className="usage-overview-behavior-card"
-      description="Created booking demand and current cohort outcomes for the top five regions."
+      description={`Created booking demand and current cohort outcomes for the top five regions.${bookingAvailable ? '' : ` ${bookingSourceDetail(bookingExcludedCount)}.`}`}
       title="Top regions"
     >
       {overview.regionUsage.length > 0 ? (
@@ -737,7 +872,11 @@ function RegionTopFive({ overview }: { readonly overview: AdminUsageOverview }) 
           </div>
         ))
       ) : (
-        <span className="muted">No regional booking demand in this period.</span>
+        <span className="muted">
+          {bookingAvailable
+            ? 'No regional booking demand in this period.'
+            : `No verified production regional booking demand in this period. ${bookingSourceDetail(bookingExcludedCount)}.`}
+        </span>
       )}
     </AdminSection>
   );
@@ -747,6 +886,22 @@ function periodDelta(current: number, previous: number) {
   if (previous === 0) return { label: current === 0 ? 'No change' : 'New activity' };
   const value = Math.round(((current - previous) / previous) * 100);
   return { label: `${value > 0 ? '+' : ''}${number(value)}%` };
+}
+
+function bookingMetricValue(value: number, bookingAvailable: boolean) {
+  return bookingAvailable ? number(value) : `${number(value)} verified`;
+}
+
+function bookingSubsetDetail(excludedCount: number) {
+  return excludedCount > 0
+    ? `Verified subset only · ${number(excludedCount)} unverified records excluded`
+    : 'Verified subset only · Booking source verification incomplete';
+}
+
+function bookingSourceDetail(excludedCount: number) {
+  return excludedCount > 0
+    ? `Source incomplete · ${number(excludedCount)} unverified records excluded`
+    : 'Source incomplete · Booking source verification incomplete';
 }
 
 function stringParam(value: string | string[] | undefined) {

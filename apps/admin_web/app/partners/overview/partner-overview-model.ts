@@ -182,6 +182,7 @@ export function emptyPartnerOverview(range: AdminPartnerOverviewRange): AdminPar
       appActivityCountScope: 'full-population',
       operatingStatusCountScope: 'full-population',
       providerScanLimit: 500,
+      supplyHealthCountScope: 'full-population',
       walletBalancePartnerCount: 0,
       walletBalanceScopeTruncated: false,
       walletStatusFilterBounded: false,

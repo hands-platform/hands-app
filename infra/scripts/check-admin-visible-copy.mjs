@@ -46,7 +46,7 @@ const coreOperatorCopyPatterns = [
   { label: 'mechanical count wording', pattern: /\((?:s|es)\)/g },
   { label: 'ambiguous loaded range wording', pattern: /\bAll loaded\b/g },
   { label: 'generic queue action wording', pattern: /\bOpen queue\b/g },
-  { label: 'ambiguous live control wording', pattern: /\bPause live\b/g },
+  { label: 'ambiguous live control wording', pattern: /\bPause live\b(?! updates\b)/g },
   { label: 'internal backlog disclaimer', pattern: /without mixing in older backlog/g },
 ];
 

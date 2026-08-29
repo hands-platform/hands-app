@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { couponReturnTo, couponReturnWithNotice, sanitizeCouponReturnTo } from './coupon-return-context';
 
 describe('coupon return context', () => {
-  it('preserves the list view, search, and page', () => {
-    expect(couponReturnTo({ couponPage: '3', q: 'welcome', view: 'records' })).toBe(
-      '/coupons?couponPage=3&q=welcome&view=records',
+  it('preserves the list view, search, sort, and page', () => {
+    expect(couponReturnTo({ couponPage: '3', q: 'welcome', sort: 'ending-soon', view: 'paused' })).toBe(
+      '/coupons?couponPage=3&q=welcome&sort=ending-soon&view=paused',
     );
   });
 
@@ -15,8 +15,8 @@ describe('coupon return context', () => {
   });
 
   it('keeps only canonical coupon query keys', () => {
-    expect(sanitizeCouponReturnTo('/coupons?view=all&q=SAVE&couponPage=2&confirm=delete&couponId=1')).toBe(
-      '/coupons?couponPage=2&q=SAVE&view=all',
+    expect(sanitizeCouponReturnTo('/coupons?view=expired&q=SAVE&sort=ending-soon&couponPage=2&confirm=delete&couponId=1')).toBe(
+      '/coupons?couponPage=2&q=SAVE&sort=ending-soon&view=expired',
     );
   });
 

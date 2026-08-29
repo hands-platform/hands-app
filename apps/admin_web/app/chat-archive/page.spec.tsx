@@ -65,6 +65,9 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('aria-label="Booking booking-production-1"');
     expect(markup).toContain('returnTo=%2Fchat-archive%3Fq%3Dlate%26sender%3Dpartner%26range%3D7d');
     expect(markup).toContain('Open transcript');
+    expect(markup).toContain('href="/audit-log?bucket=Booking"');
+    expect(markup).toContain('Booking audit log');
+    expect(markup).not.toContain('Chat search audit');
     expect((markup.match(/href="\/bookings\/booking-production-1\?/gu) ?? [])).toHaveLength(1);
     expect(markup).not.toContain('messages shown');
     expect(markup).not.toContain('+8490000');
@@ -150,6 +153,7 @@ describe('ChatArchivePage', () => {
 
     expect(markup).not.toContain('Sent: All dates');
     expect(markup).not.toContain('Sort: Newest first');
+    expect(markup).toContain('maxLength="120"');
   });
 
   it.each([
@@ -203,6 +207,19 @@ describe('ChatArchivePage', () => {
     expect(mockedRedirect).toHaveBeenCalledWith('/chat-archive?q=late');
   });
 
+  it('canonicalizes an overlong query before any evidence API request', async () => {
+    const query = 'Đánh giá \uACE0\uAC1D '.repeat(20);
+    const boundedQuery = query.trim().slice(0, 120);
+    const canonicalHref = `/chat-archive?${new URLSearchParams({ q: boundedQuery }).toString()}`;
+
+    await expect(
+      ChatArchivePage({ searchParams: Promise.resolve({ q: query }) }),
+    ).rejects.toThrow(`REDIRECT:${canonicalHref}`);
+
+    expect(mockedAdminGetResult).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(canonicalHref);
+  });
+
   it('canonicalizes an out-of-range page to the last message page', async () => {
     mockedAdminGetResult.mockResolvedValue({
       data: { matchingMessages: 12, roomsRepresented: 4 },
@@ -223,10 +240,17 @@ describe('ChatArchivePage', () => {
     expect(pageSource).not.toContain('AdminDataTable');
     expect(pageSource).not.toContain('buildCsvDataHref');
     expect(pageSource).not.toContain('phone');
+    expect(pageSource).toContain('key={plan.currentHref}');
     expect(chatArchiveCss).not.toContain('.chat-archive-page .admin-table-scroll .table');
     expect(chatArchiveCss).not.toContain('min-width: 1180px');
     expect(chatArchiveCss).not.toContain('.chat-archive-page > .card {\n  max-height:');
     expect(chatArchiveCss).toContain('@media (max-width: 1399px)');
+    expect(chatArchiveCss).toContain('grid-template-columns: minmax(320px, 1.8fr)');
+    expect(chatArchiveCss).toContain('> :is(.admin-form-label)');
+    expect(chatArchiveCss).toContain('padding-inline-start: 28px');
+    expect(chatArchiveCss).toContain('white-space: nowrap');
+    expect(chatArchiveCss).toContain('@media (max-width: 1599px)');
+    expect(chatArchiveCss).toContain('grid-column: 1 / -1');
   });
 });
 

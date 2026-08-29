@@ -10,6 +10,8 @@ import { formatRelativeTime } from '../../lib/admin-format';
 import type { PolicyAuditRow } from './policy-audit-rows';
 
 type OperationsPolicyAuditTrailSectionProps = {
+  readonly canViewAdvancedSources?: boolean;
+  readonly canViewFullAudit?: boolean;
   readonly firstHref?: string | null;
   readonly mode?: 'operator' | 'automated_smoke' | 'legacy_unknown';
   readonly newerHref?: string | null;
@@ -26,6 +28,8 @@ const POLICY_AUDIT_TRAIL_HEADERS = [
 ] as const;
 
 export function OperationsPolicyAuditTrailSection({
+  canViewAdvancedSources = true,
+  canViewFullAudit = true,
   firstHref,
   mode = 'operator',
   newerHref,
@@ -44,31 +48,39 @@ export function OperationsPolicyAuditTrailSection({
           >
             Operator changes
           </AdminFormControlLink>
-          <AdminFormControlLink
-            aria-current={mode === 'automated_smoke' ? 'page' : undefined}
-            className={mode === 'automated_smoke' ? 'button-secondary is-active' : 'button-secondary'}
-            href="/operations-policy?details=audit&audit=automated_smoke"
-          >
-            Automated smoke
-          </AdminFormControlLink>
-          <AdminFormControlLink
-            aria-current={mode === 'legacy_unknown' ? 'page' : undefined}
-            className={mode === 'legacy_unknown' ? 'button-secondary is-active' : 'button-secondary'}
-            href="/operations-policy?details=audit&audit=legacy_unknown"
-          >
-            Legacy / unknown
-          </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary operations-policy-full-audit-link" href="/audit-log?bucket=Operations%2FPolicy&range=all&sort=newest">
-            <ExternalLink size={16} aria-hidden="true" />
-            Open full audit
-          </AdminFormControlLink>
+          {canViewAdvancedSources ? (
+            <>
+              <AdminFormControlLink
+                aria-current={mode === 'automated_smoke' ? 'page' : undefined}
+                className={mode === 'automated_smoke' ? 'button-secondary is-active' : 'button-secondary'}
+                href="/operations-policy?details=audit&audit=automated_smoke"
+              >
+                Automated smoke
+              </AdminFormControlLink>
+              <AdminFormControlLink
+                aria-current={mode === 'legacy_unknown' ? 'page' : undefined}
+                className={mode === 'legacy_unknown' ? 'button-secondary is-active' : 'button-secondary'}
+                href="/operations-policy?details=audit&audit=legacy_unknown"
+              >
+                Legacy / unknown
+              </AdminFormControlLink>
+            </>
+          ) : null}
+          {canViewFullAudit ? (
+            <AdminFormControlLink className="button-secondary operations-policy-full-audit-link" href="/audit-log?bucket=Operations%2FPolicy&range=all&sort=newest">
+              <ExternalLink size={16} aria-hidden="true" />
+              Open full audit
+            </AdminFormControlLink>
+          ) : null}
         </div>
       }
       bodyClassName="admin-table-section-body"
       className="operations-policy-audit-section admin-mb-16"
       description={
         mode === 'operator'
-          ? 'Authenticated policy saves are recorded here. Automated smoke changes and restorations are available in a separate filter.'
+          ? canViewAdvancedSources
+            ? 'Authenticated policy saves are recorded here. Automated smoke changes and restorations are available in a separate filter.'
+            : 'Authenticated policy saves are recorded here with scoped before, after, actor, time, and reason evidence.'
           : mode === 'automated_smoke'
             ? 'Shows server-verified smoke changes, including the run and whether the row restored a prior value.'
             : 'Shows historical rows without trusted source metadata. These rows are not classified as operator changes.'
@@ -85,7 +97,7 @@ export function OperationsPolicyAuditTrailSection({
             rowCount={rows.length}
           >
             {rows.map((row) => (
-              <tr key={row.id}>
+              <tr id={`policy-audit-${row.id}`} key={row.id}>
                 <td>
                   <strong>
                     {formatRelativeTime(row.createdAt, { justNow: 'Just now', includeFuture: true })}
@@ -123,13 +135,15 @@ export function OperationsPolicyAuditTrailSection({
                 <td className="operations-policy-audit-evidence">
                   <p className="admin-m-0">{displayOperationalWording(row.reason)}</p>
                   <small>{displayOperationalWording(row.effect)}</small>
-                  <AdminFormControlLink
-                    aria-label={`Open evidence for ${row.label} at ${row.createdAt}`}
-                    className="button-secondary"
-                    href={policyAuditEvidenceHref(row.id)}
-                  >
-                    Open evidence
-                  </AdminFormControlLink>
+                  {canViewFullAudit ? (
+                    <AdminFormControlLink
+                      aria-label={`Open evidence for ${row.label} at ${row.createdAt}`}
+                      className="button-secondary"
+                      href={policyAuditEvidenceHref(row.id)}
+                    >
+                      Open evidence
+                    </AdminFormControlLink>
+                  ) : <small>Scoped record ID: {row.id}</small>}
                 </td>
               </tr>
             ))}
@@ -139,7 +153,7 @@ export function OperationsPolicyAuditTrailSection({
         <div className="operations-policy-audit-empty">
           <AdminEmptyState
             framed
-            message={auditEmptyMessage(mode)}
+            message={auditEmptyMessage(mode, canViewFullAudit)}
             title={auditEmptyTitle(mode)}
           />
           {mode === 'operator' ? (
@@ -179,8 +193,11 @@ function auditEmptyTitle(mode: NonNullable<OperationsPolicyAuditTrailSectionProp
   return 'No operator policy change has been audited yet.';
 }
 
-function auditEmptyMessage(mode: NonNullable<OperationsPolicyAuditTrailSectionProps['mode']>) {
-  return `${auditSourceLabel(mode)} source · All recorded history. Use Open full audit for scoped evidence search and export.`;
+function auditEmptyMessage(
+  mode: NonNullable<OperationsPolicyAuditTrailSectionProps['mode']>,
+  canViewFullAudit: boolean,
+) {
+  return `${auditSourceLabel(mode)} source · All recorded history.${canViewFullAudit ? ' Use Open full audit for scoped evidence search and export.' : ''}`;
 }
 
 function auditSourceLabel(mode: NonNullable<OperationsPolicyAuditTrailSectionProps['mode']>) {

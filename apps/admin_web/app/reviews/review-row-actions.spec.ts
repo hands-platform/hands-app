@@ -41,12 +41,48 @@ describe('visibleReviewActionItems', () => {
       'dateRange=30d&page=2&q=mai&sort=oldest&confirm=moderate&reviewId=review-1&notice=failed',
     );
 
-    expect(returnTo).toBe('/reviews?dateRange=30d&page=2&q=mai&sort=oldest');
+    expect(returnTo).toBe('/reviews?q=mai&page=2&dateRange=30d&sort=oldest');
     expect(reviewActionHrefWithReturnTo(
       '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN',
       returnTo,
     )).toBe(
-      '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&returnTo=%2Freviews%3FdateRange%3D30d%26page%3D2%26q%3Dmai%26sort%3Doldest',
+      '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&q=mai&page=2&dateRange=30d&sort=oldest&returnTo=%2Freviews%3Fq%3Dmai%26page%3D2%26dateRange%3D30d%26sort%3Doldest',
+    );
+  });
+
+  it('copies only safe list filters into confirmation context', () => {
+    const returnTo = reviewListReturnTo(
+      '/reviews',
+      'q=customer&page=3&pageSize=25&review=held&dateRange=custom&dateFrom=2026-08-01&dateTo=2026-08-20&sort=oldest&confirm=moderate&notice=failed&reportReason=spam&returnTo=%2Freviews&reviewId=review-old&status=REPORTED',
+    );
+    const href = reviewActionHrefWithReturnTo(
+      '/reviews?confirm=moderate&reviewId=review-2&status=PUBLISHED',
+      returnTo,
+    );
+    const url = new URL(href, 'http://admin.local');
+
+    expect(Object.fromEntries(url.searchParams.entries())).toEqual({
+      confirm: 'moderate',
+      dateFrom: '2026-08-01',
+      dateRange: 'custom',
+      dateTo: '2026-08-20',
+      page: '3',
+      pageSize: '25',
+      q: 'customer',
+      returnTo: '/reviews?q=customer&page=3&pageSize=25&review=held&dateRange=custom&dateFrom=2026-08-01&dateTo=2026-08-20&sort=oldest',
+      review: 'held',
+      reviewId: 'review-2',
+      sort: 'oldest',
+      status: 'PUBLISHED',
+    });
+  });
+
+  it('normalizes malicious return paths before copying confirmation context', () => {
+    expect(reviewActionHrefWithReturnTo(
+      '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN',
+      'https://evil.example/reviews?review=held',
+    )).toBe(
+      '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&returnTo=%2Freviews',
     );
   });
 });

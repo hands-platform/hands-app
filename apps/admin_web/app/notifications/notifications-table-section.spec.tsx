@@ -215,10 +215,12 @@ describe('NotificationsTableSection', () => {
         firstOccurredAt: '2026-08-05T06:00:00.000Z',
         historical: false,
         href: '/notifications?issue=failed&failureProvider=FCM&failureCode=messaging%2Fregistration-token-not-registered',
+        manageHref: '/notifications?incidentProvider=FCM&incidentFailureCode=messaging%2Fregistration-token-not-registered',
         lastOccurredAt: '2026-08-05T06:42:00.000Z',
         notificationCount: 100,
         ownerLabel: 'Platform',
         provider: 'FCM',
+        sourceKey: 'delivery-failure:v1:production:FCM:messaging%2Fregistration-token-not-registered',
         retryCondition: 'Retry after a new enabled route is registered.',
         technicalAction: 'Confirm token cleanup before retrying.',
         windowMinutes: 60,
@@ -237,6 +239,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Confirm token cleanup before retrying.');
     expect(rendered).toContain('Age Updated just now');
     expect(rendered).toContain('Open this group');
+    expect(rendered).toContain('Manage lifecycle');
     expect(rendered).toContain('Retry after a new enabled route is registered.');
     expect(rendered).not.toContain('+84900000000');
   });
@@ -378,6 +381,26 @@ describe('NotificationsTableSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['vuexy-booking-table-footer notification-table-footer']),
+    );
+  });
+
+  it('explains how to reach records beyond the supported offset boundary', () => {
+    const section = NotificationsTableSection({
+      emptyMessage: 'No notifications loaded.',
+      hrefForPage: (page) => `/notifications?page=${page}`,
+      pagination: {
+        from: 10_001,
+        page: 1001,
+        rows: [buildRow()],
+        to: 10_010,
+        totalPages: 1001,
+        totalRows: 84_216,
+      },
+      rows: [buildRow()],
+    });
+
+    expect(normalizedText(section)).toContain(
+      'Older records are beyond this browsing boundary. Narrow the date range or search filters to access them.',
     );
   });
 });

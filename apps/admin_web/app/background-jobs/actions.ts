@@ -5,9 +5,10 @@ import { redirect } from 'next/navigation';
 import { adminPostOrThrow } from '../../lib/admin-api';
 
 export async function acknowledgeBackgroundJobFailure(formData: FormData) {
+  const returnTo = backgroundJobReturnPath(formData);
   const queueName = requiredValue(formData, 'queueName');
   const jobId = requiredValue(formData, 'jobId');
-  if (!queueName || !jobId) redirectWithNotice('validation');
+  if (!queueName || !jobId) redirectWithNotice('validation', returnTo);
 
   try {
     await adminPostOrThrow(
@@ -15,17 +16,18 @@ export async function acknowledgeBackgroundJobFailure(formData: FormData) {
       {},
     );
   } catch {
-    redirectWithNotice('failed');
+    redirectWithNotice('failed', returnTo);
   }
   revalidatePath('/background-jobs');
-  redirectWithNotice('acknowledged');
+  redirectWithNotice('acknowledged', returnTo);
 }
 
 export async function resolveBackgroundJobFailure(formData: FormData) {
+  const returnTo = backgroundJobReturnPath(formData);
   const queueName = requiredValue(formData, 'queueName');
   const jobId = requiredValue(formData, 'jobId');
   const reason = requiredValue(formData, 'reason');
-  if (!queueName || !jobId || !reason || reason.length < 3) redirectWithNotice('validation');
+  if (!queueName || !jobId || !reason || reason.length < 3) redirectWithNotice('validation', returnTo);
 
   try {
     await adminPostOrThrow(
@@ -33,10 +35,10 @@ export async function resolveBackgroundJobFailure(formData: FormData) {
       { reason },
     );
   } catch {
-    redirectWithNotice('failed');
+    redirectWithNotice('failed', returnTo);
   }
   revalidatePath('/background-jobs');
-  redirectWithNotice('resolved');
+  redirectWithNotice('resolved', returnTo);
 }
 
 function requiredValue(formData: FormData, key: string) {
@@ -44,6 +46,21 @@ function requiredValue(formData: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function redirectWithNotice(notice: string): never {
-  redirect(`/background-jobs?notice=${encodeURIComponent(notice)}`);
+function backgroundJobReturnPath(formData: FormData) {
+  const value = requiredValue(formData, 'returnTo');
+  if (!value.startsWith('/') || value.startsWith('//')) return '/background-jobs';
+  try {
+    const url = new URL(value, 'http://admin.internal');
+    return url.pathname === '/background-jobs'
+      ? `${url.pathname}${url.search}`
+      : '/background-jobs';
+  } catch {
+    return '/background-jobs';
+  }
+}
+
+function redirectWithNotice(notice: string, returnTo = '/background-jobs'): never {
+  const url = new URL(returnTo, 'http://admin.internal');
+  url.searchParams.set('notice', notice);
+  redirect(`${url.pathname}?${url.searchParams.toString()}`);
 }

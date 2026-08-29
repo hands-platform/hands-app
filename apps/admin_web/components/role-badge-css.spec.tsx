@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
 describe('Role badge CSS', () => {
   it('keeps role badges aligned with the Vuexy compact chip contract', () => {

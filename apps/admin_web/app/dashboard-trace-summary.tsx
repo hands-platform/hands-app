@@ -22,7 +22,7 @@ export type DashboardDataScope = 'all-open' | 'current-shift' | 'historical' | '
 
 const DASHBOARD_DATA_SCOPE_LABELS: Record<DashboardDataScope, string> = {
   'all-open': 'All open',
-  'current-shift': 'Today so far',
+  'current-shift': 'Shift activity · Today (Vietnam)',
   historical: 'Historical',
   today: 'Today',
 };
@@ -77,6 +77,7 @@ export function DashboardDataScopeStatus({
   partialSourceCount = 0,
   refreshSeconds,
   scope,
+  scopeLabel,
   scopeEnd,
   scopeStart,
   sourceState,
@@ -87,6 +88,7 @@ export function DashboardDataScopeStatus({
   readonly partialSourceCount?: number;
   readonly refreshSeconds?: number;
   readonly scope: DashboardDataScope;
+  readonly scopeLabel?: string;
   readonly scopeEnd?: string | null;
   readonly scopeStart?: string | null;
   readonly sourceState: DashboardSourceState;
@@ -112,12 +114,12 @@ export function DashboardDataScopeStatus({
         ? `${partialSourceCount} source${partialSourceCount === 1 ? '' : 's'} unavailable`
         : sourceState === 'stale'
           ? 'Source delayed'
-          : 'All data sources current';
+          : 'Command data current';
 
     return (
       <>
         <StatusBadge tone={tone}>
-          Today so far · {sourceState === 'unavailable' ? null : (
+          Shift activity · Today (Vietnam) · {sourceState === 'unavailable' ? null : (
             <>
               Updated <DateTimeText fallback="Unavailable" value={generatedAt} /> ICT ·
               {' '}
@@ -126,7 +128,7 @@ export function DashboardDataScopeStatus({
         </StatusBadge>
         <small className="start-shift-scope-helper">
           {testDataLabel ?? (dataClass === 'test' ? 'Test data' : 'Test data excluded')}
-          {refreshSeconds ? ` · Refresh every ${refreshSeconds}s` : ''}
+          {refreshSeconds ? ` · Checks for updates every ${refreshSeconds}s` : ''}
         </small>
       </>
     );
@@ -134,7 +136,7 @@ export function DashboardDataScopeStatus({
 
   return (
     <>
-      <StatusBadge tone="info">{DASHBOARD_DATA_SCOPE_LABELS[scope]}</StatusBadge>
+      <StatusBadge tone="info">{scopeLabel ?? DASHBOARD_DATA_SCOPE_LABELS[scope]}</StatusBadge>
       {dataClass ? (
         <StatusBadge tone={dataClass === 'anomaly' ? 'warning' : dataClass === 'test' ? 'danger' : 'neutral'}>
           {testDataLabel ??
@@ -160,7 +162,7 @@ export function DashboardDataScopeStatus({
         )}
       </StatusBadge>
       {refreshSeconds && sourceState === 'available' && !isPartial ? (
-        <StatusBadge tone="neutral">Refresh every {refreshSeconds}s</StatusBadge>
+        <StatusBadge tone="neutral">Checks for updates every {refreshSeconds}s</StatusBadge>
       ) : null}
     </>
   );

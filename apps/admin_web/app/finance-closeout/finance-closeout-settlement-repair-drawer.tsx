@@ -73,10 +73,11 @@ export function FinanceCloseoutSettlementRepairDrawer({
         ariaLabel="Settlement repair preview"
         ariaLabelledBy={titleId}
         ariaModal
-        className="calendar-drawer service-menu-dialog"
+        className="calendar-drawer service-menu-dialog finance-closeout-settlement-repair-drawer"
         surfaceRef={drawerRef}
         tabIndex={-1}
       >
+        <div className="finance-closeout-settlement-repair-drawer-shell service-menu-dialog-shell">
         <div className="calendar-drawer-header">
           <div>
             <span className="calendar-drawer-eyebrow">Governed finance repair</span>
@@ -370,6 +371,7 @@ export function FinanceCloseoutSettlementRepairDrawer({
               ) : null}
             </>
           )}
+        </div>
         </div>
       </AdminDrawerSurface>
     </>

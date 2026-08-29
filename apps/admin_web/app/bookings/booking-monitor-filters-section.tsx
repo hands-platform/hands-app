@@ -1,4 +1,5 @@
 import type { FormEventHandler } from 'react';
+import { ChevronDown } from 'lucide-react';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -87,12 +88,7 @@ type BookingMonitorFiltersSectionProps = {
   readonly visibleBookingCount: number;
 };
 
-const PRIMARY_BOOKING_VIEWS = new Set<BookingPageView>([
-  'attention',
-  'active',
-  'matching',
-  'in-service',
-]);
+const PRIMARY_BOOKING_VIEWS = new Set<BookingPageView>(['attention', 'active', 'matching', 'in-service']);
 const COMPLETED_ACTION_VIEW_ORDER: readonly BookingPageView[] = [
   'payment',
   'cash-debt',
@@ -101,6 +97,11 @@ const COMPLETED_ACTION_VIEW_ORDER: readonly BookingPageView[] = [
   'pricing',
 ];
 const COMPLETED_HISTORY_VIEWS = new Set<BookingPageView>(['expired', 'all']);
+const COMPLETED_PAYMENT_CONTEXT_VIEWS = new Set<BookingPageView>([
+  'payment',
+  'cash-debt',
+  'refund-review',
+]);
 
 export function BookingMonitorFiltersSection({
   age = 'all',
@@ -146,8 +147,7 @@ export function BookingMonitorFiltersSection({
   viewHrefFor = defaultViewHrefFor,
   viewOptions,
 }: BookingMonitorFiltersSectionProps) {
-  const isPostMatchCancellationWorkspace =
-    dateRangeFormAction === '/bookings/post-match-cancellations';
+  const isPostMatchCancellationWorkspace = dateRangeFormAction === '/bookings/post-match-cancellations';
   const isCompletedWorkspace = dateRangeFormAction === '/bookings/completed';
   const isRecordsWorkspace = bookingMonitorIsRecordsView(dateRangeFormAction, view);
   const visibleViewOptions = viewOptions.filter(
@@ -157,8 +157,8 @@ export function BookingMonitorFiltersSection({
       option.view === 'all' ||
       (viewCounts.get(option.view) ?? 0) > 0,
   );
-  const preferredPrimaryViewOptions = visibleViewOptions.filter((option) =>
-    PRIMARY_BOOKING_VIEWS.has(option.view),
+  const preferredPrimaryViewOptions = [...PRIMARY_BOOKING_VIEWS].flatMap((primaryView) =>
+    visibleViewOptions.filter((option) => option.view === primaryView),
   );
   const recordViewOptions = viewOptions
     .filter((option) => BOOKING_RECORD_VIEWS.has(option.view))
@@ -173,9 +173,7 @@ export function BookingMonitorFiltersSection({
   const emptyCompletedActionOptions = completedActionOptions.filter(
     (option) => option.view !== view && (viewCounts.get(option.view) ?? 0) === 0,
   );
-  const completedHistoryOptions = viewOptions.filter((option) =>
-    COMPLETED_HISTORY_VIEWS.has(option.view),
-  );
+  const completedHistoryOptions = viewOptions.filter((option) => COMPLETED_HISTORY_VIEWS.has(option.view));
   const primaryViewOptions = isRecordsWorkspace
     ? recordViewOptions
     : isPostMatchCancellationWorkspace
@@ -183,9 +181,11 @@ export function BookingMonitorFiltersSection({
       : preferredPrimaryViewOptions.length > 0
         ? preferredPrimaryViewOptions
         : visibleViewOptions.slice(0, 1);
-  const additionalViewOptions = isPostMatchCancellationWorkspace ? [] : visibleViewOptions.filter(
-    (option) => !primaryViewOptions.some((primaryOption) => primaryOption.view === option.view),
-  );
+  const additionalViewOptions = isPostMatchCancellationWorkspace
+    ? []
+    : visibleViewOptions.filter(
+        (option) => !primaryViewOptions.some((primaryOption) => primaryOption.view === option.view),
+      );
   const emptyAdditionalViewOptions = viewOptions.filter(
     (option) =>
       !PRIMARY_BOOKING_VIEWS.has(option.view) &&
@@ -209,7 +209,7 @@ export function BookingMonitorFiltersSection({
       ? customDateFrom && customDateTo
         ? `${customDateFrom} to ${customDateTo}`
         : 'Custom dates'
-      : dateRangeFilterOptions.find((option) => option.value === dateRangeFilter)?.label ?? 'Today';
+      : (dateRangeFilterOptions.find((option) => option.value === dateRangeFilter)?.label ?? 'Today');
   const recordCount = currentViewCount;
 
   return (
@@ -247,14 +247,21 @@ export function BookingMonitorFiltersSection({
       )}
       {isCompletedWorkspace ? (
         <div className="booking-completed-queue-groups">
-          <div aria-labelledby="booking-completed-action-queues" role="group">
-            <h3 id="booking-completed-action-queues">Needs action</h3>
+          <div
+            aria-labelledby="booking-completed-action-queues"
+            className="booking-completed-queue-group is-action"
+            role="group"
+          >
+            <div className="booking-completed-queue-heading">
+              <h3 id="booking-completed-action-queues">Needs action</h3>
+              <p>Resolve payment and closeout exceptions.</p>
+            </div>
             {visibleCompletedActionOptions.length > 0 ? (
               <AdminSegmentedControl
                 activeValue={view}
                 ariaLabel="Closeout action queues"
                 className="booking-monitor-view-options"
-                options={bookingViewControlOptions(
+                options={completedBookingViewControlOptions(
                   visibleCompletedActionOptions,
                   viewCounts,
                   viewHrefFor,
@@ -264,14 +271,57 @@ export function BookingMonitorFiltersSection({
             ) : (
               <AdminInlineNotice tone="success">No closeout checks need action.</AdminInlineNotice>
             )}
+            {COMPLETED_PAYMENT_CONTEXT_VIEWS.has(view) && (
+              <p className="muted booking-closeout-queue-overlap-note">
+                Counts overlap: All payment exceptions includes the cash and refund queues.
+              </p>
+            )}
+            {showEmptyViewOptions && emptyCompletedActionOptions.length > 0 && (
+              <AdminDisclosure ariaLabel="Empty closeout checks">
+                <summary className="booking-completed-disclosure-summary">
+                  <span className="booking-completed-disclosure-summary-copy">
+                    <span>
+                      {emptyCompletedActionOptions.length} empty{' '}
+                      {emptyCompletedActionOptions.length === 1 ? 'check' : 'checks'}
+                    </span>
+                    <small>No records currently need these checks</small>
+                  </span>
+                  <ChevronDown
+                    aria-hidden={true}
+                    className="booking-completed-disclosure-chevron"
+                    size={16}
+                  />
+                </summary>
+                <div className="admin-disclosure-content">
+                  <AdminSegmentedControl
+                    activeValue={view}
+                    ariaLabel="Empty closeout checks"
+                    className="booking-monitor-view-options"
+                    options={bookingViewControlOptions(
+                      emptyCompletedActionOptions,
+                      viewCounts,
+                      viewHrefFor,
+                      onViewChange,
+                    )}
+                  />
+                </div>
+              </AdminDisclosure>
+            )}
           </div>
-          <div aria-labelledby="booking-completed-history-queues" role="group">
-            <h3 id="booking-completed-history-queues">History</h3>
+          <div
+            aria-labelledby="booking-completed-history-queues"
+            className="booking-completed-queue-group is-history"
+            role="group"
+          >
+            <div className="booking-completed-queue-heading">
+              <h3 id="booking-completed-history-queues">History</h3>
+              <p>Browse expired and terminal records by closed period.</p>
+            </div>
             <AdminSegmentedControl
               activeValue={view}
               ariaLabel="Closeout history"
               className="booking-monitor-view-options"
-              options={bookingViewControlOptions(
+              options={completedBookingViewControlOptions(
                 completedHistoryOptions,
                 viewCounts,
                 viewHrefFor,
@@ -279,33 +329,6 @@ export function BookingMonitorFiltersSection({
               )}
             />
           </div>
-          <p className="muted booking-closeout-queue-overlap-note">
-            Counts overlap: All payment exceptions includes the cash and refund queues.
-          </p>
-          {showEmptyViewOptions && emptyCompletedActionOptions.length > 0 && (
-            <AdminDisclosure ariaLabel="Empty closeout checks">
-              <summary>
-                <span>
-                  Show {emptyCompletedActionOptions.length} empty{' '}
-                  {emptyCompletedActionOptions.length === 1 ? 'check' : 'checks'}
-                </span>
-                <small>No records currently need these checks</small>
-              </summary>
-              <div className="admin-disclosure-content">
-                <AdminSegmentedControl
-                  activeValue={view}
-                  ariaLabel="Empty closeout checks"
-                  className="booking-monitor-view-options"
-                  options={bookingViewControlOptions(
-                    emptyCompletedActionOptions,
-                    viewCounts,
-                    viewHrefFor,
-                    onViewChange,
-                  )}
-                />
-              </div>
-            </AdminDisclosure>
-          )}
         </div>
       ) : (
         <AdminSegmentedControl
@@ -317,123 +340,124 @@ export function BookingMonitorFiltersSection({
       )}
 
       <AdminFormShell
-        className="admin-filter-form booking-monitor-search-form admin-mt-14"
+        className={`admin-filter-form booking-monitor-search-form admin-mt-14${
+          isCompletedWorkspace && (hasActiveFilters || searchQuery)
+            ? ' booking-completed-search-form-expanded'
+            : ''
+        }`}
         action={dateRangeFormAction}
         method="get"
       >
-            {dateRangeHiddenInputs
-              .filter(
-                ([key]) =>
-                  !['page', 'q'].includes(key) &&
-                  key !== 'cancellationReason',
-              )
-              .map(([key, value], index) => (
-                <input key={`${key}-${index}`} type="hidden" name={key} value={value} />
-              ))}
-            <AdminFormSearch
-              className="admin-form-control-fluid"
-              defaultValue={searchQuery}
-              label="Search bookings"
-              name="q"
-              placeholder="Booking ID, customer, Partner, or address"
-            />
-            {showCancellationReasonFilter && (
-              <AdminFormSelect
-                className="admin-form-control-fluid"
-                defaultValue={cancellationReasonFilter}
-                label="Cancellation reason"
-                labelVisibility="visible"
-                name="cancellationReason"
-                options={cancellationReasonFilterOptions}
-              />
-            )}
-            <AdminFormControlButton className="button-primary">
-              {showCancellationReasonFilter ? 'Apply filters' : 'Search'}
-            </AdminFormControlButton>
-            {(hasActiveFilters || searchQuery) && (
-              <AdminFormControlLink
-                className="button-secondary"
-                href={hasActiveFilters ? filterResetHref : searchClearHref}
-              >
-                {hasActiveFilters ? 'Reset filters' : 'Clear'}
-              </AdminFormControlLink>
-            )}
+        {dateRangeHiddenInputs
+          .filter(([key]) => !['page', 'q'].includes(key) && key !== 'cancellationReason')
+          .map(([key, value], index) => (
+            <input key={`${key}-${index}`} type="hidden" name={key} value={value} />
+          ))}
+        <AdminFormSearch
+          className="admin-form-control-fluid"
+          defaultValue={searchQuery}
+          key={searchQuery}
+          label="Search bookings"
+          name="q"
+          placeholder="Booking ID, customer, Partner, or address"
+        />
+        {showCancellationReasonFilter && (
+          <AdminFormSelect
+            className="admin-form-control-fluid"
+            defaultValue={cancellationReasonFilter}
+            label="Cancellation reason"
+            labelVisibility="visible"
+            name="cancellationReason"
+            options={cancellationReasonFilterOptions}
+          />
+        )}
+        <AdminFormControlButton className="button-primary">
+          {showCancellationReasonFilter ? 'Apply filters' : 'Search'}
+        </AdminFormControlButton>
+        {(hasActiveFilters || searchQuery) && (
+          <AdminFormControlLink
+            className="button-secondary"
+            href={hasActiveFilters ? filterResetHref : searchClearHref}
+          >
+            {hasActiveFilters ? 'Reset filters' : 'Clear'}
+          </AdminFormControlLink>
+        )}
       </AdminFormShell>
       {showDateRange && (
         <div className="booking-date-filter-bar admin-mt-14" aria-label="Booking list date range">
-              <span className="payment-filter-group-label">
-                {isRecordsWorkspace ? 'Report period' : dateRangeLabel}
-              </span>
-              <AdminSegmentedControl
-                activeValue={dateRangeFilter}
-                ariaLabel="Booking list period"
-                options={visibleDateRangeOptions.map((option) => ({
-                  href:
-                    option.value === 'custom'
-                      ? dateRangeHrefFor(dateRangeFilter)
-                      : dateRangeHrefFor(option.value),
-                  label: option.label,
-                  onClick: (event) => {
-                    if (option.value === 'custom') event.preventDefault();
-                    onDateRangeFilterChange(option.value);
-                  },
-                  value: option.value,
-                }))}
+          <span className="payment-filter-group-label">
+            {isRecordsWorkspace ? 'Report period' : dateRangeLabel}
+          </span>
+          <AdminSegmentedControl
+            activeValue={dateRangeFilter}
+            ariaLabel="Booking list period"
+            options={visibleDateRangeOptions.map((option) => ({
+              href:
+                option.value === 'custom'
+                  ? dateRangeHrefFor(dateRangeFilter)
+                  : dateRangeHrefFor(option.value),
+              label: option.label,
+              onClick: (event) => {
+                if (option.value === 'custom') event.preventDefault();
+                onDateRangeFilterChange(option.value);
+              },
+              value: option.value,
+            }))}
+          />
+          {showCustomDateRange && (
+            <AdminFormShell
+              className="booking-custom-date-grid"
+              action={dateRangeFormAction}
+              aria-describedby={customDateError ? 'booking-custom-date-error' : undefined}
+              method="get"
+              noValidate
+              onSubmit={onCustomDateSubmit}
+            >
+              {dateRangeHiddenInputs
+                .filter(([key]) => !['dateRange', 'dateFrom', 'dateTo', 'page'].includes(key))
+                .map(([key, value], index) => (
+                  <input key={`${key}-${index}`} type="hidden" name={key} value={value} />
+                ))}
+              <input type="hidden" name="dateRange" value="custom" />
+              <AdminFormDate
+                ariaDescribedBy={customDateError ? 'booking-custom-date-error' : undefined}
+                ariaInvalid={Boolean(customDateError)}
+                className="admin-form-control-fluid"
+                label="Start date"
+                labelVisibility="visible"
+                name="dateFrom"
+                onChange={(event) => onCustomDateFromChange(event.target.value)}
+                required
+                value={customDateFrom}
               />
-              {showCustomDateRange && (
-                <AdminFormShell
-                  className="booking-custom-date-grid"
-                  action={dateRangeFormAction}
-                  aria-describedby={customDateError ? 'booking-custom-date-error' : undefined}
-                  method="get"
-                  noValidate
-                  onSubmit={onCustomDateSubmit}
-                >
-                  {dateRangeHiddenInputs
-                    .filter(([key]) => !['dateRange', 'dateFrom', 'dateTo', 'page'].includes(key))
-                    .map(([key, value], index) => (
-                      <input key={`${key}-${index}`} type="hidden" name={key} value={value} />
-                    ))}
-                  <input type="hidden" name="dateRange" value="custom" />
-                  <AdminFormDate
-                    ariaDescribedBy={customDateError ? 'booking-custom-date-error' : undefined}
-                    ariaInvalid={Boolean(customDateError)}
-                    className="admin-form-control-fluid"
-                    label="Start date"
-                    labelVisibility="visible"
-                    name="dateFrom"
-                    onChange={(event) => onCustomDateFromChange(event.target.value)}
-                    required
-                    value={customDateFrom}
-                  />
-                  <AdminFormDate
-                    ariaDescribedBy={customDateError ? 'booking-custom-date-error' : undefined}
-                    ariaInvalid={Boolean(customDateError)}
-                    className="admin-form-control-fluid"
-                    label="End date"
-                    labelVisibility="visible"
-                    name="dateTo"
-                    onChange={(event) => onCustomDateToChange(event.target.value)}
-                    required
-                    value={customDateTo}
-                  />
-                  <div className="booking-custom-date-error-row">
-                    {customDateError && (
-                      <AdminInlineNotice
-                        className="booking-custom-date-error"
-                        id="booking-custom-date-error"
-                        role="alert"
-                        tone="danger"
-                      >
-                        {customDateError}
-                      </AdminInlineNotice>
-                    )}
-                  </div>
-                  <AdminFormControlButton className="button-primary booking-date-apply-button">
-                    Apply dates
-                  </AdminFormControlButton>
-                </AdminFormShell>
-              )}
+              <AdminFormDate
+                ariaDescribedBy={customDateError ? 'booking-custom-date-error' : undefined}
+                ariaInvalid={Boolean(customDateError)}
+                className="admin-form-control-fluid"
+                label="End date"
+                labelVisibility="visible"
+                name="dateTo"
+                onChange={(event) => onCustomDateToChange(event.target.value)}
+                required
+                value={customDateTo}
+              />
+              <div className="booking-custom-date-error-row">
+                {customDateError && (
+                  <AdminInlineNotice
+                    className="booking-custom-date-error"
+                    id="booking-custom-date-error"
+                    role="alert"
+                    tone="danger"
+                  >
+                    {customDateError}
+                  </AdminInlineNotice>
+                )}
+              </div>
+              <AdminFormControlButton className="button-primary booking-date-apply-button">
+                Apply dates
+              </AdminFormControlButton>
+            </AdminFormShell>
+          )}
         </div>
       )}
       {isRecordsWorkspace ? (
@@ -457,10 +481,13 @@ export function BookingMonitorFiltersSection({
           <div aria-describedby="booking-age-filter-help" className="admin-mt-14">
             <AdminQueueAgeSortControls
               age={age}
-              ageAriaLabel={isPostMatchCancellationWorkspace ? 'Cancellation decision age' : 'Booking request age'}
+              ageAriaLabel={
+                isPostMatchCancellationWorkspace ? 'Cancellation decision age' : 'Booking request age'
+              }
               ageCounts={ageCounts}
               ageHref={ageHref}
               ageLabel={queueAgeLabel}
+              compact={currentViewCount === 0 && !hasActiveFilters}
               sla={queueSla}
               slaFilter={slaFilter}
               slaHref={slaHref}
@@ -471,62 +498,65 @@ export function BookingMonitorFiltersSection({
           </div>
         </>
       ) : null}
-      {showAdditionalQueues && !isRecordsWorkspace && !isCompletedWorkspace && (additionalViewOptions.length > 0 ||
-        (showEmptyViewOptions && emptyAdditionalViewOptions.length > 0)) && (
-        <AdminDisclosure
-          ariaLabel="Additional booking queues"
-          className="admin-mt-14"
-          open={additionalViewOptions.some((option) => option.view === view)}
-        >
-          <summary>
-            <span>Additional queues</span>
-            <small>Live flow, exceptions, and history</small>
-          </summary>
-          <div className="admin-disclosure-content booking-monitor-additional-queue-groups">
-            {bookingAdditionalQueueGroups(additionalViewOptions).map((group) => (
-              <div aria-labelledby={`booking-queue-group-${group.key}`} key={group.key} role="group">
-                <h3 id={`booking-queue-group-${group.key}`}>{group.label}</h3>
-                <AdminSegmentedControl
-                  activeValue={view}
-                  ariaLabel={`${group.label} booking queues`}
-                  className="booking-monitor-view-options"
-                  options={bookingViewControlOptions(group.options, viewCounts, viewHrefFor, onViewChange)}
-                />
-              </div>
-            ))}
-            {showEmptyViewOptions && emptyAdditionalViewOptions.length > 0 && (
-              <AdminDisclosure ariaLabel="Empty booking queues">
-                <summary>
-                  <span>Show empty queues</span>
-                  <small>{emptyAdditionalViewOptions.length} queues currently have no records</small>
-                </summary>
-                <div className="admin-disclosure-content booking-monitor-additional-queue-groups">
-                  {bookingAdditionalQueueGroups(emptyAdditionalViewOptions).map((group) => (
-                    <div
-                      aria-labelledby={`booking-empty-queue-group-${group.key}`}
-                      key={group.key}
-                      role="group"
-                    >
-                      <h3 id={`booking-empty-queue-group-${group.key}`}>{group.label}</h3>
-                      <AdminSegmentedControl
-                        activeValue={view}
-                        ariaLabel={`Empty ${group.label} booking queues`}
-                        className="booking-monitor-view-options"
-                        options={bookingViewControlOptions(
-                          group.options,
-                          viewCounts,
-                          viewHrefFor,
-                          onViewChange,
-                        )}
-                      />
-                    </div>
-                  ))}
+      {showAdditionalQueues &&
+        !isRecordsWorkspace &&
+        !isCompletedWorkspace &&
+        (additionalViewOptions.length > 0 ||
+          (showEmptyViewOptions && emptyAdditionalViewOptions.length > 0)) && (
+          <AdminDisclosure
+            ariaLabel="Additional booking queues"
+            className="admin-mt-14"
+            open={additionalViewOptions.some((option) => option.view === view)}
+          >
+            <summary>
+              <span>Additional queues</span>
+              <small>Live flow, exceptions, and history</small>
+            </summary>
+            <div className="admin-disclosure-content booking-monitor-additional-queue-groups">
+              {bookingAdditionalQueueGroups(additionalViewOptions).map((group) => (
+                <div aria-labelledby={`booking-queue-group-${group.key}`} key={group.key} role="group">
+                  <h3 id={`booking-queue-group-${group.key}`}>{group.label}</h3>
+                  <AdminSegmentedControl
+                    activeValue={view}
+                    ariaLabel={`${group.label} booking queues`}
+                    className="booking-monitor-view-options"
+                    options={bookingViewControlOptions(group.options, viewCounts, viewHrefFor, onViewChange)}
+                  />
                 </div>
-              </AdminDisclosure>
-            )}
-          </div>
-        </AdminDisclosure>
-      )}
+              ))}
+              {showEmptyViewOptions && emptyAdditionalViewOptions.length > 0 && (
+                <AdminDisclosure ariaLabel="Empty booking queues">
+                  <summary>
+                    <span>Show empty queues</span>
+                    <small>{emptyAdditionalViewOptions.length} queues currently have no records</small>
+                  </summary>
+                  <div className="admin-disclosure-content booking-monitor-additional-queue-groups">
+                    {bookingAdditionalQueueGroups(emptyAdditionalViewOptions).map((group) => (
+                      <div
+                        aria-labelledby={`booking-empty-queue-group-${group.key}`}
+                        key={group.key}
+                        role="group"
+                      >
+                        <h3 id={`booking-empty-queue-group-${group.key}`}>{group.label}</h3>
+                        <AdminSegmentedControl
+                          activeValue={view}
+                          ariaLabel={`Empty ${group.label} booking queues`}
+                          className="booking-monitor-view-options"
+                          options={bookingViewControlOptions(
+                            group.options,
+                            viewCounts,
+                            viewHrefFor,
+                            onViewChange,
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </AdminDisclosure>
+              )}
+            </div>
+          </AdminDisclosure>
+        )}
     </AdminTablePanel>
   );
 }
@@ -560,56 +590,118 @@ export function BookingMonitorAdditionalQueuesSection({
   );
   const creationFailure = viewOptions.find((option) => option.view === 'blocked-create');
   const creationFailureCount = viewCounts.get('blocked-create') ?? 0;
+  const promotedExceptionViews = new Set(exceptionOptions.map((option) => option.view));
+  const exceptionQueueCount = exceptionOptions.filter(
+    (option) => (viewCounts.get(option.view) ?? 0) > 0,
+  ).length;
   const directoryOptions = viewOptions.filter(
     (option) =>
       !PRIMARY_BOOKING_VIEWS.has(option.view) &&
       !BOOKING_RECORD_VIEWS.has(option.view) &&
-      option.view !== 'blocked-create',
+      option.view !== 'blocked-create' &&
+      !promotedExceptionViews.has(option.view),
   );
+  const directoryGroups = bookingAdditionalQueueGroups(directoryOptions).map((group) => ({
+    ...group,
+    description:
+      group.key === 'live-flow'
+        ? 'Follow bookings through matching, customer choice, and handoff.'
+        : group.key === 'exceptions'
+          ? 'Investigate delayed, missing, or inconsistent booking states.'
+          : 'Open supporting booking queue views.',
+    label:
+      group.key === 'live-flow'
+        ? 'Monitor stages'
+        : group.key === 'exceptions'
+          ? 'Intervention & repair'
+          : group.label,
+  }));
 
   return (
     <AdminTablePanel
-      actions={(
+      actions={
         <AdminFormControlLink className="button-secondary" href={viewHrefFor('all')}>
           Booking records
         </AdminFormControlLink>
-      )}
-      description="Only non-zero exception queues are promoted here."
+      }
+      className="booking-monitor-secondary-queues-panel"
+      description="Exception queues needing review appear first. Open the directory only when you need a specific workflow stage."
       id="booking-additional-exceptions"
-      title="Additional exceptions"
+      resultLabel={
+        exceptionQueueCount > 0
+          ? `${exceptionQueueCount} ${exceptionQueueCount === 1 ? 'queue needs' : 'queues need'} review`
+          : 'Exceptions clear'
+      }
+      resultTone={exceptionQueueCount > 0 ? 'warning' : 'success'}
+      title="Stage & exception queues"
     >
-      {exceptionOptions.length > 0 ? (
-        <AdminSegmentedControl
-          activeValue={view}
-          ariaLabel="Additional booking exceptions"
-          className="booking-monitor-view-options"
-          options={bookingViewControlOptions(exceptionOptions, viewCounts, viewHrefFor, onViewChange)}
-        />
-      ) : (
-        <AdminInlineNotice tone="success">No additional exceptions.</AdminInlineNotice>
+      {exceptionOptions.length > 0 && (
+        <div
+          aria-labelledby="booking-promoted-exceptions-title"
+          className="booking-monitor-promoted-exceptions"
+          role="group"
+        >
+          <div className="booking-monitor-promoted-exceptions-header">
+            <h3 id="booking-promoted-exceptions-title">Needs intervention</h3>
+            <p>Queues with bookings appear here; the current queue stays visible while selected.</p>
+          </div>
+          <AdminSegmentedControl
+            activeValue={view}
+            ariaLabel="Additional booking exceptions"
+            className="booking-monitor-view-options"
+            options={bookingViewControlOptions(exceptionOptions, viewCounts, viewHrefFor, onViewChange)}
+          />
+        </div>
       )}
 
       {creationFailure && creationFailureCount > 0 && (
-        <AdminInlineNotice className="admin-mt-14" tone="warning">
+        <AdminInlineNotice tone="warning">
           <strong>Creation failures today: {creationFailureCount}</strong>{' '}
-          <AdminFormControlLink href={viewHrefFor('blocked-create')}>
-            Review failures
-          </AdminFormControlLink>
+          <AdminFormControlLink href={viewHrefFor('blocked-create')}>Review failures</AdminFormControlLink>
         </AdminInlineNotice>
       )}
 
-      <AdminDisclosure ariaLabel="Browse booking queue directory" className="admin-mt-14">
-        <summary>
-          <span>Browse queue directory</span>
-          <small>Stage views and inactive exceptions</small>
+      <AdminDisclosure
+        ariaLabel="Browse booking queue directory"
+        className="booking-monitor-queue-directory-disclosure"
+        open={directoryOptions.some((option) => option.view === view)}
+      >
+        <summary className="booking-monitor-queue-directory-summary">
+          <span className="booking-monitor-queue-directory-summary-copy">
+            <strong>Queue directory</strong>
+            <small>Choose a workflow stage or inactive exception queue</small>
+          </span>
+          <span className="booking-monitor-queue-directory-summary-meta">
+            <span>{adminCountLabel(directoryOptions.length, 'view')}</span>
+            <ChevronDown aria-hidden={true} className="booking-monitor-queue-directory-chevron" size={16} />
+          </span>
         </summary>
-        <div className="admin-disclosure-content">
-          <AdminSegmentedControl
-            activeValue={view}
-            ariaLabel="Booking queue directory"
-            className="booking-monitor-view-options booking-monitor-queue-directory"
-            options={bookingViewControlOptions(directoryOptions, viewCounts, viewHrefFor, onViewChange)}
-          />
+        <div className="admin-disclosure-content booking-monitor-queue-directory-groups">
+          {directoryGroups.map((group) => (
+            <div
+              aria-labelledby={`booking-queue-directory-group-${group.key}`}
+              className="booking-monitor-queue-directory-group"
+              key={group.key}
+              role="group"
+            >
+              <div className="booking-monitor-queue-directory-group-header">
+                <h3 id={`booking-queue-directory-group-${group.key}`}>{group.label}</h3>
+                <p>{group.description}</p>
+              </div>
+              <AdminSegmentedControl
+                activeValue={view}
+                ariaLabel={`${group.label} booking queue directory`}
+                className="booking-monitor-view-options booking-monitor-queue-directory"
+                options={bookingQueueDirectoryControlOptions(
+                  group.options,
+                  viewCounts,
+                  viewHrefFor,
+                  onViewChange,
+                  view,
+                )}
+              />
+            </div>
+          ))}
         </div>
       </AdminDisclosure>
     </AdminTablePanel>
@@ -630,6 +722,64 @@ function bookingViewControlOptions(
     title: option.description,
     value: option.view,
   }));
+}
+
+function completedBookingViewControlOptions(
+  options: readonly BookingMonitorViewOption[],
+  viewCounts: ReadonlyMap<string, number>,
+  viewHrefFor: (value: BookingPageView) => string,
+  onViewChange: (value: BookingPageView) => void,
+) {
+  return options.map((option) => {
+    const count = viewCounts.get(option.view) ?? 0;
+    return {
+      href: viewHrefFor(option.view),
+      ariaLabel: `${option.label}, ${adminCountLabel(count, 'booking')}`,
+      label: (
+        <>
+          <span>{option.label}</span>
+          <strong className="booking-completed-queue-count">{count}</strong>
+        </>
+      ),
+      onClick: () => onViewChange(option.view),
+      title: option.description,
+      value: option.view,
+    };
+  });
+}
+
+function bookingQueueDirectoryControlOptions(
+  options: readonly BookingMonitorViewOption[],
+  viewCounts: ReadonlyMap<string, number>,
+  viewHrefFor: (value: BookingPageView) => string,
+  onViewChange: (value: BookingPageView) => void,
+  activeView: BookingPageView,
+) {
+  return options.map((option) => {
+    const count = viewCounts.get(option.view) ?? 0;
+
+    return {
+      href: viewHrefFor(option.view),
+      ariaLabel: `${option.label}, ${adminCountLabel(count, 'booking')}`,
+      label: (
+        <>
+          <span className="booking-monitor-queue-directory-option-copy">
+            <strong>{option.label}</strong>
+            <small>{option.description}</small>
+          </span>
+          <span className="booking-monitor-queue-directory-option-meta">
+            {option.view === activeView ? <small>Current</small> : null}
+            <strong className={count > 0 ? 'is-nonzero' : undefined}>
+              {adminCountLabel(count, 'booking')}
+            </strong>
+          </span>
+        </>
+      ),
+      onClick: () => onViewChange(option.view),
+      title: option.description,
+      value: option.view,
+    };
+  });
 }
 
 const BOOKING_ADDITIONAL_QUEUE_GROUPS = [
@@ -663,8 +813,12 @@ const BOOKING_ADDITIONAL_QUEUE_GROUPS = [
 
 function bookingAdditionalQueueGroups(options: readonly BookingMonitorViewOption[]) {
   const assignedViews = new Set<BookingPageView>();
+  const optionByView = new Map(options.map((option) => [option.view, option]));
   const groups = BOOKING_ADDITIONAL_QUEUE_GROUPS.map((group) => {
-    const groupOptions = options.filter((option) => group.views.has(option.view));
+    const groupOptions = [...group.views].flatMap((view) => {
+      const option = optionByView.get(view);
+      return option ? [option] : [];
+    });
     groupOptions.forEach((option) => assignedViews.add(option.view));
     return { key: group.key, label: group.label, options: groupOptions };
   }).filter((group) => group.options.length > 0);

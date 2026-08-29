@@ -35,6 +35,7 @@ import {
   readPaymentConfirmationAction,
 } from '../payment-action-confirmation';
 import { PaymentActionConfirmationSummary } from '../payment-action-confirmation-summary';
+import { paymentProviderReferenceCopy } from '../payment-method-copy';
 import { PaymentDetailActionMapSection } from './payment-detail-action-map-section';
 import {
   PaymentDetailCallbackTimelineSection,
@@ -177,6 +178,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         }
         decisions={visibleDecisions}
         evidence={payment.evidence}
+        evaluatedAt={payment.evaluatedAt}
         paymentStatus={payment.status}
       />
 
@@ -505,7 +507,8 @@ function paymentStatusHint(payment: AdminPaymentDetail) {
 }
 
 function gatewayReferenceLabel(payment: AdminPaymentDetail) {
-  return payment.providerRef ? `Gateway ref ${payment.providerRef}` : 'No gateway reference saved.';
+  const reference = paymentProviderReferenceCopy(payment.method, payment.providerRef);
+  return payment.providerRef ? `Gateway ref ${reference}` : reference;
 }
 
 function cashFeeMetric(payment: AdminPaymentDetail, cashDebt: boolean) {

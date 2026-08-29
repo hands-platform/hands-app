@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ServiceCatalogProvenance, ServicePublicationStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
 
@@ -28,6 +28,52 @@ describe('AdminService service catalog group commands', () => {
       customPricePartnerCount: 1,
       openBookingLineCount: 3,
     });
+  });
+
+  it('returns only exact-target service catalog audit evidence for an existing group', async () => {
+    const prisma = {
+      massageService: { findFirst: vi.fn().mockResolvedValue({ id: 'service-60' }) },
+      serviceCatalogDraft: { findUnique: vi.fn().mockResolvedValue(null) },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'audit-1',
+            action: 'service_catalog.published',
+            target: 'service_group:aroma_massage',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.serviceCatalogAuditEvidence('aroma_massage')).resolves.toMatchObject({
+      groupKey: 'aroma_massage',
+      items: [{ id: 'audit-1' }],
+      target: 'service_group:aroma_massage',
+    });
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 25,
+        where: {
+          action: { startsWith: 'service_catalog.' },
+          target: 'service_group:aroma_massage',
+        },
+      }),
+    );
+  });
+
+  it('rejects invalid or unknown service audit evidence targets', async () => {
+    const service = createAdminService({
+      massageService: { findFirst: vi.fn().mockResolvedValue(null) },
+      serviceCatalogDraft: { findUnique: vi.fn().mockResolvedValue(null) },
+    });
+
+    await expect(service.serviceCatalogAuditEvidence('../audit-logs')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    await expect(service.serviceCatalogAuditEvidence('unknown_group')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('saves an incomplete draft without changing app-visible service or payout rows', async () => {
@@ -242,6 +288,12 @@ describe('AdminService service catalog group commands', () => {
     };
     const service = createAdminService({
       massageService: { findMany: vi.fn().mockResolvedValue([live, blocked]) },
+      adminAuditLog: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'audit-published-1',
+          actor: { id: 'admin-1', email: 'operator@hands.vn', fullName: 'Service Operator' },
+        }),
+      },
       serviceCatalogDraft: {
         findMany: vi.fn().mockResolvedValue([
           { serviceGroupKey: 'aroma_massage', version: 2 },
@@ -261,8 +313,94 @@ describe('AdminService service catalog group commands', () => {
       historicalPayoutRuleCount: 2,
       workingDraftCount: 2,
       lastPublishedById: 'admin-1',
+      lastPublishedByLabel: 'Service Operator',
+      lastPublishedEvidenceId: 'audit-published-1',
+      lastPublishedProvenance: 'AUDIT_ACTOR',
       auditTarget: 'service_group:aroma_massage',
     });
+  });
+
+  it.each([
+    [
+      'disabled operator evidence',
+      {
+        audit: {
+          id: 'audit-disabled-operator',
+          actor: { id: 'admin-disabled', email: 'disabled@hands.vn', fullName: 'Former Operator' },
+        },
+        provenance: ServiceCatalogProvenance.OPERATOR,
+        publishedById: 'admin-disabled',
+        user: null,
+      },
+      {
+        auditTarget: 'service_group:aroma_massage',
+        lastPublishedByLabel: 'Former Operator',
+        lastPublishedEvidenceId: 'audit-disabled-operator',
+        lastPublishedProvenance: 'AUDIT_ACTOR',
+      },
+    ],
+    [
+      'legacy seed publication',
+      {
+        audit: null,
+        provenance: ServiceCatalogProvenance.SEED,
+        publishedById: null,
+        user: null,
+      },
+      {
+        auditTarget: null,
+        lastPublishedByLabel: 'Legacy/seed publication · actor not recorded',
+        lastPublishedEvidenceId: null,
+        lastPublishedProvenance: 'LEGACY_SEED',
+      },
+    ],
+    [
+      'missing evidence and actor',
+      {
+        audit: null,
+        provenance: ServiceCatalogProvenance.OPERATOR,
+        publishedById: 'admin-missing',
+        user: null,
+      },
+      {
+        auditTarget: null,
+        lastPublishedByLabel: 'Unknown actor',
+        lastPublishedEvidenceId: null,
+        lastPublishedProvenance: 'UNKNOWN',
+      },
+    ],
+    [
+      'user lookup fallback',
+      {
+        audit: null,
+        provenance: ServiceCatalogProvenance.OPERATOR,
+        publishedById: 'admin-current',
+        user: { id: 'admin-current', email: 'current@hands.vn', fullName: 'Current Operator' },
+      },
+      {
+        auditTarget: null,
+        lastPublishedByLabel: 'Current Operator',
+        lastPublishedEvidenceId: null,
+        lastPublishedProvenance: 'USER_LOOKUP',
+      },
+    ],
+  ])('resolves %s without exposing a raw actor id as the label', async (_case, input, expected) => {
+    const service = createAdminService({
+      massageService: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            ...publishedService(60),
+            provenance: input.provenance,
+            publishedById: input.publishedById,
+          },
+        ]),
+      },
+      serviceCatalogDraft: { findMany: vi.fn().mockResolvedValue([]) },
+      adminAuditLog: { findFirst: vi.fn().mockResolvedValue(input.audit) },
+      user: { findUnique: vi.fn().mockResolvedValue(input.user) },
+    });
+
+    await expect(service.serviceCatalogHealth()).resolves.toMatchObject(expected);
   });
 });
 

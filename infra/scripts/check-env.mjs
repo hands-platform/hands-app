@@ -84,14 +84,18 @@ const insecureValues = new Set(['change-me', 'changeme', 'secret', 'password', '
 const missingRequired = required.filter((key) => !env[key]);
 const insecureRequired = required.filter((key) => insecureValues.has(String(env[key] ?? '').trim()));
 const missingRecommended = recommended.filter((key) => !env[key]);
+const previewSecretInvalid = env.NODE_ENV === 'production' &&
+  String(env.SITE_CONTENT_PREVIEW_SECRET ?? '').length < 32;
 
 const result = {
-  ok: missingRequired.length === 0 && (isTemplate || insecureRequired.length === 0),
+  ok: missingRequired.length === 0 &&
+    (isTemplate || (insecureRequired.length === 0 && !previewSecretInvalid)),
   envFile: envFileExists ? envPath : null,
   mode: isTemplate ? 'template' : 'runtime',
   missingRequired,
   insecureRequired: isTemplate ? [] : insecureRequired,
   missingRecommended,
+  previewSecret: isTemplate || !previewSecretInvalid ? 'valid-or-not-required' : 'missing-or-short',
 };
 
 console.log(JSON.stringify(result, null, 2));

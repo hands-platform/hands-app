@@ -39,7 +39,7 @@ describe('BookingMonitorLiveStatusSection', () => {
     expect(markup).not.toContain('Active bookings: 3');
     expect(markup).not.toContain('admin-metric-grid');
     expect(markup).not.toContain('href=');
-    expect(markupText).toContain('All open');
+    expect(markupText).toContain('Scope: All open bookings');
     expect(markupText).toContain('Live · updated');
     expect(markup).not.toContain('href="/bookings/completed?view=active"');
     expect(source).toContain('AdminFilterSummary');
@@ -80,7 +80,7 @@ describe('BookingMonitorLiveStatusSection', () => {
     const markup = renderToStaticMarkup(section);
 
     expect(normalizedText(section)).toContain(
-      'Realtime disconnected Waiting for realtime connection Last refresh 09:45',
+      'Realtime disconnected REST fallback refresh active while the socket reconnects Last refresh 09:45',
     );
     expect(markup).toContain('role="alert"');
     expect(normalizedText(markup)).toContain('Source unavailable');

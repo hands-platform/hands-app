@@ -7,6 +7,7 @@ import type { AdminBookingSettlementSnapshot } from '../../../lib/admin-api';
 import { adminGetResult } from '../../../lib/admin-api';
 import { emptyBookingSettlementSummary } from '../tax-settlement-page-model';
 import BookingSettlementAuditPage from './page';
+import { settlementAuditDueStatus } from './settlement-audit-copy';
 
 vi.mock('../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
@@ -21,8 +22,23 @@ const mockedAdminGetResult = vi.mocked(adminGetResult);
 const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 
 describe('BookingSettlementAuditPage', () => {
+  it.each([
+    [3, 0, '3 overdue / 0 unknown', 'Known due dates require action'],
+    [0, 199, '0 overdue / 199 unknown', 'Due-date coverage incomplete'],
+    [3, 7, '3 overdue / 7 unknown', 'Due-date coverage incomplete'],
+    [0, 0, '0 overdue / 0 unknown', 'No overdue or unknown due dates'],
+  ] as const)(
+    'describes overdue %s and unknown %s due dates without false reassurance',
+    (overdue, unknown, label, detail) => {
+      expect(settlementAuditDueStatus(overdue, unknown)).toMatchObject({ detail, label });
+    },
+  );
   beforeEach(() => {
-    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({ data: fallback, ok: true, status: 200 }));
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: true,
+      status: 200,
+    }));
   });
 
   it('uses server audit health and the shared Admin atoms', () => {
@@ -43,14 +59,16 @@ describe('BookingSettlementAuditPage', () => {
     const page = await BookingSettlementAuditPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(requests).toEqual(expect.arrayContaining([
-      '/admin/booking-settlement-snapshots/summary?range=all&review=integrity-exceptions&sort=oldest',
-      '/admin/booking-settlement-snapshots/summary?range=all&review=all&sort=oldest',
-      '/admin/booking-settlement-snapshots?range=all&review=integrity-exceptions&sort=oldest&take=25',
-    ]));
+    expect(requests).toEqual(
+      expect.arrayContaining([
+        '/admin/booking-settlement-snapshots/summary?range=all&review=integrity-exceptions&sort=oldest',
+        '/admin/booking-settlement-snapshots/summary?range=all&review=all&sort=oldest',
+        '/admin/booking-settlement-snapshots?range=all&review=integrity-exceptions&sort=oldest&take=25',
+      ]),
+    );
     expect(markup).toContain('Integrity exceptions');
     expect(markup).toContain('Payment evidence');
-    expect(markup).toContain('Overdue tax workflow');
+    expect(markup).toContain('Tax due status');
     expect(markup).toContain('Amount at risk · global');
     expect(markup).toContain('All dates');
     expect(markup).toContain('Oldest action first');
@@ -102,6 +120,8 @@ describe('BookingSettlementAuditPage', () => {
     expect(markup).toContain('+ 1 more');
     expect(markup).toContain('Finance Operations');
     expect(markup).toContain('Open clearing');
+    expect(markup).toContain('Platform VAT');
+    expect(markup).toContain('Positive VAT');
     expect(markup).toContain('returnTo=');
     expect(markup).toContain(
       '/api/admin/finance-tax/booking-settlement-audit/export?range=30d&amp;review=payment-evidence&amp;period=2026-07&amp;paymentMethod=CARD&amp;q=Demo+Customer&amp;sort=largest-discrepancy&amp;reason=clearing',
@@ -111,7 +131,11 @@ describe('BookingSettlementAuditPage', () => {
   });
 
   it('does not render API failures as a true empty queue', async () => {
-    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({ data: fallback, ok: false, status: 503 }));
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: false,
+      status: 503,
+    }));
 
     const page = await BookingSettlementAuditPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
@@ -167,6 +191,7 @@ function snapshotFixture(): AdminBookingSettlementSnapshot {
     paymentProcessingFee: 12_000,
     platformFeeGross: 100_000,
     platformFeeNetRevenue: 90_000,
+    platformVatEvidenceStatus: 'POSITIVE_STANDARD_OR_REDUCED',
     postedAt: '2026-07-20T02:00:00.000Z',
     providerProfile: {
       displayName: 'Partner 42',

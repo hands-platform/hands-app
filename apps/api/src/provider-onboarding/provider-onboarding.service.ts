@@ -841,6 +841,7 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
       ? (options.lifecycle as TaxPolicyLifecycleStatus)
       : undefined;
     const query = normalizeString(options.q)?.slice(0, 160);
+    const defaultProductionDrafts = options.view === 'drafts' && !provenance && !source;
     const effectiveFrom = options.effectiveFrom
       ? parseDate(options.effectiveFrom, 'effectiveFrom must be a valid date')
       : undefined;
@@ -855,7 +856,9 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
           ? { lifecycleStatus: { in: lifecycle } }
           : {}),
       ...(provenance ? { provenance } : {}),
-      ...(!provenance && source === 'production' ? { provenance: TaxPolicyProvenance.OPERATOR } : {}),
+      ...(!provenance && (source === 'production' || defaultProductionDrafts)
+        ? { provenance: TaxPolicyProvenance.OPERATOR }
+        : {}),
       ...(!provenance && source === 'test-legacy' ? { provenance: { not: TaxPolicyProvenance.OPERATOR } } : {}),
       ...(query
         ? {
@@ -889,7 +892,57 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
       this.prisma.taxPolicyVersion.findMany(args),
       this.prisma.taxPolicyVersion.count({ where }),
     ]);
-    return { items, total, skip, take };
+    if (options.view !== 'current' || items.length === 0) {
+      return { items, total, skip, take };
+    }
+    const policyVersionIds = items.map((item) => item.id);
+    const [approvalRequests, activationAudits] = await Promise.all([
+      this.prisma.taxPolicyApprovalRequest.findMany({
+        where: {
+          policyVersionId: { in: policyVersionIds },
+          status: { in: [TaxPolicyApprovalStatus.ACTIVATED, TaxPolicyApprovalStatus.APPROVED] },
+        },
+        orderBy: [{ activatedAt: 'desc' }, { decidedAt: 'desc' }, { requestedAt: 'desc' }],
+        take: Math.min(20, policyVersionIds.length * 10),
+        include: {
+          requestedByAdmin: { select: { email: true, fullName: true, id: true } },
+          decidedByAdmin: { select: { email: true, fullName: true, id: true } },
+        },
+      }),
+      this.prisma.adminAuditLog.findMany({
+        where: {
+          action: 'tax_policy.activated',
+          target: { in: policyVersionIds.map((id) => `tax_policy:${id}`) },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { createdAt: true, id: true, target: true },
+        take: Math.min(20, policyVersionIds.length * 10),
+      }),
+    ]);
+    return {
+      items: items.map((item) => {
+        const approvalRequest = approvalRequests.find((request) => request.policyVersionId === item.id);
+        const activationAudit = activationAudits.find((audit) => audit.target === `tax_policy:${item.id}`);
+        return {
+          ...item,
+          activationEvidence: {
+            activationAuditAt: activationAudit?.createdAt ?? null,
+            activationAuditId: activationAudit?.id ?? null,
+            activatedAt: item.activatedAt ?? approvalRequest?.activatedAt ?? null,
+            approvalRequestId: approvalRequest?.id ?? null,
+            approvedAt: item.approvedAt ?? approvalRequest?.decidedAt ?? null,
+            checker: approvalRequest?.decidedByAdmin ?? null,
+            maker: approvalRequest?.requestedByAdmin ?? null,
+            payloadHash: item.payloadHash,
+            policyVersionId: item.id,
+            revision: item.revision,
+          },
+        };
+      }),
+      total,
+      skip,
+      take,
+    };
   }
 
   async taxPolicyCapabilities(
@@ -926,6 +979,7 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
           where: {
             lifecycleStatus: TaxPolicyLifecycleStatus.SCHEDULED,
             effectiveFrom: { gte: now },
+            provenance: TaxPolicyProvenance.OPERATOR,
           },
           orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }],
           include: {
@@ -954,16 +1008,21 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
       return {
         generatedAt: now.toISOString(),
         drafts: {
-          needsAuthor: count(TaxPolicyLifecycleStatus.DRAFT),
-          awaitingChecker: count(TaxPolicyLifecycleStatus.PENDING_APPROVAL),
-          approved: count(TaxPolicyLifecycleStatus.APPROVED),
-          scheduled: count(TaxPolicyLifecycleStatus.SCHEDULED),
+          needsAuthor: count(TaxPolicyLifecycleStatus.DRAFT, TaxPolicyProvenance.OPERATOR),
+          awaitingChecker: count(TaxPolicyLifecycleStatus.PENDING_APPROVAL, TaxPolicyProvenance.OPERATOR),
+          approved: count(TaxPolicyLifecycleStatus.APPROVED, TaxPolicyProvenance.OPERATOR),
+          scheduled: count(TaxPolicyLifecycleStatus.SCHEDULED, TaxPolicyProvenance.OPERATOR),
         },
         history: {
           production: productionHistory,
           testOrLegacy: Math.max(0, historyTotal - productionHistory),
         },
         nextScheduled,
+        nonProductionScheduledCount: groups
+          .filter((group) =>
+            group.lifecycleStatus === TaxPolicyLifecycleStatus.SCHEDULED &&
+            group.provenance !== TaxPolicyProvenance.OPERATOR)
+          .reduce((total, group) => total + group._count._all, 0),
       };
     });
   }
@@ -1102,8 +1161,14 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
     });
   }
 
-  async taxPolicyIntegritySummary(actorId: string, now = new Date()) {
+  async taxPolicyIntegritySummary(
+    actorId: string,
+    options: { source?: string } = {},
+    now = new Date(),
+  ) {
     const rangeStart = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
+    const source = taxPolicyEvidenceSource(options.source) ?? 'production';
+    const sourcePredicate = taxPolicyIntegritySourcePredicate(source);
     return this.prisma.$transaction(async (tx) => {
       await requireTaxPolicyOperatorAccess(tx, actorId, 'read');
       const rows = await tx.$queryRaw<Array<{
@@ -1121,57 +1186,89 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
         oldestNoActivePolicy: Date | null;
         oldestNoApprovedTaxProfile: Date | null;
         oldestNoMatchingRule: Date | null;
+        sourceLegacy: bigint;
+        sourceProduction: bigint;
+        sourceTest: bigint;
+        sourceUnknown: bigint;
       }>>(Prisma.sql`
         SELECT
-          COUNT(*)::bigint AS "total",
+          COUNT(*) FILTER (WHERE ${sourcePredicate})::bigint AS "total",
           COUNT(*) FILTER (
-            WHERE evidence."logCount" > 0
+            WHERE ${sourcePredicate}
+              AND evidence."logCount" > 0
               AND evidence."snapshotCount" = evidence."logCount"
               AND evidence."withholdingTotal" = earning."withholdingAmount"
           )::bigint AS "healthy",
           COUNT(*) FILTER (
-            WHERE evidence."logCount" > 0
+            WHERE ${sourcePredicate}
+              AND evidence."logCount" > 0
               AND evidence."withholdingTotal" <> earning."withholdingAmount"
           )::bigint AS "amountMismatch",
-          COUNT(*) FILTER (WHERE evidence."logCount" = 0)::bigint AS "missingTaxLog",
           COUNT(*) FILTER (
-            WHERE evidence."logCount" > 0 AND evidence."snapshotCount" < evidence."logCount"
+            WHERE ${sourcePredicate} AND evidence."logCount" = 0
+          )::bigint AS "missingTaxLog",
+          COUNT(*) FILTER (
+            WHERE ${sourcePredicate}
+              AND evidence."logCount" > 0
+              AND evidence."snapshotCount" < evidence."logCount"
           )::bigint AS "missingSnapshot",
-          COUNT(*) FILTER (WHERE evidence."noActivePolicy")::bigint AS "noActivePolicy",
-          COUNT(*) FILTER (WHERE evidence."noApprovedTaxProfile")::bigint AS "noApprovedTaxProfile",
-          COUNT(*) FILTER (WHERE evidence."noMatchingRule")::bigint AS "noMatchingRule",
+          COUNT(*) FILTER (
+            WHERE ${sourcePredicate} AND evidence."noActivePolicy"
+          )::bigint AS "noActivePolicy",
+          COUNT(*) FILTER (
+            WHERE ${sourcePredicate} AND evidence."noApprovedTaxProfile"
+          )::bigint AS "noApprovedTaxProfile",
+          COUNT(*) FILTER (
+            WHERE ${sourcePredicate} AND evidence."noMatchingRule"
+          )::bigint AS "noMatchingRule",
           MIN(earning."createdAt") FILTER (
-            WHERE evidence."logCount" > 0 AND evidence."withholdingTotal" <> earning."withholdingAmount"
+            WHERE ${sourcePredicate}
+              AND evidence."logCount" > 0
+              AND evidence."withholdingTotal" <> earning."withholdingAmount"
           ) AS "oldestAmountMismatch",
-          MIN(earning."createdAt") FILTER (WHERE evidence."logCount" = 0) AS "oldestMissingTaxLog",
           MIN(earning."createdAt") FILTER (
-            WHERE evidence."logCount" > 0 AND evidence."snapshotCount" < evidence."logCount"
+            WHERE ${sourcePredicate} AND evidence."logCount" = 0
+          ) AS "oldestMissingTaxLog",
+          MIN(earning."createdAt") FILTER (
+            WHERE ${sourcePredicate}
+              AND evidence."logCount" > 0
+              AND evidence."snapshotCount" < evidence."logCount"
           ) AS "oldestMissingSnapshot",
-          MIN(earning."createdAt") FILTER (WHERE evidence."noActivePolicy") AS "oldestNoActivePolicy",
-          MIN(earning."createdAt") FILTER (WHERE evidence."noApprovedTaxProfile") AS "oldestNoApprovedTaxProfile",
-          MIN(earning."createdAt") FILTER (WHERE evidence."noMatchingRule") AS "oldestNoMatchingRule"
-        FROM "ProviderEarning" earning
-        LEFT JOIN LATERAL (
-          SELECT
-            COUNT(*)::int AS "logCount",
-            COUNT(log."ruleSnapshot")::int AS "snapshotCount",
-            COALESCE(SUM(log."withholdingAmount"), 0)::bigint AS "withholdingTotal",
-            COALESCE(BOOL_OR(log."ruleSnapshot"->>'reason' = 'NO_ACTIVE_POLICY'), false) AS "noActivePolicy",
-            COALESCE(BOOL_OR(log."ruleSnapshot"->>'reason' = 'NO_APPROVED_TAX_PROFILE'), false) AS "noApprovedTaxProfile",
-            COALESCE(BOOL_OR(
-              log."ruleSnapshot"->>'reason' = 'NO_MATCHING_RULE'
-              OR jsonb_path_exists(COALESCE(log."ruleSnapshot", '{}'::jsonb), '$.lines[*] ? (@.scope == "NONE")')
-            ), false) AS "noMatchingRule"
-          FROM "ProviderTaxLog" log
-          WHERE log."earningId" = earning."id"
-        ) evidence ON true
-        WHERE earning."createdAt" >= ${rangeStart}
+          MIN(earning."createdAt") FILTER (
+            WHERE ${sourcePredicate} AND evidence."noActivePolicy"
+          ) AS "oldestNoActivePolicy",
+          MIN(earning."createdAt") FILTER (
+            WHERE ${sourcePredicate} AND evidence."noApprovedTaxProfile"
+          ) AS "oldestNoApprovedTaxProfile",
+          MIN(earning."createdAt") FILTER (
+            WHERE ${sourcePredicate} AND evidence."noMatchingRule"
+          ) AS "oldestNoMatchingRule",
+          COUNT(*) FILTER (
+            WHERE ${taxPolicyIntegritySourceExpression()} = 'LEGACY'
+          )::bigint AS "sourceLegacy",
+          COUNT(*) FILTER (
+            WHERE ${taxPolicyIntegritySourceExpression()} = 'PRODUCTION'
+          )::bigint AS "sourceProduction",
+          COUNT(*) FILTER (
+            WHERE ${taxPolicyIntegritySourceExpression()} = 'TEST'
+          )::bigint AS "sourceTest",
+          COUNT(*) FILTER (
+            WHERE ${taxPolicyIntegritySourceExpression()} = 'UNKNOWN'
+          )::bigint AS "sourceUnknown"
+        ${taxPolicyIntegrityEvidenceSource(rangeStart, Prisma.sql`true`)}
       `);
       const row = rows[0];
       return {
         generatedAt: now.toISOString(),
         range: '30d',
         rangeStart: rangeStart.toISOString(),
+        source,
+        sourceTotals: {
+          legacy: Number(row?.sourceLegacy ?? 0),
+          production: Number(row?.sourceProduction ?? 0),
+          test: Number(row?.sourceTest ?? 0),
+          unknown: Number(row?.sourceUnknown ?? 0),
+        },
         total: Number(row?.total ?? 0),
         recordIntegrity: {
           healthy: Number(row?.healthy ?? 0),
@@ -1211,7 +1308,7 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
     const skip = normalizeAdminTaxPolicyVersionSkip(options.skip);
     const take = normalizeAdminTaxPolicyVersionTake(options.take);
     const rangeStart = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
-    const source = taxPolicyEvidenceSource(options.source) ?? 'all';
+    const source = taxPolicyEvidenceSource(options.source) ?? 'production';
     const sort = options.sort === 'newest' ? 'newest' : 'oldest';
     const requestedFrom = options.from
       ? parseVietnamDateBoundary(options.from, 'Integrity from date must be valid')
@@ -1243,6 +1340,7 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
           createdAt: Date;
           grossAmount: number;
           id: string;
+          evidenceSource: string | null;
           policyProvenance: TaxPolicyProvenance | null;
           policyVersionId: string | null;
           providerDisplayName: string;
@@ -1260,7 +1358,8 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
             earning."withholdingAmount",
             evidence."withholdingTotal" AS "taxLogWithholdingAmount",
             evidence."policyVersionId",
-            evidence."policyProvenance"
+            evidence."policyProvenance",
+            ${taxPolicyIntegritySourceExpression()} AS "evidenceSource"
           ${taxPolicyIntegrityEvidenceSource(from, predicate)}
           ORDER BY earning."createdAt" ${sort === 'newest' ? Prisma.raw('DESC') : Prisma.raw('ASC')}, earning."id" ${sort === 'newest' ? Prisma.raw('DESC') : Prisma.raw('ASC')}
           OFFSET ${skip}
@@ -1271,7 +1370,7 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
         generatedAt: now.toISOString(),
         issue,
         items: rows.map((row) => {
-          const evidenceSource = taxPolicyIntegrityRowSource(row.policyProvenance);
+          const evidenceSource = taxPolicyIntegrityRowSource(row.evidenceSource);
           return {
             ...row,
             classification: taxPolicyIntegrityClassification(issue, evidenceSource),
@@ -1797,24 +1896,32 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
             message: 'This tax policy approval request already has a different final decision.',
           });
         }
-        if (request.policyVersion.lifecycleStatus !== TaxPolicyLifecycleStatus.PENDING_APPROVAL) {
-          throw new ConflictException({
-            code: 'TAX_POLICY_APPROVAL_STATE_CHANGED',
-            message: 'The tax policy lifecycle changed after this approval request was submitted.',
-          });
-        }
         const currentHash = taxPolicyPayloadHash(request.policyVersion);
-        if (
+        const lifecycleChanged = request.policyVersion.lifecycleStatus !== TaxPolicyLifecycleStatus.PENDING_APPROVAL;
+        const payloadChanged =
           currentHash !== request.payloadHash ||
-          request.policyVersion.payloadHash !== request.payloadHash
-        ) {
-          throw new ConflictException({
-            code: 'TAX_POLICY_PAYLOAD_CHANGED',
-            message: 'The tax policy payload changed after submission. Create a new draft request.',
-          });
+          request.policyVersion.payloadHash !== request.payloadHash;
+
+        if (input.decision === 'APPROVE') {
+          if (lifecycleChanged) {
+            throw new ConflictException({
+              code: 'TAX_POLICY_APPROVAL_STATE_CHANGED',
+              message: 'The tax policy lifecycle changed after this approval request was submitted.',
+            });
+          }
+          if (payloadChanged) {
+            throw new ConflictException({
+              code: 'TAX_POLICY_PAYLOAD_CHANGED',
+              message: 'The tax policy payload changed after submission. Create a new draft request.',
+            });
+          }
         }
 
         if (input.decision === 'REJECT') {
+          const staleReasons = [
+            ...(lifecycleChanged ? ['TAX_POLICY_APPROVAL_STATE_CHANGED'] : []),
+            ...(payloadChanged ? ['TAX_POLICY_PAYLOAD_CHANGED'] : []),
+          ];
           const rejected = await tx.taxPolicyApprovalRequest.update({
             where: { id: request.id },
             data: {
@@ -1826,10 +1933,12 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
             },
             include: { policyVersion: true, requestedByAdmin: true, decidedByAdmin: true },
           });
-          await tx.taxPolicyVersion.update({
-            where: { id: request.policyVersionId },
-            data: { lifecycleStatus: TaxPolicyLifecycleStatus.REJECTED },
-          });
+          if (staleReasons.length === 0) {
+            await tx.taxPolicyVersion.update({
+              where: { id: request.policyVersionId },
+              data: { lifecycleStatus: TaxPolicyLifecycleStatus.REJECTED },
+            });
+          }
           await tx.adminAuditLog.create({
             data: {
               actorId,
@@ -1841,6 +1950,10 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
                 checkerId: actorId,
                 decisionReason,
                 payloadHash: request.payloadHash,
+                currentPayloadHash: currentHash,
+                observedLifecycleStatus: request.policyVersion.lifecycleStatus,
+                staleRequest: staleReasons.length > 0,
+                staleReasons,
               }),
             },
           });
@@ -1973,6 +2086,28 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
         }
         if (policy.effectiveFrom.getTime() > now.getTime()) {
           return { skipped: true, reason: 'not-due', policyVersionId };
+        }
+        if (!taxPolicyActivationProvenanceAllowed(policy.provenance)) {
+          await tx.taxPolicyApprovalRequest.update({
+            where: { id: request.id },
+            data: {
+              status: TaxPolicyApprovalStatus.FAILED,
+              failureCode: 'TAX_POLICY_NON_PRODUCTION_ACTIVATION_BLOCKED',
+            },
+          });
+          await tx.adminAuditLog.create({
+            data: {
+              actorId: request.decidedByAdminId ?? request.requestedByAdminId,
+              action: 'tax_policy.activation_blocked',
+              target: `tax_policy_approval:${request.id}`,
+              metadata: toJson({
+                policyVersionId,
+                policyProvenance: policy.provenance,
+                failureCode: 'TAX_POLICY_NON_PRODUCTION_ACTIVATION_BLOCKED',
+              }),
+            },
+          });
+          return { skipped: true, reason: 'non-production-provenance', policyVersionId };
         }
         if (taxPolicyPayloadHash(policy) !== request.payloadHash) {
           await tx.taxPolicyApprovalRequest.update({
@@ -2372,6 +2507,19 @@ function requiredTaxPolicyEvidence(value: string | undefined, actionLabel: strin
     throw new BadRequestException(`${actionLabel} requires at least 10 characters of operator evidence`);
   }
   return evidence;
+}
+
+function taxPolicyActivationProvenanceAllowed(provenance: TaxPolicyProvenance) {
+  if (provenance === TaxPolicyProvenance.OPERATOR) return true;
+  try {
+    assertTaxPolicyFixtureWriteEnvironment(
+      process.env.DATABASE_URL,
+      process.env.TAX_POLICY_FIXTURE_WRITE_ALLOWLIST,
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function requireTaxPolicyOperatorAccess(
@@ -2867,6 +3015,7 @@ function taxPolicyIntegrityEvidenceSource(rangeStart: Date, predicate: Prisma.Sq
   return Prisma.sql`
     FROM "ProviderEarning" earning
     INNER JOIN "ProviderProfile" provider ON provider."id" = earning."providerProfileId"
+    INNER JOIN "User" providerUser ON providerUser."id" = provider."userId"
     LEFT JOIN LATERAL (
       SELECT
         COUNT(*)::int AS "logCount",
@@ -2925,13 +3074,32 @@ function taxPolicyAuditPolicyVersionId(log: { metadata?: Prisma.JsonValue | null
 function taxPolicyIntegritySourceExpression() {
   return Prisma.sql`
     CASE
+      WHEN providerUser."adminUserProvenance" = 'FIXTURE'
+        OR providerUser."fixtureKind" IS NOT NULL
+        OR providerUser."fixtureRunId" IS NOT NULL
+        OR providerUser."fixtureExpiresAt" IS NOT NULL
+        THEN 'TEST'
+      WHEN evidence."logCount" > 0
+        AND evidence."policyCount" = evidence."logCount"
+        AND evidence."provenanceCount" = 1
+        AND evidence."hasProductionPolicy"
+        THEN 'PRODUCTION'
+      WHEN evidence."logCount" > 0
+        AND evidence."policyCount" = evidence."logCount"
+        AND evidence."provenanceCount" = 1
+        AND evidence."hasTestPolicy"
+        THEN 'TEST'
+      WHEN evidence."logCount" > 0
+        AND evidence."policyCount" = evidence."logCount"
+        AND evidence."provenanceCount" = 1
+        AND evidence."hasLegacyPolicy"
+        THEN 'LEGACY'
       WHEN evidence."logCount" = 0
-        OR evidence."policyCount" <> evidence."logCount"
+        AND providerUser."adminUserProvenance" = 'PRODUCTION'
+        THEN 'PRODUCTION'
+      WHEN evidence."policyCount" <> evidence."logCount"
         OR evidence."provenanceCount" <> 1
         THEN 'UNKNOWN'
-      WHEN evidence."hasProductionPolicy" THEN 'PRODUCTION'
-      WHEN evidence."hasTestPolicy" THEN 'TEST'
-      WHEN evidence."hasLegacyPolicy" THEN 'LEGACY'
       ELSE 'UNKNOWN'
     END
   `;
@@ -2944,12 +3112,11 @@ function taxPolicyIntegritySourcePredicate(source: TaxPolicyEvidenceSource) {
 }
 
 function taxPolicyIntegrityRowSource(
-  provenance: TaxPolicyProvenance | null,
+  source: string | null,
 ): 'LEGACY' | 'PRODUCTION' | 'TEST' | 'UNKNOWN' {
-  if (!provenance || provenance === TaxPolicyProvenance.LEGACY_UNKNOWN) return 'UNKNOWN';
-  if (provenance === TaxPolicyProvenance.OPERATOR) return 'PRODUCTION';
-  if (provenance === TaxPolicyProvenance.MIGRATION) return 'LEGACY';
-  return 'TEST';
+  return source === 'LEGACY' || source === 'PRODUCTION' || source === 'TEST'
+    ? source
+    : 'UNKNOWN';
 }
 
 function taxPolicyIntegrityClassification(
@@ -2960,6 +3127,7 @@ function taxPolicyIntegrityClassification(
     return 'APPLICABILITY_READINESS' as const;
   }
   if (source === 'PRODUCTION') return 'CURRENT_REGRESSION' as const;
+  if (source === 'TEST') return 'TEST_RESIDUE' as const;
   if (source === 'LEGACY') return 'LEGACY_MIGRATION_DEBT' as const;
   return 'UNKNOWN' as const;
 }

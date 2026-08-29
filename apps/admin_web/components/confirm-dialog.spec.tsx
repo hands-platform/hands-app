@@ -82,13 +82,21 @@ describe('ConfirmDialog', () => {
     expect(focusBoundarySource).toContain('confirm-dialog-backdrop');
     expect(focusBoundarySource).toContain('ariaModal');
     expect(focusBoundarySource).toContain("window.sessionStorage.getItem('hands-admin-confirmation-return-focus')");
+    expect(focusBoundarySource).toContain('JSON.stringify({ pathname: cancelUrl.pathname })');
     expect(focusBoundarySource).toContain('window.history.back()');
     expect(focusBoundarySource).toContain('onClickCapture={handleCancelClick}');
     expect(focusBoundarySource).toContain('window.location.assign(cancelHref)');
+    expect(focusBoundarySource).toContain('if (onCancel)');
+    expect(focusBoundarySource).toContain('onCancel();');
+    expect(focusBoundarySource).toContain('useAdminModalFocus(dialogRef, closeDialog, returnFocusRef)');
+    expect(source).toContain('onSubmit={onSubmit}');
+    expect(source).toContain('returnFocusRef={returnFocusRef}');
     expect(modalFocusSource).toContain("event.key === 'Escape'");
+    expect(modalFocusSource).toContain('container.scrollTop = 0');
+    expect(modalFocusSource).toContain('container.focus({ preventScroll: true })');
     expect(modalFocusSource).toContain('disableModalBackground');
     expect(modalFocusSource).toContain('sibling.inert = true');
-    expect(modalFocusSource).toContain('returnFocus?.focus()');
+    expect(modalFocusSource).toContain('returnFocus?.focus({ preventScroll: true })');
     expect(rootShellSource).toContain('rememberConfirmationTrigger');
     expect(rootShellSource).toContain(
       "link?.closest('details')?.querySelector<HTMLElement>(':scope > summary')",

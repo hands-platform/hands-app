@@ -41,7 +41,9 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('Session activity period');
     expect(rendered).toContain('All app languages');
     expect(rendered).toContain('Sort customers');
+    expect(rendered).toContain('Newest customers');
     expect(rendered).toContain('Most bookings');
+    expect(rendered).not.toContain('Newest first');
     expect(rendered).toContain('Apply filters');
     expect(rendered).toContain('Search: linh');
     expect(rendered).toContain('Clear filters');

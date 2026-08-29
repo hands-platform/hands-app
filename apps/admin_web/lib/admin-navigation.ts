@@ -3,6 +3,7 @@ import {
   hasAdminOperatorCategory,
   type AdminOperatorAccessLike,
 } from './admin-operator-access-model';
+import { couponLaunchEnabled, shiftHandoffLaunchEnabled } from './launch-features';
 
 export const adminNavIconKeys = [
   'activity',
@@ -209,25 +210,74 @@ const partnerMoneyLinks = [
 
 const partnerOperationsLinks = [
   navLink(
-    'partner-workspace-overview',
+    'partner-operations-overview',
     'activity',
     '/partners/overview',
     'Overview',
     'Review current supply, action queues, period performance, and wallet risk.',
+    ['partner overview', 'partner', 'partners', 'provider', 'providers'],
   ),
   navLink(
-    'partner-workspace-controls',
+    'partner-operations-action-queue',
     'controls',
     '/partner-controls',
     'Action Queue',
     'Review availability, account controls, and Partner operating restrictions.',
+    ['partner action queue', 'partner controls', 'partner queue'],
   ),
   navLink(
-    'partner-workspace-directory',
+    'partner-operations-approvals',
+    'approvals',
+    '/partners?review=approval-pending&sort=oldest',
+    'Approvals',
+    'Review submitted Partner approvals in oldest-first decision order.',
+    ['partner approvals', 'approval', 'approvals'],
+  ),
+  navLink(
+    'partner-operations-onboarding-blockers',
+    'controls',
+    '/partners?review=unapproved',
+    'Onboarding Blockers',
+    'Resolve issues blocking Partner onboarding and approval readiness.',
+    ['partner onboarding', 'onboarding', 'blocked partners'],
+  ),
+  navLink(
+    'partner-operations-blockers',
+    'controls',
+    '/partner-controls?details=controls',
+    'Partner Blockers',
+    'Review the complete server-ranked Partner blocker queue.',
+    ['partner blockers', 'blockers'],
+  ),
+  navLink(
+    'partner-operations-reports',
+    'audit',
+    '/partner-controls?details=reports',
+    'Reports',
+    'Review Partner reports, incidents, severity, and resolution evidence.',
+    ['partner reports'],
+  ),
+  navLink(
+    'partner-operations-account-controls',
+    'controls',
+    '/partner-controls?details=sanctions',
+    'Account Controls',
+    'Review active Partner restrictions and retained control history.',
+    ['partner account controls', 'account controls'],
+  ),
+  navLink(
+    'partner-operations-directory',
     'partners',
     '/partners',
     'Directory',
     'Find Partner records and open approvals, onboarding blockers, or wallet debt.',
+    ['partner directory'],
+    [
+      searchEntry('partner-wallet-debt', 'wallet', '/partners?review=unsettled', 'Wallet Debt', [
+        'unsettled partners',
+        'negative wallet',
+      ]),
+    ],
   ),
 ] as const;
 
@@ -318,7 +368,6 @@ const systemHealthLinks = [
 ] as const;
 
 export const adminWorkspaceNavigationGroups: readonly AdminWorkspaceNavigationGroup[] = [
-  { id: 'partner-operations', label: 'Partner Operations', links: partnerOperationsLinks },
   { id: 'booking-closeout', label: 'Booking Closeout', links: bookingCloseoutLinks },
   { id: 'customer-signals', label: 'Customer Signals', links: customerSignalLinks },
   { id: 'insights', label: 'Insights', links: insightLinks },
@@ -420,43 +469,7 @@ export const adminNavSections: readonly AdminNavSection[] = [
     iconKey: 'partners',
     label: 'Partner Operations',
     description: 'Approve, support, monitor, and control Partner operations.',
-    links: [
-      navLink(
-        'partner-operations-workspace',
-        'partners',
-        '/partners/overview',
-        'Partner Operations',
-        'Open Partner supply, action queues, and directory tools in one workspace.',
-        ['partner', 'partners'],
-        [
-          searchEntry('partner-directory', 'partners', '/partners', 'Partner Directory', [
-            'partner directory',
-          ]),
-          searchEntry('partner-controls', 'controls', '/partner-controls', 'Partner Action Queue', [
-            'partner controls',
-            'partner queue',
-          ]),
-          searchEntry(
-            'partner-approvals',
-            'approvals',
-            '/partners?review=approval-pending&sort=oldest',
-            'Partner Approvals',
-            ['approval', 'approvals'],
-          ),
-          searchEntry(
-            'partner-onboarding',
-            'controls',
-            '/partners?review=unapproved',
-            'Onboarding Blockers',
-            ['onboarding', 'blocked partners'],
-          ),
-          searchEntry('partner-wallet-debt', 'wallet', '/partners?review=unsettled', 'Wallet Debt', [
-            'unsettled partners',
-            'negative wallet',
-          ]),
-        ],
-      ),
-    ],
+    links: partnerOperationsLinks,
   },
   {
     id: 'finance-operations',
@@ -744,6 +757,8 @@ export function adminNavSectionsForAccess(access: AdminOperatorAccessLike): Admi
   return adminNavSections.flatMap((section) => {
     const href = section.href && canAccessHref(access, section.href) ? section.href : undefined;
     const links = section.links.flatMap((link) => {
+      if (link.href === '/coupons' && !couponLaunchEnabled()) return [];
+      if (link.href === '/operations-handoff' && !shiftHandoffLaunchEnabled()) return [];
       const searchEntries = link.searchEntries?.filter((entry) => canAccessHref(access, entry.href));
       if (canAccessHref(access, link.href)) return [{ ...link, searchEntries }];
 

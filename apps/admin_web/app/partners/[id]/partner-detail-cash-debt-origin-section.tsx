@@ -54,6 +54,7 @@ export function PartnerDetailCashDebtOriginSection({
     >
       <AdminTraceSummary
         className="admin-mt-12"
+        inferScope={false}
         metrics={[
           {
             detail: 'From cash-service fee/tax settlement rows.',
@@ -61,12 +62,16 @@ export function PartnerDetailCashDebtOriginSection({
             value: openDebtLabel,
           },
           {
-            detail: 'Deposit reference or admin offset is required to clear debt.',
+            detail: hasCashFeeDebt
+              ? 'Deposit reference or admin offset is required to clear debt.'
+              : 'No settlement evidence is required when cash debt is clear.',
             label: 'Evidence',
-            value: hasSettlementRef ? 'Some refs' : 'Needs ref',
+            value: hasCashFeeDebt ? (hasSettlementRef ? 'Some refs' : 'Needs ref') : 'Not required',
           },
           {
-            detail: 'Partner visibility and participation stay open; final acceptance and service start wait.',
+            detail: hasCashFeeDebt
+              ? 'Partner visibility and participation stay open; final acceptance and service start wait.'
+              : 'Cash debt adds no marketplace or service-flow restriction.',
             label: 'Marketplace',
             value: hasCashFeeDebt ? 'Warning state' : 'Participation open',
           },
@@ -76,9 +81,11 @@ export function PartnerDetailCashDebtOriginSection({
             value: 'Not wallet-blocked',
           },
           {
-            detail: 'Finance should not release payout while HANDS fee/tax debt is open.',
+            detail: hasCashFeeDebt
+              ? 'Finance should not release payout while HANDS fee/tax debt is open.'
+              : 'Cash debt does not block payout; account and compliance gates still apply.',
             label: 'Payout release',
-            value: hasCashFeeDebt ? 'Blocked by cash debt' : 'Available',
+            value: hasCashFeeDebt ? 'Blocked by cash debt' : 'No cash-debt block',
           },
           {
             detail: hasCashFeeDebt ? 'Use Cash Settlements to clear the wallet.' : 'No finance action needed.',

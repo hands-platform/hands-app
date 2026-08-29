@@ -2,6 +2,7 @@ import { createHmac, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto
 import { adminWebSessionCookieSecretFromEnv } from './admin-session-secret';
 
 export const ADMIN_WEB_SESSION_COOKIE_NAME = 'hands_admin_session';
+export const ADMIN_WEB_SESSION_DEFAULT_TTL_SECONDS = 2 * 60 * 60;
 export const ADMIN_WEB_SESSION_MAX_TTL_SECONDS = 8 * 60 * 60;
 
 const DEV_REALTIME_ACCESS_FLAG = 'true';
@@ -211,7 +212,7 @@ export function adminWebSessionCookieName(env: NodeJS.ProcessEnv = process.env) 
 export function parseAdminWebSessionTtlSeconds(value: string | undefined) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    return ADMIN_WEB_SESSION_MAX_TTL_SECONDS;
+    return ADMIN_WEB_SESSION_DEFAULT_TTL_SECONDS;
   }
 
   return Math.min(Math.floor(parsed), ADMIN_WEB_SESSION_MAX_TTL_SECONDS);

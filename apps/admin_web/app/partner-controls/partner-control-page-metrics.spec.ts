@@ -17,6 +17,7 @@ describe('partner control page metrics', () => {
         kind: 'risk',
         label: 'Reports needing review',
         scope: 'All partners',
+        scopeKind: 'record',
         value: '2',
       }),
       expect.objectContaining({
@@ -26,7 +27,9 @@ describe('partner control page metrics', () => {
       expect.objectContaining({
         helper: 'Negative wallet gates final acceptance, service start, and payout release.',
         href: '/partner-controls?details=controls&review=cash-debt',
+        kind: 'risk',
         label: 'Debt gates',
+        scopeKind: 'record',
       }),
       expect.objectContaining({
         href: '/partner-controls?details=reports&review=overdue&sort=oldest',

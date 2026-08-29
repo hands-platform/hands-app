@@ -131,6 +131,39 @@ describe('finance approval access actions', () => {
       status: 'error',
     });
   });
+
+  it.each([
+    [
+      'RECENT_REAUTH_REQUIRED',
+      'Confirm your current password and MFA for this Admin Web session',
+      false,
+    ],
+    [
+      'SESSION_MFA_UNVERIFIED',
+      'Verify MFA for this Admin Web session',
+      true,
+    ],
+  ])('returns a recoverable %s decision state', async (code, message, mfaRequired) => {
+    mockedAdminPostOrThrow.mockRejectedValue(
+      new AdminApiRequestError('POST', '/admin/finance-approver-governance/requests/request-1/decision', 403, {
+        code,
+      }),
+    );
+    const formData = new FormData();
+    formData.set('requestId', 'request-1');
+    formData.set('decision', 'APPROVE');
+    formData.set('decisionReason', 'Preserve this evidence while reauthenticating');
+
+    const state = await decideFinanceApproverAccessRequest({ status: 'idle' }, formData);
+
+    expect(state).toMatchObject({
+      error: expect.stringContaining(message),
+      mfaRequired,
+      reauthRequired: true,
+      status: 'error',
+    });
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledOnce();
+  });
 });
 
 function financeApproverRequestFormData(reason = 'Independent treasury backup coverage') {

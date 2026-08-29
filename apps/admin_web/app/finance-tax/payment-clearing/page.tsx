@@ -9,6 +9,7 @@ import type {
   AdminUser,
 } from '../../../lib/admin-api';
 import { adminGet, adminGetResult, adminPostOrThrow } from '../../../lib/admin-api';
+import { AdminTableSubstack } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminInlineNotice } from '../../../components/admin-inline-notice';
@@ -184,6 +185,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
   const showBulkReviewAssignment =
     paymentClearingReviewNeedsOwner(filters.review) &&
     pagination.rows.some((entry) => ['OPEN', 'PARTIALLY_CLEARED'].includes(entry.status));
+  const showTerminalOutcome = ['cleared', 'reversed', 'terminal'].includes(filters.review);
   const showOwnerConfirmation =
     requestedOwnerConfirmation &&
     Boolean(requestedEntry && ['OPEN', 'PARTIALLY_CLEARED'].includes(requestedEntry.status)) &&
@@ -447,7 +449,20 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         resultTone="success"
         title="Payment clearing filters"
       >
-        <AdminFormShell action="/finance-tax/payment-clearing" className="filter-form admin-mb-16" method="get">
+        <AdminFormShell
+          action="/finance-tax/payment-clearing"
+          className="filter-form admin-mb-16"
+          key={JSON.stringify([
+            filters.review,
+            filters.sort,
+            filters.range,
+            filters.q,
+            filters.take,
+            reviewOwner,
+            filters.paymentClearingAge,
+          ])}
+          method="get"
+        >
           <input name="review" type="hidden" value={filters.review} />
           <input name="range" type="hidden" value={filters.range} />
           <input name="take" type="hidden" value={filters.take} />
@@ -601,14 +616,6 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       >
         <input name="redirectTo" type="hidden" value={currentQueueHref} />
       <FinanceTablePanel
-        actions={
-          showBulkReviewAssignment ? (
-            <PaymentClearingSelectionControls
-              loadOwnerOptions={loadPaymentClearingReviewOwnerOptions}
-              visibleCount={pagination.rows.length}
-            />
-          ) : null
-        }
         className="payment-clearing-results-panel"
         grouped
         description={
@@ -628,6 +635,12 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         resultTone={paymentClearingResultTone(filters.review, pagination.totalRows)}
         title={paymentClearingTableTitle(filters.review)}
       >
+        {showBulkReviewAssignment ? (
+          <PaymentClearingSelectionControls
+            loadOwnerOptions={loadPaymentClearingReviewOwnerOptions}
+            visibleCount={pagination.rows.length}
+          />
+        ) : null}
         <FinanceDataTable
           ariaLabel="Payment clearing evidence table"
           emptyMessage="No payment clearing rows match the current filters."
@@ -636,7 +649,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
             'Booking & payment',
             'Event & evidence',
             'Remaining & original',
-            'Owner & SLA',
+            showTerminalOutcome ? 'Outcome & time' : 'Owner & SLA',
             'Next action',
           ]}
           rowCount={pagination.rows.length}
@@ -704,7 +717,23 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 </div>
               </td>
               <td className="payment-clearing-owner-sla-cell">
-                {entry.reviewAssignment ? (
+                {showTerminalOutcome ? (
+                  <AdminTableSubstack>
+                    <StatusBadgeFromPillClass pillClass={financePaymentClearingStatusPill(entry.status)}>
+                      {paymentClearingLabel(entry.status)}
+                    </StatusBadgeFromPillClass>
+                    <span className="muted">
+                      Occurred <DateTimeText value={entry.occurredAt} />
+                    </span>
+                    <span className="muted">
+                      {entry.clearedAt ? (
+                        <>{clearingState.closedAtLabel} <DateTimeText value={entry.clearedAt} /></>
+                      ) : (
+                        `${clearingState.closedAtLabel} not recorded`
+                      )}
+                    </span>
+                  </AdminTableSubstack>
+                ) : entry.reviewAssignment ? (
                   <>
                     <strong>
                       {entry.reviewAssignment.assignee?.fullName ??
@@ -720,7 +749,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 ) : (
                   <span className="muted">Closed</span>
                 )}
-                {clearingState.isOpen ? (
+                {!showTerminalOutcome && clearingState.isOpen ? (
                   <div className="admin-mt-6">
                     <AdminTextLink
                       href={appendQueryParam(
@@ -733,7 +762,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                     </AdminTextLink>
                   </div>
                 ) : null}
-                <div className="admin-mt-10">
+                {!showTerminalOutcome ? <div className="admin-mt-10">
                   <StatusBadgeFromPillClass pillClass={paymentClearingSlaPill(entry.occurredAt, entry.status)}>
                     {paymentClearingSlaLabel(entry.occurredAt, entry.status)}
                   </StatusBadgeFromPillClass>
@@ -748,7 +777,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                       {paymentClearingLabel(entry.status)}
                     </StatusBadgeFromPillClass>
                   </div>
-                </div>
+                </div> : null}
               </td>
               <td>
                 <AdminTextLink href={paymentClearingDetailHref(entry.id, currentQueueHref)}>
@@ -916,7 +945,7 @@ function paymentClearingDocumentTitle(
 ) {
   if (review === 'partial') return 'Partial Matches';
   if (review === 'cleared' || review === 'reversed' || review === 'terminal') {
-    return 'Payment Matching History';
+    return 'Cleared & Reversed History';
   }
   return 'Unmatched Payment Evidence';
 }

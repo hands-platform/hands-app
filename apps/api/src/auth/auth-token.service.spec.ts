@@ -362,7 +362,13 @@ describe('AuthTokenService admin realtime socket tokens', () => {
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorId: null,
+        actorKey: 'admin_auth_token',
+        actorType: 'SERVICE',
         action: 'admin_operator.realtime.authentication_denied',
+        area: 'SECURITY',
+        outcome: 'DENIED',
+        severity: 'REVIEW',
+        source: 'admin_auth_token',
         metadata: {
           authProvider: 'admin-realtime',
           reason: 'SESSION_NOT_FOUND',
@@ -675,13 +681,21 @@ describe('AuthTokenService Admin Web API tokens', () => {
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: {
         actorId: null,
+        actorKey: 'admin_auth_token',
+        actorType: 'SERVICE',
         action: 'admin_operator.rest.authentication_denied',
+        area: 'SECURITY',
         target: 'admin_web_session:admin-web-jti',
         metadata: {
           authProvider: 'admin-web',
           reason: 'SESSION_NOT_FOUND',
           sessionId: 'admin-web-jti',
         },
+        objectId: 'admin-web-jti',
+        objectType: 'admin_web_session',
+        outcome: 'DENIED',
+        severity: 'REVIEW',
+        source: 'admin_auth_token',
       },
     });
   });
@@ -698,10 +712,10 @@ describe('AuthTokenService Admin Web API tokens', () => {
     });
   });
 
-  it('rejects an Admin Web session after the configured idle timeout', async () => {
+  it('rejects an Admin Web session after the default two-hour idle timeout', async () => {
     const { prisma, service, token } = createAdminWebApiServiceAndToken();
     const session = adminWebSessionFixture('admin-web-jti', []);
-    session.lastSeenAt = new Date(Date.now() - 31 * 60_000);
+    session.lastSeenAt = new Date(Date.now() - 121 * 60_000);
     prisma.adminWebSession.findUnique.mockResolvedValue(session);
 
     await expect(service.authenticateBearerToken(token)).rejects.toThrow(UnauthorizedException);

@@ -7,10 +7,12 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type RefObject,
 } from 'react';
 import { Archive, EyeOff, Save, Send, ShieldCheck } from 'lucide-react';
 
 import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdrop-button';
+import { AdminReauthenticateOperatorForm } from '../../components/admin-reauthenticate-operator-form';
 import {
   AdminDrawerActionFooter,
   AdminDrawerFormGrid,
@@ -25,12 +27,15 @@ import { useAdminModalFocus } from '../../components/use-admin-modal-focus';
 import type { AdminServiceCatalogDraftPayload, AdminServiceCatalogImpact } from '../../lib/admin-api';
 import { serviceBasePayoutRule } from '../../lib/service-base-payout-rule';
 import type { ServiceCatalogGroup } from '../../lib/service-catalog-filters';
-import { initialServiceCatalogActionState, saveServiceCatalogGroup } from './actions';
+import { saveServiceCatalogGroup } from './actions';
+import { initialServiceCatalogActionState } from './service-catalog-action-state';
 import {
   readVndEditorValue,
   SERVICE_CATALOG_DURATIONS,
   serviceCatalogPublishBlockers,
+  serviceCatalogReviewChangeSet,
   slugifyServiceGroupKey,
+  type ServiceCatalogReviewChangeSet,
 } from './service-catalog-editor-model';
 import { useServiceCatalogDrawer } from './service-catalog-drawer-shell';
 
@@ -71,9 +76,12 @@ export function ServiceCatalogEditorForm({
   const { requestClose, setChildModalOpen } = useServiceCatalogDrawer();
   const [dirty, setDirty] = useState(false);
   const [confirmation, setConfirmation] = useState<CatalogIntent | null>(null);
+  const [reauthDismissed, setReauthDismissed] = useState(false);
+  const [reauthConfirmed, setReauthConfirmed] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const mutationKeyRef = useRef<HTMLInputElement>(null);
   const mutationIntentRef = useRef<HTMLInputElement>(null);
+  const confirmationTriggerRef = useRef<HTMLElement>(null);
   const draft = group?.draft?.payload;
   const translations = draft?.nameTranslations ?? group?.nameTranslations ?? {};
   const [translationValues, setTranslationValues] = useState<Record<string, string>>(() => ({
@@ -117,6 +125,13 @@ export function ServiceCatalogEditorForm({
     group?.draft?.version ?? 0,
     ...(group?.items.map((item) => item.catalogVersion ?? 0) ?? [0]),
   );
+  const reviewChangeSet = serviceCatalogReviewChangeSet({
+    description,
+    displayOrder,
+    durations: durationValues,
+    group,
+    nameTranslations: translationValues,
+  });
 
   const resetMutationKey = useCallback(() => {
     if (mutationKeyRef.current) mutationKeyRef.current.value = '';
@@ -159,15 +174,15 @@ export function ServiceCatalogEditorForm({
     }
   }
 
-  function reviewPublish() {
+  function reviewPublish(trigger: HTMLElement) {
     if (publishBlockers.length) {
       focusEditorField(formRef.current, publishBlockers[0]?.field);
       return;
     }
-    openConfirmation('PUBLISH');
+    openConfirmation('PUBLISH', trigger);
   }
 
-  function reviewRemoval(intent: 'HIDE' | 'ARCHIVE') {
+  function reviewRemoval(intent: 'HIDE' | 'ARCHIVE', trigger: HTMLElement) {
     if (reason.trim().length < 12) {
       focusEditorField(formRef.current, 'reason');
       return;
@@ -176,17 +191,34 @@ export function ServiceCatalogEditorForm({
       focusEditorField(formRef.current, 'impact');
       return;
     }
-    openConfirmation(intent);
+    openConfirmation(intent, trigger);
   }
 
-  function openConfirmation(intent: CatalogIntent) {
+  function openConfirmation(intent: CatalogIntent, trigger: HTMLElement) {
+    confirmationTriggerRef.current = trigger;
+    setReauthConfirmed(false);
+    setReauthDismissed(false);
     setChildModalOpen(true);
     setConfirmation(intent);
   }
 
   function closeConfirmation() {
+    const trigger = confirmationTriggerRef.current;
+    const triggerIntent = confirmation;
+    setReauthConfirmed(false);
+    setReauthDismissed(false);
     setConfirmation(null);
     setChildModalOpen(false);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const currentTrigger = triggerIntent
+          ? document.querySelector<HTMLElement>(
+              `[data-service-catalog-review-intent="${triggerIntent}"]`,
+            )
+          : trigger;
+        if (currentTrigger?.isConnected) currentTrigger.focus({ preventScroll: true });
+      });
+    });
   }
 
   return (
@@ -404,8 +436,9 @@ export function ServiceCatalogEditorForm({
           </AdminFormControlButton>
           <AdminFormControlButton
             className="button-primary"
+            data-service-catalog-review-intent="PUBLISH"
             disabled={pending || publishBlockers.length > 0}
-            onClick={reviewPublish}
+            onClick={(event) => reviewPublish(event.currentTarget)}
             type="button"
           >
             <Send aria-hidden="true" size={16} />
@@ -419,12 +452,12 @@ export function ServiceCatalogEditorForm({
               <summary>More actions</summary>
               <div>
                 {group.items.some((item) => item.publicationStatus === 'PUBLISHED') ? (
-                  <AdminFormControlButton className="button-secondary" disabled={pending || pricingConflict || !boundedImpactAvailable} onClick={() => reviewRemoval('HIDE')} type="button">
+                  <AdminFormControlButton className="button-secondary" data-service-catalog-review-intent="HIDE" disabled={pending || pricingConflict || !boundedImpactAvailable} onClick={(event) => reviewRemoval('HIDE', event.currentTarget)} type="button">
                     <EyeOff aria-hidden="true" size={16} />
                     Review hide from apps
                   </AdminFormControlButton>
                 ) : null}
-                <AdminFormControlButton className="button-danger" disabled={pending || pricingConflict || !boundedImpactAvailable} onClick={() => reviewRemoval('ARCHIVE')} type="button">
+                <AdminFormControlButton className="button-danger" data-service-catalog-review-intent="ARCHIVE" disabled={pending || pricingConflict || !boundedImpactAvailable} onClick={(event) => reviewRemoval('ARCHIVE', event.currentTarget)} type="button">
                   <Archive aria-hidden="true" size={16} />
                   Review archive
                 </AdminFormControlButton>
@@ -433,48 +466,75 @@ export function ServiceCatalogEditorForm({
           ) : null}
         </AdminDrawerActionFooter>
 
-        {confirmation ? (
+        {confirmation && (!state.reauthRequired || reauthDismissed) ? (
           <CatalogConfirmationDialog
+            actionError={state.status === 'error' ? state.message : undefined}
             currentLiveOptionCount={currentLiveOptionCount}
             groupKey={serviceGroupKey}
             impact={impact}
             intent={confirmation}
             onCancel={closeConfirmation}
+            onConfirmIdentity={() => setReauthDismissed(false)}
             pending={pending}
             prepareMutation={prepareMutation}
             proposedLiveOptionCount={proposedLiveOptionCount}
             reason={reason}
+            reauthConfirmed={reauthConfirmed}
+            reauthRequired={Boolean(state.reauthRequired)}
+            returnFocusRef={confirmationTriggerRef}
+            reviewChangeSet={reviewChangeSet}
           />
         ) : null}
       </AdminDrawerFormGrid>
+      {confirmation && state.reauthRequired && !reauthDismissed ? (
+        <CatalogReauthenticationDialog
+          onBack={() => setReauthDismissed(true)}
+          onSuccess={() => {
+            setReauthConfirmed(true);
+            setReauthDismissed(true);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
 function CatalogConfirmationDialog({
+  actionError,
   currentLiveOptionCount,
   groupKey,
   impact,
   intent,
   onCancel,
+  onConfirmIdentity,
   pending,
   prepareMutation,
   proposedLiveOptionCount,
   reason,
+  reauthConfirmed,
+  reauthRequired,
+  returnFocusRef,
+  reviewChangeSet,
 }: {
+  readonly actionError?: string;
   readonly currentLiveOptionCount: number;
   readonly groupKey: string;
   readonly impact?: AdminServiceCatalogImpact | null;
   readonly intent: CatalogIntent;
   readonly onCancel: () => void;
+  readonly onConfirmIdentity: () => void;
   readonly pending: boolean;
   readonly prepareMutation: (intent: CatalogIntent) => void;
   readonly proposedLiveOptionCount: number;
   readonly reason: string;
+  readonly reauthConfirmed: boolean;
+  readonly reauthRequired: boolean;
+  readonly returnFocusRef: RefObject<HTMLElement | null>;
+  readonly reviewChangeSet: ServiceCatalogReviewChangeSet;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   const [archiveAcknowledged, setArchiveAcknowledged] = useState(false);
-  useAdminModalFocus(dialogRef, onCancel);
+  useAdminModalFocus(dialogRef, onCancel, returnFocusRef);
   const isArchive = intent === 'ARCHIVE';
   const title = intent === 'PUBLISH' ? 'Publish service group?' : intent === 'HIDE' ? 'Hide service group from apps?' : 'Archive service group?';
   const submitLabel = intent === 'PUBLISH' ? `Publish ${proposedLiveOptionCount} app-visible options` : intent === 'HIDE' ? 'Hide from Customer & Partner apps' : 'Archive service group';
@@ -512,9 +572,24 @@ function CatalogConfirmationDialog({
           <ImpactChangeFact label="Active Partners" value={impact?.activePartnerCount ?? 0} />
           <ImpactChangeFact label="Open booking lines" value={impact?.openBookingLineCount ?? 0} />
         </dl>
+        {intent === 'PUBLISH' ? <CatalogPublishChangeSet changeSet={reviewChangeSet} /> : null}
         <p className="service-catalog-confirmation-consequence">
           {consequenceCopy} A service-group audit change set will record this command and its reason.
         </p>
+        {reauthConfirmed ? (
+          <AdminNoticeCard role="status" tone="success">
+            Identity confirmed for this Admin session. Review the command again, then submit it explicitly.
+          </AdminNoticeCard>
+        ) : actionError ? (
+          <AdminNoticeCard role="alert" tone="danger">
+            {actionError}
+            {reauthRequired ? (
+              <AdminFormControlButton className="button-secondary" onClick={onConfirmIdentity} type="button">
+                Confirm identity
+              </AdminFormControlButton>
+            ) : null}
+          </AdminNoticeCard>
+        ) : null}
         <div className="service-catalog-confirmation-reason">
           <small>Recorded reason</small>
           <p>{reason}</p>
@@ -541,6 +616,124 @@ function CatalogConfirmationDialog({
             value={intent}
           >
             {pending ? 'Applying...' : submitLabel}
+          </AdminFormControlButton>
+        </div>
+      </AdminDialogCard>
+    </div>
+  );
+}
+
+function CatalogPublishChangeSet({ changeSet }: { readonly changeSet: ServiceCatalogReviewChangeSet }) {
+  return (
+    <section aria-labelledby="service-catalog-change-set-title" className="service-catalog-change-set">
+      <div className="service-catalog-change-set-heading">
+        <h4 id="service-catalog-change-set-title">Catalog changes</h4>
+        {!changeSet.hasMonetaryChange ? <span>No monetary change</span> : null}
+      </div>
+      {changeSet.durationChanges.length ? (
+        <div className="service-catalog-duration-changes">
+          {changeSet.durationChanges.map((change) => (
+            <div className="service-catalog-duration-change" key={change.durationMin}>
+              <strong>{change.durationMin} minutes</strong>
+              <dl>
+                <ReviewDelta
+                  after={change.after.offered ? 'Offered' : 'Not offered'}
+                  before={change.before.offered ? 'Offered' : 'Not offered'}
+                  label="Offered"
+                />
+                <ReviewDelta
+                  after={formatVnd(change.after.customerPrice)}
+                  before={formatVnd(change.before.customerPrice)}
+                  label="Customer price"
+                />
+                <ReviewDelta
+                  after={formatVnd(change.after.partnerPayout)}
+                  before={formatVnd(change.before.partnerPayout)}
+                  label="Partner payout"
+                />
+                <ReviewDelta
+                  after={formatVnd(change.after.grossHandsFee)}
+                  before={formatVnd(change.before.grossHandsFee)}
+                  label="Gross HANDS fee"
+                />
+              </dl>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="muted service-catalog-no-field-change">No duration changes</p>
+      )}
+      {changeSet.configChanges.length ? (
+        <dl className="service-catalog-config-changes">
+          {changeSet.configChanges.map((change) => (
+            <ReviewDelta
+              after={change.after}
+              before={change.before}
+              key={change.label}
+              label={change.label}
+            />
+          ))}
+        </dl>
+      ) : null}
+    </section>
+  );
+}
+
+function ReviewDelta({
+  after,
+  before,
+  label,
+}: {
+  readonly after: string;
+  readonly before: string;
+  readonly label: string;
+}) {
+  return (
+    <div className="service-catalog-review-delta">
+      <dt>{label}</dt>
+      <dd>
+        <span>{before}</span>
+        <span aria-hidden="true">→</span>
+        <span>{after}</span>
+      </dd>
+    </div>
+  );
+}
+
+function CatalogReauthenticationDialog({
+  onBack,
+  onSuccess,
+}: {
+  readonly onBack: () => void;
+  readonly onSuccess: () => void;
+}) {
+  const dialogRef = useRef<HTMLElement>(null);
+  useAdminModalFocus(dialogRef, onBack);
+  return (
+    <div className="service-catalog-confirmation-layer">
+      <AdminDrawerBackdropButton
+        aria-label="Back to service catalog review"
+        className="confirm-dialog-backdrop"
+        onClick={onBack}
+      />
+      <AdminDialogCard
+        ariaDescribedBy="service-catalog-reauthentication-description"
+        ariaLabelledBy="service-catalog-reauthentication-title"
+        ariaModal
+        className="admin-dialog-card service-catalog-confirmation"
+        surfaceRef={dialogRef}
+        tabIndex={-1}
+      >
+        <div className="service-catalog-confirmation-heading">
+          <h3 id="service-catalog-reauthentication-title">Confirm identity to continue</h3>
+          <p id="service-catalog-reauthentication-description">
+            Live catalog changes require recent password and MFA confirmation for this Admin session.
+          </p>
+        </div>
+        <AdminReauthenticateOperatorForm onSuccess={onSuccess} />
+        <div className="service-catalog-confirmation-actions">
+          <AdminFormControlButton className="button-secondary" onClick={onBack} type="button">
+            Back to review
           </AdminFormControlButton>
         </div>
       </AdminDialogCard>
@@ -625,7 +818,7 @@ function DurationInputRow({ duration, errors, group, onChange, value }: {
           name={`providerPayoutAmount${duration}`}
           onChange={(event) => onChange({ ...value, providerPayoutAmount: event.target.value })}
           placeholder="350000"
-          step="100000"
+          step="1"
           type="number"
           value={value.providerPayoutAmount}
         />

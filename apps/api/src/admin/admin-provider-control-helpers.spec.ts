@@ -137,6 +137,18 @@ describe('admin provider control helpers', () => {
     });
   });
 
+  it('requires bounded sanction create evidence at the service authority', () => {
+    for (const reason of [undefined, '', '   ', 'x'.repeat(11), 'x'.repeat(501)]) {
+      expect(() => normalizeProviderSanctionCreateInput({ reason })).toThrow(BadRequestException);
+    }
+    expect(normalizeProviderSanctionCreateInput({ reason: `  ${'x'.repeat(12)}  ` }).reason).toBe(
+      'x'.repeat(12),
+    );
+    expect(normalizeProviderSanctionCreateInput({ reason: 'x'.repeat(500) }).reason).toBe(
+      'x'.repeat(500),
+    );
+  });
+
   it('requires and trims meaningful sanction lift evidence', () => {
     expect(normalizeProviderSanctionLiftInput({ reason: '  Partner debt settled in full  ' })).toEqual({
       reason: 'Partner debt settled in full',
@@ -149,6 +161,15 @@ describe('admin provider control helpers', () => {
     );
     expect(() => normalizeProviderSanctionLiftInput({ reason: 'x'.repeat(501) })).toThrow(
       'Lift reason must be at most 500 characters',
+    );
+    expect(normalizeProviderSanctionLiftInput({ reason: 'x'.repeat(12) })).toEqual({
+      reason: 'x'.repeat(12),
+    });
+    expect(normalizeProviderSanctionLiftInput({ reason: 'x'.repeat(500) })).toEqual({
+      reason: 'x'.repeat(500),
+    });
+    expect(() => normalizeProviderSanctionLiftInput({ reason: 'x'.repeat(11) })).toThrow(
+      'Lift reason must be at least 12 characters',
     );
   });
 
@@ -164,8 +185,13 @@ describe('admin provider control helpers', () => {
       providerProfileId: 'provider-1',
       reason: 'manual review',
     });
-    expect(providerAccountUnblockAuditMetadata('provider-1')).toEqual({
+    expect(providerAccountUnblockAuditMetadata('provider-1', 'Issue resolved with evidence', [
+      'sanction-1',
+      'sanction-2',
+    ])).toEqual({
       providerProfileId: 'provider-1',
+      reason: 'Issue resolved with evidence',
+      liftedSanctionIds: ['sanction-1', 'sanction-2'],
     });
     expect(
       providerReportCreateAuditMetadata({

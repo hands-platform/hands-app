@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import PaymentFeesPage from './page';
 
@@ -13,6 +13,7 @@ vi.mock('../../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 vi.mock('../../../lib/admin-operator-access', () => ({
@@ -20,12 +21,22 @@ vi.mock('../../../lib/admin-operator-access', () => ({
 }));
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 
 describe('PaymentFeesPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href.startsWith('/admin/monthly-tax-closings/summary?')
+        ? { ...(fallback as Record<string, unknown>), hasActivity: true }
+        : fallback,
+    );
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: await mockedAdminGet(href, fallback),
+      ok: true,
+      status: 200,
+    }));
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue(null);
   });
 
@@ -48,6 +59,7 @@ describe('PaymentFeesPage', () => {
     expect(markup).toContain('Period: 2026-06');
     expect(markup).toContain('Currency: VND');
     expect(markup).toContain('Fee command board');
+    expect(markup).toContain('Tax closeout');
     expect(markup).toContain('Net processing fee');
     expect(markup).toContain('Effective fee rate');
     expect(markup).toContain('Evidence review');
@@ -77,7 +89,9 @@ describe('PaymentFeesPage', () => {
   });
 
   it('keeps the payment fee period compact by avoiding duplicated page-template metrics', () => {
-    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Fee command board">');
+    expect(source).toContain(
+      '<FinanceListCommandBoard ariaLabel="Fee command board" className="finance-five-card-command-board">',
+    );
     expect(source).not.toContain('metrics={[');
   });
 
@@ -166,9 +180,13 @@ describe('PaymentFeesPage', () => {
       reversalCount: 0,
       settlementCount: 1,
     };
-    mockedAdminGet.mockImplementation(async (href, fallback) =>
-      href.startsWith('/admin/payment-fees/summary') ? summary : fallback,
-    );
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/payment-fees/summary')) return summary;
+      if (href.startsWith('/admin/monthly-tax-closings/summary?')) {
+        return { ...(fallback as Record<string, unknown>), hasActivity: true };
+      }
+      return fallback;
+    });
 
     const page = await PaymentFeesPage({
       searchParams: Promise.resolve({ period: '2026-06' }),
@@ -191,6 +209,60 @@ describe('PaymentFeesPage', () => {
     expect(markup).toContain('paymentMethod=CARD');
     expect(markup).not.toContain('1.000 VND');
     expect(markup).not.toContain('30 VND');
+  });
+
+  it('keeps CASH volume visible without creating a processor evidence link', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/monthly-tax-closings/summary?')) {
+        return { ...(fallback as Record<string, unknown>), hasActivity: true };
+      }
+      if (href.startsWith('/admin/payment-fees/summary?')) {
+        const summary = fallback as Record<string, unknown>;
+        return {
+          ...summary,
+          byPaymentMethod: [
+            {
+              customerPaymentAmountTotal: 600_000,
+              evidenceCustomerPaymentAmountTotal: 0,
+              evidenceRecordedFeeTotal: 0,
+              evidenceReviewCount: 0,
+              paymentMethod: 'CASH',
+              paymentProcessingFeeTotal: 0,
+              remediationDelta: null,
+              remediationExpectedFeeTotal: null,
+              reversalCount: 0,
+              settlementCount: 1,
+            },
+            {
+              customerPaymentAmountTotal: 600_000,
+              evidenceCustomerPaymentAmountTotal: 600_000,
+              evidenceRecordedFeeTotal: 10_000,
+              evidenceReviewCount: 1,
+              paymentMethod: 'MOMO',
+              paymentProcessingFeeTotal: 10_000,
+              remediationDelta: null,
+              remediationExpectedFeeTotal: null,
+              reversalCount: 0,
+              settlementCount: 1,
+            },
+          ],
+          remediationPreview: {
+            ...(summary.remediationPreview as Record<string, unknown>),
+            evidenceReviewCount: 1,
+          },
+        };
+      }
+      return fallback;
+    });
+
+    const markup = renderToStaticMarkup(await PaymentFeesPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    }));
+
+    expect(markup).toContain('<strong>CASH</strong>');
+    expect(markup).toContain('<strong>MOMO</strong>');
+    expect(markup).not.toContain('paymentMethod=CASH');
+    expect(markup).toContain('paymentMethod=MOMO');
   });
 
   it('renders a governed draft editor with full method coverage and separate approval', async () => {
@@ -443,5 +515,77 @@ describe('PaymentFeesPage', () => {
     expect(rejectedMarkup).toContain('CARD fee differs from the signed schedule');
     expect(rejectedMarkup).toContain('Review approval request');
     expect(rejectedMarkup).not.toContain('Review cancellation');
+  });
+
+  it.each([
+    ['FUTURE_PERIOD', false, 'Future period', 'Monitoring not started'],
+    ['NOT_STARTED', false, 'No activity', 'No close record'],
+    ['NOT_STARTED', true, 'Review totals', 'Needs review'],
+    ['REVIEWED', true, 'Declare', 'Needs action'],
+    ['DECLARED', true, 'Record payment', 'Needs action'],
+    ['PAID', true, 'Close period', 'Needs action'],
+    ['CLOSED', true, 'Closed', 'Records'],
+  ])('uses shared %s period semantics on the payment fees page', async (periodState, hasActivity, value, scope) => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/monthly-tax-closings/summary?')) {
+        return {
+          ...(fallback as Record<string, unknown>),
+          hasActivity,
+          periodState,
+          status: periodState === 'NOT_STARTED' || periodState === 'FUTURE_PERIOD' ? 'DRAFT' : periodState,
+        };
+      }
+      return fallback;
+    });
+
+    const markup = renderToStaticMarkup(await PaymentFeesPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    }));
+
+    expect(markup).toContain(value);
+    expect(markup).toContain(scope);
+    expect(markup).not.toContain('No tax due');
+    if (!hasActivity) {
+      expect(markup).not.toContain('Export payment fee CSV');
+      expect(markup).not.toContain('Evidence review');
+      expect(markup).not.toContain('Period policy missing');
+    }
+  });
+
+  it.each([401, 403, 500, null])('fails closed when the payment fee summary returns %s', async (status) => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) =>
+      href.startsWith('/admin/payment-fees/summary?')
+        ? { data: fallback, ok: false, status }
+        : { data: fallback, ok: true, status: 200 },
+    );
+
+    const markup = renderToStaticMarkup(await PaymentFeesPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    }));
+
+    expect(markup).toContain('Payment fee data unavailable');
+    expect(markup).toContain(status ? `API ${status}` : 'API unavailable');
+    expect(markup).toContain('Retry Payment Fees');
+    expect(markup).not.toContain('0 VND');
+    expect(markup).not.toContain('Export payment fee CSV');
+    expect(markup).not.toContain('Evidence review');
+    expect(markup).not.toContain('Period policy missing');
+  });
+
+  it('keeps fee evidence while marking monthly closeout unavailable', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) =>
+      href.startsWith('/admin/monthly-tax-closings/summary?')
+        ? { data: fallback, ok: false, status: 503 }
+        : { data: await mockedAdminGet(href, fallback), ok: true, status: 200 },
+    );
+
+    const markup = renderToStaticMarkup(await PaymentFeesPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    }));
+
+    expect(markup).toContain('Data unavailable');
+    expect(markup).toContain('Payment fee register data remains available');
+    expect(markup).toContain('Payment fee evidence by method');
+    expect(markup).not.toContain('Export payment fee CSV');
   });
 });

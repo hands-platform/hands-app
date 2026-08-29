@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { AdminSegmentedControl } from './admin-segmented-control';
 
 describe('AdminSegmentedControl', () => {
+  it('passes React keys directly after spread props for links and anchors', () => {
+    const source = readFileSync('components/admin-segmented-control.tsx', 'utf8');
+
+    expect(source).toContain('<Link {...linkProps} key={key}');
+    expect(source).toContain('<a {...linkProps} key={key}>');
+    expect(source).not.toContain('<Link key={key} {...linkProps}');
+    expect(source).not.toContain('<a key={key} {...linkProps}>');
+  });
   it('renders Vuexy segmented filter links with stable active state and deduped classes', () => {
     const segmented = AdminSegmentedControl({
       activeValue: 'today',

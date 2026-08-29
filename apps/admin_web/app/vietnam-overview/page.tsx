@@ -32,7 +32,7 @@ import {
 } from './vietnam-overview-model';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Vietnam Overview | HANDS Admin' };
+export const metadata = { title: 'Vietnam Overview' };
 
 const VietnamOverviewLiveMap = dynamicComponent<VietnamOverviewLiveMapProps>(
   () => import('./vietnam-overview-live-map').then((module) => module.VietnamOverviewLiveMap),
@@ -200,7 +200,7 @@ export default async function VietnamOverviewPage({
         </div>
       }
       contentClassName="vietnam-overview-workspace"
-      description="Current demand, assignable Partner coverage, and Vietnam-time booking outcomes."
+      description="Current demand, ready Partner signals, and Vietnam-time booking outcomes."
       title="Vietnam Overview"
     >
       <span id="vietnam-overview-top" />
@@ -294,13 +294,7 @@ function LiveOperations({
   }));
   const sampledRegions = activeRegion ? [activeRegion] : feed.regions;
   const visibleRegions = sampledRegions
-    .filter((region) =>
-      region.needsSupplyNowCount +
-        region.assignedOrInServiceCount +
-        region.staleActiveRecordCount +
-        region.readyPartnerCount >
-      0,
-    )
+    .filter((region) => activeRegion !== null || vietnamOverviewRegionCoverageCount(region) > 0)
     .sort(
       (left, right) =>
         right.supplyShortageCount - left.supplyShortageCount ||
@@ -321,7 +315,7 @@ function LiveOperations({
           value={formatNumber(totals.needsSupplyNowCount)}
         />
         <AdminKpiCard
-          helper={`Assignable now using the matching freshness policy (${formatNumber(feed.partnerLocationFreshnessMinutes)} min).`}
+          helper={`Ready under account, service, wallet, and ${formatNumber(feed.partnerLocationFreshnessMinutes)}-minute location checks.`}
           icon={ShieldCheck}
           kind="live"
           label="Ready Partners"
@@ -329,11 +323,15 @@ function LiveOperations({
           value={formatNumber(totals.readyPartnerCount)}
         />
         <AdminKpiCard
-          helper={totals.supplyShortageCount > 0 ? `${totals.supplyShortageCount} valid matching booking(s) exceed ready supply.` : 'Ready supply covers valid matching demand.'}
+          helper={
+            totals.supplyShortageCount > 0
+              ? `${formatNumber(totals.supplyShortageCount)} sampled needs-supply record(s) exceed sampled ready Partners. This is not assignment-engine matchability.`
+              : 'No sampled needs-versus-ready gap. This does not confirm assignment-engine matchability.'
+          }
           href={totals.supplyShortageCount > 0 ? '/bookings?view=matching' : undefined}
           icon={totals.supplyShortageCount > 0 ? XCircle : CheckCircle2}
           kind={totals.supplyShortageCount > 0 ? 'risk' : 'live'}
-          label="Supply shortage"
+          label="Sampled supply gap"
           scope="Live"
           value={formatNumber(totals.supplyShortageCount)}
         />
@@ -358,15 +356,12 @@ function LiveOperations({
 
       <AdminSection
         actions={
-          <div className="actions">
-            <StatusBadge tone="success">Generated <DateTimeText fallback="Unknown" value={feed.generatedAt} /></StatusBadge>
-            {feed.sample?.sources?.some((source) => source.truncated) ? (
-              <StatusBadge tone="warning">Partial sample</StatusBadge>
-            ) : null}
-          </div>
+          feed.sample?.sources?.some((source) => source.truncated)
+            ? <StatusBadge tone="warning">Partial sample</StatusBadge>
+            : undefined
         }
         className="vietnam-overview-map-section"
-        description="Monitor current booking demand and assignable Partner coverage by region. Secondary saved and stale locations are off by default."
+        description="Monitor sampled booking states and ready-Partner signals by region. Secondary saved and stale locations are off by default."
         id="vietnam-operating-map"
         title="Operating map"
       >
@@ -381,6 +376,7 @@ function LiveOperations({
             sampleCopy={sampleScope.copy}
             signalFilters={signalFilters}
             totalPointCount={regionPoints.length}
+            visibleCopy={`${formatNumber(visiblePoints.length)} shown for ${activeRegion?.shortName ?? 'all regions'} and ${formatNumber(signalKeys.length)} selected layer${signalKeys.length === 1 ? '' : 's'}.`}
         />
       </AdminSection>
 
@@ -394,19 +390,27 @@ function LiveOperations({
           <AdminDataTable
             className="vietnam-overview-live-region-table"
             emptyMessage={<AdminEmptyState message="No mapped regional records are available." title="No regional sample" />}
-            headers={['Region', 'Needs supply', 'Ready Partners', 'Shortage', 'Matched / service', 'Stale', 'Action']}
+            headers={['Region', 'Needs supply', 'Ready Partners', 'Sampled gap', 'Matched / service', 'Stale', 'Action']}
             rowCount={visibleRegions.length}
           >
             {visibleRegions.map((region) => {
               const potentialGap = region.supplyShortageCount > 0;
+              const coverageCount = vietnamOverviewRegionCoverageCount(region);
+              const contextOnly = coverageCount > 0 && vietnamOverviewOperationalCoverageCount(region) === 0;
               return (
                 <tr key={region.regionCode}>
-                  <td><strong>{region.regionName}</strong></td>
+                  <td>
+                    <div className="vietnam-overview-region-name">
+                      <strong>{region.regionName}</strong>
+                      {coverageCount === 0 ? <small>No sampled coverage records</small> : null}
+                      {contextOnly ? <small>Customer or Partner context sampled</small> : null}
+                    </div>
+                  </td>
                   <td>{formatNumber(region.needsSupplyNowCount)}</td>
                   <td>{formatNumber(region.readyPartnerCount)}</td>
                   <td>
                     <StatusBadge tone={potentialGap ? 'warning' : 'neutral'}>
-                      {potentialGap ? formatNumber(region.supplyShortageCount) : 'No sampled shortage'}
+                      {potentialGap ? formatNumber(region.supplyShortageCount) : 'No sampled gap'}
                     </StatusBadge>
                   </td>
                   <td>{formatNumber(region.assignedOrInServiceCount)}</td>
@@ -434,8 +438,8 @@ function LiveOperations({
         </AdminTableScroll>
         {hiddenRegionCount > 0 ? (
           <AdminDetails className="vietnam-overview-empty-regions">
-            <summary>Show {formatNumber(hiddenRegionCount)} regions with no sampled live records</summary>
-            <p>A zero sample does not mean the region has no customers or Partners.</p>
+            <summary>Show {formatNumber(hiddenRegionCount)} {hiddenRegionCount === 1 ? 'region' : 'regions'} with no sampled coverage records</summary>
+            <p>A zero sample means no mapped customer, Partner, or active-booking record was returned for that region.</p>
           </AdminDetails>
         ) : null}
       </AdminSection>
@@ -455,7 +459,16 @@ function PeriodOutcomes({
   const metrics = activeRegion ?? overview.totals;
   const closedCount = metrics.completedBookingCount + metrics.cancellationCount;
   const cancellationShare = percentage(metrics.cancellationCount, closedCount);
-  const visibleRegions = activeRegion ? [activeRegion] : overview.regions;
+  const visibleRegions = (activeRegion
+    ? [activeRegion]
+    : overview.regions.filter((region) => vietnamOverviewPeriodOutcomeCount(region) > 0)
+  ).sort(
+    (left, right) =>
+      vietnamOverviewPeriodOutcomeCount(right) - vietnamOverviewPeriodOutcomeCount(left),
+  );
+  const hiddenZeroRegions = activeRegion
+    ? []
+    : overview.regions.filter((region) => vietnamOverviewPeriodOutcomeCount(region) === 0);
 
   return (
     <>
@@ -559,25 +572,54 @@ function PeriodOutcomes({
                       : 'Unavailable'}
                   </td>
                   <td>
-                    <AdminTextLink
-                      href={vietnamOverviewHrefWithState({
-                        range,
-                        regionCode: region.regionCode,
-                        signalKeys: defaultLiveSignals,
-                        view: 'period',
-                      })}
-                    >
-                      View region report
-                    </AdminTextLink>
+                    {activeRegion ? (
+                      'Current report'
+                    ) : (
+                      <AdminTextLink
+                        href={vietnamOverviewHrefWithState({
+                          range,
+                          regionCode: region.regionCode,
+                          signalKeys: defaultLiveSignals,
+                          view: 'period',
+                        })}
+                      >
+                        View region report
+                      </AdminTextLink>
+                    )}
                   </td>
                 </tr>
               );
             })}
           </AdminDataTable>
         </AdminTableScroll>
+        {hiddenZeroRegions.length > 0 ? (
+          <AdminDetails className="vietnam-overview-empty-regions">
+            <summary>
+              Show {formatNumber(hiddenZeroRegions.length)} {hiddenZeroRegions.length === 1 ? 'region' : 'regions'} with no sampled outcomes
+            </summary>
+            <p>{hiddenZeroRegions.map((region) => region.regionName).join(', ')}</p>
+          </AdminDetails>
+        ) : null}
       </AdminSection>
     </>
   );
+}
+
+function vietnamOverviewRegionCoverageCount(region: AdminVietnamOverviewRegion) {
+  return region.customerCount + region.partnerCount + region.activeBookingCount;
+}
+
+function vietnamOverviewOperationalCoverageCount(region: AdminVietnamOverviewRegion) {
+  return (
+    region.needsSupplyNowCount +
+    region.readyPartnerCount +
+    region.assignedOrInServiceCount +
+    region.staleActiveRecordCount
+  );
+}
+
+function vietnamOverviewPeriodOutcomeCount(region: AdminVietnamOverviewRegion) {
+  return region.completedBookingCount + region.cancellationCount;
 }
 
 function normalizeVietnamOverviewView(value: string | string[] | undefined): VietnamOverviewView {

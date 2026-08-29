@@ -577,7 +577,18 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         >
           <AdminFormShell
             action="/finance-tax/bank-reconciliation"
-            className="filter-form admin-mb-12"
+            className="filter-form admin-mb-12 bank-reconciliation-search-form"
+            key={JSON.stringify([
+              filters.range,
+              filters.review,
+              filters.take,
+              transactionQuery,
+              bankTransactionDirection,
+              bankReconciliationSource,
+              bankReconciliationAge,
+              withdrawalCandidate,
+              reviewOwner,
+            ])}
             method="get"
           >
             <input name="range" type="hidden" value={filters.range} />

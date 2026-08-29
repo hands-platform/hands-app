@@ -3,18 +3,20 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { adminPostOrThrow, type AdminPushCampaign } from '../../../lib/admin-api';
+import { safeCustomerReturnTo } from '../customer-filters';
 
 export async function addCustomerOpsNote(formData: FormData) {
   const customerId = String(formData.get('customerId') ?? '');
   const note = String(formData.get('note') ?? '');
   const preset = String(formData.get('preset') ?? '');
   const bookingId = String(formData.get('bookingId') ?? '');
+  const returnTo = safeCustomerReturnTo(String(formData.get('returnTo') ?? ''));
   if (!customerId) {
     throw new Error('customerId is required');
   }
   if (!note.trim() && !preset.trim()) {
     return redirect(
-      `/customers/${encodeURIComponent(customerId)}?action=note&noteNotice=failed#customer-operator-notes`,
+      customerDetailNoticeHref(customerId, returnTo, 'noteNotice', 'failed', 'customer-operator-notes', 'note'),
     );
   }
 
@@ -26,7 +28,7 @@ export async function addCustomerOpsNote(formData: FormData) {
     });
   } catch {
     return redirect(
-      `/customers/${encodeURIComponent(customerId)}?noteNotice=failed#customer-operator-notes`,
+      customerDetailNoticeHref(customerId, returnTo, 'noteNotice', 'failed', 'customer-operator-notes'),
     );
   }
 
@@ -34,7 +36,7 @@ export async function addCustomerOpsNote(formData: FormData) {
   revalidatePath('/customers');
   revalidatePath('/audit-log');
   return redirect(
-    `/customers/${encodeURIComponent(customerId)}?noteNotice=saved#customer-operator-notes`,
+    customerDetailNoticeHref(customerId, returnTo, 'noteNotice', 'saved', 'customer-operator-notes'),
   );
 }
 
@@ -43,6 +45,7 @@ export async function sendCustomerPushMessage(formData: FormData) {
   const targetUserId = readRequiredFormString(formData, 'targetUserId');
   const title = readRequiredFormString(formData, 'title');
   const body = readRequiredFormString(formData, 'body');
+  const returnTo = safeCustomerReturnTo(String(formData.get('returnTo') ?? ''));
 
   try {
     await adminPostOrThrow<AdminPushCampaign>('/admin/notifications/push-campaigns', {
@@ -57,13 +60,39 @@ export async function sendCustomerPushMessage(formData: FormData) {
     revalidatePath('/notifications/push-send');
   } catch {
     return redirect(
-      `/customers/${encodeURIComponent(customerId)}?notificationNotice=failed#customer-app-notifications`,
+      customerDetailNoticeHref(
+        customerId,
+        returnTo,
+        'notificationNotice',
+        'failed',
+        'customer-app-notifications',
+      ),
     );
   }
 
   return redirect(
-    `/customers/${encodeURIComponent(customerId)}?notificationNotice=sent#customer-app-notifications`,
+    customerDetailNoticeHref(
+      customerId,
+      returnTo,
+      'notificationNotice',
+      'sent',
+      'customer-app-notifications',
+    ),
   );
+}
+
+function customerDetailNoticeHref(
+  customerId: string,
+  returnTo: string,
+  noticeKey: 'noteNotice' | 'notificationNotice',
+  notice: string,
+  sectionId: string,
+  action?: 'note',
+) {
+  const params = new URLSearchParams({ returnTo });
+  if (action) params.set('action', action);
+  params.set(noticeKey, notice);
+  return `/customers/${encodeURIComponent(customerId)}?${params.toString()}#${sectionId}`;
 }
 
 function readRequiredFormString(formData: FormData, key: string) {

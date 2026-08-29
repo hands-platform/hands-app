@@ -18,6 +18,7 @@ import {
   adminPostOrThrow,
   isAdminApiAuthError,
 } from '../../lib/admin-api';
+import { safeCustomerReturnTo } from '../customers/customer-filters';
 import { walletAdjustmentFormKeyFromFormData } from './wallet-adjustment-form-key';
 
 const ownerTypes = new Set<AdminManualWalletAdjustmentOwnerType>(['CUSTOMER', 'PARTNER']);
@@ -504,8 +505,23 @@ function safeActionMessage(error: unknown) {
 function readCustomerDetailReturnTo(formData: FormData, ownerType: string, ownerId: string) {
   if (ownerType !== 'CUSTOMER' || !ownerId) return '';
   const requestedReturnTo = readOptionalString(formData, 'redirectTo');
-  const expectedReturnTo = `/customers/${encodeURIComponent(ownerId)}#customer-wallet-adjustment-request`;
-  return requestedReturnTo === expectedReturnTo ? expectedReturnTo : '';
+  const expectedPath = `/customers/${encodeURIComponent(ownerId)}`;
+  const fallbackReturnTo = `${expectedPath}?returnTo=${encodeURIComponent(
+    '/customers',
+  )}#customer-wallet-adjustment-request`;
+  if (!requestedReturnTo || requestedReturnTo.startsWith('//') || requestedReturnTo.includes('\\')) {
+    return fallbackReturnTo;
+  }
+
+  try {
+    const url = new URL(requestedReturnTo, 'http://admin.local');
+    if (url.origin !== 'http://admin.local' || url.pathname !== expectedPath) return fallbackReturnTo;
+    const listReturnTo = safeCustomerReturnTo(url.searchParams.get('returnTo') ?? '');
+    const params = new URLSearchParams({ returnTo: listReturnTo });
+    return `${expectedPath}?${params.toString()}#customer-wallet-adjustment-request`;
+  } catch {
+    return fallbackReturnTo;
+  }
 }
 
 function revalidateWalletAdjustmentSurfaces(ownerType: AdminManualWalletAdjustmentOwnerType, ownerId: string) {

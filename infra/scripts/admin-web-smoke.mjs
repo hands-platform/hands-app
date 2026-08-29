@@ -72,16 +72,20 @@ const budgetSmokePaths = [
   '/wallet-adjustments',
   '/wallet-adjustments?view=records',
 ];
-const runCriticalSmoke =
-  rawSmokeArgs.includes('--critical') || env.ADMIN_WEB_SMOKE_MODE === 'critical';
-const runBudgetSmoke =
-  rawSmokeArgs.includes('--budget') || env.ADMIN_WEB_SMOKE_MODE === 'budget';
+const runCriticalSmoke = rawSmokeArgs.includes('--critical') || env.ADMIN_WEB_SMOKE_MODE === 'critical';
+const runBudgetSmoke = rawSmokeArgs.includes('--budget') || env.ADMIN_WEB_SMOKE_MODE === 'budget';
 const enforceRouteBudget = rawSmokeArgs.includes('--enforce-budget');
 const requestedSmokeArgs = rawSmokeArgs
   .filter((value) => value !== '--critical' && value !== '--budget' && value !== '--enforce-budget')
   .flatMap((value) => value.split(','))
   .map((path) => path.trim())
   .filter(Boolean);
+const shiftHandoffLaunchEnabled = env.SHIFT_HANDOFF_LAUNCH_ENABLED === 'true';
+const shiftHandoffDisabledMarkers = [
+  'Shift Handoff',
+  'Not active for current launch',
+  'Existing audit history remains retained',
+];
 
 function notificationRetryFollowUp(
   review,
@@ -200,11 +204,11 @@ const pages = [
       'Finance Overview',
       'Shift Command',
       'Next action',
-      'Open queues',
+      'Remaining queues',
       'Money status',
       'Today result',
       'In service',
-      'Open handoff',
+      ...(shiftHandoffLaunchEnabled ? ['Open handoff'] : []),
     ],
   },
   {
@@ -213,11 +217,11 @@ const pages = [
       'HANDS Admin',
       'Shift Command',
       'Next action',
-      'Open queues',
+      'Remaining queues',
       'Money status',
       'Today result',
       'In service',
-      'Open handoff',
+      ...(shiftHandoffLaunchEnabled ? ['Open handoff'] : []),
     ],
   },
   {
@@ -242,7 +246,7 @@ const pages = [
   },
   {
     path: '/?range=7d',
-    markers: ['Shift Command', 'Next action', 'Open queues', 'Period result', 'Last 7 days'],
+    markers: ['Shift Command', 'Next action', 'Remaining queues', 'Period result', 'Last 7 days'],
   },
   {
     path: '/usage-overview',
@@ -300,23 +304,13 @@ const pages = [
   },
   {
     path: '/bookings?view=matching',
-    markers: [
-      'Booking Monitor',
-      'Matching ops',
-      'Booking workspace filters',
-      'Current workspace:',
-    ],
+    markers: ['Booking Monitor', 'Matching ops', 'Booking workspace filters', 'Current workspace:'],
   },
   { path: '/bookings?view=attention', markers: ['Booking Monitor', 'Follow-up queue'] },
   { path: '/bookings?view=first-pick', markers: ['Booking Monitor', 'Stage 1 first-pick'] },
   {
     path: '/bookings?view=marketplace',
-    markers: [
-      'Booking Monitor',
-      'Stage 2 marketplace',
-      'Booking workspace filters',
-      'Current workspace:',
-    ],
+    markers: ['Booking Monitor', 'Stage 2 marketplace', 'Booking workspace filters', 'Current workspace:'],
   },
   {
     path: '/bookings?view=customer-choice',
@@ -538,36 +532,42 @@ const pages = [
   },
   {
     path: '/operations-handoff',
-    markers: [
-      'Operations History',
-      'Operations history range',
-      'Incomplete handoff',
-      'Operations review checklist',
-      'Historical issue signals',
-      'Finance history review',
-      'Period brief',
-      'Operations history notes',
-      'Detailed history lists',
-      'Load full history details',
-    ],
+    markers: shiftHandoffLaunchEnabled
+      ? [
+          'Operations History',
+          'Operations history range',
+          'Incomplete handoff',
+          'Operations review checklist',
+          'Historical issue signals',
+          'Finance history review',
+          'Period brief',
+          'Operations history notes',
+          'Detailed history lists',
+          'Load full history details',
+        ]
+      : shiftHandoffDisabledMarkers,
   },
   {
     path: '/operations-handoff?range=7d',
-    markers: ['Operations History', 'Operations history range', 'Last 7 days', 'Detailed history lists'],
+    markers: shiftHandoffLaunchEnabled
+      ? ['Operations History', 'Operations history range', 'Last 7 days', 'Detailed history lists']
+      : shiftHandoffDisabledMarkers,
   },
   {
     path: '/operations-handoff?details=all&range=7d',
-    markers: [
-      'Operations History',
-      'Operations history range',
-      'Unified activity stream',
-      'Booking history queue',
-      'Customer history',
-      'Partner history',
-      'Finance and chat closeout',
-      'Finance decision history',
-      'Completed approvals, bank reconciliation decisions, refunds, executions, remittances, monthly close decisions, rejections, reversals, and resolved Finance SLA alerts only.',
-    ],
+    markers: shiftHandoffLaunchEnabled
+      ? [
+          'Operations History',
+          'Operations history range',
+          'Unified activity stream',
+          'Booking history queue',
+          'Customer history',
+          'Partner history',
+          'Finance and chat closeout',
+          'Finance decision history',
+          'Completed approvals, bank reconciliation decisions, refunds, executions, remittances, monthly close decisions, rejections, reversals, and resolved Finance SLA alerts only.',
+        ]
+      : shiftHandoffDisabledMarkers,
   },
   {
     path: '/cash-settlements',
@@ -605,13 +605,7 @@ const pages = [
   },
   {
     path: '/finance-overview',
-    markers: [
-      'Finance Overview',
-      'Finance scope',
-      'Today Movement',
-      'Current Balances',
-      'Records',
-    ],
+    markers: ['Finance Overview', 'Finance scope', 'Today Movement', 'Current Balances', 'Records'],
     forbiddenMarkers: ['Gross customer payment', 'Finance Priority Desk', 'Finance Action Lists'],
   },
   {
@@ -680,13 +674,7 @@ const pages = [
   },
   {
     path: '/finance-tax/general-ledger',
-    markers: [
-      'General Ledger',
-      'General ledger filters',
-      'Needs action',
-      'Debit / Credit',
-      'Status',
-    ],
+    markers: ['General Ledger', 'General ledger filters', 'Needs action', 'Debit / Credit', 'Status'],
   },
   {
     path: '/finance-tax/bank-reconciliation',
@@ -758,14 +746,12 @@ const pages = [
   {
     path: '/finance-tax/settlement-reversals',
     markers: [
-      'Settlement Reversals',
+      'Closed-period Settlement Reversals',
       'Closed-period reversals',
-      'Tax correction recorded',
       'Settlement reversal filters',
       'Settlement reversal rows',
-      'Original',
-      'Evidence',
-      'Status',
+      'Related Partner Money reversals',
+      'Open withdrawal journals',
     ],
   },
   {
@@ -826,12 +812,7 @@ const pages = [
   },
   {
     path: '/finance-tax/company-bank-accounts',
-    markers: [
-      'Company Bank Accounts',
-      'Bank account management',
-      'Masked number',
-      'Recent account changes',
-    ],
+    markers: ['Company Bank Accounts', 'Bank account management', 'Masked number', 'Recent account changes'],
   },
   {
     path: '/finance-tax/approval-queue',
@@ -901,11 +882,7 @@ const pages = [
       'Historical batch filters',
       'Historical settlement dry-run',
     ],
-    forbiddenMarkers: [
-      'Closeout reconciliation board',
-      'Settlement gap filters',
-      'Settlement backlog',
-    ],
+    forbiddenMarkers: ['Closeout reconciliation board', 'Settlement gap filters', 'Settlement backlog'],
   },
   {
     path: '/finance-closeout?view=operations&range=7d',
@@ -943,12 +920,7 @@ const pages = [
   },
   {
     path: '/wallet-adjustments?view=records',
-    markers: [
-      'Wallet Adjustments',
-      'Record filters',
-      'Manual adjustment history',
-      'Rows per page',
-    ],
+    markers: ['Wallet Adjustments', 'Record filters', 'Manual adjustment history', 'Rows per page'],
   },
   {
     path: '/earnings?range=7d',
@@ -1043,12 +1015,7 @@ const pages = [
   },
   {
     path: '/notifications?review=unattempted',
-    markers: [
-      'Notifications',
-      'Unattempted history',
-      'Notification operation filters',
-      'Needs action',
-    ],
+    markers: ['Notifications', 'Unattempted history', 'Notification operation filters', 'Needs action'],
   },
   {
     path: '/notifications?review=fcm',
@@ -1143,11 +1110,7 @@ const pages = [
   },
   {
     path: '/partner-controls',
-    markers: [
-      'Partner Controls',
-      'Priority queue',
-      'Partner control workspaces',
-    ],
+    markers: ['Partner Controls', 'Priority queue', 'Partner control workspaces'],
   },
   {
     path: '/partner-controls?details=controls',
@@ -1215,12 +1178,7 @@ const pages = [
   },
   {
     path: '/partners?details=all',
-    markers: [
-      'Partners',
-      'Compact list',
-      'List-first partner control view',
-      'Partner operations list',
-    ],
+    markers: ['Partners', 'Compact list', 'List-first partner control view', 'Partner operations list'],
   },
   {
     path: '/partners?review=unapproved',
@@ -1236,13 +1194,7 @@ const pages = [
   },
   {
     path: '/partners?review=kyc&details=all',
-    markers: [
-      'Partners',
-      'KYC updates',
-      'KYC review board',
-      'Compact admin list',
-      'Compact list',
-    ],
+    markers: ['Partners', 'KYC updates', 'KYC review board', 'Compact admin list', 'Compact list'],
   },
   { path: '/partners?review=cash-debt', markers: ['Partners', 'Cash fee debt'] },
   {
@@ -1432,6 +1384,7 @@ async function loadSmokeCookieHeader() {
     headers: {
       accept: 'application/json',
       'content-type': 'application/json',
+      origin: baseUrl,
     },
     method: 'POST',
     redirect: 'manual',
@@ -1670,260 +1623,257 @@ async function runSupportFollowUps(followUp, parentPath, body) {
 }
 
 if (!runBudgetSmoke && !runDirectSmoke) {
-const providersBody =
-  shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
-    ? await fetchPage('/providers')
-    : '';
-const providerLinkMatch = providersBody.match(
-  /href="\/(?:partners|providers)\/(?!overview(?:["/?]))([^"]+)"/,
-);
-if (providerLinkMatch) {
-  const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
-  const providerOverviewMarkers = [
-    'Fast operations overview',
-    'Open full partner record',
-    'Needs action',
-    'Identity',
-    'Booking command',
-    'Payout readiness',
-    'Next operator action',
-    'Detail workspaces',
-  ];
-  for (const providerPath of providerDetailPaths) {
-    const providerBody = await fetchPage(providerPath);
-    const missingProviderMarkers = providerOverviewMarkers.filter((marker) => !providerBody.includes(marker));
-    if (missingProviderMarkers.length > 0) {
+  const providersBody =
+    shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
+      ? await fetchPage('/providers')
+      : '';
+  const providerLinkMatch = providersBody.match(
+    /href="\/(?:partners|providers)\/(?!overview(?:["/?]))([^"]+)"/,
+  );
+  if (providerLinkMatch) {
+    const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
+    const providerOverviewMarkers = [
+      'Fast operations overview',
+      'Open full partner record',
+      'Needs action',
+      'Identity',
+      'Booking command',
+      'Payout readiness',
+      'Next operator action',
+      'Detail workspaces',
+    ];
+    for (const providerPath of providerDetailPaths) {
+      const providerBody = await fetchPage(providerPath);
+      const missingProviderMarkers = providerOverviewMarkers.filter(
+        (marker) => !providerBody.includes(marker),
+      );
+      if (missingProviderMarkers.length > 0) {
+        throw new Error(`${providerPath} is missing expected markers: ${missingProviderMarkers.join(', ')}`);
+      }
+      assertNoLegacyVisibleLanguage(providerPath, providerBody);
+      console.log(`PASS ${providerPath}`);
+    }
+
+    const providerFullPath = `/partners/${providerLinkMatch[1]}?section=full`;
+    const providerFullBody = await fetchPage(providerFullPath);
+    const providerFullMarkers = [
+      'Current partner status',
+      'Profile and KYC',
+      'Work readiness',
+      'Bookings and reputation',
+      'Reviews and evaluations',
+      'Wallet and payout',
+      'Operations timeline',
+      'System diagnostics',
+      'Open technical diagnostics',
+      'All Partner chats',
+    ];
+    const missingProviderFullMarkers = providerFullMarkers.filter(
+      (marker) => !providerFullBody.includes(marker),
+    );
+    if (missingProviderFullMarkers.length > 0) {
       throw new Error(
-        `${providerPath} is missing expected markers: ${missingProviderMarkers.join(', ')}`,
+        `${providerFullPath} is missing expected markers: ${missingProviderFullMarkers.join(', ')}`,
       );
     }
-    assertNoLegacyVisibleLanguage(providerPath, providerBody);
-    console.log(`PASS ${providerPath}`);
+    assertNoLegacyVisibleLanguage(providerFullPath, providerFullBody);
+    console.log(`PASS ${providerFullPath}`);
+
+    const providerWorkspaceTargets = [
+      {
+        markers: ['Partner booking journey', 'Record date filter'],
+        path: `/partners/${providerLinkMatch[1]}?section=bookings`,
+      },
+      {
+        markers: ['Partner control records', 'Partner operator notes', 'Partner recent operations timeline'],
+        path: `/partners/${providerLinkMatch[1]}?section=control&control=records`,
+      },
+      {
+        markers: ['Partner finance records', 'Finance-only evidence', 'Partner wallet detail'],
+        path: `/partners/${providerLinkMatch[1]}?section=dossier&dossier=finance`,
+      },
+      {
+        markers: ['Partner device and session diagnostics', 'Device and session activity'],
+        path: `/partners/${providerLinkMatch[1]}?section=access&access=diagnostics`,
+      },
+    ];
+    for (const target of providerWorkspaceTargets) {
+      const body = await fetchPage(target.path);
+      const missing = target.markers.filter((marker) => !body.includes(marker));
+      if (missing.length > 0) {
+        throw new Error(`${target.path} is missing expected markers: ${missing.join(', ')}`);
+      }
+      assertNoLegacyVisibleLanguage(target.path, body);
+      console.log(`PASS ${target.path}`);
+    }
   }
 
-  const providerFullPath = `/partners/${providerLinkMatch[1]}?section=full`;
-  const providerFullBody = await fetchPage(providerFullPath);
-  const providerFullMarkers = [
-    'Current partner status',
-    'Profile and KYC',
-    'Work readiness',
-    'Bookings and reputation',
-    'Reviews and evaluations',
-    'Wallet and payout',
-    'Operations timeline',
-    'System diagnostics',
-    'Open technical diagnostics',
-    'All Partner chats',
-  ];
-  const missingProviderFullMarkers = providerFullMarkers.filter(
-    (marker) => !providerFullBody.includes(marker),
+  const customersBody = shouldRunDeepSection('/customers') ? await fetchPage('/customers') : '';
+  const customerLinkMatch = customersBody.match(/href="\/customers\/([^"]+)"/);
+  if (customerLinkMatch) {
+    const customerPath = `/customers/${customerLinkMatch[1]}`;
+    const customerBody = await fetchPage(customerPath);
+    const customerMarkers = [
+      'Customer Detail',
+      'Current status',
+      'Profile and contact',
+      'Needs action',
+      'Payment &amp; wallet',
+      'Payment and wallet summary',
+      'Adjust customer wallet',
+      'Customer behavior',
+      'Booking history',
+      'Referral activity',
+      'Customer app notifications',
+      'Notification history',
+      'Audit records',
+      'Add operator note',
+      'Operator note history',
+      'Chat evidence',
+      'Chat history',
+    ];
+    const missing = customerMarkers.filter((marker) => !customerBody.includes(marker));
+    if (missing.length > 0) {
+      throw new Error(`${customerPath} is missing expected markers: ${missing.join(', ')}`);
+    }
+    const unexpectedCustomerMarkers = [
+      'Record date filter',
+      'Customer workspace view',
+      'Chat and system evidence',
+      'System audit records',
+    ].filter((marker) => customerBody.includes(marker));
+    if (unexpectedCustomerMarkers.length > 0) {
+      throw new Error(`${customerPath} includes deferred markers: ${unexpectedCustomerMarkers.join(', ')}`);
+    }
+    assertNoLegacyVisibleLanguage(customerPath, customerBody);
+    console.log(`PASS ${customerPath}`);
+
+    const customerDiagnosticsPath = `${customerPath}?diagnostics=developer`;
+    const customerDiagnosticsBody = await fetchPage(customerDiagnosticsPath);
+    const missingCustomerDiagnosticsMarkers = [
+      'Chat and system evidence',
+      'System audit records',
+      'System audit evidence',
+    ].filter((marker) => !customerDiagnosticsBody.includes(marker));
+    if (missingCustomerDiagnosticsMarkers.length > 0) {
+      throw new Error(
+        `${customerDiagnosticsPath} is missing expected markers: ${missingCustomerDiagnosticsMarkers.join(', ')}`,
+      );
+    }
+    assertNoLegacyVisibleLanguage(customerDiagnosticsPath, customerDiagnosticsBody);
+    console.log(`PASS ${customerDiagnosticsPath}`);
+  }
+
+  const bookingsBody = shouldRunDeepSection('/bookings') ? await fetchPage('/bookings') : '';
+  const bookingLinkMatch = bookingsBody.match(
+    /href="\/bookings\/(?!completed(?:[/?#"]|$)|post-match-cancellations(?:[/?#"]|$))([^"?#/]+)(?:[?#][^"]*)?"/,
   );
-  if (missingProviderFullMarkers.length > 0) {
-    throw new Error(
-      `${providerFullPath} is missing expected markers: ${missingProviderFullMarkers.join(', ')}`,
-    );
+  if (bookingLinkMatch) {
+    const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
+    const bookingAuthorityContractMarkers = [
+      'NestJS business authority',
+      'MVP authority contract',
+      'customer fallback partner choice',
+      'wallet gate',
+      'Connected operations records',
+      'Operator action availability',
+      'Booking gate reason',
+      'Finance evidence',
+      'Cash settlement desk',
+      'Tax policy',
+      'Location trail',
+      'Communication and movement handoff',
+      'Chat lifecycle and retention',
+      'All customer chats',
+      'All Partner chats',
+      'Service pricing evidence',
+    ];
+    const bookingWorkspaceTargets = [
+      {
+        forbiddenMarkers: [
+          'Booking workspace view',
+          'Overview mode',
+          'Booking review records',
+          'Finance detail',
+          'Booking lifecycle timeline',
+          'Developer/System history',
+          'Developer/System settlement',
+          'Developer/System diagnostics',
+        ],
+        markers: [
+          ...bookingAuthorityContractMarkers,
+          'Booking sections',
+          'Booking summary',
+          'Needs action',
+          'Customer / Partner / Chat',
+          'Payment &amp; settlement',
+          'Booking timeline',
+          'Reviews &amp; notes',
+          'Operational records',
+          'Booking result',
+          'Customer detail',
+          'Matched Partner detail',
+          'Money result',
+          'Customer and Partner chat history',
+          'Activity',
+        ],
+        path: bookingPath,
+      },
+      {
+        forbiddenMarkers: ['>Access restricted<', 'Page content is hidden.'],
+        markers: [
+          'Booking sections',
+          'Booking summary',
+          'Booking full record index',
+          'Developer/System diagnostics',
+        ],
+        path: `${bookingPath}?section=diagnostics`,
+      },
+    ];
+    let bookingBody = '';
+    for (const target of bookingWorkspaceTargets) {
+      const body = await fetchPage(target.path);
+      const missing = target.markers.filter((marker) => !body.includes(marker));
+      if (missing.length > 0) {
+        throw new Error(`${target.path} is missing expected markers: ${missing.join(', ')}`);
+      }
+      const unexpected = target.forbiddenMarkers.filter((marker) => body.includes(marker));
+      if (unexpected.length > 0) {
+        throw new Error(`${target.path} rendered another booking workspace: ${unexpected.join(', ')}`);
+      }
+      if (body.includes('>Access restricted<') || body.includes('Page content is hidden.')) {
+        throw new Error(`${target.path} rendered the operator access-denied surface.`);
+      }
+      assertNoLegacyVisibleLanguage(target.path, body);
+      console.log(`PASS ${target.path}`);
+      if (target.path === bookingPath) bookingBody = body;
+    }
+    assertSelectedParticipantCountedInCustomerShortlist(bookingPath, bookingBody);
   }
-  assertNoLegacyVisibleLanguage(providerFullPath, providerFullBody);
-  console.log(`PASS ${providerFullPath}`);
 
-  const providerWorkspaceTargets = [
-    {
-      markers: ['Partner booking journey', 'Record date filter'],
-      path: `/partners/${providerLinkMatch[1]}?section=bookings`,
-    },
-    {
-      markers: ['Partner control records', 'Partner operator notes', 'Partner recent operations timeline'],
-      path: `/partners/${providerLinkMatch[1]}?section=control&control=records`,
-    },
-    {
-      markers: ['Partner finance records', 'Finance-only evidence', 'Partner wallet detail'],
-      path: `/partners/${providerLinkMatch[1]}?section=dossier&dossier=finance`,
-    },
-    {
-      markers: ['Partner device and session diagnostics', 'Device and session activity'],
-      path: `/partners/${providerLinkMatch[1]}?section=access&access=diagnostics`,
-    },
-  ];
-  for (const target of providerWorkspaceTargets) {
-    const body = await fetchPage(target.path);
-    const missing = target.markers.filter((marker) => !body.includes(marker));
+  const paymentsBody = shouldRunDeepSection('/payments') ? await fetchPage('/payments') : '';
+  const paymentLinkMatch = paymentsBody.match(/href="\/payments\/([^"]+)"/);
+  if (paymentLinkMatch) {
+    const paymentPath = `/payments/${paymentLinkMatch[1]}`;
+    const paymentBody = await fetchPage(paymentPath);
+    const paymentMarkers = [
+      'Payment operation detail',
+      'Payment action execution map',
+      'Gateway callback attempt timeline',
+      'Linked booking evidence',
+      'Money ledger',
+      'Chat and operation evidence',
+      'Payment audit trail',
+    ];
+    const missing = paymentMarkers.filter((marker) => !paymentBody.includes(marker));
     if (missing.length > 0) {
-      throw new Error(`${target.path} is missing expected markers: ${missing.join(', ')}`);
+      throw new Error(`${paymentPath} is missing expected markers: ${missing.join(', ')}`);
     }
-    assertNoLegacyVisibleLanguage(target.path, body);
-    console.log(`PASS ${target.path}`);
+    assertNoLegacyVisibleLanguage(paymentPath, paymentBody);
+    console.log(`PASS ${paymentPath}`);
   }
-}
 
-const customersBody = shouldRunDeepSection('/customers') ? await fetchPage('/customers') : '';
-const customerLinkMatch = customersBody.match(/href="\/customers\/([^"]+)"/);
-if (customerLinkMatch) {
-  const customerPath = `/customers/${customerLinkMatch[1]}`;
-  const customerBody = await fetchPage(customerPath);
-  const customerMarkers = [
-    'Customer Detail',
-    'Current status',
-    'Profile and contact',
-    'Needs action',
-    'Payment &amp; wallet',
-    'Payment and wallet summary',
-    'Adjust customer wallet',
-    'Customer behavior',
-    'Booking history',
-    'Referral activity',
-    'Customer app notifications',
-    'Notification history',
-    'Audit records',
-    'Add operator note',
-    'Operator note history',
-    'Chat evidence',
-    'Chat history',
-  ];
-  const missing = customerMarkers.filter((marker) => !customerBody.includes(marker));
-  if (missing.length > 0) {
-    throw new Error(`${customerPath} is missing expected markers: ${missing.join(', ')}`);
-  }
-  const unexpectedCustomerMarkers = [
-    'Record date filter',
-    'Customer workspace view',
-    'Chat and system evidence',
-    'System audit records',
-  ].filter((marker) => customerBody.includes(marker));
-  if (unexpectedCustomerMarkers.length > 0) {
-    throw new Error(
-      `${customerPath} includes deferred markers: ${unexpectedCustomerMarkers.join(', ')}`,
-    );
-  }
-  assertNoLegacyVisibleLanguage(customerPath, customerBody);
-  console.log(`PASS ${customerPath}`);
-
-  const customerDiagnosticsPath = `${customerPath}?diagnostics=developer`;
-  const customerDiagnosticsBody = await fetchPage(customerDiagnosticsPath);
-  const missingCustomerDiagnosticsMarkers = [
-    'Chat and system evidence',
-    'System audit records',
-    'System audit evidence',
-  ].filter((marker) => !customerDiagnosticsBody.includes(marker));
-  if (missingCustomerDiagnosticsMarkers.length > 0) {
-    throw new Error(
-      `${customerDiagnosticsPath} is missing expected markers: ${missingCustomerDiagnosticsMarkers.join(', ')}`,
-    );
-  }
-  assertNoLegacyVisibleLanguage(customerDiagnosticsPath, customerDiagnosticsBody);
-  console.log(`PASS ${customerDiagnosticsPath}`);
-}
-
-const bookingsBody = shouldRunDeepSection('/bookings') ? await fetchPage('/bookings') : '';
-const bookingLinkMatch = bookingsBody.match(
-  /href="\/bookings\/(?!completed(?:[/?#"]|$)|post-match-cancellations(?:[/?#"]|$))([^"?#/]+)(?:[?#][^"]*)?"/,
-);
-if (bookingLinkMatch) {
-  const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
-  const bookingAuthorityContractMarkers = [
-    'NestJS business authority',
-    'MVP authority contract',
-    'customer fallback partner choice',
-    'wallet gate',
-    'Connected operations records',
-    'Operator action availability',
-    'Booking gate reason',
-    'Finance evidence',
-    'Cash settlement desk',
-    'Tax policy',
-    'Location trail',
-    'Communication and movement handoff',
-    'Chat lifecycle and retention',
-    'All customer chats',
-    'All Partner chats',
-    'Service pricing evidence',
-  ];
-  const bookingWorkspaceTargets = [
-    {
-      forbiddenMarkers: [
-        'Booking workspace view',
-        'Overview mode',
-        'Booking review records',
-        'Finance detail',
-        'Booking lifecycle timeline',
-        'Developer/System history',
-        'Developer/System settlement',
-        'Developer/System diagnostics',
-      ],
-      markers: [
-        ...bookingAuthorityContractMarkers,
-        'Booking sections',
-        'Booking summary',
-        'Needs action',
-        'Customer / Partner / Chat',
-        'Payment &amp; settlement',
-        'Booking timeline',
-        'Reviews &amp; notes',
-        'Operational records',
-        'Booking result',
-        'Customer detail',
-        'Matched Partner detail',
-        'Money result',
-        'Customer and Partner chat history',
-        'Activity',
-      ],
-      path: bookingPath,
-    },
-    {
-      forbiddenMarkers: ['>Access restricted<', 'Page content is hidden.'],
-      markers: [
-        'Booking sections',
-        'Booking summary',
-        'Booking full record index',
-        'Developer/System diagnostics',
-      ],
-      path: `${bookingPath}?section=diagnostics`,
-    },
-  ];
-  let bookingBody = '';
-  for (const target of bookingWorkspaceTargets) {
-    const body = await fetchPage(target.path);
-    const missing = target.markers.filter((marker) => !body.includes(marker));
-    if (missing.length > 0) {
-      throw new Error(`${target.path} is missing expected markers: ${missing.join(', ')}`);
-    }
-    const unexpected = target.forbiddenMarkers.filter((marker) => body.includes(marker));
-    if (unexpected.length > 0) {
-      throw new Error(`${target.path} rendered another booking workspace: ${unexpected.join(', ')}`);
-    }
-    if (body.includes('>Access restricted<') || body.includes('Page content is hidden.')) {
-      throw new Error(`${target.path} rendered the operator access-denied surface.`);
-    }
-    assertNoLegacyVisibleLanguage(target.path, body);
-    console.log(`PASS ${target.path}`);
-    if (target.path === bookingPath) bookingBody = body;
-  }
-  assertSelectedParticipantCountedInCustomerShortlist(bookingPath, bookingBody);
-}
-
-const paymentsBody = shouldRunDeepSection('/payments') ? await fetchPage('/payments') : '';
-const paymentLinkMatch = paymentsBody.match(/href="\/payments\/([^"]+)"/);
-if (paymentLinkMatch) {
-  const paymentPath = `/payments/${paymentLinkMatch[1]}`;
-  const paymentBody = await fetchPage(paymentPath);
-  const paymentMarkers = [
-    'Payment operation detail',
-    'Payment action execution map',
-    'Gateway callback attempt timeline',
-    'Linked booking evidence',
-    'Money ledger',
-    'Chat and operation evidence',
-    'Payment audit trail',
-  ];
-  const missing = paymentMarkers.filter((marker) => !paymentBody.includes(marker));
-  if (missing.length > 0) {
-    throw new Error(`${paymentPath} is missing expected markers: ${missing.join(', ')}`);
-  }
-  assertNoLegacyVisibleLanguage(paymentPath, paymentBody);
-  console.log(`PASS ${paymentPath}`);
-}
-
-await runFinanceDetailRouteSmoke();
-
+  await runFinanceDetailRouteSmoke();
 }
 if (runBudgetSmoke) {
   await runBudgetDetailRoutes();
@@ -1971,9 +1921,9 @@ async function runFinanceDetailRouteSmoke() {
       listPath: '/finance-tax/booking-settlement-audit',
       markers: [
         'Booking Settlement Audit Detail',
-        'Settlement record overview',
-        'Settlement evidence hub',
-        'Accounting amount breakdown',
+        'Identity',
+        'Canonical evidence',
+        'Allocation equation',
         'Coupon and policy record',
       ],
       routePrefix: 'finance-tax/booking-settlement-audit',
@@ -1982,7 +1932,7 @@ async function runFinanceDetailRouteSmoke() {
       listPath: '/finance-tax/settlement-reversals?range=all',
       markers: [
         'Settlement Reversal Detail',
-        'Refund after payout evidence',
+        'Paid payout refund',
         'Original settlement lock',
         'Reversal accounting impact',
       ],
@@ -2048,9 +1998,7 @@ function printRouteBudgetSummary() {
     const sizeKb = Math.round(metric.bytes / 1024);
     const flags = [
       metric.durationMs > ROUTE_BUDGET_WARN_MS ? `>${ROUTE_BUDGET_WARN_MS}ms` : null,
-      metric.bytes > ROUTE_BUDGET_WARN_BYTES
-        ? `>${Math.round(ROUTE_BUDGET_WARN_BYTES / 1024)}KB`
-        : null,
+      metric.bytes > ROUTE_BUDGET_WARN_BYTES ? `>${Math.round(ROUTE_BUDGET_WARN_BYTES / 1024)}KB` : null,
     ].filter(Boolean);
     console.log(
       `BUDGET ${metric.path} ${metric.status} ${metric.durationMs}ms ${sizeKb}KB${flags.length ? ` WARN ${flags.join(',')}` : ''}`,

@@ -1,6 +1,10 @@
 import {
   buildPartnerDataHrefs,
+  buildPartnerExportHref,
   buildPartnerListHref,
+  buildPartnerSnapshotFirstHref,
+  buildPartnerSnapshotNextHref,
+  buildPartnerSnapshotPreviousHref,
   buildProviderActiveFilters,
   buildProviderFilters,
   paginatePartnerRows,
@@ -20,6 +24,55 @@ describe('partner filters', () => {
     expect(filters.pageSize).toBe(10);
   });
 
+  it('keeps authoritative VND debt priority sorting on the unsettled server query', () => {
+    const filters = buildProviderFilters({
+      page: '2',
+      review: 'unsettled',
+      sort: 'wallet-debt',
+    });
+
+    expect(filters).toMatchObject({ cursor: '', page: 1, sort: 'wallet-debt' });
+    expect(buildPartnerListHref(filters)).toBe('/partners?review=unsettled&sort=wallet-debt');
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/wallet-debt-page?take=10',
+      listIsServerPaginated: true,
+      listUsesSnapshotCursor: true,
+      summaryHref: '/admin/partners/list-providers/summary?review=unsettled',
+      summaryMatchesVisibleFilter: true,
+    });
+    expect(buildProviderActiveFilters(filters).map((filter) => filter.label)).toContain(
+      'Sort: debt high to low',
+    );
+  });
+
+  it('builds bounded wallet debt cursor history, export, previous, and restart links', () => {
+    const firstPage = buildProviderFilters({ review: 'unsettled', sort: 'wallet-debt' });
+    const nextHref = buildPartnerSnapshotNextHref(firstPage, 'cursor-2', 'snapshot-start');
+    const secondPage = buildProviderFilters(
+      Object.fromEntries(new URL(`http://localhost${nextHref}`).searchParams.entries()),
+    );
+
+    expect(nextHref).toBe(
+      '/partners?review=unsettled&sort=wallet-debt&cursor=cursor-2&cursorHistory=WyJzbmFwc2hvdC1zdGFydCJd&page=2',
+    );
+    expect(buildPartnerDataHrefs(secondPage)).toMatchObject({
+      listHref: '/admin/partners/wallet-debt-page?take=10&cursor=cursor-2',
+      listUsesSnapshotCursor: true,
+    });
+    expect(buildPartnerExportHref(firstPage, 'snapshot-start')).toBe(
+      '/api/admin/partners/export?review=unsettled&sort=wallet-debt&cursor=snapshot-start',
+    );
+    expect(buildPartnerExportHref(secondPage)).toBe(
+      '/api/admin/partners/export?page=2&review=unsettled&sort=wallet-debt&cursor=cursor-2',
+    );
+    expect(buildPartnerSnapshotPreviousHref(secondPage)).toBe(
+      '/partners?review=unsettled&sort=wallet-debt&cursor=snapshot-start',
+    );
+    expect(buildPartnerSnapshotFirstHref(secondPage, 'snapshot-start')).toBe(
+      '/partners?review=unsettled&sort=wallet-debt&cursor=snapshot-start',
+    );
+  });
+
   it('normalizes partner pagination params and builds page hrefs', () => {
     const filters = buildProviderFilters({
       page: '2',
@@ -33,9 +86,7 @@ describe('partner filters', () => {
     expect(filters.pageSize).toBe(25);
     expect(filters.sort).toBe('newest');
     expect(filters.providerStatus).toBe('');
-    expect(buildPartnerListHref(filters, { page: 3 })).toBe(
-      '/partners?review=unapproved&pageSize=25&page=3',
-    );
+    expect(buildPartnerListHref(filters, { page: 3 })).toBe('/partners?review=unapproved&pageSize=25&page=3');
     expect(buildPartnerListHref(filters, { review: 'unsettled' })).toBe(
       '/partners?review=unsettled&pageSize=25',
     );
@@ -52,7 +103,8 @@ describe('partner filters', () => {
       '/partners?providerStatus=ONLINE_AVAILABLE_SOON&review=ready-now',
     );
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=10&providerStatus=ONLINE_AVAILABLE_SOON&review=ready-now',
+      listHref:
+        '/admin/partners/list-providers?take=10&providerStatus=ONLINE_AVAILABLE_SOON&review=ready-now',
       listIsServerPaginated: true,
       summaryHref:
         '/admin/partners/list-providers/summary?providerStatus=ONLINE_AVAILABLE_SOON&review=ready-now',
@@ -340,9 +392,7 @@ describe('partner filters', () => {
     expect(filters.review).toBe('ready-now');
     expect(unsafeFilters.readiness).toBe('');
     expect(buildProviderActiveFilters(filters).map((filter) => filter.label)).toContain('Review: Ready now');
-    expect(buildPartnerListHref(filters, { sort: 'last-work' })).toBe(
-      '/partners?review=ready-now',
-    );
+    expect(buildPartnerListHref(filters, { sort: 'last-work' })).toBe('/partners?review=ready-now');
     expect(buildPartnerDataHrefs(filters)).toEqual({
       listHref: '/admin/partners/list-providers?take=10&review=ready-now',
       listIsServerPaginated: true,
@@ -579,7 +629,9 @@ describe('partner filters', () => {
   it('keeps primary and normalized legacy partner pages compact', () => {
     expect(partnerHasAdvancedOperationalFilters(buildProviderFilters({ review: 'unapproved' }))).toBe(false);
     expect(partnerHasAdvancedOperationalFilters(buildProviderFilters({ review: 'unsettled' }))).toBe(false);
-    expect(partnerHasAdvancedOperationalFilters(buildProviderFilters({ review: 'marketplace-ready' }))).toBe(false);
+    expect(partnerHasAdvancedOperationalFilters(buildProviderFilters({ review: 'marketplace-ready' }))).toBe(
+      false,
+    );
   });
 
   it('keeps onboarding blocker copy focused on actionable evidence, not bank or tax', () => {

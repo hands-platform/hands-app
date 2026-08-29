@@ -11,6 +11,7 @@ type PartnerDetailFullRecordIndexSectionProps = {
   readonly canViewDiagnostics: boolean;
   readonly decisionQueue?: PartnerDecisionQueue | null;
   readonly financeOpenCount: number;
+  readonly operationalPolicyAvailable?: boolean;
   readonly partnerId: string;
   readonly workOpenCount: number;
 };
@@ -21,15 +22,20 @@ export function PartnerDetailFullRecordIndexSection({
   canViewDiagnostics,
   decisionQueue = null,
   financeOpenCount,
+  operationalPolicyAvailable = true,
   partnerId,
   workOpenCount,
 }: PartnerDetailFullRecordIndexSectionProps) {
-  const openCount = approvalOpenCount + workOpenCount + financeOpenCount;
+  const openCount = approvalOpenCount + (operationalPolicyAvailable ? workOpenCount : 0) + financeOpenCount;
 
   return (
     <AdminCard className="partner-workspace-index" id="partner-full-record-index">
       <AdminSectionHeader
-        actions={<StatusBadge tone={openCount ? 'warning' : 'success'}>{openCount ? `${openCount} open` : 'No action'}</StatusBadge>}
+        actions={
+          <StatusBadge tone={openCount || !operationalPolicyAvailable ? 'warning' : 'success'}>
+            {openCount ? `${openCount} open` : operationalPolicyAvailable ? 'No action' : 'No known action'}
+          </StatusBadge>
+        }
         description="Choose the existing work area for this Partner. This compatibility URL no longer loads every record and form onto one page."
         title="Partner work areas"
       />
@@ -48,13 +54,19 @@ export function PartnerDetailFullRecordIndexSection({
             value: approvalOpenCount ? `${approvalOpenCount} open` : 'Ready',
           },
           {
-            detail: 'Service, location, app reachability, schedule, and booking readiness.',
+            detail: operationalPolicyAvailable
+              ? 'Service, location, app reachability, schedule, and booking readiness.'
+              : 'Operational policy data is unavailable. Pause matching and readiness decisions.',
             href: withPartnerDecisionQueue(
               buildPartnerDetailWorkspaceHref(partnerId, 'access', 'readiness'),
               decisionQueue,
             ),
             label: 'Work readiness',
-            value: workOpenCount ? `${workOpenCount} open` : 'Ready',
+            value: operationalPolicyAvailable
+              ? workOpenCount
+                ? `${workOpenCount} open`
+                : 'Ready'
+              : 'Unavailable',
           },
           {
             detail: 'Booking journey, current participation, and retained evidence workspaces.',

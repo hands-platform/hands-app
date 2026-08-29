@@ -142,7 +142,7 @@ describe('Start Shift ranking and demand widgets', () => {
     expect(markup).toContain('App activity');
     expect(markup).toContain('Sessions');
     expect(markup).toContain('Profile views');
-    expect(markup).toContain('Fastest response');
+    expect(markup).not.toContain('Fastest response <span>0</span>');
     expect(markup).toContain('Ordered by app activity, then Partner profile views');
     expect(markup).toContain('Ordered by app activity, then authenticated sessions');
     expect(markup).toContain('id="start-shift-partner-ranking-tab-mostActive"');
@@ -222,9 +222,62 @@ describe('Start Shift ranking and demand widgets', () => {
     );
 
     expect(markup).toContain('Partner needs attention');
-    expect(markup).toContain('Needs attention <span>1</span>');
+    expect(markup).not.toContain('role="tablist"');
+    expect(markup).not.toContain('role="tabpanel"');
     expect(markup).not.toContain('Most active <span>0</span>');
     expect(markup).not.toContain('Fastest response <span>0</span>');
+  });
+
+  it('renders Customer attention without a tablist when it is the only mode', () => {
+    const customer = analytics.customerRankings.mostActive[0];
+    const markup = renderToStaticMarkup(
+      <StartShiftRankingWidgets
+        analytics={{
+          ...analytics,
+          customerRankings: {
+            highestValue: [],
+            mostActive: [],
+            mostCompleted: [],
+            needsAttention: [{ ...customer, issueCount: 1 }],
+          },
+          partnerRankings: { fastestResponse: [], highestRated: [], mostActive: [], mostCompleted: [], needsAttention: [] },
+        }}
+        rangeLabel="Today"
+      />,
+    );
+
+    expect(markup).toContain('Customer needs attention');
+    expect(markup).not.toContain('role="tablist"');
+  });
+
+  it('renders both attention tables without empty mode tabs', () => {
+    const customer = analytics.customerRankings.mostActive[0];
+    const partner = analytics.partnerRankings.mostActive[0];
+    const markup = renderToStaticMarkup(
+      <StartShiftRankingWidgets
+        analytics={{
+          ...analytics,
+          customerRankings: {
+            highestValue: [],
+            mostActive: [],
+            mostCompleted: [],
+            needsAttention: [{ ...customer, issueCount: 1 }],
+          },
+          partnerRankings: {
+            fastestResponse: [],
+            highestRated: [],
+            mostActive: [],
+            mostCompleted: [],
+            needsAttention: [{ ...partner, issueCount: 1 }],
+          },
+        }}
+        rangeLabel="Today"
+      />,
+    );
+
+    expect(markup).toContain('Customer needs attention');
+    expect(markup).toContain('Partner needs attention');
+    expect(markup).not.toContain('role="tablist"');
   });
 
   it('labels exact negative Partner net earnings for Finance review', () => {

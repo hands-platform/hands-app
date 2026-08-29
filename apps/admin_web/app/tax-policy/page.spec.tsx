@@ -69,6 +69,7 @@ function workspaceSummary() {
     drafts: { needsAuthor: 1, awaitingChecker: 0, approved: 0, scheduled: 0 },
     history: { production: 1, testOrLegacy: 145 },
     nextScheduled: null,
+    nonProductionScheduledCount: 0,
   };
 }
 
@@ -90,10 +91,31 @@ describe('TaxPolicyPage', () => {
     await TaxPolicyPage({ searchParams: Promise.resolve({}) });
     expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toEqual([
       '/admin/tax-policy-versions?view=current&take=2',
-      '/admin/tax-policy-versions?view=drafts&take=25&skip=0',
+      '/admin/tax-policy-versions?view=drafts&take=25&skip=0&source=production',
       '/admin/tax-policy-capabilities',
       '/admin/tax-policy-workspace-summary',
     ]);
+  });
+
+  it('shows non-production scheduled work as a release blocker with a separate source entry', async () => {
+    mockedAdminGetResult.mockImplementation((href, fallback) => {
+      if (href.includes('view=current')) return ok({ items: [policy()], total: 1, skip: 0, take: 2 }) as never;
+      if (href.includes('/admin/tax-policy-capabilities')) return ok(capabilities()) as never;
+      if (href.includes('/admin/tax-policy-workspace-summary')) {
+        return ok({ ...workspaceSummary(), nonProductionScheduledCount: 2 }) as never;
+      }
+      return ok(fallback) as never;
+    });
+
+    const markup = renderToStaticMarkup(await TaxPolicyPage({
+      searchParams: Promise.resolve({ view: 'drafts' }),
+    }));
+
+    expect(markup).toContain('Non-production scheduled policies block release');
+    expect(markup).toContain('2 scheduled test or legacy policies');
+    expect(markup).toContain('/tax-policy?view=drafts&amp;source=test-legacy');
+    expect(markup).toContain('Production work');
+    expect(markup).toContain('Test / legacy work');
   });
 
   it('renders the current policy read-only with Vietnam time and no direct update control', async () => {
@@ -106,6 +128,47 @@ describe('TaxPolicyPage', () => {
     expect(markup).not.toContain('approvalAdminId');
   });
 
+  it('renders complete activation handoff evidence with copy and exact audit recovery', async () => {
+    mockedAdminGetResult.mockImplementation((href, fallback) => {
+      if (href.includes('view=current')) return ok({ items: [policy({
+        revision: 4,
+        payloadHash: 'hash-1',
+        activationEvidence: {
+          activationAuditAt: '2026-08-01T17:00:00.000Z',
+          activationAuditId: 'audit/activation-1',
+          activatedAt: '2026-08-01T17:00:00.000Z',
+          approvalRequestId: 'approval-1',
+          approvedAt: '2026-07-20T03:00:00.000Z',
+          checker: { id: 'checker-1', fullName: 'Finance Checker', email: 'checker@example.com' },
+          maker: { id: 'maker-1', fullName: 'Policy Maker', email: 'maker@example.com' },
+          payloadHash: 'hash-1',
+          policyVersionId: 'policy-1',
+          revision: 4,
+        },
+      })], total: 1, skip: 0, take: 2 }) as never;
+      if (href.includes('/admin/tax-policy-capabilities')) return ok(capabilities()) as never;
+      if (href.includes('/admin/tax-policy-workspace-summary')) return ok(workspaceSummary()) as never;
+      return ok(fallback) as never;
+    });
+
+    const markup = renderToStaticMarkup(await TaxPolicyPage({ searchParams: Promise.resolve({}) }));
+    expect(markup).toContain('Activation evidence');
+    expect(markup).toContain('Copy activation evidence');
+    expect(markup).toContain('<dt>Content hash</dt><dd><code>hash-1</code>');
+    expect(markup).toContain('approval-1');
+    expect(markup).toContain('Policy Maker · maker-1');
+    expect(markup).toContain('Finance Checker · checker-1');
+    expect(markup).toContain('auditEventId=audit%2Factivation-1#tax-policy-audit-event');
+    expect(markup).not.toContain('checker@example.com');
+  });
+
+  it('does not hide missing activation evidence fields', async () => {
+    const markup = renderToStaticMarkup(await TaxPolicyPage({ searchParams: Promise.resolve({}) }));
+    expect(markup).toContain('Activation evidence');
+    expect(markup).toContain('<dt>Approval request ID</dt><dd><code>Missing</code>');
+    expect(markup).toContain('<dt>Activation audit ID</dt><dd>Missing</dd>');
+  });
+
   it('never shows a smoke policy as ready', async () => {
     mockedAdminGetResult.mockImplementation((href, fallback) => {
       if (href.includes('view=current')) {
@@ -116,7 +179,47 @@ describe('TaxPolicyPage', () => {
     const markup = renderToStaticMarkup(await TaxPolicyPage({ searchParams: Promise.resolve({}) }));
     expect(markup).toContain('Critical');
     expect(markup).toContain('Smoke test policy is controlling live withholding');
+    expect(markup).toContain('Candidate provenance');
+    expect(markup).toContain('Smoke test');
+    expect(markup).toContain('No predecessor recorded');
+    expect(markup).not.toContain('New production source');
     expect(markup).not.toContain('Production policy, checker receipt');
+  });
+
+  it('separates a clean operator candidate from its retained smoke predecessor', async () => {
+    mockedAdminGetResult.mockImplementation((href, fallback) => {
+      if (href.includes('view=current')) {
+        return ok({
+          items: [policy({
+            supersedesPolicyVersion: {
+              id: 'smoke-policy-1',
+              name: 'Retained smoke baseline',
+              provenance: 'SMOKE_TEST',
+            },
+          })],
+          total: 1,
+          skip: 0,
+          take: 2,
+        }) as never;
+      }
+      return ok(fallback) as never;
+    });
+
+    const markup = renderToStaticMarkup(await TaxPolicyPage({ searchParams: Promise.resolve({}) }));
+    expect(markup).toContain('Candidate provenance');
+    expect(markup).toContain('<dt>Candidate provenance</dt><dd>Production</dd>');
+    expect(markup).toContain('Superseded source lineage');
+    expect(markup).toContain('Retained smoke baseline · Smoke test');
+  });
+
+  it('documents the production candidate and historical predecessor as independent invariants', () => {
+    const runbook = readFileSync(
+      new URL('../../../../docs/runbooks/tax-policy-smoke-active-replacement.md', import.meta.url),
+      'utf8',
+    );
+    expect(runbook).toContain('The candidate provenance must be `OPERATOR`');
+    expect(runbook).toContain('A historical predecessor may have non-production provenance');
+    expect(runbook).not.toContain('the source lineage is non-production');
   });
 
   it('loads a requested draft by exact id and renders the durable approval action', async () => {
@@ -197,6 +300,31 @@ describe('TaxPolicyPage', () => {
     expect(markup).toContain('Open withholding records');
   });
 
+  it('keeps draft inputs closed until production write capability is restored', async () => {
+    mockedAdminGetResult.mockImplementation((href, fallback) => {
+      if (href.includes('view=current')) return ok({ items: [policy()], total: 1, skip: 0, take: 2 }) as never;
+      if (href.includes('/admin/tax-policy-capabilities')) {
+        return ok(capabilities({
+          canDraft: false,
+          draftBlockers: [{ code: 'MFA_REQUIRED', message: 'Complete MFA before creating a production draft.' }],
+        })) as never;
+      }
+      if (href.includes('/admin/tax-policy-workspace-summary')) return ok(workspaceSummary()) as never;
+      return ok(fallback) as never;
+    });
+
+    const markup = renderToStaticMarkup(await TaxPolicyPage({
+      searchParams: Promise.resolve({ view: 'drafts' }),
+    }));
+
+    expect(markup).toContain('Production draft unavailable');
+    expect(markup).toContain('Complete MFA before creating a production draft.');
+    expect(markup).toContain('No draft fields are opened or preserved');
+    expect(markup).toContain('Re-check capability');
+    expect(markup).not.toContain('name="legalSourceUrl"');
+    expect(markup).not.toContain('name="effectiveFrom"');
+  });
+
   it('separates API failure from a true empty result', async () => {
     mockedAdminGetResult.mockImplementation((_href, fallback) =>
       Promise.resolve({ data: fallback, ok: false, status: 500, errorCode: 'UPSTREAM_FAILED' }) as never,
@@ -214,11 +342,80 @@ describe('TaxPolicyPage', () => {
       '/admin/tax-policy-audit-logs?source=production&take=25&skip=0',
     );
     expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toContain(
-      '/admin/tax-policy-integrity-summary',
+      '/admin/tax-policy-integrity-summary?source=production',
     );
     expect(markup).toContain('30-day integrity summary');
     expect(markup).toContain('bounded 30-day evidence sample, not an all-period KPI');
     expect(markup).not.toContain('/admin/audit-logs?q=tax_');
+  });
+
+  it('keeps zero integrity metrics compact and deep-links only actionable evidence', async () => {
+    mockedAdminGetResult.mockImplementation((href, fallback) => {
+      if (href.includes('view=current')) return ok({ items: [policy()], total: 1, skip: 0, take: 2 }) as never;
+      if (href.includes('/admin/tax-policy-integrity-summary')) {
+        return ok({
+          generatedAt: '2026-08-14T08:00:00.000Z',
+          range: '30d',
+          rangeStart: '2026-07-15T08:00:00.000Z',
+          source: 'production',
+          sourceTotals: { production: 300, test: 100, legacy: 5, unknown: 13 },
+          total: 300,
+          recordIntegrity: {
+            healthy: 287, amountMismatch: 0, missingTaxLog: 13, missingSnapshot: 0,
+            oldestAmountMismatch: null, oldestMissingTaxLog: '2026-08-01T01:00:00.000Z', oldestMissingSnapshot: null,
+          },
+          taxApplicability: {
+            noActivePolicy: 0, noApprovedTaxProfile: 0, noMatchingRule: 0,
+            oldestNoActivePolicy: null, oldestNoApprovedTaxProfile: null, oldestNoMatchingRule: null,
+          },
+        }) as never;
+      }
+      if (href.includes('/admin/tax-policy-capabilities')) return ok(capabilities()) as never;
+      if (href.includes('/admin/tax-policy-workspace-summary')) return ok(workspaceSummary()) as never;
+      return ok(fallback) as never;
+    });
+
+    const markup = renderToStaticMarkup(await TaxPolicyPage({
+      searchParams: Promise.resolve({ view: 'integrity' }),
+    }));
+
+    expect(markup).toContain('13 earning(s) have unknown provenance');
+    expect(markup).toContain('issue=missing-tax-log&amp;issueSource=production&amp;issuePage=1#tax-policy-integrity-queue');
+    expect(markup.match(/Review exact evidence/gu)).toHaveLength(1);
+    expect(markup.match(/Owner not assigned/gu)).toHaveLength(1);
+    expect(markup).toContain('0 / 300 · no matching 30-day evidence');
+  });
+
+  it('keeps Integrity usable while an older API response omits additive source fields', async () => {
+    mockedAdminGetResult.mockImplementation((href, fallback) => {
+      if (href.includes('view=current')) return ok({ items: [policy()], total: 1, skip: 0, take: 2 }) as never;
+      if (href.includes('/admin/tax-policy-integrity-summary')) {
+        return ok({
+          generatedAt: '2026-08-14T08:00:00.000Z',
+          range: '30d',
+          rangeStart: '2026-07-15T08:00:00.000Z',
+          total: 55,
+          recordIntegrity: {
+            healthy: 42, amountMismatch: 0, missingTaxLog: 13, missingSnapshot: 0,
+            oldestAmountMismatch: null, oldestMissingTaxLog: '2026-08-01T01:00:00.000Z', oldestMissingSnapshot: null,
+          },
+          taxApplicability: {
+            noActivePolicy: 0, noApprovedTaxProfile: 0, noMatchingRule: 0,
+            oldestNoActivePolicy: null, oldestNoApprovedTaxProfile: null, oldestNoMatchingRule: null,
+          },
+        }) as never;
+      }
+      if (href.includes('/admin/tax-policy-capabilities')) return ok(capabilities()) as never;
+      if (href.includes('/admin/tax-policy-workspace-summary')) return ok(workspaceSummary()) as never;
+      return ok(fallback) as never;
+    });
+
+    const markup = renderToStaticMarkup(await TaxPolicyPage({
+      searchParams: Promise.resolve({ view: 'integrity', issueSource: 'production' }),
+    }));
+    expect(markup).toContain('Source-classified integrity unavailable');
+    expect(markup).toContain('No all-source count is being represented as production');
+    expect(markup).not.toContain('Production · 55');
   });
 
   it('loads and renders an exact audit event with provenance, copy, and recovery actions', async () => {
@@ -249,6 +446,41 @@ describe('TaxPolicyPage', () => {
     expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toContain(
       '/admin/tax-policy-audit-logs?eventId=audit-1&amp;source=production&amp;take=1&amp;skip=0'.replaceAll('&amp;', '&'),
     );
+  });
+
+  it('offers audit action presets while preserving exact action input', async () => {
+    const markup = renderToStaticMarkup(await TaxPolicyPage({
+      searchParams: Promise.resolve({ view: 'integrity', auditAction: 'tax_policy.activated' }),
+    }));
+    expect(markup).toContain('Action preset or exact action');
+    expect(markup).toContain('list="tax-policy-audit-action-presets"');
+    expect(markup).toContain('<option value="tax_policy.activation_blocked"></option>');
+    expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toContain(
+      '/admin/tax-policy-audit-logs?source=production&amp;take=25&amp;skip=0&amp;action=tax_policy.activated'.replaceAll('&amp;', '&'),
+    );
+  });
+
+  it('truncates dense test history IDs visually while retaining full accessible copy', async () => {
+    const fullId = 'smoke-tax-policy-2026-08-28-run-000000000001';
+    mockedAdminGetResult.mockImplementation((href, fallback) => {
+      if (href.includes('view=current')) return ok({ items: [policy()], total: 1, skip: 0, take: 2 }) as never;
+      if (href.includes('view=history')) return ok({
+        items: [policy({ id: fullId, provenance: 'SMOKE_TEST', lifecycleStatus: 'SUPERSEDED' })],
+        total: 1,
+        skip: 0,
+        take: 25,
+      }) as never;
+      if (href.includes('/admin/tax-policy-capabilities')) return ok(capabilities()) as never;
+      if (href.includes('/admin/tax-policy-workspace-summary')) return ok(workspaceSummary()) as never;
+      return ok(fallback) as never;
+    });
+
+    const markup = renderToStaticMarkup(await TaxPolicyPage({
+      searchParams: Promise.resolve({ view: 'history', source: 'test-legacy' }),
+    }));
+    expect(markup).toContain('smoke-tax-po…0000000001');
+    expect(markup).toContain(`title="${fullId}"`);
+    expect(markup).toContain(`aria-label="Copy full policy ID ${fullId}"`);
   });
 
   it('renders filtered integrity evidence with exact source and finance trace', async () => {

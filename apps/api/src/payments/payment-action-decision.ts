@@ -76,6 +76,7 @@ export type PaymentOperationDecision = {
 };
 
 const EXTERNAL_METHODS = new Set(['MOMO', 'VNPAY', 'CARD', 'BANK_TRANSFER']);
+const TERMINAL_PAYMENT_STATUSES = new Set(['CAPTURED', 'REFUNDED', 'RELEASED']);
 const NON_CAPTURE_BOOKING_STATUSES = new Set(['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED']);
 const ACTIVE_BOOKING_STATUSES = new Set([
   'CREATED',
@@ -301,7 +302,12 @@ function paymentPrimaryQueue(
     decisions.some((candidate) => candidate.action === action && paymentActionCanExecute(candidate));
 
   if (evidence.state === 'CONFLICT') return 'evidence-conflict';
-  if (EXTERNAL_METHODS.has(record.method) && evidence.state === 'MISSING') {
+  if (
+    EXTERNAL_METHODS.has(record.method) &&
+    evidence.state === 'MISSING' &&
+    record.status !== 'RELEASED' &&
+    record.status !== 'REFUNDED'
+  ) {
     return 'missing-gateway-evidence';
   }
   if (record.method === 'CASH' && record.status === 'PENDING' && terminal) {
@@ -359,6 +365,10 @@ function syncDecision(
   if (!EXTERNAL_METHODS.has(record.method)) {
     return decision('SYNC', 'BLOCKED', false, 'SYNC_NOT_APPLICABLE',
       `${record.method} does not use an external gateway status sync.`, [], null);
+  }
+  if (TERMINAL_PAYMENT_STATUSES.has(record.status)) {
+    return decision('SYNC', 'BLOCKED', false, 'PAYMENT_STATE_NOT_SYNCABLE',
+      `Gateway status sync is not executable for terminal payment state ${record.status}.`, [], evidence.verifiedAt);
   }
   if (!record.providerRef) {
     return decision('SYNC', 'BLOCKED', false, 'GATEWAY_REFERENCE_MISSING',

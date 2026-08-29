@@ -26,7 +26,6 @@ import {
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
 import { readSearchParam } from '../../lib/date-range';
-import { formatRelativeTime } from '../../lib/admin-format';
 import { operationalPolicyAnchor } from '../../lib/operations-policy';
 import { buildBookingAcceptanceMatrix } from './booking-acceptance-matrix';
 import { buildMatchingStageImpactPreview } from './matching-stage-impact-preview';
@@ -73,7 +72,15 @@ export default async function OperationsPolicyPage({
   const params = (await searchParams) ?? {};
   const operatorAccess = await getCurrentAdminOperatorAccess();
   const canLoadFullDiagnostics = hasAdminOperatorCategory(operatorAccess, 'DEVELOPER_SYSTEM');
-  const loadPlan = buildOperationsPolicyLoadPlan(params, { allowFullDiagnostics: canLoadFullDiagnostics });
+  const canLoadPolicyAudit = hasAdminOperatorCategory(operatorAccess, 'SYSTEM_POLICY');
+  const canLoadFullAudit = hasAdminOperatorCategory(operatorAccess, 'SYSTEM_AUDIT');
+  const canOpenBookingEvidence = hasAdminOperatorCategory(operatorAccess, 'BOOKINGS_DETAIL');
+  const canOpenPartnerEvidence = hasAdminOperatorCategory(operatorAccess, 'PARTNERS_DETAIL');
+  const loadPlan = buildOperationsPolicyLoadPlan(params, {
+    allowAdvancedAudit: canLoadFullDiagnostics,
+    allowFullDiagnostics: canLoadFullDiagnostics,
+    allowPolicyAudit: canLoadPolicyAudit,
+  });
   const [settingsResult, bookingsResult, providersResult, matchingPreviewResult, auditResult, auditHealthResult] = await Promise.all([
     loadPlan.settingsHref
       ? adminGetResult<AdminOperationalPolicySetting[]>(loadPlan.settingsHref, [], {
@@ -108,8 +115,16 @@ export default async function OperationsPolicyPage({
     query,
     status: statusFilter,
   });
+  const selectedPolicyGroupId = selectedSetting
+    ? policyGroups.find((group) => group.rows.some((setting) => setting.key === selectedSetting.key))?.id ?? routeGroup
+    : routeGroup;
+  const selectedPolicyReturnHref = operationsPolicyFilterHref(
+    query,
+    statusFilter,
+    selectedPolicyGroupId,
+    lifecycleFilter,
+  );
   const counts = operationsPolicyCounts(settings);
-  const observedAt = new Date().toISOString();
   const auditMode = loadPlan.auditSource;
   const policyAuditRows = operationalPolicyAuditRows(auditResult.data.items);
   const auditHistory = loadPlan.auditCursorHistory;
@@ -125,31 +140,62 @@ export default async function OperationsPolicyPage({
     ? buildOperationsPolicyAuditHref(auditMode, auditResult.data.nextCursor, auditNextHistory)
     : null;
   const refreshHref = currentOperationsPolicyHref(params);
+  const supplyHref = buildOperationsPolicyMatchingHref('supply');
+  const supplyDiagnosticsHref = `${supplyHref}&diagnostics=complete`;
+  const selectedPolicyPanel = !selectedSetting ? null : (
+    <aside aria-label={`Change ${selectedSetting.label}`} className="operations-policy-editor">
+      {operationsPolicyLifecycle(selectedSetting) === 'live' && auditHealthResult.ok ? (
+        <OperationsPolicyForm
+          key={selectedSetting.key}
+          returnHref={selectedPolicyReturnHref}
+          setting={selectedSetting}
+        />
+      ) : operationsPolicyLifecycle(selectedSetting) === 'live' ? (
+        <AdminNoticeCard role="alert" tone="danger">
+          <AdminSectionHeader
+            actions={(
+              <div className="admin-inline-actions">
+                <AdminFormControlLink className="button-secondary" href={refreshHref}>Retry</AdminFormControlLink>
+                <AdminFormControlLink className="button-secondary" href="/background-jobs">System Health</AdminFormControlLink>
+              </div>
+            )}
+            description="Policy audit evidence could not be read. Changes are disabled until the audit service is available."
+            status={<StatusBadge tone="danger">Writes disabled</StatusBadge>}
+            title="Policy audit is unavailable"
+          />
+        </AdminNoticeCard>
+      ) : (
+        <AdminNoticeCard role="alert" tone={operationsPolicyLifecycle(selectedSetting) === 'unknown' ? 'danger' : 'info'}>
+          <strong>{selectedSetting.label} is {operationsPolicyLifecycle(selectedSetting)}</strong>
+          <p>{operationsPolicyLifecycle(selectedSetting) === 'unknown'
+            ? 'Lifecycle metadata is missing or unsupported. Editing is disabled until the API returns an explicit lifecycle contract.'
+            : selectedSetting.consumerContract?.fallbackBehavior ?? 'This policy is read-only in the current runtime contract.'}</p>
+        </AdminNoticeCard>
+      )}
+    </aside>
+  );
 
-  const acceptanceMatrix = loadPlan.shouldRenderMatchingSupply
+  const acceptanceMatrix = loadPlan.shouldRenderSupplyDiagnostics
     ? buildBookingAcceptanceMatrix(settings, providers)
     : null;
-  const supplySensitivity = loadPlan.shouldRenderMatchingSupply
+  const supplySensitivity = loadPlan.shouldRenderSupplyDiagnostics
     ? buildPolicySupplySensitivity(settings, bookings, providers)
     : null;
-  const matchingStageImpactPreview = loadPlan.shouldRenderMatchingSupply
+  const matchingStageImpactPreview = loadPlan.shouldRenderSupplyDiagnostics
     ? buildMatchingStageImpactPreview(settings, bookings, providers)
     : null;
-  const impactDashboard = loadPlan.shouldRenderMatchingSimulation
+  const impactDashboard = loadPlan.shouldRenderMatchingHistory
     ? buildPolicyImpactDashboard(settings, bookings)
     : null;
-  const policyEffectAnalysis = loadPlan.shouldRenderMatchingSimulation
+  const policyEffectAnalysis = loadPlan.shouldRenderMatchingHistory
     ? buildPolicyOutcomeEffect(settings, bookings)
     : null;
-  const policyDrilldown = loadPlan.shouldRenderMatchingSimulation
+  const policyDrilldown = loadPlan.shouldRenderMatchingHistory
     ? buildPolicyDrilldown(bookings, settings)
     : null;
-  const evidenceUsesDemoReference = supplySensitivity?.referenceLabel === 'Demo Ho Chi Minh City';
-  const usableSupply = Number(
-    supplySensitivity?.summary.find((metric) => metric.label === 'Current visible supply')?.value ?? 0,
-  );
-  const supplyEvidenceFailed = !bookingsResult.ok || !providersResult.ok || !settingsResult.ok;
-  const historicalEvidenceFailed = !bookingsResult.ok || !settingsResult.ok;
+  const supplyEvidenceFailed = !matchingPreviewResult.ok;
+  const supplyDiagnosticsFailed = !bookingsResult.ok || !providersResult.ok || !settingsResult.ok;
+  const historicalEvidenceFailed = loadPlan.shouldRenderMatchingHistory && (!bookingsResult.ok || !settingsResult.ok);
 
   return (
     <AdminPageTemplate
@@ -181,16 +227,18 @@ export default async function OperationsPolicyPage({
                 className={loadPlan.shouldRenderMatchingSimulation ? 'is-active' : undefined}
                 href={buildOperationsPolicyMatchingHref('simulation')}
               >
-                Simulation
-              </AdminFormControlLink>
-              <AdminFormControlLink
-                aria-current={loadPlan.shouldRenderAuditReview ? 'page' : undefined}
-                className={loadPlan.shouldRenderAuditReview ? 'is-active' : undefined}
-                href="/operations-policy?details=audit"
-              >
-                Audit
+                Dispatch preview
               </AdminFormControlLink>
             </>
+          ) : null}
+          {canLoadPolicyAudit ? (
+            <AdminFormControlLink
+              aria-current={loadPlan.shouldRenderAuditReview ? 'page' : undefined}
+              className={loadPlan.shouldRenderAuditReview ? 'is-active' : undefined}
+              href="/operations-policy?details=audit"
+            >
+              Audit
+            </AdminFormControlLink>
           ) : null}
         </AdminFilterChipGroup>
       </nav>
@@ -340,6 +388,7 @@ export default async function OperationsPolicyPage({
                 />
               ) : (
                 <div className={`operations-policy-workspace${selectedSetting ? ' has-editor' : ''}`}>
+                  {selectedPolicyPanel}
                   <div className="operations-policy-group-list">
                     {policyGroups.map((group, index) => (
                       <details
@@ -409,7 +458,7 @@ export default async function OperationsPolicyPage({
                                   {lifecycle === 'live' ? (
                                     <AdminTextLink
                                       aria-current={isEditing ? 'page' : undefined}
-                                      href={operationsPolicyEditHref(setting.key, query, statusFilter, routeGroup, lifecycleFilter)}
+                                      href={operationsPolicyEditHref(setting.key, query, statusFilter, group.id, lifecycleFilter)}
                                     >
                                       {isEditing ? 'Editing' : 'Review change'}
                                     </AdminTextLink>
@@ -422,32 +471,6 @@ export default async function OperationsPolicyPage({
                       </details>
                     ))}
                   </div>
-                  {selectedSetting && operationsPolicyLifecycle(selectedSetting) === 'live' && auditHealthResult.ok ? (
-                    <aside aria-label={`Change ${selectedSetting.label}`} className="operations-policy-editor">
-                      <OperationsPolicyForm key={selectedSetting.key} setting={selectedSetting} />
-                    </aside>
-                  ) : selectedSetting && operationsPolicyLifecycle(selectedSetting) === 'live' ? (
-                    <AdminNoticeCard role="alert" tone="danger">
-                      <AdminSectionHeader
-                        actions={(
-                          <div className="admin-inline-actions">
-                            <AdminFormControlLink className="button-secondary" href={refreshHref}>Retry</AdminFormControlLink>
-                            <AdminFormControlLink className="button-secondary" href="/background-jobs">System Health</AdminFormControlLink>
-                          </div>
-                        )}
-                        description="Policy audit evidence could not be read. Changes are disabled until the audit service is available."
-                        status={<StatusBadge tone="danger">Writes disabled</StatusBadge>}
-                        title="Policy audit is unavailable"
-                      />
-                    </AdminNoticeCard>
-                  ) : selectedSetting ? (
-                    <AdminNoticeCard role="alert" tone={operationsPolicyLifecycle(selectedSetting) === 'unknown' ? 'danger' : 'info'}>
-                      <strong>{selectedSetting.label} is {operationsPolicyLifecycle(selectedSetting)}</strong>
-                      <p>{operationsPolicyLifecycle(selectedSetting) === 'unknown'
-                        ? 'Lifecycle metadata is missing or unsupported. Editing is disabled until the API returns an explicit lifecycle contract.'
-                        : selectedSetting.consumerContract?.fallbackBehavior ?? 'This policy is read-only in the current runtime contract.'}</p>
-                    </AdminNoticeCard>
-                  ) : null}
                 </div>
               )}
             </>
@@ -456,62 +479,39 @@ export default async function OperationsPolicyPage({
       ) : null}
 
       {loadPlan.shouldRenderMatchingSupply ? (
-        <AdminSection
-          actions={
-            <AdminFormControlLink className="button-secondary" href={refreshHref}>
-              <RefreshCw size={16} aria-hidden="true" />
-              Refresh evidence
-            </AdminFormControlLink>
-          }
-          className="operations-policy-evidence-header"
-          description={(
-            <>
-              Observed <DateTimeText value={observedAt} /> ({formatRelativeTime(observedAt, { justNow: 'just now', includeFuture: true })}). Sources: operational policy settings, {bookings.length} recent booking records, and {providers.length} bounded Partner records.
-            </>
-          )}
-          statusLabel={supplyEvidenceFailed ? 'Unavailable' : usableSupply === 0 ? 'Blocked · no eligible Partner supply' : 'Ready'}
-          statusTone={supplyEvidenceFailed || usableSupply === 0 ? 'danger' : 'success'}
-          title="Supply evidence"
-        >
-          {supplyEvidenceFailed ? (
-            <AdminEmptyState
-              framed
-              message="The operational evidence sample could not be loaded. Refresh before using this workspace for a policy decision."
-              title="Evidence unavailable"
-            />
-          ) : null}
-          {evidenceUsesDemoReference ? (
-            <AdminNoticeCard role="status" tone="warning">
-              <AdminSectionHeader
-                description="No usable booking coordinate was available, so the workspace uses a Ho Chi Minh City reference point. Refresh with production evidence before deciding a live policy change."
-                status={<StatusBadge tone="warning">Demo reference</StatusBadge>}
-                title="Do not use this coordinate for production policy decisions"
-              />
-            </AdminNoticeCard>
-          ) : null}
-          {!supplyEvidenceFailed && usableSupply === 0 ? (
-            <AdminNoticeCard role="alert" tone="danger">
-              <AdminSectionHeader
-                actions={
-                  <div className="admin-inline-actions">
-                    <AdminFormControlLink className="button-secondary" href="/partner-controls?details=controls&review=location">Review Partner location</AdminFormControlLink>
-                    <AdminFormControlLink className="button-secondary" href="/notifications?view=delivery">Review push delivery</AdminFormControlLink>
-                  </div>
-                }
-                description="No currently usable Partner supply exists inside the sampled radius and freshness gates. This is a supply blocker, not a policy-alignment success."
-                status={<StatusBadge tone="danger">0 usable Partners</StatusBadge>}
-                title="Supply is not ready"
-              />
-            </AdminNoticeCard>
-          ) : null}
-        </AdminSection>
+        <OperationsPolicyLiveSimulatorSection
+          canOpenBookingEvidence={canOpenBookingEvidence}
+          canOpenPartnerEvidence={canOpenPartnerEvidence}
+          compact
+          preview={matchingPreviewResult.data}
+          refreshHref={refreshHref}
+          unavailable={supplyEvidenceFailed}
+          variant="supply"
+        />
       ) : null}
 
-      {loadPlan.shouldRenderMatchingSupply && !supplyEvidenceFailed ? (
-        usableSupply === 0 ? (
-          <OperationsPolicyDiagnosticsDisclosure>
+      {loadPlan.shouldRenderMatchingSupply ? (
+          <OperationsPolicyDiagnosticsDisclosure
+            hideHref={supplyHref}
+            open={loadPlan.shouldRenderSupplyDiagnostics}
+            showHref={supplyDiagnosticsHref}
+          >
+            {!loadPlan.shouldRenderSupplyDiagnostics ? null : supplyDiagnosticsFailed ? (
+              <AdminEmptyState
+                framed
+                message="The bounded sample diagnostics could not be loaded. The authoritative Supply status above remains independent."
+                title="Sample diagnostics unavailable"
+              />
+            ) : (
             <div className="operations-policy-diagnostic-stack">
-              <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix!} />
+              <AdminNoticeCard role="status" tone="warning">
+                <strong>Sample-only supporting diagnostics</strong>
+                <p>{bookings.length} booking records returned · {providers.length} Partner records returned · total coverage unavailable.</p>
+              </AdminNoticeCard>
+              <OperationsPolicyFinalPartnerChoiceSection
+                canOpenPartnerEvidence={canOpenPartnerEvidence}
+                matrix={acceptanceMatrix!}
+              />
               <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity!} />
               {matchingStageImpactPreview!.openMatchingCount > 0 ? (
                 <OperationsPolicyMatchingStageImpactSection preview={matchingStageImpactPreview!} />
@@ -519,49 +519,67 @@ export default async function OperationsPolicyPage({
                 <AdminEmptyState framed message="No open bookings to model." title="No matching stage sample" />
               )}
             </div>
+            )}
           </OperationsPolicyDiagnosticsDisclosure>
-        ) : (
-          <>
-            <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix!} />
-            <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity!} />
-            <OperationsPolicyMatchingStageImpactSection preview={matchingStageImpactPreview!} />
-          </>
-        )
       ) : null}
 
       {loadPlan.shouldRenderMatchingSimulation ? (
         <>
           <OperationsPolicyLiveSimulatorSection
+            canOpenBookingEvidence={canOpenBookingEvidence}
+            canOpenPartnerEvidence={canOpenPartnerEvidence}
             preview={matchingPreviewResult.data}
             refreshHref={refreshHref}
             unavailable={!matchingPreviewResult.ok}
           />
-          <AdminSection
-            className="operations-policy-historical-evidence admin-mb-16"
-            description="Past booking policy snapshots and outcomes. This evidence remains independent of current Partner supply."
-            statusLabel={historicalEvidenceFailed ? 'Unavailable' : bookings.length > 0 ? `${bookings.length} booking records` : 'No history'}
-            statusTone={historicalEvidenceFailed ? 'danger' : 'neutral'}
-            title="Historical policy evidence"
-          >
-            {historicalEvidenceFailed ? (
-              <AdminEmptyState
-                framed
-                message="Historical booking evidence could not be loaded. The current dispatch preview above remains independently usable."
-                title="Historical evidence unavailable"
-              />
-            ) : bookings.length === 0 ? (
-              <AdminEmptyState
-                framed
-                message="No recent booking policy snapshots are available for historical comparison."
-                title="No historical booking evidence"
-              />
-            ) : null}
-          </AdminSection>
-          {!historicalEvidenceFailed && bookings.length > 0 ? (
+          <nav aria-label="Dispatch preview views" className="operations-policy-preview-views">
+            <AdminFilterChipGroup ariaLabel="Dispatch preview views">
+              <AdminFormControlLink
+                aria-current={!loadPlan.shouldRenderMatchingHistory ? 'page' : undefined}
+                className={!loadPlan.shouldRenderMatchingHistory ? 'is-active' : undefined}
+                href={buildOperationsPolicyMatchingHref('simulation')}
+              >
+                Current preview
+              </AdminFormControlLink>
+              <AdminFormControlLink
+                aria-current={loadPlan.shouldRenderMatchingHistory ? 'page' : undefined}
+                className={loadPlan.shouldRenderMatchingHistory ? 'is-active' : undefined}
+                href={`${buildOperationsPolicyMatchingHref('simulation')}&history=review`}
+              >
+                Review history
+              </AdminFormControlLink>
+            </AdminFilterChipGroup>
+          </nav>
+          {loadPlan.shouldRenderMatchingHistory ? (
             <>
-              <OperationsPolicyChangeImpactSection dashboard={impactDashboard!} sampledBookingCount={bookings.length} />
-              <OperationsPolicyDrilldownSection drilldown={policyDrilldown!} />
-              <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis!} />
+              <AdminSection
+                className="operations-policy-historical-evidence admin-mb-16"
+                description="Historical scope only: past booking policy snapshots and outcomes, independent of the current dispatch conclusion above."
+                statusLabel={historicalEvidenceFailed ? 'Unavailable' : bookings.length > 0 ? `${bookings.length} booking records` : 'No history'}
+                statusTone={historicalEvidenceFailed ? 'danger' : 'neutral'}
+                title="Review history"
+              >
+                {historicalEvidenceFailed ? (
+                  <AdminEmptyState
+                    framed
+                    message="Historical booking evidence could not be loaded. The current dispatch preview above remains independently usable."
+                    title="Historical evidence unavailable"
+                  />
+                ) : bookings.length === 0 ? (
+                  <AdminEmptyState
+                    framed
+                    message="No recent booking policy snapshots are available for historical comparison."
+                    title="No historical booking evidence"
+                  />
+                ) : null}
+              </AdminSection>
+              {!historicalEvidenceFailed && bookings.length > 0 ? (
+                <>
+                  <OperationsPolicyChangeImpactSection dashboard={impactDashboard!} sampledBookingCount={bookings.length} />
+                  <OperationsPolicyDrilldownSection drilldown={policyDrilldown!} />
+                  <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis!} />
+                </>
+              ) : null}
             </>
           ) : null}
         </>
@@ -581,6 +599,8 @@ export default async function OperationsPolicyPage({
           </AdminNoticeCard>
         ) : (
           <OperationsPolicyAuditTrailSection
+            canViewAdvancedSources={canLoadFullDiagnostics}
+            canViewFullAudit={canLoadFullAudit}
             firstHref={auditFirstHref}
             mode={auditMode}
             newerHref={auditNewerHref}

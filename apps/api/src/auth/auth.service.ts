@@ -13,10 +13,13 @@ import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AdminUserProvenance, Prisma, Role } from '@prisma/client';
+import { adminAuditCanonicalCreateData } from '../admin/admin-audit-event-registry';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { AuthTokenService } from './auth-token.service';
 import {
+  ADMIN_OPERATOR_LOCK_MS,
+  ADMIN_OPERATOR_MAX_FAILED_LOGINS,
   hashAdminOperatorPassword,
   verifyAdminOperatorPasswordOrDummy,
 } from './admin-operator-credential';
@@ -55,6 +58,7 @@ const OTP_SEND_PHONE_DAILY_MAX = 10;
 const OTP_SEND_PREFIX_DAILY_MAX = 200;
 const OTP_SEND_GLOBAL_DAILY_MAX = 10_000;
 const REFRESH_TOKEN_MAX_TTL_SECONDS = 30 * 24 * 60 * 60;
+const ADMIN_WEB_SESSION_DEFAULT_TTL_SECONDS = 2 * 60 * 60;
 const ADMIN_WEB_SESSION_MAX_TTL_SECONDS = 8 * 60 * 60;
 const ADMIN_LOGIN_AUDIT_VALUE_MAX_LENGTH = 200;
 type MobileExchangeRole = (typeof MOBILE_EXCHANGE_ROLES)[number];
@@ -293,7 +297,7 @@ export class AuthService {
       !mfaVerification.verified
     ) {
       if (credential && !credential.disabledAt && (credential.lockedUntil?.getTime() ?? 0) <= now.getTime()) {
-        await this.prisma.$transaction(async (tx) => {
+        const lockEstablished = await this.prisma.$transaction(async (tx) => {
           const updated = await tx.adminOperatorCredential.update({
             where: { id: credential.id },
             data: {
@@ -302,44 +306,72 @@ export class AuthService {
             },
             select: { failedLoginCount: true },
           });
+          const lockResult = updated.failedLoginCount >= ADMIN_OPERATOR_MAX_FAILED_LOGINS
+            ? await tx.adminOperatorCredential.updateMany({
+                where: {
+                  id: credential.id,
+                  OR: [{ lockedUntil: null }, { lockedUntil: { lte: now } }],
+                },
+                data: { lockedUntil: new Date(now.getTime() + ADMIN_OPERATOR_LOCK_MS) },
+              })
+            : { count: 0 };
+          const locked = updated.failedLoginCount >= ADMIN_OPERATOR_MAX_FAILED_LOGINS;
+          const established = lockResult.count === 1;
+          if (established) {
+            await tx.adminWebSession.updateMany({
+              where: { userId: credential.user.id, revokedAt: null },
+              data: {
+                revokedAt: now,
+                revocationReason: 'Admin login locked after repeated failures',
+              },
+            });
+          }
           await tx.adminAuditLog.create({
-            data: {
+            data: adminAuditCanonicalCreateData({
               actorId: null,
-              action: 'admin_operator.login.failed',
+              actorType: 'SERVICE',
+              action: established ? 'admin_operator.login.lock' : 'admin_operator.login.failed',
+              source: 'admin_auth',
               target: `user:${credential.user.id}`,
               metadata: {
                 failedLoginCount: updated.failedLoginCount,
-                locked: false,
+                locked,
                 ...adminLoginAuditContext(requestContext),
               },
-            },
+            }),
           });
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+          return established;
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+        if (lockEstablished) this.socketAuth?.disconnectAdminUser(credential.user.id);
       } else if (credential) {
         await this.prisma.adminAuditLog.create({
-          data: {
+          data: adminAuditCanonicalCreateData({
             actorId: null,
+            actorType: 'SERVICE',
             action: 'admin_operator.login.blocked',
+            source: 'admin_auth',
             target: `user:${credential.user.id}`,
             metadata: {
               disabled: Boolean(credential.disabledAt),
               locked: (credential.lockedUntil?.getTime() ?? 0) > now.getTime(),
               ...adminLoginAuditContext(requestContext),
             },
-          },
+          }),
         });
       } else {
         const identityHash = createHash('sha256').update(email).digest('hex');
         await this.prisma.adminAuditLog.create({
-          data: {
+          data: adminAuditCanonicalCreateData({
             actorId: null,
+            actorType: 'SERVICE',
             action: 'admin_operator.login.failed_unknown_identity',
+            source: 'admin_auth',
             target: `admin_login_identity:${identityHash}`,
             metadata: {
               identityHash,
               ...adminLoginAuditContext(requestContext),
             },
-          },
+          }),
         });
       }
       await this.enforceAdminLoginAccountFailureLimit(email);
@@ -375,12 +407,13 @@ export class AuthService {
         },
       }),
       this.prisma.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId: credential.user.id,
           action: 'admin_operator.login.success',
+          source: 'admin_auth',
           target: `user:${credential.user.id}`,
           metadata: { sessionId, ...adminLoginAuditContext(requestContext) },
-        },
+        }),
       }),
     ]);
 
@@ -497,12 +530,13 @@ export class AuthService {
         data: { acceptedAt: now, pendingKey: null, targetUserId: user.id },
       });
       await tx.adminAuditLog.create({
-        data: {
+        data: adminAuditCanonicalCreateData({
           actorId: user.id,
           action: 'admin_operator.invitation.accept',
+          source: 'admin_auth',
           target: `user:${user.id}`,
           metadata: { invitationId: invitation.id, invitedByAdminId: invitation.invitedByAdminId },
-        },
+        }),
       });
 
       return { accepted: true, user: { id: user.id, email: user.email, fullName: user.fullName } };
@@ -763,7 +797,7 @@ export class AuthService {
   }
 
   private async enforceAdminLoginAccountFailureLimit(email: string) {
-    const key = `admin-login-account:${createHash('sha256').update(email).digest('hex')}`;
+    const key = adminLoginAccountFailureRateLimitKey(email);
     try {
       const bucket = await this.redisState.consumeRateLimit(key, ADMIN_LOGIN_ACCOUNT_FAILURE_WINDOW_MS);
       if (bucket.count > ADMIN_LOGIN_ACCOUNT_MAX_FAILURES) {
@@ -988,6 +1022,10 @@ function adminLoginAuditContext(context: AdminLoginRequestContext) {
   };
 }
 
+function adminLoginAccountFailureRateLimitKey(email: string) {
+  return `admin-login-account:${createHash('sha256').update(email).digest('hex')}`;
+}
+
 function refreshTokenHash(refreshToken: string) {
   return createHash('sha256').update(refreshToken).digest('base64url');
 }
@@ -1003,7 +1041,7 @@ function refreshFamilyTtlSeconds(tokenTtlSeconds: number) {
 
 function adminWebSessionTtlSeconds(value: string | undefined) {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return ADMIN_WEB_SESSION_MAX_TTL_SECONDS;
+  if (!Number.isFinite(parsed) || parsed <= 0) return ADMIN_WEB_SESSION_DEFAULT_TTL_SECONDS;
   return Math.min(Math.floor(parsed), ADMIN_WEB_SESSION_MAX_TTL_SECONDS);
 }
 

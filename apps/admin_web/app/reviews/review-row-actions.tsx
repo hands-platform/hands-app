@@ -18,6 +18,7 @@ import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdro
 import { AdminCard, AdminDrawerSurface } from '../../components/admin-surface';
 import { useAdminModalFocus } from '../../components/use-admin-modal-focus';
 import { moderateReview } from './actions';
+import { safeReviewReturnTo } from './review-action-confirmation';
 import type { ReviewActionItem } from './review-page-actions';
 
 type ReviewEditModel = {
@@ -254,16 +255,41 @@ function ReviewEditSubmitButton() {
 }
 
 export function reviewListReturnTo(pathname: string, search: string) {
-  const params = new URLSearchParams(search);
-  for (const key of ['confirm', 'notice', 'reportReason', 'returnTo', 'reviewId', 'status']) {
-    params.delete(key);
-  }
-  const query = params.toString();
-  return `${pathname === '/reviews' ? pathname : '/reviews'}${query ? `?${query}` : ''}`;
+  const safePathname = pathname === '/reviews' ? pathname : '/reviews';
+  return safeReviewListReturnTo(`${safePathname}${search ? `?${search}` : ''}`);
 }
 
 export function reviewActionHrefWithReturnTo(href: string, returnTo: string) {
   const url = new URL(href, 'http://admin.local');
-  url.searchParams.set('returnTo', returnTo);
+  const safeReturnTo = safeReviewListReturnTo(returnTo);
+  const returnUrl = new URL(safeReturnTo, 'http://admin.local');
+  for (const key of REVIEW_LIST_QUERY_KEYS) {
+    const value = returnUrl.searchParams.get(key);
+    if (value) url.searchParams.set(key, value);
+  }
+  url.searchParams.set('returnTo', safeReturnTo);
   return `${url.pathname}${url.search}`;
+}
+
+const REVIEW_LIST_QUERY_KEYS = [
+  'q',
+  'page',
+  'pageSize',
+  'review',
+  'dateRange',
+  'dateFrom',
+  'dateTo',
+  'sort',
+] as const;
+
+function safeReviewListReturnTo(value: string) {
+  const safeReturnTo = safeReviewReturnTo(value);
+  const url = new URL(safeReturnTo, 'http://admin.local');
+  const params = new URLSearchParams();
+  for (const key of REVIEW_LIST_QUERY_KEYS) {
+    const param = url.searchParams.get(key);
+    if (param) params.set(key, param);
+  }
+  const query = params.toString();
+  return `/reviews${query ? `?${query}` : ''}`;
 }

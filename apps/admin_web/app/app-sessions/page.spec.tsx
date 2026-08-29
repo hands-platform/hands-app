@@ -7,6 +7,10 @@ import type { AdminAppSessionDirectoryRow } from '../../lib/admin-api';
 import { adminGetResult } from '../../lib/admin-api';
 import AppSessionsPage from './page';
 
+const { mockedRedirect } = vi.hoisted(() => ({ mockedRedirect: vi.fn() }));
+
+vi.mock('next/navigation', () => ({ redirect: mockedRedirect }));
+
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
 
@@ -21,6 +25,7 @@ const globalCss = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
 describe('AppSessionsPage', () => {
   beforeEach(() => {
+    mockedRedirect.mockReset();
     mockedAdminGetResult.mockReset();
     mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
       data: fallback,
@@ -91,6 +96,13 @@ describe('AppSessionsPage', () => {
     expect(markup).toContain('<span class="metric-card-scope is-live">Live</span>');
     expect(markup).toContain('<span class="metric-card-scope is-risk">Needs action</span>');
     expect(markup).toContain('<span class="metric-card-scope is-record">Filtered records</span>');
+    expect(markup).toContain('<p>Filtered records</p>');
+    expect(markup).not.toContain('<p>Loaded sessions</p>');
+    expect(markup).toContain('Current page sample — 1 of 120');
+    expect(markup).toContain('Current page role split');
+    expect(markup).toContain('Current page platform and version');
+    expect(markup).toContain('Current page review queue');
+    expect(markup).not.toMatch(/>(?:Clear|Ready|Fresh)</u);
     expect(markup).toContain('card admin-section vuexy-booking-table-card vuexy-booking-table-group');
   });
 
@@ -132,6 +144,32 @@ describe('AppSessionsPage', () => {
     expect(markup).toContain('No app session data');
     expect(markup).toContain('not a system health confirmation');
     expect(markup).not.toContain('metric-card-label');
+    expect(mockedRedirect).not.toHaveBeenCalled();
+  });
+
+  it('redirects an out-of-range page to the last page without dropping filters', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: String(href).includes('/summary')
+        ? { expired: 331, generatedAt: '2026-08-08T00:00:00.000Z', liveCustomers: 0, livePartners: 0, recent: 0, recentCustomers: 0, recentPartners: 0, stale: 0, totalCount: 331 }
+        : fallback,
+      ok: true,
+      status: 200,
+    }));
+
+    await AppSessionsPage({
+      searchParams: Promise.resolve({
+        page: '999',
+        pageSize: '10',
+        platform: 'ios',
+        q: '8490',
+        role: 'PROVIDER',
+        state: 'expired',
+      }),
+    });
+
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/app-sessions?role=PROVIDER&state=expired&platform=ios&q=8490&page=34',
+    );
   });
 
   it('does not render zero metrics when a session API request fails', async () => {

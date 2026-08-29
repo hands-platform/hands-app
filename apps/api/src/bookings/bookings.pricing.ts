@@ -1,7 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-export function calculateCouponDiscount(discount: Prisma.JsonValue, subtotal: number) {
+export function calculateCouponDiscount(
+  discount: Prisma.JsonValue,
+  subtotal: number,
+  maximumDiscountAmount?: number | null,
+) {
   if (!discount || typeof discount !== 'object' || Array.isArray(discount)) {
     return 0;
   }
@@ -19,7 +23,11 @@ export function calculateCouponDiscount(discount: Prisma.JsonValue, subtotal: nu
     return 0;
   }
 
-  return Math.min(subtotal, Math.round((subtotal * value) / 100));
+  const maximum =
+    Number.isSafeInteger(maximumDiscountAmount) && (maximumDiscountAmount ?? 0) > 0
+      ? maximumDiscountAmount!
+      : subtotal;
+  return Math.min(subtotal, maximum, Math.round((subtotal * value) / 100));
 }
 
 function couponDiscountRecord(discount: Prisma.JsonValue) {
@@ -88,10 +96,19 @@ export function resolveCustomerPrice(
 export function resolveBookingPriceSummary(input: {
   customerPrice: number;
   adminMinimumAmount: number;
-  coupon?: { id?: string | null; code?: string | null; discount: Prisma.JsonValue } | null;
+  coupon?: {
+    id?: string | null;
+    code?: string | null;
+    discount: Prisma.JsonValue;
+    maximumDiscountAmount?: number | null;
+  } | null;
 }) {
   const discountAmount = input.coupon
-    ? calculateCouponDiscount(input.coupon.discount, input.customerPrice)
+    ? calculateCouponDiscount(
+        input.coupon.discount,
+        input.customerPrice,
+        input.coupon.maximumDiscountAmount,
+      )
     : 0;
 
   return {

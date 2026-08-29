@@ -1,4 +1,5 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
+import { PaymentStatus } from '@prisma/client';
 import { Job, Queue } from 'bullmq';
 import {
   PAYMENT_BOOKING_RECOVERY_QUEUE_NAME,
@@ -20,7 +21,7 @@ export class PaymentStatusProcessor extends WorkerHost {
     const result = await this.payments.checkAndSyncStatus(job.data.paymentId);
     if (
       'bookingRecoveryReady' in result &&
-      result.bookingRecoveryReady &&
+      (result.bookingRecoveryReady || result.status === PaymentStatus.FAILED) &&
       typeof result.bookingId === 'string'
     ) {
       const recovery = paymentBookingRecoveryJob({

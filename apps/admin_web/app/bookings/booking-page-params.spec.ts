@@ -1,5 +1,6 @@
 import {
   buildBookingListHref,
+  readBookingDateRangeFilter,
   readBookingEvidenceFilter,
   readBookingGateFilter,
   readBookingView,
@@ -22,6 +23,23 @@ describe('booking page search params', () => {
     expect(readBookingView(undefined, 'NO_SHOW')).toBe('no-show');
     expect(readBookingView('unknown', 'COMPLETED')).toBe('attention');
     expect(readBookingView(undefined)).toBe('attention');
+    expect(readBookingView('')).toBe('attention');
+    expect(readBookingView('not-a-real-view')).toBe('attention');
+    expect(readBookingView(['post-match-cancellations', 'manual-decision'])).toBe(
+      'post-match-cancellations',
+    );
+  });
+
+  it('validates date ranges with a route-selected fallback and first array value', () => {
+    expect(readBookingDateRangeFilter(undefined)).toBe('today');
+    expect(readBookingDateRangeFilter('', '30d')).toBe('30d');
+    expect(readBookingDateRangeFilter('not-a-range', '30d')).toBe('30d');
+    expect(readBookingDateRangeFilter(['7d', 'today'], '30d')).toBe('7d');
+    expect(readBookingDateRangeFilter(['not-a-range', '7d'], '30d')).toBe('30d');
+
+    for (const dateRange of ['all', 'today', 'yesterday', '7d', '30d', 'custom'] as const) {
+      expect(readBookingDateRangeFilter(dateRange, '30d')).toBe(dateRange);
+    }
   });
 
   it('normalizes evidence and gate filters with safe defaults', () => {

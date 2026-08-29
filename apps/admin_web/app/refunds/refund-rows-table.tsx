@@ -9,15 +9,56 @@ import { MoneyText } from '../../components/money-text';
 import { AdminSignal, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { RefundTableRow } from './refunds-table-section';
 
+const REFUND_HASH_ID = /^[A-Za-z0-9_-]+$/u;
+
+export function parseRefundHashTarget(hash: string) {
+  const prefix = hash.startsWith('#refund-review-')
+    ? '#refund-review-'
+    : hash.startsWith('#refund-')
+      ? '#refund-'
+      : null;
+  if (!prefix) return null;
+
+  try {
+    const id = decodeURIComponent(hash.slice(prefix.length));
+    return REFUND_HASH_ID.test(id)
+      ? { id, kind: prefix === '#refund-review-' ? 'checklist' as const : 'row' as const }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function focusRefundHashRow(target: HTMLElement) {
+  target.focus({ preventScroll: true });
+}
+
 export function RefundRowsTable({ rows }: { readonly rows: readonly RefundTableRow[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
-    const hashId = decodeURIComponent(window.location.hash.replace('#refund-review-', ''));
-    if (window.location.hash.startsWith('#refund-review-') && rows.some((row) => row.id === hashId)) {
-      const frame = window.requestAnimationFrame(() => setOpenId(hashId));
-      return () => window.cancelAnimationFrame(frame);
-    }
+    let frame = 0;
+    const applyHashTarget = () => {
+      const hashTarget = parseRefundHashTarget(window.location.hash);
+      if (!hashTarget || !rows.some((row) => row.id === hashTarget.id)) return;
+
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        if (hashTarget.kind === 'checklist') {
+          setOpenId(hashTarget.id);
+        } else {
+          const target = document.getElementById(`refund-${hashTarget.id}`);
+          if (target) focusRefundHashRow(target);
+        }
+      });
+    };
+
+    applyHashTarget();
+    window.addEventListener('hashchange', applyHashTarget);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('hashchange', applyHashTarget);
+    };
   }, [rows]);
 
   useEffect(() => {
@@ -43,7 +84,7 @@ export function RefundRowsTable({ rows }: { readonly rows: readonly RefundTableR
         const reviewId = `refund-review-${row.id}`;
         return (
           <Fragment key={row.id}>
-            <tr className="refund-case-row" id={`refund-${row.id}`}>
+            <tr className="refund-case-row" id={`refund-${row.id}`} tabIndex={-1}>
               <td>
                 <AdminSignal tone={row.opsTone}>{row.stageLabel}</AdminSignal>
                 <span className="refund-case-age">{row.ageLabel}</span>

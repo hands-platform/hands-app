@@ -1,6 +1,7 @@
 import type { AdminProvider } from '../../../lib/admin-api';
 import { shortId } from '../../../lib/admin-format';
 import type { StatusBadgeTone } from '../../../components/status-badge';
+import { buildPartnerDetailTargetHref } from './partner-detail-workspace-model';
 
 export type PartnerControlConfirmationAction = 'lift-control';
 
@@ -23,11 +24,11 @@ export function partnerControlActionConfirmHref(providerId: string, sanctionId: 
   const params = new URLSearchParams({
     controlAction: 'lift-control',
     sanctionId,
-    control: 'records',
-    section: 'control',
+    access: 'controls',
+    section: 'access',
   });
 
-  return `/partners/${encodeURIComponent(providerId)}?${params.toString()}#reports`;
+  return `/partners/${encodeURIComponent(providerId)}?${params.toString()}#partner-reports-controls`;
 }
 
 export function readPartnerControlConfirmationAction(value: string): PartnerControlConfirmationAction | null {
@@ -60,7 +61,7 @@ function buildLiftControlConfirmation(
 
   return {
     action: 'lift-control',
-    cancelHref: `/partners/${provider.id}?section=control&control=records#reports`,
+    cancelHref: buildPartnerDetailTargetHref(provider.id, 'account-controls'),
     confirmLabel: 'Lift control',
     description:
       disabledReason ||

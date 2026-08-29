@@ -124,6 +124,7 @@ function financeListFilterGroupLabel(id: string) {
   if (id === 'review') return 'Queue';
   if (id === 'review-owner') return 'Review owner';
   if (id === 'take') return 'Rows';
+  if (id === 'tax-status') return 'Tax status';
   if (id === 'evidence-source') return 'Evidence source';
   if (id === 'withdrawal-candidate') return 'Withdrawal candidates';
   return id;

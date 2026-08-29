@@ -59,6 +59,7 @@ import {
 import { PayoutBatchListSection } from './payout-batch-list-section';
 import type { PayoutBatchTableRow } from './payout-batch-table';
 import type { PayoutCommandSignal } from './payout-command-queue-section';
+import { PayoutRecordHashFocus } from './payout-record-hash-focus';
 import { PayoutWalletWithdrawalRequestSection } from './payout-wallet-withdrawal-request-section';
 import {
   PayoutMoneyFlowSection,
@@ -81,6 +82,8 @@ type PayoutsPageProps = {
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPayoutFilters(params);
+  const payoutBatchIdRequested = Boolean(readSearchParam(params.payoutBatchId));
+  const withdrawalIdRequested = Boolean(readSearchParam(params.withdrawalId));
   const isOperationsWorkspace = filters.workspace === 'operations';
   const isPolicyWorkspace = filters.workspace === 'policy';
   const isAuditWorkspace = filters.workspace === 'audit';
@@ -95,19 +98,15 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         : 'Payout batches';
   const currentPayoutViewHref = payoutCurrentViewHref(filters);
   const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
-  const confirmationBatchId = readSearchParam(params.payoutBatchId);
+  const confirmationBatchId = filters.payoutBatchId;
   const payoutRangeScope = dateRangeLabel(filters.range);
   const apiHrefs = buildPayoutOperationsApiHrefs(filters);
-  const confirmationPayoutBatchHref =
-    confirmationBatchId && confirmationBatchId !== filters.editPayoutBatchId
-      ? `/admin/payout-batches/${encodeURIComponent(confirmationBatchId)}`
-      : null;
   const [
     payoutBatchesResult,
     payoutSummaryResult,
     payoutOverviewSummaryResult,
     selectedPayoutBatchResult,
-    confirmationPayoutBatchResult,
+    selectedWithdrawalRequestResult,
     allEarnings,
     policySettings,
     walletWithdrawalRequestsResult,
@@ -117,14 +116,16 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     apiHrefs.payoutBatchesHref
       ? adminGetResult<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, [])
       : Promise.resolve({ data: [] as AdminPayoutBatch[], ok: true, status: 204 }),
-    adminGetResult<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
+    apiHrefs.payoutBatchSummaryHref
+      ? adminGetResult<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null)
+      : Promise.resolve({ data: null, ok: true, status: 204 }),
     adminGetResult<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchOverviewSummaryHref, null),
     apiHrefs.selectedPayoutBatchHref
       ? adminGetResult<AdminPayoutBatch | null>(apiHrefs.selectedPayoutBatchHref, null)
       : Promise.resolve({ data: null, ok: true, status: 204 }),
-    confirmationPayoutBatchHref
-      ? adminGetResult<AdminPayoutBatch | null>(confirmationPayoutBatchHref, null)
-      : Promise.resolve({ data: null, ok: true, status: 204 }),
+    apiHrefs.selectedWithdrawalRequestHref
+      ? adminGetResult<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.selectedWithdrawalRequestHref, [])
+      : Promise.resolve({ data: [] as AdminProviderWalletWithdrawalRequest[], ok: true, status: 204 }),
     apiHrefs.earningsHref
       ? adminGet<AdminEarning[]>(apiHrefs.earningsHref, [])
       : Promise.resolve([] as AdminEarning[]),
@@ -156,17 +157,38 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const summary = buildSummary(batches, payoutOverviewSummary);
   const payoutBatchRows = buildPayoutBatchTableRows(batches, filters);
   const payoutBatchTotal = payoutSummary?.total ?? payoutBatchRows.length;
-  const payoutBatchPagination = buildPayoutServerPagination(payoutBatchRows, filters, payoutBatchTotal);
+  const exactPayoutBatch = filters.payoutBatchId
+    ? allBatches.find((batch) => batch.id === filters.payoutBatchId) ??
+      (selectedPayoutBatchResult.data?.id === filters.payoutBatchId ? selectedPayoutBatchResult.data : null)
+    : null;
+  const exactPayoutBatchRow = exactPayoutBatch
+    ? buildPayoutBatchTableRows([exactPayoutBatch], filters)[0] ?? null
+    : null;
+  const payoutBatchPagination = filters.payoutBatchId
+    ? buildPayoutServerPagination(
+        exactPayoutBatchRow ? [exactPayoutBatchRow] : [],
+        { ...filters, page: 1 },
+        exactPayoutBatchRow ? 1 : 0,
+      )
+    : buildPayoutServerPagination(payoutBatchRows, filters, payoutBatchTotal);
   const selectedPayoutBatchRow =
     payoutBatchRows.find((row) => row.id === filters.editPayoutBatchId) ??
-    (selectedPayoutBatchResult.data
+    (selectedPayoutBatchResult.data?.id === filters.editPayoutBatchId
       ? buildPayoutBatchTableRows([selectedPayoutBatchResult.data], filters)[0]
       : null);
-  const withdrawalTotal = walletWithdrawalSummary?.filteredTotal ?? walletWithdrawalRequests.length;
+  const exactWithdrawalRequest = filters.withdrawalId
+    ? selectedWithdrawalRequestResult.data.find((request) => request.id === filters.withdrawalId) ?? null
+    : null;
+  const displayedWithdrawalRequests = filters.withdrawalId
+    ? exactWithdrawalRequest ? [exactWithdrawalRequest] : []
+    : walletWithdrawalRequests;
+  const withdrawalTotal = filters.withdrawalId
+    ? displayedWithdrawalRequests.length
+    : walletWithdrawalSummary?.filteredTotal ?? walletWithdrawalRequests.length;
   const withdrawalPagination = isRecordsWorkspace || isAuditWorkspace
     ? buildPayoutServerPagination(
-        walletWithdrawalRequests,
-        { ...filters, page: filters.withdrawalPage },
+        displayedWithdrawalRequests,
+        { ...filters, page: filters.withdrawalId ? 1 : filters.withdrawalPage },
         withdrawalTotal,
       )
     : null;
@@ -187,9 +209,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     : [];
   const confirmationBatch =
     allBatches.find((batch) => batch.id === confirmationBatchId) ??
-    [selectedPayoutBatchResult.data, confirmationPayoutBatchResult.data].find(
-      (batch) => batch?.id === confirmationBatchId,
-    ) ??
+    (selectedPayoutBatchResult.data?.id === confirmationBatchId ? selectedPayoutBatchResult.data : null) ??
     null;
   const confirmationBatches =
     confirmationBatch && !allBatches.some((batch) => batch.id === confirmationBatch.id)
@@ -271,6 +291,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       ]}
       title="Partner Payouts"
     >
+      <PayoutRecordHashFocus />
       {confirmation ? (
         <>
           {confirmation.action === 'reverse' ? (
@@ -393,6 +414,18 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           Payout summary could not be loaded. Reload before using this page for release or reconciliation.
         </AdminInlineNotice>
       ) : null}
+
+      {payoutBatchIdRequested && (!filters.payoutBatchId || !exactPayoutBatch) ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+          The requested payout batch is invalid, unavailable, or no longer accessible. No other batch was selected.
+        </AdminInlineNotice>
+      ) : null}
+
+      {withdrawalIdRequested && (!filters.withdrawalId || !exactWithdrawalRequest) ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+          The requested withdrawal is invalid, unavailable, or no longer accessible. No other withdrawal was selected.
+        </AdminInlineNotice>
+      ) : null}
       {!walletWithdrawalGlobalSummaryResult.ok ? (
         <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
           Withdrawal reconciliation summary could not be loaded. Global bank-match risk is unavailable.
@@ -510,29 +543,29 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         ) : null}
         {!isBankReconciliationScope ? (
           <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
-            <span className="payout-range-filter-group-label">Range</span>
+            <span className="payout-range-filter-group-label">Created date range</span>
           <AdminSegmentedControl
             activeValue={filters.range}
-            ariaLabel="Payout date range"
+            ariaLabel="Payout created date range"
             className="payout-range-filter-buttons"
             options={[
               {
-                href: payoutHref({ range: 'all', recon: filters.recon, view: filters.view }),
+                href: payoutCurrentViewHref(filters, { page: 1, range: 'all', withdrawalPage: 1 }),
                 label: 'All dates',
                 value: 'all',
               },
               {
-                href: payoutHref({ range: 'today', recon: filters.recon, view: filters.view }),
+                href: payoutCurrentViewHref(filters, { page: 1, range: 'today', withdrawalPage: 1 }),
                 label: 'Today',
                 value: 'today',
               },
               {
-                href: payoutHref({ range: '7d', recon: filters.recon, view: filters.view }),
+                href: payoutCurrentViewHref(filters, { page: 1, range: '7d', withdrawalPage: 1 }),
                 label: 'Last 7 days',
                 value: '7d',
               },
               {
-                href: payoutHref({ range: '30d', recon: filters.recon, view: filters.view }),
+                href: payoutCurrentViewHref(filters, { page: 1, range: '30d', withdrawalPage: 1 }),
                 label: 'Last 30 days',
                 value: '30d',
               },
@@ -545,10 +578,30 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           {filters.view !== 'batches' ? <input name="view" type="hidden" value={filters.view} /> : null}
           {filters.recon ? <input name="recon" type="hidden" value={filters.recon} /> : null}
           {filters.range !== 'all' ? <input name="range" type="hidden" value={filters.range} /> : null}
-          {filters.evidence ? <input name="evidence" type="hidden" value={filters.evidence} /> : null}
-          {filters.period ? <input name="period" type="hidden" value={filters.period} /> : null}
+          {filters.pageSize !== 20 ? <input name="pageSize" type="hidden" value={filters.pageSize} /> : null}
+          {(isOperationsWorkspace || filters.recon === 'payout-closeout-repair') && filters.evidence ? (
+            <input name="evidence" type="hidden" value={filters.evidence} />
+          ) : null}
+          {(isOperationsWorkspace || filters.recon === 'payout-closeout-repair') && filters.period ? (
+            <input name="period" type="hidden" value={filters.period} />
+          ) : null}
           {filters.returnTo ? <input name="returnTo" type="hidden" value={filters.returnTo} /> : null}
-          {filters.status ? <input name="status" type="hidden" value={filters.status} /> : null}
+          {(isOperationsWorkspace || filters.recon === 'payout-closeout-repair') && filters.status ? (
+            <input name="status" type="hidden" value={filters.status} />
+          ) : null}
+          {(isRecordsWorkspace || filters.recon === 'bank-unmatched') && filters.withdrawalStatus ? (
+            <input name="withdrawalStatus" type="hidden" value={filters.withdrawalStatus} />
+          ) : null}
+          {(isRecordsWorkspace || filters.recon === 'bank-unmatched') && filters.withdrawalReconciliation ? (
+            <input
+              name="withdrawalReconciliation"
+              type="hidden"
+              value={filters.withdrawalReconciliation}
+            />
+          ) : null}
+          {(isRecordsWorkspace || filters.recon === 'bank-unmatched') && filters.withdrawalPartnerId ? (
+            <input name="withdrawalPartnerId" type="hidden" value={filters.withdrawalPartnerId} />
+          ) : null}
           <AdminFormInput
             defaultValue={filters.q}
             label={
@@ -571,6 +624,20 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                 { label: 'In transfer', value: 'transfer' },
                 { label: 'Paid history', value: 'paid' },
                 { label: 'Cancelled archive', value: 'archived' },
+              ]}
+            />
+          ) : null}
+          {filters.recon === 'payout-closeout-repair' ? (
+            <AdminFormSelect
+              defaultValue={filters.evidence ?? ''}
+              label="Primary evidence gap"
+              name="evidence"
+              options={[
+                { label: 'All repair evidence', value: '' },
+                { label: 'Missing transfer reference', value: 'missing-transfer-ref' },
+                { label: 'Withholding incomplete', value: 'withholding-review' },
+                { label: 'Wallet ledger mismatch', value: 'wallet-ledger-mismatch' },
+                { label: 'Posted GL journal missing', value: 'posted-gl-journal-missing' },
               ]}
             />
           ) : null}
@@ -778,46 +845,24 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           activeStatus={filters.withdrawalStatus}
           pagination={withdrawalPagination}
           paginationHrefForPage={(withdrawalPage) =>
-            payoutHref({
+            payoutCurrentViewHref(filters, {
               focusWithdrawalRequests: true,
-              page: filters.page,
-              pageSize: filters.pageSize,
-              range: filters.range,
-              recon: filters.recon,
               withdrawalPage,
-              withdrawalPartnerId: filters.withdrawalPartnerId,
-              withdrawalReconciliation: filters.withdrawalReconciliation,
-              withdrawalStatus: filters.hasWithdrawalSavedView ? filters.withdrawalStatus : null,
-              view: filters.view,
             })
           }
           reconciliationHrefForView={(withdrawalReconciliation) =>
-            payoutHref({
+            payoutCurrentViewHref(filters, {
               focusWithdrawalRequests: true,
-              page: filters.page,
-              pageSize: filters.pageSize,
-              range: filters.range,
-              recon: filters.recon,
-              withdrawalPartnerId: filters.withdrawalPartnerId,
               withdrawalReconciliation,
               withdrawalStatus: 'PAID',
-              view: filters.view,
+              withdrawalPage: 1,
             })
           }
           range={filters.range}
-          requests={walletWithdrawalRequests}
+          requests={displayedWithdrawalRequests}
           reverseHrefForRequest={(requestId) =>
-            payoutHref({
-              pageSize: filters.pageSize,
-              q: filters.q,
-              range: filters.range,
-              recon: filters.recon,
+            payoutCurrentViewHref(filters, {
               reverseWithdrawalRequestId: requestId,
-              sort: filters.sort,
-              view: filters.view,
-              withdrawalPartnerId: filters.withdrawalPartnerId,
-              withdrawalReconciliation: filters.withdrawalReconciliation,
-              withdrawalStatus: filters.withdrawalStatus,
             })
           }
           savedView={
@@ -830,15 +875,11 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               : null
           }
           statusHrefForView={(withdrawalStatus) =>
-            payoutHref({
+            payoutCurrentViewHref(filters, {
               focusWithdrawalRequests: true,
-              page: filters.page,
-              pageSize: filters.pageSize,
-              range: filters.range,
-              recon: filters.recon,
-              withdrawalPartnerId: filters.withdrawalPartnerId,
+              withdrawalPage: 1,
+              withdrawalReconciliation: null,
               withdrawalStatus,
-              view: filters.view,
             })
           }
           summary={walletWithdrawalSummary}
@@ -916,25 +957,36 @@ function withdrawalSavedViewLabel(filters: ReturnType<typeof buildPayoutFilters>
   return `Withdrawal requests · ${adminWorkflowStatusLabel(filters.withdrawalStatus)}`;
 }
 
-function payoutCurrentViewHref(filters: ReturnType<typeof buildPayoutFilters>) {
+function payoutCurrentViewHref(
+  filters: ReturnType<typeof buildPayoutFilters>,
+  overrides: Partial<Parameters<typeof payoutHref>[0]> = {},
+) {
+  const isWithdrawalScope = filters.view === 'withdrawals' || filters.recon === 'bank-unmatched';
   return payoutHref({
-    editPayoutBatchId: filters.editPayoutBatchId,
-    evidence: filters.evidence,
-    page: filters.page,
     pageSize: filters.pageSize,
-    period: filters.period,
     q: filters.q,
-    queue: filters.queue,
     range: filters.range,
     recon: filters.recon,
-    returnTo: filters.returnTo,
     sort: filters.sort,
-    status: filters.status,
     view: filters.view,
-    withdrawalPage: filters.withdrawalPage,
-    withdrawalPartnerId: filters.withdrawalPartnerId,
-    withdrawalReconciliation: filters.withdrawalReconciliation,
-    withdrawalStatus: filters.hasWithdrawalSavedView ? filters.withdrawalStatus : null,
+    ...(isWithdrawalScope
+      ? {
+          reverseWithdrawalRequestId: filters.reverseWithdrawalRequestId,
+          withdrawalPage: filters.withdrawalPage,
+          withdrawalPartnerId: filters.withdrawalPartnerId,
+          withdrawalReconciliation: filters.withdrawalReconciliation,
+          withdrawalStatus: filters.withdrawalStatus,
+        }
+      : {
+          editPayoutBatchId: filters.editPayoutBatchId,
+          evidence: filters.evidence,
+          page: filters.page,
+          period: filters.period,
+          queue: filters.queue,
+          returnTo: filters.returnTo,
+          status: filters.status,
+        }),
+    ...overrides,
   });
 }
 

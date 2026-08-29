@@ -89,6 +89,29 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
     expect(classNamesIn(section)).toContain('pill pill-warn');
     expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
   });
+
+  it('hides zero and bank-only diagnostics while preserving the responsible Partner Controls link', () => {
+    const section = OperationsPolicyFinalPartnerChoiceSection({
+      matrix: {
+        blockingCount: 0,
+        sampledPartnerCount: 30,
+        cards: [],
+        impact: [
+          { helper: 'No action.', kind: 'record', label: 'Account follow-up', scope: 'No follow-up', value: '0' },
+          { helper: 'Withdrawal evidence.', kind: 'action', label: 'Bank review', scope: 'Sample review', value: '30' },
+          { helper: 'Refresh location.', kind: 'risk', label: 'Location block', scope: 'Needs action', value: '4' },
+        ],
+        summary: [],
+      },
+    });
+    const rendered = normalizedTextContent(section);
+
+    expect(rendered).toContain('Location block');
+    expect(rendered).not.toContain('Account follow-up');
+    expect(rendered).not.toContain('Bank review');
+    expect(rendered).toContain('Withdrawal bank evidence stays in Partner Controls');
+    expect(hrefsIn(section)).toContain('/partner-controls?details=controls&review=bank');
+  });
 });
 
 function classNamesIn(value: unknown): string[] {

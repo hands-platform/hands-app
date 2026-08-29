@@ -2,6 +2,7 @@ import {
   adminAuditDefaultWhere,
   adminAuditAreaWhere,
   adminAuditActorTypeWhere,
+  adminAuditCanonicalCreateData,
   adminAuditEventReadModel,
   adminAuditOutcomeWhere,
   adminAuditSeverityWhere,
@@ -22,6 +23,68 @@ describe('admin audit event registry', () => {
     ['tax_policy.updated', 'POLICY', 'NOTICE', 'SUCCEEDED'],
   ])('assigns one canonical primary classification to %s', (action, area, severity, outcome) => {
     expect(classifyAdminAuditAction(action)).toEqual({ area, severity, outcome });
+  });
+
+  it.each([
+    ['admin_operator.login.success', 'INFO', 'SUCCEEDED'],
+    ['admin_operator.login.failed', 'REVIEW', 'FAILED'],
+    ['admin_operator.login.failed_unknown_identity', 'REVIEW', 'FAILED'],
+    ['admin_operator.login.blocked', 'REVIEW', 'DENIED'],
+    ['admin_operator.rest.authentication_denied', 'REVIEW', 'DENIED'],
+    ['admin_operator.realtime.authentication_denied', 'REVIEW', 'DENIED'],
+    ['admin_operator.authorization.denied', 'REVIEW', 'DENIED'],
+    ['admin_operator.realtime.authorization_denied', 'REVIEW', 'DENIED'],
+    ['admin_operator.session.logout', 'NOTICE', 'SUCCEEDED'],
+    ['admin_operator.session.revoke', 'NOTICE', 'SUCCEEDED'],
+    ['admin_operator.reauthenticate.success', 'NOTICE', 'SUCCEEDED'],
+    ['admin_operator.reauthenticate.failed', 'REVIEW', 'FAILED'],
+    ['admin_operator.reauthenticate.blocked', 'REVIEW', 'DENIED'],
+    ['admin_operator.reauthenticate.lock', 'REVIEW', 'DENIED'],
+    ['admin_operator.mfa.enrollment_started', 'NOTICE', 'RECORDED'],
+    ['admin_operator.mfa.enrollment_verified', 'NOTICE', 'SUCCEEDED'],
+    ['admin_operator.mfa.enrollment_failed', 'REVIEW', 'FAILED'],
+    ['admin_operator.mfa.reset', 'NOTICE', 'RECORDED'],
+  ])('persists the explicit security contract for %s', (action, severity, outcome) => {
+    expect(classifyAdminAuditAction(action)).toEqual({ area: 'SECURITY', severity, outcome });
+    expect(adminAuditCanonicalCreateData({
+      action,
+      actorId: 'admin-1',
+      source: 'admin_api',
+      target: 'user:admin-1',
+    })).toMatchObject({
+      actorType: 'HUMAN',
+      area: 'SECURITY',
+      outcome,
+      severity,
+      source: 'admin_api',
+    });
+  });
+
+  it('uses the same canonical Security predicate for the saved view and direct area filter', () => {
+    expect(adminAuditSavedViewWhere('SECURITY_ACCESS')).toEqual({
+      AND: [adminAuditDefaultWhere('SECURITY_ACCESS'), adminAuditAreaWhere('SECURITY')],
+    });
+  });
+
+  it('builds canonical actorless service evidence without exposing a human actor', () => {
+    expect(adminAuditCanonicalCreateData({
+      action: 'admin_operator.login.failed_unknown_identity',
+      actorId: null,
+      actorType: 'SERVICE',
+      metadata: { identityHash: 'sha256-only' },
+      source: 'admin_auth',
+      target: 'admin_login_identity:sha256-only',
+    })).toMatchObject({
+      actorId: null,
+      actorKey: 'admin_auth',
+      actorType: 'SERVICE',
+      area: 'SECURITY',
+      objectId: 'sha256-only',
+      objectType: 'admin_login_identity',
+      outcome: 'FAILED',
+      severity: 'REVIEW',
+      source: 'admin_auth',
+    });
   });
 
   it('exposes unregistered event types as explicit unknown data quality', () => {
@@ -153,6 +216,41 @@ describe('admin audit event registry', () => {
 
     expect(event.payload).toBeNull();
     expect(event.changeSummary).toBe('Changed status');
+  });
+
+  it('summarizes safe investigation context without repeating the event label or exposing secrets', () => {
+    const event = adminAuditEventReadModel({
+      action: 'admin_operator.rest.authentication_denied',
+      createdAt: '2026-08-12T00:00:00.000Z',
+      id: 'security-event-1',
+      metadata: {
+        password: 'private-password',
+        reasonCode: 'SESSION_NOT_FOUND',
+        result: 'DENIED',
+        routeTemplate: '/admin/audit-logs',
+        token: 'private-token',
+      },
+      target: 'admin_web_session:session-1',
+    }, { includePayload: false });
+
+    expect(event.changeSummary).toBe(
+      'Reason SESSION_NOT_FOUND · Route /admin/audit-logs · Result DENIED',
+    );
+    expect(event.changeSummary).not.toContain('Admin Operator Rest Authentication Denied');
+    expect(event.changeSummary).not.toContain('private-password');
+    expect(event.changeSummary).not.toContain('private-token');
+  });
+
+  it('uses an explicit no-details fallback instead of duplicating the event label', () => {
+    const event = adminAuditEventReadModel({
+      action: 'payment.failed',
+      createdAt: '2026-08-12T00:00:00.000Z',
+      id: 'event-without-details',
+      target: 'payment:payment-1',
+    });
+
+    expect(event.eventLabel).toBe('Payment Failed');
+    expect(event.changeSummary).toBe('No change details recorded');
   });
 
   it('excludes legacy page telemetry from all operational views', () => {

@@ -5,6 +5,7 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
@@ -40,6 +41,7 @@ type CustomerWalletAdjustmentPanelProps = {
   readonly notice?: string;
   readonly openPeriods: readonly AdminManualWalletAdjustmentOpenPeriod[];
   readonly operatorLabel?: string;
+  readonly returnTo: string;
   readonly walletLedger: AdminCustomerWalletLedgerPage;
   readonly walletPage: number;
 };
@@ -56,11 +58,14 @@ export function CustomerWalletAdjustmentPanel({
   notice,
   openPeriods,
   operatorLabel = 'Current operator',
+  returnTo,
   walletLedger,
   walletPage,
 }: CustomerWalletAdjustmentPanelProps) {
   const noticeContent = customerWalletAdjustmentNotice(notice);
-  const returnTo = `/customers/${encodeURIComponent(customerId)}#customer-wallet-adjustment-request`;
+  const redirectTo = `/customers/${encodeURIComponent(customerId)}?${new URLSearchParams({
+    returnTo,
+  }).toString()}#customer-wallet-adjustment-request`;
   const showForm = canCreateRequest && openPeriods.length > 0 && (actionOpen || noticeContent?.tone === 'warn');
 
   return (
@@ -124,7 +129,7 @@ export function CustomerWalletAdjustmentPanel({
               customerLabel={customerLabel}
               operatorLabel={operatorLabel}
               openPeriods={openPeriods}
-              returnTo={returnTo}
+              returnTo={redirectTo}
             />
           </div>
         ) : actionOpen && openPeriods.length === 0 ? (
@@ -157,6 +162,7 @@ export function CustomerWalletAdjustmentPanel({
 
       <CustomerWalletLedgerTable
         customerId={customerId}
+        returnTo={returnTo}
         walletLedger={walletLedger}
         walletPage={walletPage}
       />
@@ -166,10 +172,12 @@ export function CustomerWalletAdjustmentPanel({
 
 function CustomerWalletLedgerTable({
   customerId,
+  returnTo,
   walletLedger,
   walletPage,
 }: {
   readonly customerId: string;
+  readonly returnTo: string;
   readonly walletLedger: AdminCustomerWalletLedgerPage;
   readonly walletPage: number;
 }) {
@@ -188,40 +196,52 @@ function CustomerWalletLedgerTable({
       resultTone="info"
       title="Wallet transaction history"
     >
-      <div className="admin-filter-chip-row admin-mb-12" aria-label="Customer wallet totals">
-        <StatusBadge tone="info">
-          Balance <MoneyText amount={summary.balance} currency={summary.currency} />
-        </StatusBadge>
-        <StatusBadge tone="success">
-          Money in <MoneyText amount={summary.moneyIn} currency={summary.currency} />
-        </StatusBadge>
-        <StatusBadge tone="warning">
-          Money out <MoneyText amount={summary.moneyOut} currency={summary.currency} />
-        </StatusBadge>
-      </div>
-      <AdminTableScroll>
-        <AdminDataTable
-          emptyMessage="No customer wallet transactions have been recorded."
-          headers={CUSTOMER_WALLET_LEDGER_HEADERS}
-          rowCount={rows.length}
-        >
-          {rows.map((row) => (
-            <CustomerWalletLedgerTableRow key={row.id} row={row} />
-          ))}
-        </AdminDataTable>
-      </AdminTableScroll>
-      <AdminTablePaginationFooter
-        activePage={activePage}
-        ariaLabel="Customer wallet transaction pages"
-        from={from}
-        hrefForPage={(page) =>
-          `/customers/${encodeURIComponent(customerId)}?walletPage=${page}#customer-wallet-history`
-        }
-        itemLabel="transactions"
-        to={to}
-        totalPages={totalPages}
-        totalRows={summary.totalCount}
-      />
+      {summary.totalCount === 0 ? (
+        <AdminEmptyState
+          className="customer-wallet-ledger-empty"
+          message="No customer wallet transactions have been recorded."
+          title={null}
+        />
+      ) : (
+        <>
+          <div className="admin-filter-chip-row admin-mb-12" aria-label="Customer wallet totals">
+            <StatusBadge tone="info">
+              Balance <MoneyText amount={summary.balance} currency={summary.currency} />
+            </StatusBadge>
+            <StatusBadge tone="success">
+              Money in <MoneyText amount={summary.moneyIn} currency={summary.currency} />
+            </StatusBadge>
+            <StatusBadge tone="warning">
+              Money out <MoneyText amount={summary.moneyOut} currency={summary.currency} />
+            </StatusBadge>
+          </div>
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage="No customer wallet transactions have been recorded."
+              headers={CUSTOMER_WALLET_LEDGER_HEADERS}
+              rowCount={rows.length}
+            >
+              {rows.map((row) => (
+                <CustomerWalletLedgerTableRow key={row.id} row={row} />
+              ))}
+            </AdminDataTable>
+          </AdminTableScroll>
+          <AdminTablePaginationFooter
+            activePage={activePage}
+            ariaLabel="Customer wallet transaction pages"
+            from={from}
+            hrefForPage={(page) => {
+              const params = new URLSearchParams({ returnTo });
+              if (page > 1) params.set('walletPage', String(page));
+              return `/customers/${encodeURIComponent(customerId)}?${params.toString()}#customer-wallet-history`;
+            }}
+            itemLabel="transactions"
+            to={to}
+            totalPages={totalPages}
+            totalRows={summary.totalCount}
+          />
+        </>
+      )}
     </AdminTablePanel>
   );
 }

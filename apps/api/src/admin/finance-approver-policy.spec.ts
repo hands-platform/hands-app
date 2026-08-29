@@ -6,7 +6,11 @@ import {
 
 import {
   evaluateFinanceApproverPolicy,
+  financeApproverLegacyAttestationState,
   financeApproverPolicySnapshot,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
   type FinanceApproverPolicyUser,
 } from './finance-approver-policy';
 
@@ -146,7 +150,102 @@ describe('verified Finance approver policy', () => {
       expect.arrayContaining([expect.objectContaining({ code: 'SESSION_MFA_UNVERIFIED' })]),
     );
   });
+
+  it('accepts only a structurally valid unexpired legacy attestation', () => {
+    const approved = legacyAttestationEvent({
+      createdAt: new Date(now.getTime() - 60_000),
+      effectiveAt: new Date(now.getTime() - 60_000),
+      expiresAt: new Date(now.getTime() + 60_000),
+      id: 'attestation-approved-1',
+    });
+
+    expect(financeApproverLegacyAttestationState([approved], 'legacy-owner-1', now)).toEqual({
+      approvalEventId: approved.id,
+      lifecycle: 'CURRENT',
+    });
+    expect(
+      financeApproverLegacyAttestationState(
+        [{ ...approved, metadata: { ...approved.metadata, expiresAt: undefined } } as never],
+        'legacy-owner-1',
+        now,
+      ),
+    ).toMatchObject({ lifecycle: 'EXPIRED' });
+  });
+
+  it('excludes revoked and superseded legacy attestations while accepting the latest valid approval', () => {
+    const oldApproval = legacyAttestationEvent({
+      createdAt: new Date(now.getTime() - 120_000),
+      effectiveAt: new Date(now.getTime() - 120_000),
+      expiresAt: new Date(now.getTime() + 120_000),
+      id: 'attestation-approved-old',
+    });
+    const revoked = legacyAttestationClosure(
+      FINANCE_APPROVER_LEGACY_ATTESTATION_REVOKE_ACTION,
+      oldApproval.id,
+      'attestation-revoked-1',
+      new Date(now.getTime() - 60_000),
+    );
+    expect(financeApproverLegacyAttestationState([revoked, oldApproval], 'legacy-owner-1', now)).toMatchObject({
+      lifecycle: 'REVOKED',
+    });
+
+    const newApproval = legacyAttestationEvent({
+      createdAt: new Date(now.getTime() - 30_000),
+      effectiveAt: new Date(now.getTime() - 30_000),
+      expiresAt: new Date(now.getTime() + 180_000),
+      id: 'attestation-approved-new',
+    });
+    const superseded = legacyAttestationClosure(
+      FINANCE_APPROVER_LEGACY_ATTESTATION_SUPERSEDE_ACTION,
+      oldApproval.id,
+      'attestation-superseded-1',
+      new Date(now.getTime() - 20_000),
+    );
+    expect(
+      financeApproverLegacyAttestationState([superseded, newApproval, oldApproval], 'legacy-owner-1', now),
+    ).toEqual({ approvalEventId: newApproval.id, lifecycle: 'CURRENT' });
+    expect(financeApproverLegacyAttestationState([superseded, oldApproval], 'legacy-owner-1', now)).toMatchObject({
+      lifecycle: 'SUPERSEDED',
+    });
+  });
 });
+
+function legacyAttestationEvent(input: {
+  createdAt: Date;
+  effectiveAt: Date;
+  expiresAt: Date;
+  id: string;
+}) {
+  return {
+    action: FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+    actorId: 'checker-1',
+    createdAt: input.createdAt,
+    id: input.id,
+    metadata: {
+      attestationRequestEventId: 'attestation-request-1',
+      attestorId: 'attestor-1',
+      effectiveAt: input.effectiveAt.toISOString(),
+      expiresAt: input.expiresAt.toISOString(),
+      independentCheckerId: 'checker-1',
+      permissionVersion: 1,
+      sourceReference: 'owner-register-2026-08',
+      targetSnapshot: { permission: { version: 1 } },
+      targetUserId: 'legacy-owner-1',
+    },
+    target: 'finance_approver_attestation:legacy-owner-1:request-1',
+  };
+}
+
+function legacyAttestationClosure(action: string, attestationEventId: string, id: string, createdAt: Date) {
+  return {
+    action,
+    actorId: 'checker-2',
+    createdAt,
+    id,
+    metadata: { attestationEventId },
+    target: 'finance_approver_attestation:legacy-owner-1:request-1',
+  };
+}
 
 function approver(override: Partial<FinanceApproverPolicyUser> = {}): FinanceApproverPolicyUser {
   return {

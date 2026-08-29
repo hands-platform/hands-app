@@ -112,7 +112,7 @@ export function PayoutBatchTable({
       rowCount={rows.length}
     >
       {rows.map((row) => (
-        <tr id={row.id} key={row.id}>
+        <tr id={`payout-batch-${row.id}`} key={row.id} tabIndex={-1}>
           <td>
             <AdminTextLink href={row.partnerChecksHref}>{row.partnerLabel}</AdminTextLink>
             <div className="muted">{row.partnerPhone}</div>
@@ -161,9 +161,15 @@ export function PayoutBatchTable({
           <td>
             <div className="actions">
               {row.reviewHref ? (
-                <StatusBadgeLink href={row.reviewHref} tone="info">
-                  {row.statusLabel === 'Paid' ? 'Repair transfer evidence' : 'Review transfer'}
-                </StatusBadgeLink>
+                <span id={`payout-transfer-trigger-${row.id}`}>
+                  <StatusBadgeLink
+                    ariaLabel={`${row.statusLabel === 'Paid' ? 'Repair transfer evidence' : 'Review transfer'} for ${row.partnerLabel} (${row.shortId})`}
+                    href={row.reviewHref}
+                    tone="info"
+                  >
+                    {row.statusLabel === 'Paid' ? 'Repair transfer evidence' : 'Review transfer'}
+                  </StatusBadgeLink>
+                </span>
               ) : null}
               <ActionMenu actions={row.actionMenuItems} label={`Payout actions for ${row.shortId}`} />
               {row.payoutHold ? (

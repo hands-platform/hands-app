@@ -25,6 +25,7 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
   it('renders recent partner timeline records with links and formatted dates', () => {
     const section = PartnerDetailRecentTimelineSection({
+      fullTimelineHref: '/partners/partner-1?section=access&access=diagnostics#app-activity',
       records: [
         {
           at: '2026-06-01T10:00:00.000Z',
@@ -50,7 +51,12 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(rendered).toContain('First-pick accepted');
     expect(rendered).toContain('Partner accepted a first-pick request.');
     expect(rendered).toContain('1 Jun 2026, 17:00');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#app-activity', '#booking-chat-records']));
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/partners/partner-1?section=access&access=diagnostics#app-activity',
+        '#booking-chat-records',
+      ]),
+    );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
@@ -66,6 +72,7 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
   it('renders an empty state when no records match the filters', () => {
     const section = PartnerDetailRecentTimelineSection({
+      fullTimelineHref: '/partners/partner-1?section=access&access=readiness',
       records: [],
     });
 
@@ -87,6 +94,7 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
   it('normalizes internal provider wording in timeline titles and details', () => {
     const section = PartnerDetailRecentTimelineSection({
+      fullTimelineHref: '/partners/partner-1?section=access&access=diagnostics#app-activity',
       records: [
         {
           at: '2026-06-01T10:00:00.000Z',
@@ -110,6 +118,7 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
   it('humanizes internal action slugs in timeline titles', () => {
     const section = PartnerDetailRecentTimelineSection({
+      fullTimelineHref: '/partners/partner-1?section=access&access=diagnostics#app-activity',
       records: [
         {
           at: '2026-06-01T10:00:00.000Z',
@@ -140,7 +149,10 @@ describe('PartnerDetailRecentTimelineSection', () => {
         type: 'EARNING',
       },
     ] as unknown as Parameters<typeof PartnerDetailRecentTimelineSection>[0]['records'];
-    const section = PartnerDetailRecentTimelineSection({ records: recordsWithDetailNode });
+    const section = PartnerDetailRecentTimelineSection({
+      fullTimelineHref: '/partners/partner-1?section=access&access=diagnostics#app-activity',
+      records: recordsWithDetailNode,
+    });
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Shared money atom marker');

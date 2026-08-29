@@ -23,6 +23,7 @@ describe('customer detail actions', () => {
     formData.set('targetUserId', ' user-1 ');
     formData.set('title', ' Wallet update ');
     formData.set('body', ' Your wallet balance was updated. ');
+    formData.set('returnTo', '/customers?view=all&page=2&q=mai');
 
     await sendCustomerPushMessage(formData);
 
@@ -36,7 +37,7 @@ describe('customer detail actions', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/customers/customer-1');
     expect(revalidatePath).toHaveBeenCalledWith('/notifications');
     expect(redirect).toHaveBeenCalledWith(
-      '/customers/customer-1?notificationNotice=sent#customer-app-notifications',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&notificationNotice=sent#customer-app-notifications',
     );
   });
 
@@ -47,11 +48,12 @@ describe('customer detail actions', () => {
     formData.set('targetUserId', 'user-1');
     formData.set('title', 'Notice');
     formData.set('body', 'Please reopen the app.');
+    formData.set('returnTo', '/customers?view=all&page=2&q=mai');
 
     await sendCustomerPushMessage(formData);
 
     expect(redirect).toHaveBeenCalledWith(
-      '/customers/customer-1?notificationNotice=failed#customer-app-notifications',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&notificationNotice=failed#customer-app-notifications',
     );
     expect(revalidatePath).not.toHaveBeenCalled();
   });
@@ -62,6 +64,7 @@ describe('customer detail actions', () => {
     formData.set('bookingId', 'booking-1');
     formData.set('preset', 'Customer contacted; waiting for reply.');
     formData.set('note', 'Called at 09:30.');
+    formData.set('returnTo', '/customers?view=all&page=2&q=mai');
 
     await addCustomerOpsNote(formData);
 
@@ -72,7 +75,7 @@ describe('customer detail actions', () => {
     });
     expect(revalidatePath).toHaveBeenCalledWith('/audit-log');
     expect(redirect).toHaveBeenCalledWith(
-      '/customers/customer-1?noteNotice=saved#customer-operator-notes',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&noteNotice=saved#customer-operator-notes',
     );
   });
 
@@ -81,11 +84,12 @@ describe('customer detail actions', () => {
     const formData = new FormData();
     formData.set('customerId', 'customer-1');
     formData.set('preset', 'Payment record checked.');
+    formData.set('returnTo', '/customers?view=all&page=2&q=mai');
 
     await addCustomerOpsNote(formData);
 
     expect(redirect).toHaveBeenCalledWith(
-      '/customers/customer-1?noteNotice=failed#customer-operator-notes',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&noteNotice=failed#customer-operator-notes',
     );
     expect(revalidatePath).not.toHaveBeenCalled();
   });
@@ -93,12 +97,30 @@ describe('customer detail actions', () => {
   it('shows a visible validation failure without calling the API for an empty note', async () => {
     const formData = new FormData();
     formData.set('customerId', 'customer-1');
+    formData.set('returnTo', '/customers?view=all&page=2&q=mai');
 
     await addCustomerOpsNote(formData);
 
     expect(adminPostOrThrow).not.toHaveBeenCalled();
     expect(redirect).toHaveBeenCalledWith(
-      '/customers/customer-1?action=note&noteNotice=failed#customer-operator-notes',
+      '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26page%3D2%26q%3Dmai&action=note&noteNotice=failed#customer-operator-notes',
+    );
+  });
+
+  it.each([
+    'https://evil.example/customers?view=all',
+    '//evil.example/customers?view=all',
+    '/customers\\?view=all',
+  ])('falls back to the customer directory for an unsafe returnTo: %s', async (returnTo) => {
+    const formData = new FormData();
+    formData.set('customerId', 'customer-1');
+    formData.set('note', 'Verified customer context.');
+    formData.set('returnTo', returnTo);
+
+    await addCustomerOpsNote(formData);
+
+    expect(redirect).toHaveBeenCalledWith(
+      '/customers/customer-1?returnTo=%2Fcustomers&noteNotice=saved#customer-operator-notes',
     );
   });
 });

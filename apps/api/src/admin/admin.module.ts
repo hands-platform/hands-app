@@ -16,6 +16,7 @@ import { TAX_POLICY_ACTIVATION_QUEUE_NAME } from '../provider-onboarding/tax-pol
 import { ReferralsModule } from '../referrals/referrals.module';
 import { SiteContentModule } from '../site-content/site-content.module';
 import { AdminBackgroundJobsService } from './admin-background-jobs.service';
+import { AdminNotificationDeliveryIncidentSyncService } from './admin-notification-delivery-incident-sync.service';
 import { AdminController } from './admin.controller';
 import { AdminOperatorCategoryGuard } from './admin-operator-category.guard';
 import { AdminService } from './admin.service';
@@ -48,6 +49,7 @@ import { BankStatementEscalationScheduler } from './bank-statement-escalation.sc
   controllers: [AdminController, AdminSystemController],
   providers: [
     AdminBackgroundJobsService,
+    AdminNotificationDeliveryIncidentSyncService,
     AdminOperatorCategoryGuard,
     AdminService,
     BankStatementEscalationProcessor,

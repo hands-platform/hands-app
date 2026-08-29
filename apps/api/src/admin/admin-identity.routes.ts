@@ -17,6 +17,7 @@ import {
   ManageAdminOperatorInvitationDto,
   ReauthenticateAdminOperatorDto,
   ResetAdminMfaDto,
+  RevokeFinanceApproverLegacyAttestationDto,
   SuspendAdminOperatorDto,
   UpdateAdminCalendarEventDto,
   UpdateAdminOperatorAccessDto,
@@ -62,6 +63,14 @@ export class AdminIdentityRoutes extends AdminNotificationRoutes {
   @Get('admin-operator-invitations')
   adminOperatorInvitations(@CurrentUser() user: AuthenticatedUser) {
     return this.admin.listAdminOperatorInvitations(user.id);
+  }
+
+  @Get('admin-operator-invitations/existing-user-candidate')
+  adminOperatorExistingUserCandidate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('email') email?: string,
+  ) {
+    return this.admin.findAdminOperatorInvitationCandidate(user.id, email);
   }
 
   @Post('admin-operator-invitations')
@@ -193,8 +202,9 @@ export class AdminIdentityRoutes extends AdminNotificationRoutes {
     @CurrentUser() user: AuthenticatedUser,
     @Query('targetUserId') targetUserId?: string,
     @Query('take') take?: string,
+    @Query('cursor') cursor?: string,
   ) {
-    return this.admin.listAdminOperatorHistory(user.id, targetUserId, take);
+    return this.admin.listAdminOperatorHistory(user.id, targetUserId, take, cursor);
   }
 
   @Post('users/:id/admin-web-sessions/:sessionId/revoke')
@@ -320,7 +330,7 @@ export class AdminIdentityRoutes extends AdminNotificationRoutes {
     @Param('id') requestId: string,
     @Body() body: DecideFinanceApproverAccessRequestDto,
   ) {
-    return this.admin.decideFinanceApproverAccessRequest(user.id, requestId, body);
+    return this.admin.decideFinanceApproverAccessRequest(user.id, requestId, body, user.sessionId);
   }
 
   @Post('finance-approver-governance/legacy-attestations')
@@ -337,7 +347,26 @@ export class AdminIdentityRoutes extends AdminNotificationRoutes {
     @Param('id') requestEventId: string,
     @Body() body: DecideFinanceApproverLegacyAttestationDto,
   ) {
-    return this.admin.decideFinanceApproverLegacyAttestation(user.id, requestEventId, body);
+    return this.admin.decideFinanceApproverLegacyAttestation(
+      user.id,
+      requestEventId,
+      body,
+      user.sessionId,
+    );
+  }
+
+  @Post('finance-approver-governance/legacy-attestations/:id/revoke')
+  revokeFinanceApproverLegacyAttestation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') attestationEventId: string,
+    @Body() body: RevokeFinanceApproverLegacyAttestationDto,
+  ) {
+    return this.admin.revokeFinanceApproverLegacyAttestation(
+      user.id,
+      attestationEventId,
+      body,
+      user.sessionId,
+    );
   }
 
   @Get('app-sessions')

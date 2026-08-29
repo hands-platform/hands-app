@@ -84,9 +84,60 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('Batch evidence');
     expect(markup).not.toContain('Settlement review mode');
     expect(markup).toContain('Settlement backlog');
+    expect(markup).toContain('Settlement comparison action at table end');
+    expect(markup.match(/id="settlement-comparison-selection-status"/gu) ?? []).toHaveLength(1);
+    expect(markup.match(/id="settlement-comparison-selection-status-footer"/gu) ?? []).toHaveLength(1);
     expect(hrefs).toContain('/admin/booking-settlement-gaps/summary?age=backlog&track=canonical');
     expect(hrefs).toContain('/admin/booking-settlement-gaps?age=backlog&skip=0&take=10&track=canonical');
     expect(hrefs.some((href) => href.startsWith('/admin/payments?'))).toBe(false);
+  });
+
+  it('scopes the shared drawer grid to explicit wrappers across all four callers', () => {
+    const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+    const cashDrawerSource = readFileSync(
+      new URL('../cash-settlements/cash-settlement-review-drawer.tsx', import.meta.url),
+      'utf8',
+    );
+    const payoutDrawerSource = readFileSync(
+      new URL('../payouts/payout-transfer-evidence-drawer.tsx', import.meta.url),
+      'utf8',
+    );
+    const serviceDrawerSource = readFileSync(
+      new URL('../services/service-catalog-drawer-shell.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(css).toMatch(
+      /\.service-menu-dialog > \.service-menu-dialog-shell \{[^}]*grid-template-rows: auto minmax\(0, 1fr\);/s,
+    );
+    expect(css).not.toContain('.service-menu-dialog > div {');
+    expect(repairDrawerSource).toContain(
+      'finance-closeout-settlement-repair-drawer-shell service-menu-dialog-shell',
+    );
+    expect(cashDrawerSource).toContain('cash-settlement-review-drawer-shell service-menu-dialog-shell');
+    expect(payoutDrawerSource).toContain('className="service-menu-dialog-shell"');
+    expect(serviceDrawerSource).toContain('className="service-menu-dialog-shell"');
+  });
+
+  it('reserves readable desktop widths for selection and repair actions inside table scroll regions', () => {
+    const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+    const backlogSource = readFileSync(
+      new URL('./finance-closeout-settlement-backlog-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(css).toMatch(/\.finance-closeout-settlement-table \{[^}]*min-width: 960px;/s);
+    expect(css).toMatch(
+      /\.finance-closeout-settlement-table :is\(th, td\):nth-child\(1\) \{[^}]*width: 9%;/s,
+    );
+    expect(css).toMatch(
+      /\.finance-closeout-settlement-table :is\(th, td\):nth-child\(6\) \{[^}]*width: 15%;/s,
+    );
+    expect(css).toMatch(/\.finance-closeout-comparison-table \{[^}]*min-width: 1080px;/s);
+    expect(css).toMatch(
+      /\.finance-closeout-comparison-table :is\(th, td\):nth-child\(5\) \{[^}]*width: 15%;/s,
+    );
+    expect(backlogSource).toContain('className="finance-closeout-settlement-action"');
   });
 
   it.each([401, 403, 429, 500, null])(
@@ -393,6 +444,8 @@ describe('FinanceCloseoutPage', () => {
         companyOutputVatPositive: 0,
         companyOutputVatZero: 66,
         eligible: 0,
+        expectedAvailable: 66,
+        expectedUnavailable: 0,
         journalBalanced: 66,
         paymentFeeDefaulted: 66,
         paymentFeePolicyMatched: 0,
@@ -427,6 +480,8 @@ describe('FinanceCloseoutPage', () => {
             companyOutputVatPositive: 0,
             companyOutputVatZero: 2,
             eligible: 0,
+            expectedAvailable: 2,
+            expectedUnavailable: 0,
             journalBalanced: 2,
             paymentFeeDefaulted: 2,
             paymentFeePolicyMatched: 0,
@@ -441,7 +496,9 @@ describe('FinanceCloseoutPage', () => {
           paymentMethod: 'MOMO',
           recordCount: 2,
           totals: {
+            availability: 'ALL_AVAILABLE',
             companyOutputVat: 0,
+            computedCount: 2,
             customerPaymentAmount: 800_000,
             journalReconciliationDelta: 0,
             journalTotalCredit: 800_000,
@@ -451,12 +508,15 @@ describe('FinanceCloseoutPage', () => {
             paymentProcessingFee: 0,
             platformFeeGross: 160_000,
             platformFeeNetRevenue: 160_000,
+            totalCount: 2,
           },
         },
       ],
       totalMatched: 66,
       totals: {
+        availability: 'ALL_AVAILABLE',
         companyOutputVat: 0,
+        computedCount: 66,
         customerPaymentAmount: 26_400_000,
         journalReconciliationDelta: 0,
         journalTotalCredit: 26_400_000,
@@ -466,6 +526,7 @@ describe('FinanceCloseoutPage', () => {
         paymentProcessingFee: 0,
         platformFeeGross: 5_280_000,
         platformFeeNetRevenue: 5_280_000,
+        totalCount: 66,
       },
       truncated: false,
     };
@@ -495,6 +556,8 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('Retained service VAT rule 66 · Policy zero 0 · Unexplained zero 0');
     expect(markup).toContain('2 fee default · 0 unexplained VAT · 0 delta');
     expect(markup).toContain('CASH: 34 · MOMO: 32');
+    expect(markup).toContain('Monthly close: Open or not linked: 66');
+    expect(markup).not.toContain('OPEN_OR_UNLINKED');
     expect(markup).toContain('Finance policy gate');
     expect(markup).toContain('Payment-fee policy evidence needs review: 66');
     expect(markup).toContain('Review required');
@@ -529,6 +592,7 @@ describe('FinanceCloseoutPage', () => {
         status: 'AVAILABLE',
         withholdingAmount: 35000,
       },
+      evidenceVersion: 'preview-version-1',
       monthlyClosingStatus: 'REVIEWED',
       monthlyPeriod: '2026-07',
       partner: { id: 'partner-1', displayName: 'Settlement Partner' },
@@ -676,6 +740,7 @@ describe('FinanceCloseoutPage', () => {
       serviceCount: 1,
       settlementSnapshotId: null,
       sourceVersion: 'preview-version-2',
+      evidenceVersion: 'preview-version-2',
       technicalEligibility: true,
     };
     const approver = {
@@ -712,8 +777,8 @@ describe('FinanceCloseoutPage', () => {
     expect(financeCloseoutComparisonSelectionLabel(count)).toBe(label);
   });
 
-  it('declares an operator-specific page title', () => {
-    expect(metadata).toEqual({ title: 'Settlement Repair · HANDS Admin' });
+  it('lets the root metadata template append the Admin title exactly once', () => {
+    expect(metadata).toEqual({ title: 'Settlement Repair' });
   });
 
   it('closes the repair drawer without a document navigation so focus can return to its trigger', () => {
@@ -743,6 +808,7 @@ function settlementPreviewFixture(bookingId: string): AdminBookingSettlementGapR
       status: 'AVAILABLE',
       withholdingAmount: 35000,
     },
+    evidenceVersion: `${bookingId}-version`,
     monthlyClosingStatus: 'REVIEWED',
     monthlyPeriod: '2026-07',
     partner: { id: 'partner-1', displayName: 'Settlement Partner' },

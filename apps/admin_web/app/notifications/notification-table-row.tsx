@@ -22,9 +22,11 @@ export type NotificationTableRow = {
     readonly historical: boolean;
     readonly href: string;
     readonly lastOccurredAt: string;
+    readonly manageHref: string;
     readonly notificationCount: number;
     readonly ownerLabel: string;
     readonly provider: string;
+    readonly sourceKey: string;
     readonly retryCondition: string;
     readonly technicalAction: string;
     readonly windowMinutes: number;
@@ -149,7 +151,10 @@ function NotificationIncidentTableRow({
         ) : null}
       </td>
       <td data-label="Open affected records">
-        <StatusBadgeLink href={incident.href} tone="warning">Open this group</StatusBadgeLink>
+        <div className="notification-row-actions">
+          <StatusBadgeLink href={incident.href} tone="warning">Open this group</StatusBadgeLink>
+          <StatusBadgeLink href={incident.manageHref} tone="info">Manage lifecycle</StatusBadgeLink>
+        </div>
       </td>
     </tr>
   );

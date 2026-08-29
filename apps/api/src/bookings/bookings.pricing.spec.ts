@@ -12,6 +12,10 @@ describe('booking pricing helpers', () => {
     expect(calculateCouponDiscount({ type: 'percent', value: '150' }, 300000)).toBe(300000);
   });
 
+  it('caps a percentage coupon at its per-booking maximum discount', () => {
+    expect(calculateCouponDiscount({ type: 'percent', value: 50 }, 500000, 100000)).toBe(100000);
+  });
+
   it('ignores unsupported or malformed coupon discounts', () => {
     expect(calculateCouponDiscount(null, 300000)).toBe(0);
     expect(calculateCouponDiscount({ type: 'fixed', value: 10000 }, 300000)).toBe(0);

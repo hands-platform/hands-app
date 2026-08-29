@@ -10,6 +10,10 @@ import { Job } from 'bullmq';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import {
+  COUPON_RELEASE_REASON,
+  releaseCouponRedemptionForBooking,
+} from '../bookings/bookings.coupon-redemption';
 import { BOOKING_TIMEOUT_QUEUE_NAME, type BookingTimeoutJob } from './booking-timeout.queue';
 import { MatchingGateway } from './matching.gateway';
 
@@ -46,7 +50,8 @@ export class BookingTimeoutProcessor extends WorkerHost {
     if (booking.status === BookingStatus.OPEN_MATCHING) {
       const expiredAt = new Date();
       try {
-        expired = await this.prisma.booking.update({
+        expired = await this.prisma.$transaction(async (tx) => {
+          const updated = await tx.booking.update({
           where: {
             id: booking.id,
             status: BookingStatus.OPEN_MATCHING,
@@ -84,6 +89,13 @@ export class BookingTimeoutProcessor extends WorkerHost {
           },
           include: { payment: true },
         });
+          await releaseCouponRedemptionForBooking(tx, {
+            bookingId: booking.id,
+            occurredAt: expiredAt,
+            reason: COUPON_RELEASE_REASON.MATCHING_EXPIRED,
+          });
+          return updated;
+        });
       } catch (error) {
         if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2025') {
           throw error;
@@ -98,6 +110,21 @@ export class BookingTimeoutProcessor extends WorkerHost {
         ))
     ) {
       return { skipped: true };
+    }
+
+    if (booking.status !== BookingStatus.OPEN_MATCHING) {
+      await this.prisma.$transaction((tx) =>
+        releaseCouponRedemptionForBooking(tx, {
+          bookingId: booking.id,
+          occurredAt: booking.closedAt ?? new Date(),
+          reason:
+            booking.closedReason === 'customer_cancelled'
+              ? COUPON_RELEASE_REASON.CUSTOMER_CANCELLED
+              : booking.closedReason === 'preferred_provider_rejected'
+                ? COUPON_RELEASE_REASON.PREFERRED_PARTNER_REJECTED
+                : COUPON_RELEASE_REASON.MATCHING_EXPIRED,
+        }),
+      );
     }
 
     const paymentClosure = expired.payment
@@ -154,9 +181,7 @@ export class BookingTimeoutProcessor extends WorkerHost {
           type: BookingOpsTaskType.PAYMENT_REVIEWED,
         },
         data: {
-          status: paymentClosure?.refundRequested
-            ? BookingOpsTaskStatus.PENDING
-            : BookingOpsTaskStatus.DONE,
+          status: paymentClosure?.refundRequested ? BookingOpsTaskStatus.PENDING : BookingOpsTaskStatus.DONE,
           note: paymentClosure?.refundRequested
             ? 'Captured payment refund is pending finance review.'
             : 'Payment closure completed after booking cancellation.',
@@ -173,9 +198,7 @@ export class BookingTimeoutProcessor extends WorkerHost {
           type: BookingOpsTaskType.PAYMENT_REVIEWED,
         },
         data: {
-          status: paymentClosure?.refundRequested
-            ? BookingOpsTaskStatus.PENDING
-            : BookingOpsTaskStatus.DONE,
+          status: paymentClosure?.refundRequested ? BookingOpsTaskStatus.PENDING : BookingOpsTaskStatus.DONE,
           note: paymentClosure?.refundRequested
             ? 'Captured payment refund is pending finance review.'
             : 'Payment closure completed after matching expiration.',

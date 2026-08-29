@@ -22,10 +22,11 @@ export function PaymentClearingSelectionControls({
   visibleCount,
 }: PaymentClearingSelectionControlsProps) {
   const [selectedCount, setSelectedCount] = useState(0);
-  const [canSubmit, setCanSubmit] = useState(false);
+  const [assigneeAdminId, setAssigneeAdminId] = useState('');
   const [ownerOptions, setOwnerOptions] = useState<readonly { readonly label: string; readonly value: string }[] | null>(null);
   const [ownerOptionsError, setOwnerOptionsError] = useState(false);
   const [ownerOptionsLoading, setOwnerOptionsLoading] = useState(false);
+  const [reason, setReason] = useState('');
   const loadOwnerOptionsRef = useRef(loadOwnerOptions);
   const hasSelection = selectedCount > 0;
 
@@ -35,11 +36,12 @@ export function PaymentClearingSelectionControls({
     const update = (resetOwnerState = false) => {
       const count = form.querySelectorAll<HTMLInputElement>('input[name="clearingEntryIds"]:checked').length;
       setSelectedCount(count);
-      setCanSubmit(count > 0 && form.checkValidity());
       if (resetOwnerState && count === 0) {
+        setAssigneeAdminId('');
         setOwnerOptions(null);
         setOwnerOptionsError(false);
         setOwnerOptionsLoading(false);
+        setReason('');
       }
     };
     const handleSelectionChange = () => update(true);
@@ -81,6 +83,13 @@ export function PaymentClearingSelectionControls({
     };
   }, [hasSelection, ownerOptions]);
 
+  const canSubmit = paymentClearingBulkAssignmentReady(
+    selectedCount,
+    ownerOptions,
+    assigneeAdminId,
+    reason,
+  );
+
   function selectVisible() {
     const form = document.querySelector<HTMLFormElement>('[data-payment-clearing-selection]');
     if (!form) return;
@@ -115,12 +124,13 @@ export function PaymentClearingSelectionControls({
         ) : ownerOptions && ownerOptions.length > 1 ? (
           <AdminFormGridFields className="compact-form payment-clearing-bulk-controls">
             <AdminFormSelect
-              defaultValue=""
               label="Assign selected to"
               labelVisibility="visible"
               name="assigneeAdminId"
+              onChange={(event) => setAssigneeAdminId(event.currentTarget.value)}
               options={ownerOptions}
               required
+              value={assigneeAdminId}
             />
             <AdminFormInput
               label="Assignment reason"
@@ -128,8 +138,10 @@ export function PaymentClearingSelectionControls({
               maxLength={500}
               minLength={12}
               name="reason"
+              onChange={(event) => setReason(event.currentTarget.value)}
               placeholder="Why should this operator own the selected clearing reviews?"
               required
+              value={reason}
             />
             <AdminFormActionRow>
               <AdminFormControlButton
@@ -153,4 +165,16 @@ export function PaymentClearingSelectionControls({
       ) : null}
     </div>
   );
+}
+
+export function paymentClearingBulkAssignmentReady(
+  selectedCount: number,
+  ownerOptions: readonly { readonly value: string }[] | null,
+  assigneeAdminId: string,
+  reason: string,
+) {
+  return selectedCount > 0 &&
+    Boolean(assigneeAdminId) &&
+    Boolean(ownerOptions?.some((option) => option.value === assigneeAdminId)) &&
+    reason.trim().length >= 12;
 }

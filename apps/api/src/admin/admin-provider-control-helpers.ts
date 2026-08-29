@@ -123,6 +123,16 @@ export function normalizeProviderReportUpdateInput(input: ProviderReportUpdateIn
 export function normalizeProviderSanctionCreateInput(input: ProviderSanctionCreateInput) {
   const reason = normalizeNullable(input.reason);
   if (!reason) throw new BadRequestException('Sanction reason is required');
+  if (reason.length < PROVIDER_SANCTION_REASON_MIN_LENGTH) {
+    throw new BadRequestException(
+      `Sanction reason must be at least ${PROVIDER_SANCTION_REASON_MIN_LENGTH} characters`,
+    );
+  }
+  if (reason.length > PROVIDER_SANCTION_REASON_MAX_LENGTH) {
+    throw new BadRequestException(
+      `Sanction reason must be at most ${PROVIDER_SANCTION_REASON_MAX_LENGTH} characters`,
+    );
+  }
   assertProviderSanctionType(input.type);
   return {
     type: input.type ?? ProviderSanctionType.WARNING,
@@ -192,8 +202,12 @@ export function providerAccountBlockAuditMetadata(providerProfileId: string, rea
   return { providerProfileId, reason };
 }
 
-export function providerAccountUnblockAuditMetadata(providerProfileId: string) {
-  return { providerProfileId };
+export function providerAccountUnblockAuditMetadata(
+  providerProfileId: string,
+  reason: string,
+  liftedSanctionIds: readonly string[],
+) {
+  return { providerProfileId, reason, liftedSanctionIds: [...liftedSanctionIds] };
 }
 
 export function providerAccountBlockedNotification(providerProfileId: string, reason: string) {

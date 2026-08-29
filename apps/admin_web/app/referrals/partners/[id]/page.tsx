@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { canViewAdminDeveloperSystem } from '../../../../components/admin-developer-system-section';
 import { type AdminPartnerReferralParent, adminGet } from '../../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../../../lib/admin-operator-access-model';
 import { ReferralParentDetailPage } from '../../referral-detail';
 
 type PageProps = {
@@ -21,6 +22,7 @@ export default async function PartnerReferralDetailPage({ params }: PageProps) {
   return (
     <ReferralParentDetailPage
       audience="partner"
+      canReviewTax={hasAdminOperatorCategory(operatorAccess, 'FINANCE_TAX')}
       canViewDeveloperSetup={canViewAdminDeveloperSystem(operatorAccess)}
       row={row}
     />

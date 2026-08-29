@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, type MouseEvent, type ReactNode } from 'react';
+import { useRef, type MouseEvent, type ReactNode, type RefObject } from 'react';
 
 import { AdminDrawerBackdropButton } from './admin-drawer-backdrop-button';
 import { AdminDialogCard } from './admin-surface';
@@ -13,6 +13,8 @@ type ConfirmDialogFocusBoundaryProps = {
   readonly children: ReactNode;
   readonly id: string;
   readonly loading?: boolean;
+  readonly onCancel?: () => void;
+  readonly returnFocusRef?: RefObject<HTMLElement | null>;
 };
 
 export function ConfirmDialogFocusBoundary({
@@ -22,19 +24,30 @@ export function ConfirmDialogFocusBoundary({
   children,
   id,
   loading,
+  onCancel,
+  returnFocusRef,
 }: ConfirmDialogFocusBoundaryProps) {
   const dialogRef = useRef<HTMLElement>(null);
 
   function closeDialog() {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
     const returnFocus = window.sessionStorage.getItem('hands-admin-confirmation-return-focus');
     if (returnFocus && window.history.length > 1) {
       window.history.back();
       return;
     }
+    const cancelUrl = new URL(cancelHref, window.location.href);
+    window.sessionStorage.setItem(
+      'hands-admin-confirmation-return-focus',
+      JSON.stringify({ pathname: cancelUrl.pathname }),
+    );
     window.location.assign(cancelHref);
   }
 
-  useAdminModalFocus(dialogRef, closeDialog);
+  useAdminModalFocus(dialogRef, closeDialog, returnFocusRef);
 
   function handleCancelClick(event: MouseEvent<HTMLElement>) {
     if (!(event.target instanceof Element)) return;

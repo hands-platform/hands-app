@@ -35,15 +35,19 @@ try {
     items: plan.items.map(({ page: _page, ...item }) => item),
   };
   const outputPath = argument('output');
-  if (outputPath) await writeFile(resolve(root, outputPath), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  console.log(JSON.stringify(report, null, 2));
-  if (!process.argv.includes('--apply')) process.exitCode = 0;
-  else {
+  if (!process.argv.includes('--apply')) {
+    if (outputPath) await writeFile(resolve(root, outputPath), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    console.log(JSON.stringify(report, null, 2));
+    process.exitCode = 0;
+  } else {
     assertApplyAllowed(plan.checksum, env);
     if (plan.summary.BLOCKED || plan.summary.CONFLICT) {
       throw new Error('Apply is blocked while BLOCKED or CONFLICT rows exist. Resolve them manually first.');
     }
     await applyPlan(plan.items);
+    report.applyExecuted = true;
+    if (outputPath) await writeFile(resolve(root, outputPath), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    console.log(JSON.stringify(report, null, 2));
     console.log(`Applied route plan ${plan.checksum}. Re-run dry-run and require zero CREATE/BACKFILL_REVISION/MOVE_ROUTE rows.`);
   }
 } finally {

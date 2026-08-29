@@ -33,6 +33,7 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 - Partner payouts are weekly, monthly, or admin-selected batch cycles.
 - Admin is an Operations Command Center, not a CRM.
 - Internal code may keep `Provider` names for compatibility, but visible product copy should use `Partner`.
+- Vietnam business time uses `Asia/Ho_Chi_Minh` (`ICT`, `UTC+7`) as its canonical IANA timezone in product behavior, API contracts, tests, operations evidence, and documentation; other region identifiers are not interchangeable even when their current UTC offset matches.
 
 ## Matching Model
 

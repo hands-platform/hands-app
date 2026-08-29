@@ -1,4 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { vi } from 'vitest';
 
 import type { AdminCashSettlementDetail } from '../../lib/admin-api';
@@ -33,6 +35,50 @@ describe('CashSettlementReviewDrawer', () => {
     expect(markup).toContain('Ledger ledger-1');
     expect(markup).toContain('Journal journal-1');
     expect(markup).not.toContain('name="reasonCode"');
+    expect(markup).toContain('class="cash-settlement-review-drawer-shell service-menu-dialog-shell"');
+    expect(markup).toContain(
+      'cash-settlement-review-drawer-shell service-menu-dialog-shell"><div class="calendar-drawer-header"',
+    );
+  });
+
+  it('keeps the Cash drawer close control square without changing the shared drawer contract', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-review-drawer.tsx'),
+      'utf8',
+    );
+    const ruleStart = css.indexOf('.cash-settlement-review-drawer .calendar-icon-button');
+    const rule = css.slice(ruleStart, css.indexOf('}', ruleStart));
+
+    expect(rule).toContain('height: 42px');
+    expect(rule).toContain('min-height: 42px');
+    expect(rule).toContain('width: 42px');
+    expect(rule).toContain('padding: 0');
+    expect(source).toContain("document.body.style.overflow = 'hidden'");
+    expect(source).toContain('document.body.style.overflow = previousOverflow');
+    expect(source).toContain("document.documentElement.style.overflow = 'hidden'");
+    expect(source).toContain('document.documentElement.style.overflow = previousRootOverflow');
+  });
+
+  it('uses a fail-closed header when the selected earning cannot be verified', () => {
+    const markup = renderToStaticMarkup(
+      <CashSettlementReviewDrawer
+        canAllocate
+        closeHref="/cash-settlements"
+        detail={null}
+        detailLoaded={false}
+        returnTo="/cash-settlements?review=missing"
+      />,
+    );
+
+    expect(markup).toContain('Review unavailable');
+    expect(markup).toContain('Cash settlement evidence');
+    expect(markup).toContain('The selected receivable could not be verified.');
+    expect(markup).toContain('Debt evidence unavailable');
+    expect(markup).toContain('No financial action is available.');
+    expect(markup).not.toContain('Approved evidence allocation');
+    expect(markup).not.toContain('One open cash fee receivable');
+    expect(markup).not.toContain('<form');
   });
 });
 

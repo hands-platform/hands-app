@@ -4,6 +4,7 @@ import {
   AccountingJournalSourceType,
   BankReconciliationStatus,
   BookingStatus,
+  CompanyBankTransactionType,
   EarningStatus,
   MonthlyTaxClosingStatus,
   PartnerTaxLineKind,
@@ -444,12 +445,9 @@ describe('EarningsService payout batches', () => {
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
           AND: expect.arrayContaining([
             expect.objectContaining({
-              NOT: expect.objectContaining({
-                OR: expect.arrayContaining([
-                  expect.objectContaining({ id: expect.objectContaining({ startsWith: 'smoke' }) }),
-                ]),
-              }),
-              earnings: expect.objectContaining({ every: expect.any(Object) }),
+              earnings: {
+                every: { booking: { is: adminBookingProductionDataWhere() } },
+              },
             }),
             expect.objectContaining({
               status: { in: [PayoutBatchStatus.DRAFT, PayoutBatchStatus.FAILED] },
@@ -460,6 +458,38 @@ describe('EarningsService payout batches', () => {
         take: 100,
       }),
     );
+    const payoutProductionScope = prisma.providerPayoutBatch.findMany.mock.calls[0]?.[0]?.where?.AND?.find(
+      (entry: { earnings?: unknown }) => Boolean(entry.earnings),
+    );
+    expect(payoutProductionScope).not.toHaveProperty('NOT');
+  });
+
+  it('uses the Asia/Ho_Chi_Minh createdAt day boundary for payout range today', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-26T03:30:00.000Z'));
+    try {
+      const prisma = {
+        providerPayoutBatch: {
+          findMany: vi.fn().mockResolvedValue([]),
+        },
+      };
+      const service = new EarningsService(prisma as never);
+
+      await service.listPayoutBatchesForAdmin({ range: 'today' });
+
+      expect(prisma.providerPayoutBatch.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            createdAt: {
+              gte: new Date('2026-08-25T17:00:00.000Z'),
+              lte: new Date('2026-08-26T16:59:59.999Z'),
+            },
+          }),
+        }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('separates open payout work from paid history at the database predicate', async () => {
@@ -506,27 +536,35 @@ describe('EarningsService payout batches', () => {
       withholdingLogs: [],
     }));
     const prisma = {
-      accountingJournalBatch: {
-        findMany: vi.fn().mockResolvedValue(
-          candidates.map((batch) => ({
-            sourceId: batch.id,
-            sourceKey: `accounting-journal:provider-payout-batch:${batch.id}:paid`,
-            status: AccountingJournalBatchStatus.POSTED,
-            totalCredit: batch.totalNetAmount,
-            totalDebit: batch.totalNetAmount,
-          })),
-        ),
-      },
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          id: 'payout-1',
+          missingTransferRef: false,
+          postedGlJournalMissing: false,
+          walletLedgerMismatch: false,
+          withholdingIncomplete: false,
+        },
+        {
+          id: 'payout-2',
+          missingTransferRef: false,
+          postedGlJournalMissing: false,
+          walletLedgerMismatch: true,
+          withholdingIncomplete: false,
+        },
+      ]),
       providerPayoutBatch: {
         findMany: vi.fn().mockResolvedValueOnce(candidates).mockResolvedValueOnce([]),
-      },
-      providerWalletLedgerEntry: {
-        findMany: vi.fn().mockResolvedValue([{ amount: -75_000, payoutBatchId: 'payout-1' }]),
       },
     };
     const service = new EarningsService(prisma as never);
 
     await expect(service.listPayoutBatchesForAdmin({ queue: 'repair', range: '7d' })).resolves.toEqual([]);
+
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ select: { id: true } }),
+    );
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
 
     expect(prisma.providerPayoutBatch.findMany).toHaveBeenNthCalledWith(
       2,
@@ -536,6 +574,68 @@ describe('EarningsService payout batches', () => {
         }),
       }),
     );
+  });
+
+  it.each([
+    ['missing-transfer-ref', 'missingTransferRef'],
+    ['withholding-review', 'withholdingIncomplete'],
+    ['wallet-ledger-mismatch', 'walletLedgerMismatch'],
+    ['posted-gl-journal-missing', 'postedGlJournalMissing'],
+  ] as const)('filters the repair queue by %s evidence', async (evidence, flag) => {
+    const evidenceRow = {
+      id: 'payout-matching-evidence',
+      missingTransferRef: false,
+      postedGlJournalMissing: false,
+      walletLedgerMismatch: false,
+      withholdingIncomplete: false,
+      [flag]: true,
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        evidenceRow,
+        {
+          id: 'payout-other-evidence',
+          missingTransferRef: false,
+          postedGlJournalMissing: false,
+          walletLedgerMismatch: false,
+          withholdingIncomplete: false,
+        },
+      ]),
+      providerPayoutBatch: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([{ id: 'payout-matching-evidence' }, { id: 'payout-other-evidence' }])
+          .mockResolvedValueOnce([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listPayoutBatchesForAdmin({ evidence, queue: 'repair', range: 'all' }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ id: { in: ['payout-matching-evidence'] } }),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('rejects unsupported repair evidence before reading payout rows', async () => {
+    const prisma = {
+      providerPayoutBatch: { findMany: vi.fn() },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listPayoutBatchesForAdmin({ evidence: 'not-a-real-gap', queue: 'repair' }),
+    ).rejects.toThrow('Unsupported payout repair evidence filter: not-a-real-gap');
+    expect(prisma.providerPayoutBatch.findMany).not.toHaveBeenCalled();
   });
 
   it('lists the exact monthly paid payout bank-outflow candidates with remaining evidence amounts', async () => {
@@ -641,6 +741,22 @@ describe('EarningsService payout batches', () => {
 
   it('summarizes admin payout batches with aggregate queries instead of loading full batches', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          id: 'payout-10',
+          missingTransferRef: false,
+          postedGlJournalMissing: true,
+          walletLedgerMismatch: false,
+          withholdingIncomplete: false,
+        },
+        {
+          id: 'payout-11',
+          missingTransferRef: false,
+          postedGlJournalMissing: false,
+          walletLedgerMismatch: true,
+          withholdingIncomplete: false,
+        },
+      ]),
       providerPayoutBatch: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 900000 } }),
         count: vi
@@ -1561,6 +1677,8 @@ describe('EarningsService payout batches', () => {
       withholdingAmount: 42_000,
       netAmount: 388_000,
       currency: 'VND',
+      payoutBatchId: null,
+      status: EarningStatus.AVAILABLE,
     };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
@@ -1623,12 +1741,17 @@ describe('EarningsService payout batches', () => {
         upsert: vi.fn().mockResolvedValue(earning),
       },
       providerPlatformFeeLog: {
-        findFirst: vi.fn().mockResolvedValue(null),
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValue({ id: 'platform-log-1' }),
         create: vi.fn().mockResolvedValue({ id: 'platform-log-1' }),
+        update: vi.fn().mockResolvedValue({ id: 'platform-log-1' }),
       },
       providerTaxLog: {
-        findFirst: vi.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValueOnce(null).mockResolvedValue({ id: 'tax-log-1' }),
         create: vi.fn().mockResolvedValue({ id: 'tax-log-1' }),
+        update: vi.fn().mockResolvedValue({ id: 'tax-log-1' }),
       },
       providerWalletLedgerEntry: {
         upsert: vi.fn().mockResolvedValue({ id: 'wallet-ledger-1' }),
@@ -1697,11 +1820,13 @@ describe('EarningsService payout batches', () => {
       preserveExistingLifecycle: true,
     });
 
-    expect(tx.providerEarning.upsert).toHaveBeenCalledTimes(1);
+    expect(tx.providerEarning.upsert).toHaveBeenCalledTimes(2);
     expect(tx.providerPlatformFeeLog.create).toHaveBeenCalledTimes(1);
+    expect(tx.providerPlatformFeeLog.update).toHaveBeenCalledTimes(1);
     expect(tx.providerTaxLog.create).toHaveBeenCalledTimes(1);
-    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledTimes(1);
-    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledTimes(1);
+    expect(tx.providerTaxLog.update).toHaveBeenCalledTimes(1);
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledTimes(2);
+    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledTimes(2);
   });
 
   it('rejects a new completed-booking settlement without authoritative completion time evidence', async () => {
@@ -1830,9 +1955,21 @@ describe('EarningsService payout batches', () => {
       $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
     };
     const settlements = {
+      previewBookingSettlementSnapshot: vi.fn().mockReturnValue({ source: 'caller-transaction-preview' }),
       upsertBookingSettlementSnapshot: vi.fn().mockResolvedValue({ id: 'settlement-1' }),
     };
     const service = new EarningsService(prisma as never, undefined, settlements as never);
+
+    await expect(
+      service.previewPaidBookingSettlementReconstruction(
+        'booking-paid-gap-1',
+        'provider-1',
+        tx as never,
+      ),
+    ).resolves.toMatchObject({
+      canReconstruct: true,
+      settlementDryRun: { source: 'caller-transaction-preview' },
+    });
 
     await expect(
       service.reconstructPaidBookingSettlement('booking-paid-gap-1', 'provider-1', {
@@ -1865,6 +2002,26 @@ describe('EarningsService payout batches', () => {
     );
     expect(tx).not.toHaveProperty('providerEarning');
     expect(tx).not.toHaveProperty('providerWalletLedgerEntry');
+
+    prisma.$transaction.mockClear();
+    settlements.upsertBookingSettlementSnapshot.mockClear();
+    await expect(
+      service.reconstructPaidBookingSettlement(
+        'booking-paid-gap-1',
+        'provider-1',
+        {
+          actorId: 'admin-1',
+          approvalAdminId: 'admin-2',
+          reason: 'Recheck and reconstruct inside the caller transaction',
+        },
+        tx as never,
+      ),
+    ).resolves.toMatchObject({ earningId: 'earning-paid-1' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingId: 'booking-paid-gap-1' }),
+      tx,
+    );
   });
 
   it('applies active payment fee policy to completed booking settlement snapshots', async () => {
@@ -3283,6 +3440,32 @@ describe('EarningsService payout batches', () => {
     });
   });
 
+  it('loads one exact withdrawal id independently from list pagination', async () => {
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findMany: vi.fn().mockResolvedValue([{
+          bankReconciliationMatches: [],
+          id: 'withdrawal-exact-1',
+          status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+        }]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await service.listProviderWalletWithdrawalRequestsForAdmin({
+      id: ' withdrawal-exact-1 ',
+      range: 'all',
+      take: 1,
+    });
+
+    expect(prisma.providerWalletWithdrawalRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 1,
+        where: { id: 'withdrawal-exact-1' },
+      }),
+    );
+  });
+
   it('filters paid withdrawals by active bank reconciliation state without counting reversed matches', async () => {
     const prisma = {
       providerWalletWithdrawalRequest: {
@@ -3329,6 +3512,96 @@ describe('EarningsService payout batches', () => {
         },
       }),
     );
+  });
+
+  it('exposes an exact bank transaction candidate only when one OUTFLOW shares the transfer reference', async () => {
+    const prisma = {
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            amount: 120_000,
+            currency: 'VND',
+            id: 'bank-transaction-exact-1',
+            occurredAt: new Date('2026-07-01T09:00:00.000Z'),
+            transferRef: 'BANK-OUT-EXACT-1',
+          },
+        ]),
+      },
+      providerWalletWithdrawalRequest: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            bankReconciliationMatches: [],
+            amount: 120_000,
+            currency: 'VND',
+            id: 'withdrawal-request-exact-bank-candidate',
+            status: ProviderWalletWithdrawalRequestStatus.PAID,
+            transferRef: 'BANK-OUT-EXACT-1',
+          },
+        ]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listProviderWalletWithdrawalRequestsForAdmin({ range: 'all', take: 20 }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        bankReconciliationCandidate: expect.objectContaining({ id: 'bank-transaction-exact-1' }),
+        bankReconciliationCandidateCount: 1,
+      }),
+    ]);
+    expect(prisma.companyBankTransaction.findMany).toHaveBeenCalledWith({
+      where: {
+        status: BankReconciliationStatus.UNMATCHED,
+        transferRef: { in: ['BANK-OUT-EXACT-1'] },
+        type: CompanyBankTransactionType.OUTFLOW,
+      },
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+      select: { amount: true, currency: true, id: true, occurredAt: true, transferRef: true },
+    });
+
+    prisma.companyBankTransaction.findMany.mockResolvedValue([
+      {
+        amount: 120_000,
+        currency: 'VND',
+        id: 'bank-transaction-1',
+        occurredAt: new Date(),
+        transferRef: 'BANK-OUT-EXACT-1',
+      },
+      {
+        amount: 120_000,
+        currency: 'VND',
+        id: 'bank-transaction-2',
+        occurredAt: new Date(),
+        transferRef: 'BANK-OUT-EXACT-1',
+      },
+    ]);
+    await expect(
+      service.listProviderWalletWithdrawalRequestsForAdmin({ range: 'all', take: 20 }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        bankReconciliationCandidate: null,
+        bankReconciliationCandidateCount: 2,
+      }),
+    ]);
+
+    prisma.companyBankTransaction.findMany.mockResolvedValue([
+      {
+        amount: 999_000,
+        currency: 'VND',
+        id: 'bank-transaction-wrong-amount',
+        occurredAt: new Date(),
+        transferRef: 'BANK-OUT-EXACT-1',
+      },
+    ]);
+    await expect(
+      service.listProviderWalletWithdrawalRequestsForAdmin({ range: 'all', take: 20 }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        bankReconciliationCandidate: null,
+        bankReconciliationCandidateCount: 0,
+      }),
+    ]);
   });
 
   it('summarizes admin partner wallet withdrawal requests with count queries only', async () => {
@@ -3971,6 +4244,46 @@ describe('EarningsService payout batches', () => {
       }),
     });
   });
+
+  it.each([
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+    ProviderWalletWithdrawalRequestStatus.FAILED,
+  ])(
+    'rejects BANK_TRANSFER_PENDING to %s before any lock-release transaction begins',
+    async (status) => {
+      const existingRequest = {
+        id: 'withdrawal-request-bank-pending',
+        providerProfileId: 'provider-1',
+        bankAccountId: 'bank-account-1',
+        amount: 500000,
+        currency: 'VND',
+        status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+        transferRef: 'BANK-OUT-001',
+        adminNote: null,
+        correctionReason: null,
+        paidAt: null,
+        metadata: { requestedFrom: 'partner-app' },
+      };
+      const prisma = {
+        providerWalletWithdrawalRequest: {
+          findUnique: vi.fn().mockResolvedValue(existingRequest),
+        },
+        $transaction: vi.fn(),
+      };
+      const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+      await expect(
+        service.updateProviderWalletWithdrawalRequestForAdmin(
+          existingRequest.id,
+          { status },
+          'admin-user-1',
+        ),
+      ).rejects.toThrow(`Withdrawal request cannot move from BANK_TRANSFER_PENDING to ${status}`);
+
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
 
   it('rejects a stale non-paid withdrawal decision with a conditional status claim', async () => {
     const existingRequest = {

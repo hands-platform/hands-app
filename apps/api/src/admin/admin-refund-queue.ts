@@ -96,6 +96,22 @@ export function adminRefundReviewWhere(
       return {
         AND: [{ status: { in: [...ADMIN_REFUND_PROCESSING_STATUSES] } }, aligned],
       };
+    case 'other':
+      return {
+        AND: [
+          aligned,
+          {
+            status: {
+              notIn: [
+                'REQUESTED',
+                ...ADMIN_REFUND_PROCESSING_STATUSES,
+                'COMPLETED',
+                'REJECTED',
+              ],
+            },
+          },
+        ],
+      };
     case 'state-mismatch':
     case 'needs-update':
       return mismatch;
@@ -298,6 +314,16 @@ function adminRefundReviewSql(
       return Prisma.sql`${refund}.status = 'REQUESTED' AND ${aligned}`;
     case 'processing':
       return Prisma.sql`${refund}.status IN (${Prisma.join(ADMIN_REFUND_PROCESSING_STATUSES)}) AND ${aligned}`;
+    case 'other':
+      return Prisma.sql`
+        ${aligned}
+        AND ${refund}.status NOT IN (
+          'REQUESTED',
+          ${Prisma.join(ADMIN_REFUND_PROCESSING_STATUSES)},
+          'COMPLETED',
+          'REJECTED'
+        )
+      `;
     case 'state-mismatch':
     case 'needs-update':
       return mismatch;

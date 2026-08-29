@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminNavSections } from '../lib/admin-navigation';
-import { AdminRootShell } from './admin-root-shell';
+import { AdminRootShell, restoreConfirmationFocus } from './admin-root-shell';
 
 const mockUsePathname = vi.fn();
 
@@ -48,12 +48,47 @@ describe('AdminRootShell', () => {
     expect(markup).not.toContain('Live Workspace');
   });
 
-  it('restores focus to settlement repair triggers after route-based drawers close', () => {
+  it('stores stable dropdown triggers and falls back to main after route-based confirmations close', () => {
     const source = readFileSync('components/admin-root-shell.tsx', 'utf8');
 
     expect(source).toContain("'repairBookingId'");
     expect(source).toContain("sessionStorage.setItem(");
-    expect(source).toContain("link)?.focus()");
+    expect(source).toContain("querySelector<HTMLButtonElement>(':scope > button[aria-label]')");
+    expect(source).toContain('triggerIndex: trigger ? matchingTriggers.indexOf(trigger) : -1');
+    expect(source).toContain("document.getElementById('admin-main-content')");
+    expect(source).toContain('sessionStorage.removeItem(confirmationReturnFocusKey)');
+  });
+
+  it.each(['Escape', 'Cancel'])('%s restores the exact first-row trigger without submitting', () => {
+    const focused: string[] = [];
+    const submit = vi.fn();
+    const firstTrigger = focusableButton('Actions for Partner note first-note', focused);
+    const secondTrigger = focusableButton('Actions for Partner note second-note', focused);
+    const main = focusableElement('main', focused);
+    const focusDocument = {
+      getElementById: () => main,
+      querySelectorAll: (selector: string) =>
+        selector === 'button[aria-label]' ? [firstTrigger, secondTrigger] : [],
+    } as unknown as Pick<Document, 'getElementById' | 'querySelectorAll'>;
+
+    expect(
+      restoreConfirmationFocus(
+        {
+          href: '/reviews/partner-customer-evaluations?confirm=moderate&noteId=first-note',
+          index: 0,
+          pathname: '/reviews/partner-customer-evaluations',
+          triggerIndex: 0,
+          triggerLabel: 'Actions for Partner note first-note',
+        },
+        '/reviews/partner-customer-evaluations',
+        focusDocument,
+      ),
+    ).toBe(true);
+
+    expect(focused).toEqual(['Actions for Partner note first-note']);
+    expect(firstTrigger.getAttribute('aria-expanded')).toBe('false');
+    expect(secondTrigger.getAttribute('aria-expanded')).toBe('false');
+    expect(submit).not.toHaveBeenCalled();
   });
 
   it('restores focus after Website Content confirmations close', () => {
@@ -66,3 +101,20 @@ describe('AdminRootShell', () => {
     expect(source).toContain("'rollbackRevisionId'");
   });
 });
+
+function focusableButton(label: string, focused: string[]) {
+  return {
+    focus: () => focused.push(label),
+    getAttribute: (name: string) => {
+      if (name === 'aria-expanded') return 'false';
+      if (name === 'aria-label') return label;
+      return null;
+    },
+  } as unknown as HTMLButtonElement;
+}
+
+function focusableElement(label: string, focused: string[]) {
+  return {
+    focus: () => focused.push(label),
+  } as unknown as HTMLElement;
+}

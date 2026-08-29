@@ -2,8 +2,14 @@ import { Body, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { CreateCouponBatchDto, CreateCouponDto, UpdateCouponDto } from './admin.dto';
+import {
+  CouponStateChangeDto,
+  CreateCouponBatchDto,
+  CreateCouponDto,
+  UpdateCouponDto,
+} from './admin.dto';
 import { AdminReviewRoutes } from './admin-review.routes';
+import { assertCouponLaunchEnabled } from '../common/launch-features';
 
 export class AdminCouponRoutes extends AdminReviewRoutes {
   @Get('coupons')
@@ -12,8 +18,9 @@ export class AdminCouponRoutes extends AdminReviewRoutes {
     @Query('skip') skip?: string,
     @Query('state') state?: string,
     @Query('q') q?: string,
+    @Query('sort') sort?: string,
   ) {
-    return this.admin.listCoupons({ q, skip, state, take });
+    return this.admin.listCoupons({ q, skip, sort, state, take });
   }
 
   @Get('coupons/summary')
@@ -33,11 +40,13 @@ export class AdminCouponRoutes extends AdminReviewRoutes {
 
   @Post('coupons/batch')
   createCouponBatch(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateCouponBatchDto) {
+    assertCouponLaunchEnabled();
     return this.admin.createCouponBatch(user.id, body.coupons);
   }
 
   @Post('coupons')
   createCoupon(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateCouponDto) {
+    assertCouponLaunchEnabled();
     return this.admin.createCoupon(user.id, body);
   }
 
@@ -47,11 +56,33 @@ export class AdminCouponRoutes extends AdminReviewRoutes {
     @Param('id') id: string,
     @Body() body: UpdateCouponDto,
   ) {
+    assertCouponLaunchEnabled();
     return this.admin.updateCoupon(user.id, id, body);
+  }
+
+  @Post('coupons/:id/activate')
+  activateCoupon(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: CouponStateChangeDto,
+  ) {
+    assertCouponLaunchEnabled();
+    return this.admin.activateCoupon(user.id, id, body.reason);
+  }
+
+  @Post('coupons/:id/pause')
+  pauseCoupon(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: CouponStateChangeDto,
+  ) {
+    assertCouponLaunchEnabled();
+    return this.admin.pauseCoupon(user.id, id, body.reason);
   }
 
   @Delete('coupons/:id')
   deleteCoupon(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    assertCouponLaunchEnabled();
     return this.admin.deleteCoupon(user.id, id);
   }
 }

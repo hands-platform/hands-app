@@ -18,6 +18,7 @@ type AdminQueueAgeSortControlsProps = {
   readonly ageCounts?: AdminQueueAgeCounts;
   readonly ageHref: (age: AdminQueueAge) => string;
   readonly ageLabel?: string;
+  readonly compact?: boolean;
   readonly sla?: AdminQueueSlaSummary;
   readonly slaFilter?: AdminQueueSlaFilter;
   readonly slaHref?: (sla: AdminQueueSlaFilter) => string;
@@ -32,6 +33,7 @@ export function AdminQueueAgeSortControls({
   ageCounts,
   ageHref,
   ageLabel = 'Age',
+  compact = false,
   sla,
   slaFilter = 'all',
   slaHref,
@@ -41,7 +43,7 @@ export function AdminQueueAgeSortControls({
 }: AdminQueueAgeSortControlsProps) {
   const activeSlaLabel = adminQueueSlaFilterLabel(slaFilter);
   return (
-    <div className="admin-queue-age-sort-controls">
+    <div className={`admin-queue-age-sort-controls${compact ? ' is-compact' : ''}`}>
       <div className="booking-date-filter-bar">
         <span className="payment-filter-group-label">{ageLabel}</span>
         <AdminSegmentedControl

@@ -85,9 +85,7 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Clear onboarding filters');
     expect(rendered).toContain('type="hidden" name="sort" value="newest"');
     expect(rendered).toContain('type="hidden" name="review" value="unapproved"');
-    expect(rendered).toContain(
-      'href="/partners?q=linh&amp;review=unapproved&amp;sort=name"',
-    );
+    expect(rendered).toContain('href="/partners?q=linh&amp;review=unapproved&amp;sort=name"');
     expect(rendered).not.toContain('More filters');
     expect(rendered).not.toContain('Booking flow');
     expect(rendered).not.toContain('Device/session');
@@ -116,6 +114,8 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Wallet debt filters');
     expect(rendered).toContain('canonical negative VND balance queue');
     expect(rendered).toContain('Export current page (10)');
+    expect(rendered).toContain('Debt: high to low');
+    expect(rendered).toContain('href="/partners?review=unsettled&amp;sort=wallet-debt"');
     expect(rendered).toContain('Clear wallet debt filters');
     expect(rendered).not.toContain('Verification stage');
     expect(rendered).not.toContain('KYC stage');

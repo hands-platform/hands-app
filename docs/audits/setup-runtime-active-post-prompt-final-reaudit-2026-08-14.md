@@ -1,6 +1,6 @@
 # HANDS Admin `/setup?mode=runtime&view=active` 최종 재감사 보고서
 
-- 감사일: 2026-08-14 (Asia/Bangkok)
+- 감사일: 2026-08-14 (Asia/Ho_Chi_Minh)
 - 대상: `http://localhost:3101/setup?mode=runtime&view=active`
 - 감사 방식: 로그인된 실제 화면, URL 상태, 표 수평 이동, Refresh, 라이트/다크 테마, 현재 소스, API 계약, 문서, 관련 테스트 대조
 - 검사 해상도: 1440×1000, 1600×1000

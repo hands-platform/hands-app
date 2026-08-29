@@ -14,6 +14,7 @@ import { parseCouponCodeBatch } from './coupon-code-batch';
 import type { CouponCreateActionState, CouponCreateResultItem } from './coupon-create-state';
 import { couponIctWallTimeToIso } from './coupon-ict-time';
 import { couponReturnWithNotice, sanitizeCouponReturnTo } from './coupon-return-context';
+import { couponLaunchEnabled } from '../../lib/launch-features';
 
 type CouponBatchResponse = {
   readonly createdCount: number;
@@ -25,6 +26,9 @@ export async function createCoupon(
   _previousState: CouponCreateActionState,
   formData: FormData,
 ): Promise<CouponCreateActionState> {
+  if (!couponLaunchEnabled()) {
+    return createActionError('Coupons are not active for the current launch.');
+  }
   const parsedCodes = parseCouponCodeBatch(String(formData.get('codes') || ''));
   const codes = parsedCodes.accepted;
   const description = couponDescriptionFromForm(formData);
@@ -53,7 +57,7 @@ export async function createCoupon(
     return createActionError('Choose an ICT end time or select No end date.');
   }
 
-  if (startsAt && endsAt && Date.parse(startsAt) > Date.parse(endsAt)) {
+  if (startsAt && endsAt && Date.parse(startsAt) >= Date.parse(endsAt)) {
     return createActionError('The ICT start time must be before the end time.');
   }
 
@@ -96,6 +100,9 @@ export async function updateCoupon(formData: FormData) {
   const noEndDate = String(formData.get('noEndDate')) === 'on';
   const endsAt = noEndDate ? undefined : couponDateFromForm(formData, 'endsAt', 'endsAtOriginal');
   const returnTo = sanitizeCouponReturnTo(String(formData.get('returnTo') || ''));
+  if (!couponLaunchEnabled()) {
+    return redirect(couponReturnWithNotice(returnTo, 'launch-disabled'));
+  }
 
   if (!couponId || !Number.isFinite(percent) || percent < 1 || percent > 100) {
     return redirect(couponReturnWithNotice(returnTo, 'update-missing'));
@@ -105,7 +112,7 @@ export async function updateCoupon(formData: FormData) {
     return redirect(couponReturnWithNotice(returnTo, 'invalid-date'));
   }
 
-  if (startsAt && endsAt && Date.parse(startsAt) > Date.parse(endsAt)) {
+  if (startsAt && endsAt && Date.parse(startsAt) >= Date.parse(endsAt)) {
     return redirect(couponReturnWithNotice(returnTo, 'date-order'));
   }
 
@@ -126,12 +133,27 @@ export async function updateCoupon(formData: FormData) {
   redirect(couponReturnWithNotice(returnTo, updatedCoupon?.id ? 'updated' : 'update-failed'));
 }
 
-export async function toggleCoupon(formData: FormData) {
-  const couponId = String(formData.get('couponId'));
-  const active = String(formData.get('active')) === 'true';
+export async function activateCoupon(formData: FormData) {
+  return changeCouponState(formData, 'activate');
+}
+
+export async function pauseCoupon(formData: FormData) {
+  return changeCouponState(formData, 'pause');
+}
+
+async function changeCouponState(formData: FormData, action: 'activate' | 'pause') {
+  const couponId = String(formData.get('couponId') || '').trim();
+  const reason = String(formData.get('reason') || '').trim().slice(0, 500);
   const returnTo = sanitizeCouponReturnTo(String(formData.get('returnTo') || ''));
+  if (!couponLaunchEnabled()) {
+    return redirect(couponReturnWithNotice(returnTo, 'launch-disabled'));
+  }
+  if (!couponId || !reason) {
+    return redirect(couponReturnWithNotice(returnTo, 'state-reason-required'));
+  }
+
   try {
-    if (!active) {
+    if (action === 'activate') {
       const couponResult = await adminGetResult<AdminCoupon | null>(`/admin/coupons/${couponId}`, null);
       if (!couponResult.ok || !couponResult.data) {
         return redirect(couponReturnWithNotice(returnTo, 'update-failed'));
@@ -140,10 +162,13 @@ export async function toggleCoupon(formData: FormData) {
         return redirect(couponReturnWithNotice(returnTo, 'activate-expired'));
       }
     }
-    await adminPatchOrThrow(`/admin/coupons/${couponId}`, { active: !active });
+    await adminPostOrThrow(`/admin/coupons/${couponId}/${action}`, { reason });
   } catch (error) {
     if (isAdminApiAuthError(error)) {
       return redirect(couponReturnWithNotice(returnTo, 'admin-auth'));
+    }
+    if (adminApiErrorStatus(error) === 409) {
+      return redirect(couponReturnWithNotice(returnTo, 'state-conflict'));
     }
     return redirect(couponReturnWithNotice(returnTo, 'update-failed'));
   }
@@ -154,6 +179,9 @@ export async function toggleCoupon(formData: FormData) {
 export async function deleteCoupon(formData: FormData) {
   const couponId = String(formData.get('couponId') || '').trim();
   const returnTo = sanitizeCouponReturnTo(String(formData.get('returnTo') || ''));
+  if (!couponLaunchEnabled()) {
+    return redirect(couponReturnWithNotice(returnTo, 'launch-disabled'));
+  }
   if (!couponId) {
     return redirect(couponReturnWithNotice(returnTo, 'delete-missing'));
   }

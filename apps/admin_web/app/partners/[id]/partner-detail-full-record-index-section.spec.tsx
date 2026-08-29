@@ -24,9 +24,7 @@ describe('PartnerDetailFullRecordIndexSection', () => {
     expect(markup).toContain('Money');
     expect(markup).toContain('History &amp; controls');
     expect(markup).toContain('Diagnostics');
-    expect(markup).toContain(
-      '/partners/partner-1?section=dossier&amp;decisionQueue=approval-pending',
-    );
+    expect(markup).toContain('/partners/partner-1?section=dossier&amp;decisionQueue=approval-pending');
     expect(markup).toContain(
       '/partners/partner-1?section=dossier&amp;dossier=finance&amp;decisionQueue=approval-pending',
     );
@@ -48,5 +46,24 @@ describe('PartnerDetailFullRecordIndexSection', () => {
 
     expect(markup).toContain('No action');
     expect(markup).not.toContain('Diagnostics');
+  });
+
+  it('does not count or label policy-dependent work readiness when policy data is unavailable', () => {
+    const markup = renderToStaticMarkup(
+      <PartnerDetailFullRecordIndexSection
+        approvalOpenCount={1}
+        bookingRecordCount={4}
+        canViewDiagnostics={false}
+        financeOpenCount={2}
+        operationalPolicyAvailable={false}
+        partnerId="partner-1"
+        workOpenCount={5}
+      />,
+    );
+
+    expect(markup).toContain('3 open');
+    expect(markup).not.toContain('8 open');
+    expect(markup).toContain('Operational policy data is unavailable');
+    expect(markup).toContain('Unavailable');
   });
 });

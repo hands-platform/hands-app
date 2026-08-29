@@ -74,6 +74,8 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
   const bankMatches = batch.entries.flatMap((entry) => entry.bankReconciliationMatches ?? []);
   const settlementPaymentFee = paymentFeePolicyInfo(batch.settlementSnapshot, batch.currency);
   const reversalEvidence = batch.settlementReversalEntry;
+  const operatorEvidence = batch.operatorEvidence;
+  const reversalReference = stringValue(readPlainRecord(batch.metadata)?.reversalReference);
 
   return (
     <AdminPageTemplate
@@ -94,7 +96,10 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
       <FinanceTablePanel
         description={
           <>
-            {batch.sourceType} / {shortId(batch.sourceId)} · Posted <DateTimeText value={batch.postedAt} />
+            {journalSourceTypeLabel(batch.sourceType)}{' '}
+            <span className="muted general-ledger-technical-token">{batch.sourceType}</span> /{' '}
+            {shortId(batch.sourceId)} · Posted{' '}
+            <DateTimeText value={batch.postedAt} />
           </>
         }
         resultLabel={batch.status}
@@ -102,7 +107,20 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
         title="Journal batch overview"
       >
         <FinanceDetailGrid>
-          <FinanceDetailInfoItem label="Record key" value={batch.sourceKey} />
+          <FinanceDetailInfoItem
+            label="Batch ID"
+            value={<span className="general-ledger-technical-id">{batch.id}</span>}
+          />
+          <FinanceDetailInfoItem
+            label="Record key"
+            value={<span className="general-ledger-technical-id">{batch.sourceKey}</span>}
+          />
+          {reversalReference ? (
+            <FinanceDetailInfoItem
+              label="Reversal reference"
+              value={<span className="general-ledger-technical-id">{reversalReference}</span>}
+            />
+          ) : null}
           <FinanceDetailInfoItem
             label="Integrity result"
             value={
@@ -138,6 +156,12 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
                   : 'Integrity evidence unavailable'
             }
           />
+          {integrity?.state !== 'CLEAR' ? (
+            <FinanceDetailInfoItem
+              label="Operator next action"
+              value={journalOperatorNextAction(batch, settlementRecordLinks)}
+            />
+          ) : null}
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -174,11 +198,15 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
               />
               <FinanceDetailInfoItem
                 label="Reversal recorded by"
-                value={reversalEvidence.createdById ?? 'System or historical record'}
+                value={journalOperatorLabel(
+                  operatorEvidence?.recordedBy,
+                  operatorEvidence?.recordedByAdminId,
+                  'System or historical record',
+                )}
               />
               <FinanceDetailInfoItem
                 label="Approval evidence"
-                value="No canonical approval field is recorded on this reversal."
+                value={journalApprovalEvidence(operatorEvidence?.approval)}
               />
             </>
           ) : null}
@@ -211,7 +239,7 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
           ariaLabel="Journal batch operating path"
           steps={[
             {
-              detail: batch.sourceType,
+              detail: <span className="general-ledger-technical-token">{batch.sourceType}</span>,
               label: 'Finance record',
               value: journalSourceLabel(batch, settlementRecordLinks.length),
             },
@@ -222,8 +250,8 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
             },
             {
               detail: `${batch.entries.length} journal row(s)`,
-              label: 'Double-entry',
-              value: integrity?.checks.entriesBalanced ?? 'UNKNOWN',
+              label: 'Entry balance',
+              value: journalEntryBalanceLabel(integrity?.checks.entriesBalanced),
             },
             {
               detail: journalNextAction(integrity?.state),
@@ -237,8 +265,9 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
             label="Finance record"
             value={
               <AdminTableSubstack>
-                <strong>{batch.sourceType}</strong>
-                <span className="muted">{batch.sourceKey}</span>
+                <strong>{journalSourceTypeLabel(batch.sourceType)}</strong>
+                <span className="muted general-ledger-technical-token">{batch.sourceType}</span>
+                <span className="general-ledger-technical-id">{batch.sourceKey}</span>
               </AdminTableSubstack>
             }
           />
@@ -262,25 +291,34 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
             label="Settlement payment fee"
             value={
               batch.settlementSnapshot ? (
-                <>
-                  <MoneyText
-                    amount={batch.settlementSnapshot.paymentProcessingFee}
-                    currency={batch.settlementSnapshot.currency}
-                  />
-                  <span className="muted admin-block">
-                    {paymentFeeBasisLabel(
+                <AdminTableSubstack className="general-ledger-fee-evidence">
+                  <span>
+                    <span className="muted">Recorded fee</span>{' '}
+                    <MoneyText
+                      amount={batch.settlementSnapshot.paymentProcessingFee}
+                      currency={batch.settlementSnapshot.currency}
+                    />
+                  </span>
+                  <span><span className="muted">Method</span> {settlementPaymentFee.method}</span>
+                  <span>
+                    <span className="muted">Basis</span>{' '}
+                    {paymentFeeBasisValue(
                       settlementPaymentFee,
                       batch.settlementSnapshot.currency,
                       batch.settlementSnapshot.paymentProcessingFee,
                     )}
                   </span>
-                  <span className="muted admin-block">
-                    {settlementPaymentFee.policyVersionId}
+                  <span>
+                    <span className="muted">Policy</span>{' '}
+                    {settlementPaymentFee.policyVersionId ? (
+                      <span className="general-ledger-technical-id">{settlementPaymentFee.policyVersionId}</span>
+                    ) : (
+                      <StatusBadge tone="warning">Policy evidence unavailable</StatusBadge>
+                    )}
                   </span>
-                  <span className="muted admin-block">
-                    {settlementPaymentFee.payer} / {settlementPaymentFee.treatment}
-                  </span>
-                </>
+                  <span><span className="muted">Payer</span> {settlementPaymentFee.payer}</span>
+                  <span><span className="muted">Treatment</span> {settlementPaymentFee.treatment}</span>
+                </AdminTableSubstack>
               ) : (
                 '-'
               )
@@ -347,7 +385,7 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
                   </StatusBadge>
                 </td>
                 <td>
-                  <strong>{entry.accountCode}</strong>
+                  <strong className="general-ledger-account-code">{entry.accountCode}</strong>
                   <div className="muted">{entry.accountName}</div>
                 </td>
                 <td>
@@ -360,7 +398,10 @@ export default async function GeneralLedgerDetailPage({ params, searchParams }: 
                 </td>
                 <td>{entry.memo ?? '-'}</td>
                 <td>
-                  <strong>{entry.sourceType ?? batch.sourceType}</strong>
+                  <strong>{journalSourceTypeLabel(entry.sourceType ?? batch.sourceType)}</strong>
+                  <div className="muted general-ledger-technical-token">
+                    {entry.sourceType ?? batch.sourceType}
+                  </div>
                   <div className="muted">{shortId(entry.sourceId ?? batch.sourceId)}</div>
                 </td>
                 <td>
@@ -388,6 +429,97 @@ function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlement
     return `${settlementRecordLinkCount} linked record(s)`;
   }
   return shortId(batch.sourceId);
+}
+
+function journalSourceTypeLabel(sourceType: AdminAccountingJournalBatchDetail['sourceType']) {
+  return sourceType
+    .toLowerCase()
+    .split('_')
+    .map((part) => part === 'provider' ? 'Partner' : `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ');
+}
+
+function journalEntryBalanceLabel(
+  state: AdminAccountingJournalIntegrity['checks']['entriesBalanced'] | undefined,
+) {
+  if (state === 'PASS') return 'Entry debit = credit · Pass';
+  if (state === 'FAIL') return 'Entry debit ≠ credit · Fail';
+  if (state === 'NOT_APPLICABLE') return 'Entry balance · Not applicable';
+  return 'Entry balance · Evidence unknown';
+}
+
+function journalOperatorNextAction(
+  batch: AdminAccountingJournalBatchDetail,
+  settlementRecordLinks: ReturnType<typeof buildFinanceSettlementTraceLinks>,
+) {
+  const blockers = new Set(batch.integrity?.blockerCodes ?? []);
+  const guidance =
+    blockers.has('PERIOD_EVIDENCE_MISSING') || blockers.has('PERIOD_MISMATCH')
+      ? 'Verify the accounting month against the retained settlement or reversal record.'
+      : blockers.has('FORMULA_DELTA') || blockers.has('FORMULA_EVIDENCE_MISSING')
+        ? 'Compare the retained settlement allocation and fee or tax evidence with the journal entries.'
+        : blockers.has('POSTED_WITHOUT_ENTRIES')
+          ? 'Confirm the source transaction before asking Finance engineering to recover missing journal entries.'
+          : blockers.size > 0
+            ? 'Compare the journal header and entry totals with the canonical source transaction.'
+            : 'Recover the missing canonical source evidence before monthly close.';
+  const settlementLink = settlementRecordLinks[0];
+
+  return (
+    <AdminTableSubstack>
+      <strong>{guidance}</strong>
+      {settlementLink ? (
+        <AdminTextLink href={settlementLink.href}>Open {settlementLink.label.toLowerCase()}</AdminTextLink>
+      ) : batch.paymentId ? (
+        <AdminTextLink href={`/payments/${encodeURIComponent(batch.paymentId)}`}>Open payment evidence</AdminTextLink>
+      ) : batch.bookingId ? (
+        <AdminTextLink href={`/bookings/${encodeURIComponent(batch.bookingId)}`}>Open booking evidence</AdminTextLink>
+      ) : (
+        <span className="muted">Canonical source link unavailable</span>
+      )}
+      <span className="muted">No journal values are changed from this screen.</span>
+    </AdminTableSubstack>
+  );
+}
+
+function journalOperatorLabel(
+  operator: NonNullable<AdminAccountingJournalBatchDetail['operatorEvidence']>['recordedBy'] | undefined,
+  recordedByAdminId: string | null | undefined,
+  fallback: string,
+) {
+  if (operator) {
+    return (
+      <AdminTableSubstack>
+        <strong>{operator.fullName ?? operator.email ?? 'Admin operator'}</strong>
+        <span className="muted">
+          {operator.email ?? `Admin ${shortId(operator.id)}`} · {operator.roles.join(', ') || 'Role unavailable'}
+        </span>
+      </AdminTableSubstack>
+    );
+  }
+  if (recordedByAdminId) {
+    return `Admin identity unavailable · ${shortId(recordedByAdminId)}`;
+  }
+  return fallback;
+}
+
+function journalApprovalEvidence(
+  approval: NonNullable<AdminAccountingJournalBatchDetail['operatorEvidence']>['approval'] | undefined,
+) {
+  if (!approval) {
+    return <StatusBadge tone="warning">Approval evidence unavailable</StatusBadge>;
+  }
+  return (
+    <AdminTableSubstack>
+      {journalOperatorLabel(approval.approver, approval.approvalAdminId, 'Approver identity unavailable')}
+      <span>
+        Approved <DateTimeText value={approval.approvedAt} />
+      </span>
+      <span className="muted">
+        Refund {shortId(approval.refundId)} · Payment {shortId(approval.paymentId)}
+      </span>
+    </AdminTableSubstack>
+  );
 }
 
 function journalCloseoutLabel(batch: AdminAccountingJournalBatchDetail) {
@@ -444,24 +576,24 @@ function paymentFeePolicyInfo(
     fixedAmount: settlement?.paymentFeeFixedAmount ?? 0,
     method: stringValue(ruleSnapshot?.method) ?? settlement?.paymentMethod ?? '-',
     payer: settlement?.paymentFeePayer ?? '-',
-    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy record missing'),
+    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : null),
     rateBps: settlement?.paymentFeeRateBps ?? 0,
     treatment: settlement?.paymentFeeTreatment ?? '-',
     currency: settlement?.currency ?? fallbackCurrency,
   };
 }
 
-function paymentFeeBasisLabel(
+function paymentFeeBasisValue(
   paymentFee: ReturnType<typeof paymentFeePolicyInfo>,
   currency: string,
   recordedFee: number,
 ) {
   if (recordedFee > 0 && paymentFee.rateBps === 0 && paymentFee.fixedAmount === 0) {
-    return `${paymentFee.method} · legacy/manual fee evidence`;
+    return 'Legacy/manual fee evidence';
   }
   return (
     <>
-      {paymentFee.method} · {paymentFee.rateBps} bps +{' '}
+      {paymentFee.rateBps} bps +{' '}
       <MoneyText amount={paymentFee.fixedAmount} currency={currency} />
     </>
   );

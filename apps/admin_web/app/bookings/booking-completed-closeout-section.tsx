@@ -1,3 +1,5 @@
+import { ChevronDown } from 'lucide-react';
+
 import { AdminDisclosure } from '../../components/admin-surface';
 
 const COMPLETED_CLOSEOUT_FLOW = [
@@ -27,9 +29,16 @@ export function BookingCompletedCloseoutSection() {
       ariaLabel="How to review closeout"
       className="booking-completed-closeout-card admin-mt-16"
     >
-      <summary>
-        <span>How to review closeout</span>
-        <small>Service evidence, finance records, and retained audit trail</small>
+      <summary className="booking-completed-disclosure-summary">
+        <span className="booking-completed-disclosure-summary-copy">
+          <span>How to review closeout</span>
+          <small>Service evidence, finance records, and retained audit trail</small>
+        </span>
+        <ChevronDown
+          aria-hidden={true}
+          className="booking-completed-disclosure-chevron"
+          size={16}
+        />
       </summary>
       <div className="admin-disclosure-content">
         <div className="booking-post-match-decision-flow" aria-label="Completed closeout flow">

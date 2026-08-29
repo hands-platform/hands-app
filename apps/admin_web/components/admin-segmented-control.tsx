@@ -27,21 +27,21 @@ export function AdminSegmentedControl<Value extends string = string>({
 }: AdminSegmentedControlProps<Value>) {
   const links = options.map((option, index) => {
     const active = option.value === activeValue;
+    const key = `${option.value}-${index}`;
     const linkProps = {
       'aria-current': semantics !== 'tabs' && active ? 'page' as const : undefined,
       'aria-label': option.ariaLabel,
       'aria-selected': semantics === 'tabs' ? active : undefined,
       className: mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined),
       href: option.href,
-      key: `${option.value}-${index}`,
       onClick: option.onClick,
       role: semantics === 'tabs' ? 'tab' : undefined,
       title: option.title,
     };
 
     return isInternalRoute(option.href)
-      ? <Link {...linkProps} prefetch={false} scroll={false}>{option.label}</Link>
-      : <a {...linkProps}>{option.label}</a>;
+      ? <Link {...linkProps} key={key} prefetch={false} scroll={false}>{option.label}</Link>
+      : <a {...linkProps} key={key}>{option.label}</a>;
   });
 
   const classNames = mergeClassNames('booking-date-filter-buttons', className);

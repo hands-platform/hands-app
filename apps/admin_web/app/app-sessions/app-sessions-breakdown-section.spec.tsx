@@ -69,6 +69,18 @@ describe('AppSessionsBreakdownSection', () => {
     expect(rendered).toContain('Version 1.7.9');
     expect(rendered).not.toContain('Version 1.7.7');
   });
+
+  it('labels breakdowns as current-page evidence for a partial dataset', () => {
+    const rendered = textContent(AppSessionsBreakdownSection({
+      platformRows: [],
+      roleRows: [],
+      scopeLabel: 'Current page',
+      versionRows: [],
+    }));
+
+    expect(rendered).toContain('Current page role split');
+    expect(rendered).toContain('Current page platform and version');
+  });
 });
 
 function buildRoleRows(): AppSessionRoleRow[] {
