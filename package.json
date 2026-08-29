@@ -35,6 +35,7 @@
     "external:pack:write": "node infra/scripts/external-registration-pack.mjs --out=infra/setup/.generated/hands-external-registration-pack.md",
     "setup:doctor": "node infra/scripts/setup-doctor.mjs",
     "repo:monorepo-contract": "node infra/scripts/check-git-monorepo-contract.mjs",
+    "repo:monorepo-contract:test": "node --test infra/scripts/check-git-monorepo-contract.test.mjs",
     "prisma:migrations:check": "node infra/scripts/check-prisma-migrations.mjs",
     "prisma:migrations:check:test": "node --test infra/scripts/check-prisma-migrations.test.mjs",
     "checkpoint:inventory": "node infra/scripts/checkpoint-inventory.mjs",

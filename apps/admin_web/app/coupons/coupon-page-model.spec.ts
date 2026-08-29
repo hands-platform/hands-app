@@ -33,6 +33,7 @@ describe('coupon page model', () => {
     expect(couponWindowState(coupon({ active: true }))).toBe('live');
     expect(couponNeedsReview(coupon({ active: false }))).toBe(true);
     expect(couponNeedsReview(coupon({ active: true, endsAt: '2026-06-09T09:00:00.000Z' }))).toBe(true);
+    expect(couponStatusLabel(coupon({ grossBudgetAmount: null }))).toBe('REVIEW REQUIRED');
   });
 
   it('sorts coupons by operations priority', () => {
@@ -194,8 +195,15 @@ function coupon(input: Partial<AdminCoupon> = {}): AdminCoupon {
   return {
     active: true,
     code: 'CODE',
+    currency: 'VND',
     discount: { type: 'percent', value: 10 },
+    endsAt: '2026-06-20T09:00:00.000Z',
+    grossBudgetAmount: 1_000_000,
     id: 'coupon-1',
+    maxRedemptions: 10,
+    maximumDiscountAmount: 100_000,
+    minimumOrderAmount: 0,
+    perCustomerRedemptionLimit: 1,
     ...input,
   };
 }

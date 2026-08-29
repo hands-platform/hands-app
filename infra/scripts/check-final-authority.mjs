@@ -710,10 +710,13 @@ function checkOperationsPolicyControlPlane() {
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
     'Operations Policy',
-    'Final partner choice control matrix',
-    'Current partner acceptance impact',
-    'Matching stage impact preview',
-    'Policy enforcement evidence',
+    'First-pick Partner response window',
+    'Marketplace Partner radius',
+    'Authoritative current status',
+    'Demo evidence cannot authorize dispatch',
+    'Read-only, no-write preview',
+    'Booking action evidence gate',
+    'Recent policy audit trail',
   ]);
 }
 

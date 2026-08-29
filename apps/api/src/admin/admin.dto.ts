@@ -392,7 +392,9 @@ export class BookingPostMatchCancellationDecisionDto {
   @IsIn(ADMIN_POST_MATCH_CANCELLATION_REASON_CODES)
   reason!: string;
 
-  @ValidateIf((body: BookingPostMatchCancellationDecisionDto) => body.reason === 'OTHER' || body.note !== undefined)
+  @ValidateIf(
+    (body: BookingPostMatchCancellationDecisionDto) => body.reason === 'OTHER' || body.note !== undefined,
+  )
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
@@ -1194,6 +1196,46 @@ export class CreateCouponDto {
   @IsOptional()
   @IsDateString()
   endsAt?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(1_000_000)
+  maxRedemptions?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(Number.MAX_SAFE_INTEGER)
+  grossBudgetAmount?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(1_000_000)
+  perCustomerRedemptionLimit?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  @Max(2_000_000_000)
+  minimumOrderAmount?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(2_000_000_000)
+  maximumDiscountAmount?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @IsIn(['VND'])
+  currency?: string;
 }
 
 export class CreateCouponBatchDto {
@@ -1227,6 +1269,46 @@ export class UpdateCouponDto {
   @IsOptional()
   @IsDateString()
   endsAt?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(1_000_000)
+  maxRedemptions?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(Number.MAX_SAFE_INTEGER)
+  grossBudgetAmount?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(1_000_000)
+  perCustomerRedemptionLimit?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  @Max(2_000_000_000)
+  minimumOrderAmount?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(2_000_000_000)
+  maximumDiscountAmount?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @IsIn(['VND'])
+  currency?: string;
 }
 
 export class CouponStateChangeDto {

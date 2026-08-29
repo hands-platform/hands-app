@@ -1,17 +1,8 @@
 import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import {
-  adminDeleteOrThrow,
-  adminGetResult,
-  adminPostOrThrow,
-} from '../../lib/admin-api';
-import {
-  activateCoupon,
-  createCoupon,
-  deleteCoupon,
-  pauseCoupon,
-} from './actions';
+import { adminDeleteOrThrow, adminGetResult, adminPostOrThrow } from '../../lib/admin-api';
+import { activateCoupon, createCoupon, deleteCoupon, pauseCoupon } from './actions';
 import { INITIAL_COUPON_CREATE_STATE } from './coupon-create-state';
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
@@ -30,6 +21,15 @@ const mockedAdminDeleteOrThrow = vi.mocked(adminDeleteOrThrow);
 const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
+const completeCouponPolicy = {
+  currency: 'VND',
+  endsAt: new Date(Date.now() + 86_400_000).toISOString(),
+  grossBudgetAmount: 10_000_000,
+  maxRedemptions: 100,
+  maximumDiscountAmount: 100_000,
+  minimumOrderAmount: 0,
+  perCustomerRedemptionLimit: 1,
+} as const;
 
 describe('coupon server actions', () => {
   beforeEach(() => {
@@ -60,6 +60,7 @@ describe('coupon server actions', () => {
     formData.set('percent', '15');
     formData.set('startsAt', '2026-06-27T09:30');
     formData.set('endsAt', '2026-07-01T18:00');
+    setCompleteCouponPolicy(formData);
 
     const state = await createCoupon(INITIAL_COUPON_CREATE_STATE, formData);
 
@@ -76,14 +77,20 @@ describe('coupon server actions', () => {
       coupons: expect.arrayContaining([
         expect.objectContaining({
           active: false,
+          currency: 'VND',
           description: 'Summer launch',
           endsAt: '2026-07-01T11:00:00.000Z',
+          grossBudgetAmount: 10_000_000,
+          maxRedemptions: 100,
+          maximumDiscountAmount: 100_000,
+          minimumOrderAmount: 0,
+          perCustomerRedemptionLimit: 1,
           startsAt: '2026-06-27T02:30:00.000Z',
         }),
       ]),
     });
     expect(state).toMatchObject({ createdCount: 4, failedCount: 0, status: 'success' });
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/coupons');
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
     expect(mockedRedirect).not.toHaveBeenCalled();
   });
 
@@ -105,6 +112,7 @@ describe('coupon server actions', () => {
     formData.set('percent', '10');
     formData.set('startsAt', '2026-06-27T09:30');
     formData.set('endsAt', '2026-06-27T09:30');
+    setCompleteCouponPolicy(formData);
 
     await expect(createCoupon(INITIAL_COUPON_CREATE_STATE, formData)).resolves.toMatchObject({
       message: expect.stringContaining('must be before'),
@@ -117,7 +125,8 @@ describe('coupon server actions', () => {
     const formData = new FormData();
     formData.set('codes', 'WELCOME10');
     formData.set('percent', '10');
-    formData.set('noEndDate', 'on');
+    formData.set('endsAt', '2026-07-01T18:00');
+    setCompleteCouponPolicy(formData);
     mockedAdminPostOrThrow.mockRejectedValue(new Error('Admin Web session is required for Admin API access'));
 
     await expect(createCoupon(INITIAL_COUPON_CREATE_STATE, formData)).resolves.toMatchObject({
@@ -132,7 +141,14 @@ describe('coupon server actions', () => {
     formData.set('reason', 'Approved campaign relaunch');
     formData.set('returnTo', '/coupons?view=records&couponPage=2');
     mockedAdminGetResult.mockResolvedValue({
-      data: { active: false, code: 'OLD10', discount: { type: 'percent', value: 10 }, endsAt: '2020-01-01T00:00:00.000Z', id: 'coupon-1' },
+      data: {
+        ...completeCouponPolicy,
+        active: false,
+        code: 'OLD10',
+        discount: { type: 'percent', value: 10 },
+        endsAt: '2020-01-01T00:00:00.000Z',
+        id: 'coupon-1',
+      },
       ok: true,
       status: 200,
     });
@@ -145,9 +161,36 @@ describe('coupon server actions', () => {
     );
   });
 
+  it('blocks activation when a legacy coupon has incomplete checkout limits', async () => {
+    const formData = new FormData();
+    formData.set('couponId', 'coupon-1');
+    formData.set('reason', 'Approved campaign relaunch');
+    mockedAdminGetResult.mockResolvedValue({
+      data: {
+        active: false,
+        code: 'LEGACY10',
+        discount: { type: 'percent', value: 10 },
+        id: 'coupon-1',
+      },
+      ok: true,
+      status: 200,
+    });
+
+    await activateCoupon(formData);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith('/coupons?couponNotice=activate-policy-incomplete');
+  });
+
   it('uses explicit activate and pause endpoints with trimmed reasons', async () => {
     mockedAdminGetResult.mockResolvedValue({
-      data: { active: false, code: 'BACK20', discount: { type: 'percent', value: 20 }, id: 'coupon-1' },
+      data: {
+        ...completeCouponPolicy,
+        active: false,
+        code: 'BACK20',
+        discount: { type: 'percent', value: 20 },
+        id: 'coupon-1',
+      },
       ok: true,
       status: 200,
     });
@@ -195,3 +238,11 @@ describe('coupon server actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith('/coupons?couponNotice=delete-used');
   });
 });
+
+function setCompleteCouponPolicy(formData: FormData) {
+  formData.set('grossBudgetAmount', String(completeCouponPolicy.grossBudgetAmount));
+  formData.set('maxRedemptions', String(completeCouponPolicy.maxRedemptions));
+  formData.set('maximumDiscountAmount', String(completeCouponPolicy.maximumDiscountAmount));
+  formData.set('minimumOrderAmount', String(completeCouponPolicy.minimumOrderAmount));
+  formData.set('perCustomerRedemptionLimit', String(completeCouponPolicy.perCustomerRedemptionLimit));
+}

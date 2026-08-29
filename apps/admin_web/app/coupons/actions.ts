@@ -13,6 +13,7 @@ import {
 import { parseCouponCodeBatch } from './coupon-code-batch';
 import type { CouponCreateActionState, CouponCreateResultItem } from './coupon-create-state';
 import { couponIctWallTimeToIso } from './coupon-ict-time';
+import { couponPolicyComplete } from './coupon-page-model';
 import { couponReturnWithNotice, sanitizeCouponReturnTo } from './coupon-return-context';
 import { couponLaunchEnabled } from '../../lib/launch-features';
 
@@ -34,8 +35,8 @@ export async function createCoupon(
   const description = couponDescriptionFromForm(formData);
   const percent = Number(formData.get('percent') || 0);
   const startsAt = couponDateFromForm(formData, 'startsAt');
-  const noEndDate = String(formData.get('noEndDate')) === 'on';
-  const endsAt = noEndDate ? undefined : couponDateFromForm(formData, 'endsAt');
+  const endsAt = couponDateFromForm(formData, 'endsAt');
+  const policy = couponPolicyFromForm(formData);
 
   if (
     codes.length === 0 ||
@@ -44,17 +45,20 @@ export async function createCoupon(
     parsedCodes.overLimit.length > 0 ||
     !Number.isFinite(percent) ||
     percent < 1 ||
-    percent > 100
+    percent > 100 ||
+    !policy
   ) {
-    return createActionError('Fix invalid codes and enter a discount percent from 1 to 100.');
+    return createActionError(
+      'Fix the codes, discount percent, redemption limits, and VND budget controls before creating coupons.',
+    );
   }
 
   if (startsAt === null || endsAt === null) {
     return createActionError('Choose valid ICT start and end values.');
   }
 
-  if (!noEndDate && !endsAt) {
-    return createActionError('Choose an ICT end time or select No end date.');
+  if (!endsAt) {
+    return createActionError('Choose an ICT end time so checkout exposure remains bounded.');
   }
 
   if (startsAt && endsAt && Date.parse(startsAt) >= Date.parse(endsAt)) {
@@ -64,15 +68,15 @@ export async function createCoupon(
   try {
     const result = await adminPostOrThrow<CouponBatchResponse>('/admin/coupons/batch', {
       coupons: codes.map((code) => ({
-          code,
-          description: description || undefined,
-          discount: { type: 'percent', value: percent },
-          active: false,
-          startsAt: startsAt || undefined,
-          endsAt: endsAt || undefined,
+        code,
+        description: description || undefined,
+        discount: { type: 'percent', value: percent },
+        active: false,
+        startsAt: startsAt || undefined,
+        endsAt,
+        ...policy,
       })),
     });
-    revalidatePath('/coupons');
     return {
       createdCount: result.createdCount,
       failedCount: result.failedCount,
@@ -97,14 +101,14 @@ export async function updateCoupon(formData: FormData) {
   const description = couponDescriptionFromForm(formData);
   const percent = Number(formData.get('percent') || 0);
   const startsAt = couponDateFromForm(formData, 'startsAt', 'startsAtOriginal');
-  const noEndDate = String(formData.get('noEndDate')) === 'on';
-  const endsAt = noEndDate ? undefined : couponDateFromForm(formData, 'endsAt', 'endsAtOriginal');
+  const endsAt = couponDateFromForm(formData, 'endsAt', 'endsAtOriginal');
+  const policy = couponPolicyFromForm(formData);
   const returnTo = sanitizeCouponReturnTo(String(formData.get('returnTo') || ''));
   if (!couponLaunchEnabled()) {
     return redirect(couponReturnWithNotice(returnTo, 'launch-disabled'));
   }
 
-  if (!couponId || !Number.isFinite(percent) || percent < 1 || percent > 100) {
+  if (!couponId || !Number.isFinite(percent) || percent < 1 || percent > 100 || !policy || !endsAt) {
     return redirect(couponReturnWithNotice(returnTo, 'update-missing'));
   }
 
@@ -122,7 +126,8 @@ export async function updateCoupon(formData: FormData) {
       description: description || null,
       discount: { type: 'percent', value: percent },
       startsAt: startsAt || null,
-      endsAt: noEndDate ? null : (endsAt || null),
+      endsAt,
+      ...policy,
     });
   } catch (error) {
     if (isAdminApiAuthError(error)) {
@@ -143,7 +148,9 @@ export async function pauseCoupon(formData: FormData) {
 
 async function changeCouponState(formData: FormData, action: 'activate' | 'pause') {
   const couponId = String(formData.get('couponId') || '').trim();
-  const reason = String(formData.get('reason') || '').trim().slice(0, 500);
+  const reason = String(formData.get('reason') || '')
+    .trim()
+    .slice(0, 500);
   const returnTo = sanitizeCouponReturnTo(String(formData.get('returnTo') || ''));
   if (!couponLaunchEnabled()) {
     return redirect(couponReturnWithNotice(returnTo, 'launch-disabled'));
@@ -160,6 +167,9 @@ async function changeCouponState(formData: FormData, action: 'activate' | 'pause
       }
       if (couponResult.data.endsAt && Date.parse(couponResult.data.endsAt) < Date.now()) {
         return redirect(couponReturnWithNotice(returnTo, 'activate-expired'));
+      }
+      if (!couponPolicyComplete(couponResult.data)) {
+        return redirect(couponReturnWithNotice(returnTo, 'activate-policy-incomplete'));
       }
     }
     await adminPostOrThrow(`/admin/coupons/${couponId}/${action}`, { reason });
@@ -202,7 +212,46 @@ export async function deleteCoupon(formData: FormData) {
 }
 
 function couponDescriptionFromForm(formData: FormData) {
-  return String(formData.get('description') || '').trim().slice(0, 500);
+  return String(formData.get('description') || '')
+    .trim()
+    .slice(0, 500);
+}
+
+function couponPolicyFromForm(formData: FormData) {
+  const maxRedemptions = integerFormValue(formData, 'maxRedemptions');
+  const grossBudgetAmount = integerFormValue(formData, 'grossBudgetAmount');
+  const perCustomerRedemptionLimit = integerFormValue(formData, 'perCustomerRedemptionLimit');
+  const minimumOrderAmount = integerFormValue(formData, 'minimumOrderAmount');
+  const maximumDiscountAmount = integerFormValue(formData, 'maximumDiscountAmount');
+  if (
+    maxRedemptions === null ||
+    maxRedemptions < 1 ||
+    grossBudgetAmount === null ||
+    grossBudgetAmount < 1 ||
+    perCustomerRedemptionLimit === null ||
+    perCustomerRedemptionLimit < 1 ||
+    perCustomerRedemptionLimit > maxRedemptions ||
+    minimumOrderAmount === null ||
+    minimumOrderAmount < 0 ||
+    maximumDiscountAmount === null ||
+    maximumDiscountAmount < 1 ||
+    maximumDiscountAmount > grossBudgetAmount
+  ) {
+    return null;
+  }
+  return {
+    currency: 'VND',
+    grossBudgetAmount,
+    maxRedemptions,
+    maximumDiscountAmount,
+    minimumOrderAmount,
+    perCustomerRedemptionLimit,
+  };
+}
+
+function integerFormValue(formData: FormData, key: string) {
+  const value = Number(formData.get(key));
+  return Number.isSafeInteger(value) ? value : null;
 }
 
 function adminApiErrorStatus(error: unknown) {

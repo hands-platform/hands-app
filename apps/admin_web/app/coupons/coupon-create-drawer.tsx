@@ -6,7 +6,6 @@ import { CheckCircle2, CircleAlert, Plus } from 'lucide-react';
 import {
   AdminDrawerActionFooter,
   AdminDrawerFormGrid,
-  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDateTime,
@@ -28,7 +27,6 @@ type CouponCreateDrawerProps = {
 export function CouponCreateDrawer({ closeHref }: CouponCreateDrawerProps) {
   const [state, formAction, pending] = useActionState(createCoupon, INITIAL_COUPON_CREATE_STATE);
   const [codesValue, setCodesValue] = useState('');
-  const [noEndDate, setNoEndDate] = useState(false);
   const parsed = useMemo(() => parseCouponCodeBatch(codesValue), [codesValue]);
   const rejectedCount = parsed.invalid.length + parsed.tooLong.length + parsed.overLimit.length;
 
@@ -42,7 +40,9 @@ export function CouponCreateDrawer({ closeHref }: CouponCreateDrawerProps) {
     >
       <AdminNoticeCard tone="info">
         <strong>Safe launch sequence</strong>
-        <p className="muted">Create as Paused, verify the code and checkout window, then activate from the list.</p>
+        <p className="muted">
+          Create as Paused, verify the code and checkout window, then activate from the list.
+        </p>
       </AdminNoticeCard>
 
       {state.status !== 'idle' ? (
@@ -121,20 +121,70 @@ export function CouponCreateDrawer({ closeHref }: CouponCreateDrawerProps) {
         />
         <AdminFormDateTime
           className="admin-form-control-fluid"
-          disabled={noEndDate}
           label="Ends (ICT)"
           labelVisibility="visible"
           name="endsAt"
+          required
         />
-        <AdminFormCheckbox
-          checked={noEndDate}
-          className="admin-grid-span-2 coupon-no-end-date"
-          label="No end date"
-          name="noEndDate"
-          onChange={(event) => setNoEndDate(event.target.checked)}
-        >
-          <span>No end date</span>
-        </AdminFormCheckbox>
+        <AdminNoticeCard className="admin-grid-span-2" tone="info">
+          <strong>Checkout exposure limits · VND</strong>
+          <p className="muted">
+            Every active coupon needs a total cap, per-customer cap, and bounded budget.
+          </p>
+        </AdminNoticeCard>
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue="100"
+          label="Maximum redemptions"
+          labelVisibility="visible"
+          min="1"
+          name="maxRedemptions"
+          required
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue="1"
+          label="Per-customer limit"
+          labelVisibility="visible"
+          min="1"
+          name="perCustomerRedemptionLimit"
+          required
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue="10000000"
+          label="Gross campaign budget (VND)"
+          labelVisibility="visible"
+          min="1"
+          name="grossBudgetAmount"
+          required
+          step="1"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue="100000"
+          label="Maximum discount / booking (VND)"
+          labelVisibility="visible"
+          min="1"
+          name="maximumDiscountAmount"
+          required
+          step="1"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue="0"
+          label="Minimum order amount (VND)"
+          labelVisibility="visible"
+          min="0"
+          name="minimumOrderAmount"
+          required
+          step="1"
+          type="number"
+        />
 
         <AdminDrawerActionFooter className="admin-grid-span-2">
           <AdminFormControlLink className="button-secondary" href={closeHref}>

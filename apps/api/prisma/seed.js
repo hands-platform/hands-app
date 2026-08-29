@@ -28,6 +28,8 @@ const {
   VerificationStatus,
   PaymentMethod,
   PaymentStatus,
+  ServiceCatalogProvenance,
+  ServicePublicationStatus,
 } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -277,10 +279,16 @@ async function main() {
           priceStep: 100000,
           displayOrder: service.displayOrder,
           active: true,
+          publicationStatus: ServicePublicationStatus.PUBLISHED,
+          provenance: ServiceCatalogProvenance.SEED,
+          publishedAt: new Date(),
         },
         create: {
           ...service,
           priceStep: 100000,
+          publicationStatus: ServicePublicationStatus.PUBLISHED,
+          provenance: ServiceCatalogProvenance.SEED,
+          publishedAt: new Date(),
         },
       }),
     ),

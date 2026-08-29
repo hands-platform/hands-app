@@ -37,9 +37,14 @@ export type CouponTableRow = {
   readonly discountLabel: string;
   readonly endsAtInputValue: string;
   readonly endsAtIso: string;
+  readonly grossBudgetAmount: number | null;
   readonly id: string;
   readonly lowerCode: string;
+  readonly maxRedemptions: number | null;
+  readonly maximumDiscountAmount: number | null;
+  readonly minimumOrderAmount: number | null;
   readonly opsHint: string;
+  readonly perCustomerRedemptionLimit: number | null;
   readonly percentValue: string;
   readonly startsAtInputValue: string;
   readonly startsAtIso: string;
@@ -146,21 +151,24 @@ export function CouponsTableSection({
                       </AdminTextLink>
                       <ActionMenu
                         actions={[
-                          row.usageCountKnown && row.usageBookingCount > 0 ? {
-                            description: 'Used coupons are retained for audit. Pause the coupon instead of deleting it.',
-                            disabled: true,
-                            href: deleteHrefForCoupon(row.id),
-                            icon: PauseCircle,
-                            kind: 'link',
-                            label: 'Pause only · usage retained',
-                          } : {
-                            description: 'Delete is allowed only when no booking usage exists.',
-                            href: deleteHrefForCoupon(row.id),
-                            icon: Trash2,
-                            kind: 'link',
-                            label: 'Delete coupon',
-                            tone: 'danger',
-                          },
+                          row.usageCountKnown && row.usageBookingCount > 0
+                            ? {
+                                description:
+                                  'Used coupons are retained for audit. Pause the coupon instead of deleting it.',
+                                disabled: true,
+                                href: deleteHrefForCoupon(row.id),
+                                icon: PauseCircle,
+                                kind: 'link',
+                                label: 'Pause only · usage retained',
+                              }
+                            : {
+                                description: 'Delete is allowed only when no booking usage exists.',
+                                href: deleteHrefForCoupon(row.id),
+                                icon: Trash2,
+                                kind: 'link',
+                                label: 'Delete coupon',
+                                tone: 'danger',
+                              },
                         ]}
                         label={`More actions for ${row.code}`}
                         managedDropdown

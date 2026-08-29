@@ -68,6 +68,7 @@ function Invoke-Preflight {
     Invoke-Check "git root" "git rev-parse --show-toplevel"
     Invoke-Check "git branch" "git branch --show-current"
     Invoke-Check "git status" "git status --short"
+    Invoke-Check "Git monorepo contract" "npm.cmd run repo:monorepo-contract"
     $changed = (& git status --short 2>$null) -join "`n"
     $protectedPatterns = @(
       "apps/api/prisma/",
@@ -175,6 +176,8 @@ function Invoke-Provider {
 function Invoke-Harness {
   Invoke-Check "script syntax: verify local" "powershell -NoProfile -Command `"[void][scriptblock]::Create([System.IO.File]::ReadAllText((Resolve-Path '.\infra\scripts\verify-local.ps1')))`""
   Invoke-Check "script syntax: verify scope" "powershell -NoProfile -Command `"[void][scriptblock]::Create([System.IO.File]::ReadAllText((Resolve-Path '.\infra\scripts\verify-scope.ps1')))`""
+  Invoke-Check "script syntax: Git monorepo contract" "node --check infra\scripts\check-git-monorepo-contract.mjs"
+  Invoke-Check "Git monorepo contract test" "npm.cmd run repo:monorepo-contract:test"
   Invoke-Check "script syntax: api smoke" "node --check infra\scripts\api-smoke.mjs"
   Invoke-Check "script syntax: admin api budget" "node --check infra\scripts\admin-api-read-budget.mjs"
   Invoke-Check "script syntax: admin web smoke" "node --check infra\scripts\admin-web-smoke.mjs"

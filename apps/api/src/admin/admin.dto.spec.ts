@@ -196,14 +196,11 @@ describe('admin request DTO validation', () => {
       reason: 'reviewed authoritative tax evidence',
     };
 
+    await expect(pipe.transform(payload, { type: 'body', metatype, data: '' })).resolves.toMatchObject({
+      confirmation: 'confirmed',
+    });
     await expect(
-      pipe.transform(payload, { type: 'body', metatype, data: '' }),
-    ).resolves.toMatchObject({ confirmation: 'confirmed' });
-    await expect(
-      pipe.transform(
-        { ...payload, confirmation: undefined },
-        { type: 'body', metatype, data: '' },
-      ),
+      pipe.transform({ ...payload, confirmation: undefined }, { type: 'body', metatype, data: '' }),
     ).rejects.toThrow();
   });
 
@@ -774,11 +771,16 @@ describe('admin request DTO validation', () => {
         { body: '{partnerName} da tham gia.', locale: 'vi', title: 'Doi tac da tham gia' },
       ],
     });
-    await expect(pipe.transform({
-      enabled: false,
-      expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
-      reason: 'Use caller fallback while managed copy is reviewed',
-    }, { type: 'body', metatype, data: '' })).resolves.toEqual({
+    await expect(
+      pipe.transform(
+        {
+          enabled: false,
+          expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
+          reason: 'Use caller fallback while managed copy is reviewed',
+        },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).resolves.toEqual({
       enabled: false,
       expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
       reason: 'Use caller fallback while managed copy is reviewed',
@@ -1317,32 +1319,21 @@ describe('admin request DTO validation', () => {
       })),
     };
 
+    await expect(pipe.transform(payload, { type: 'body', metatype, data: '' })).resolves.toMatchObject({
+      intent: 'SAVE_DRAFT',
+      reason: undefined,
+    });
     await expect(
-      pipe.transform(payload, { type: 'body', metatype, data: '' }),
-    ).resolves.toMatchObject({ intent: 'SAVE_DRAFT', reason: undefined });
-    await expect(
-      pipe.transform(
-        { ...payload, reason: '  optional draft note  ' },
-        { type: 'body', metatype, data: '' },
-      ),
+      pipe.transform({ ...payload, reason: '  optional draft note  ' }, { type: 'body', metatype, data: '' }),
     ).resolves.toMatchObject({ reason: 'optional draft note' });
     await expect(
-      pipe.transform(
-        { ...payload, intent: 'PUBLISH' },
-        { type: 'body', metatype, data: '' },
-      ),
+      pipe.transform({ ...payload, intent: 'PUBLISH' }, { type: 'body', metatype, data: '' }),
     ).rejects.toThrow();
     await expect(
-      pipe.transform(
-        { ...payload, intent: 'NOT_A_REAL_INTENT' },
-        { type: 'body', metatype, data: '' },
-      ),
+      pipe.transform({ ...payload, intent: 'NOT_A_REAL_INTENT' }, { type: 'body', metatype, data: '' }),
     ).rejects.toThrow();
     await expect(
-      pipe.transform(
-        { ...payload, reason: 'x'.repeat(501) },
-        { type: 'body', metatype, data: '' },
-      ),
+      pipe.transform({ ...payload, reason: 'x'.repeat(501) }, { type: 'body', metatype, data: '' }),
     ).rejects.toThrow();
   });
 
@@ -1362,17 +1353,15 @@ describe('admin request DTO validation', () => {
       })),
     };
 
-    await expect(
-      pipe.transform(payload, { type: 'body', metatype, data: '' }),
-    ).resolves.toMatchObject({ displayOrder: 0 });
+    await expect(pipe.transform(payload, { type: 'body', metatype, data: '' })).resolves.toMatchObject({
+      displayOrder: 0,
+    });
     for (const invalid of [
       { ...payload, displayOrder: -1 },
       { ...payload, displayOrder: 10_001 },
       {
         ...payload,
-        durations: payload.durations.map((row, index) =>
-          index === 0 ? { ...row, displayOrder: -1 } : row,
-        ),
+        durations: payload.durations.map((row, index) => (index === 0 ? { ...row, displayOrder: -1 } : row)),
       },
       {
         ...payload,
@@ -1381,9 +1370,7 @@ describe('admin request DTO validation', () => {
         ),
       },
     ]) {
-      await expect(
-        pipe.transform(invalid, { type: 'body', metatype, data: '' }),
-      ).rejects.toThrow();
+      await expect(pipe.transform(invalid, { type: 'body', metatype, data: '' })).rejects.toThrow();
     }
   });
 
@@ -1518,9 +1505,7 @@ describe('admin request DTO validation', () => {
     const metatype = bodyMetatype('unblockProviderAccount', 2) as never;
 
     for (const reason of ['', '   ', 'x'.repeat(11), 'x'.repeat(501)]) {
-      await expect(
-        pipe.transform({ reason }, { type: 'body', metatype, data: '' }),
-      ).rejects.toThrow();
+      await expect(pipe.transform({ reason }, { type: 'body', metatype, data: '' })).rejects.toThrow();
     }
 
     await expect(
@@ -1562,9 +1547,7 @@ describe('admin request DTO validation', () => {
     const metatype = bodyMetatype('createProviderSanction', 2) as never;
 
     for (const reason of [undefined, '', '   ', 'x'.repeat(11), 'x'.repeat(501)]) {
-      await expect(
-        pipe.transform({ reason }, { type: 'body', metatype, data: '' }),
-      ).rejects.toThrow();
+      await expect(pipe.transform({ reason }, { type: 'body', metatype, data: '' })).rejects.toThrow();
     }
     await expect(
       pipe.transform({ reason: `  ${'x'.repeat(12)}  ` }, { type: 'body', metatype, data: '' }),
@@ -1579,9 +1562,7 @@ describe('admin request DTO validation', () => {
     const metatype = bodyMetatype('activateCoupon', 2) as never;
 
     for (const reason of [undefined, '', '   ', 'x'.repeat(501)]) {
-      await expect(
-        pipe.transform({ reason }, { type: 'body', metatype, data: '' }),
-      ).rejects.toThrow();
+      await expect(pipe.transform({ reason }, { type: 'body', metatype, data: '' })).rejects.toThrow();
     }
     await expect(
       pipe.transform({ reason: '  Campaign owner approved launch  ' }, { type: 'body', metatype, data: '' }),
@@ -1715,6 +1696,12 @@ describe('admin request DTO validation', () => {
         description: 'Launch coupon',
         discount: { type: 'fixed', amount: 100000 },
         active: true,
+        maxRedemptions: '100',
+        grossBudgetAmount: '10000000',
+        perCustomerRedemptionLimit: '1',
+        minimumOrderAmount: '0',
+        maximumDiscountAmount: '100000',
+        currency: ' vnd ',
         createdByPhone: 'hidden',
       },
       { type: 'body', metatype: bodyMetatype('createCoupon', 1) as never, data: '' },
@@ -1722,6 +1709,14 @@ describe('admin request DTO validation', () => {
 
     expect(transformed).toHaveProperty('code', 'first100');
     expect(transformed).toHaveProperty('discount', { type: 'fixed', amount: 100000 });
+    expect(transformed).toMatchObject({
+      currency: 'VND',
+      grossBudgetAmount: 10_000_000,
+      maxRedemptions: 100,
+      maximumDiscountAmount: 100_000,
+      minimumOrderAmount: 0,
+      perCustomerRedemptionLimit: 1,
+    });
     expect(transformed).not.toHaveProperty('createdByPhone');
   });
 });

@@ -97,7 +97,8 @@ export function buildCouponCreateNotice({
 
   if (notice === 'admin-auth') {
     return {
-      detail: 'Your Admin session is missing, expired, or unauthorized. Sign in again before saving coupon changes.',
+      detail:
+        'Your Admin session is missing, expired, or unauthorized. Sign in again before saving coupon changes.',
       title: 'Admin session expired',
       tone: 'danger',
     };
@@ -159,6 +160,15 @@ export function buildCouponCreateNotice({
     };
   }
 
+  if (notice === 'activate-policy-incomplete') {
+    return {
+      detail:
+        'Set a future ICT end time and complete every redemption and VND budget limit before activation.',
+      title: 'Coupon checkout policy is incomplete',
+      tone: 'warning',
+    };
+  }
+
   if (notice === 'deleted') {
     return {
       detail: 'The coupon was removed from the coupon list.',
@@ -185,7 +195,8 @@ export function buildCouponCreateNotice({
 
   if (notice === 'delete-used') {
     return {
-      detail: 'This coupon has booking usage and must remain available for audit. Pause it instead of deleting it.',
+      detail:
+        'This coupon has booking usage and must remain available for audit. Pause it instead of deleting it.',
       title: 'Used coupon cannot be deleted',
       tone: 'warning',
     };
@@ -240,9 +251,14 @@ export function buildCouponTableRows(coupons: readonly AdminCoupon[]): CouponTab
     description: coupon.description ?? '-',
     discountLabel: formatDiscount(coupon.discount),
     endsAtIso: coupon.endsAt ?? '',
+    grossBudgetAmount: coupon.grossBudgetAmount ?? null,
     id: coupon.id,
     lowerCode: coupon.code.toLowerCase(),
+    maxRedemptions: coupon.maxRedemptions ?? null,
+    maximumDiscountAmount: coupon.maximumDiscountAmount ?? null,
+    minimumOrderAmount: coupon.minimumOrderAmount ?? null,
     opsHint: couponOpsHint(coupon),
+    perCustomerRedemptionLimit: coupon.perCustomerRedemptionLimit ?? null,
     percentValue: couponPercentValue(coupon.discount),
     startsAtInputValue: couponIsoToIctWallTimeInput(coupon.startsAt),
     startsAtIso: coupon.startsAt ?? '',
@@ -259,7 +275,8 @@ export function buildCouponTableRows(coupons: readonly AdminCoupon[]): CouponTab
       discountAmount: booking.discountAmount ?? null,
       discountLabel: formatMoney(booking.discountAmount, booking.currency ?? 'VND', '-'),
       partnerLabel: booking.partnerName ?? 'Not matched',
-      paymentLabel: [booking.paymentMethod, booking.paymentStatus].filter(Boolean).join(' / ') || 'No payment',
+      paymentLabel:
+        [booking.paymentMethod, booking.paymentStatus].filter(Boolean).join(' / ') || 'No payment',
       requestTimeLabel: formatCouponIctDateTime(booking.requestTime, 'Not set'),
       reversalStatusLabel: booking.reversalStatus ?? 'ACTIVE',
       serviceLabel: booking.serviceName ?? '-',
@@ -328,7 +345,7 @@ export function buildCampaignCommandBoard({
 
 export function couponNeedsReview(coupon: AdminCoupon) {
   const windowState = couponWindowState(coupon);
-  return (coupon.active && windowState === 'expired') || !coupon.active;
+  return !couponPolicyComplete(coupon) || (coupon.active && windowState === 'expired') || !coupon.active;
 }
 
 export function couponWindowState(coupon: AdminCoupon): CouponWindowState {
@@ -350,6 +367,9 @@ export function couponWindowState(coupon: AdminCoupon): CouponWindowState {
 
 export function couponStatusLabel(coupon: AdminCoupon) {
   const windowState = couponWindowState(coupon);
+  if (!couponPolicyComplete(coupon)) {
+    return 'REVIEW REQUIRED';
+  }
   if (!coupon.active) {
     return 'PAUSED';
   }
@@ -435,6 +455,9 @@ function couponOpsHint(coupon: AdminCoupon) {
 
 function couponCheckoutHint(coupon: AdminCoupon) {
   const windowState = couponWindowState(coupon);
+  if (!couponPolicyComplete(coupon)) {
+    return 'Checkout will reject this code until every redemption and VND budget limit is complete.';
+  }
   if (!coupon.active) {
     return 'Checkout preview will reject this code until it is activated.';
   }
@@ -449,13 +472,32 @@ function couponCheckoutHint(coupon: AdminCoupon) {
 
 function couponStatusClass(coupon: AdminCoupon) {
   const windowState = couponWindowState(coupon);
-  if (!coupon.active || windowState === 'expired') {
+  if (!couponPolicyComplete(coupon) || !coupon.active || windowState === 'expired') {
     return 'signal signal-warn';
   }
   if (windowState === 'scheduled') {
     return 'signal signal-info';
   }
   return 'signal signal-ok';
+}
+
+export function couponPolicyComplete(coupon: AdminCoupon) {
+  return (
+    coupon.currency === 'VND' &&
+    Boolean(coupon.endsAt) &&
+    Number.isInteger(coupon.maxRedemptions) &&
+    (coupon.maxRedemptions ?? 0) > 0 &&
+    Number.isSafeInteger(coupon.grossBudgetAmount) &&
+    (coupon.grossBudgetAmount ?? 0) > 0 &&
+    Number.isInteger(coupon.perCustomerRedemptionLimit) &&
+    (coupon.perCustomerRedemptionLimit ?? 0) > 0 &&
+    (coupon.perCustomerRedemptionLimit ?? 0) <= (coupon.maxRedemptions ?? 0) &&
+    Number.isInteger(coupon.minimumOrderAmount) &&
+    (coupon.minimumOrderAmount ?? -1) >= 0 &&
+    Number.isInteger(coupon.maximumDiscountAmount) &&
+    (coupon.maximumDiscountAmount ?? 0) > 0 &&
+    (coupon.maximumDiscountAmount ?? 0) <= (coupon.grossBudgetAmount ?? 0)
+  );
 }
 
 function couponPercentValue(discount: unknown) {

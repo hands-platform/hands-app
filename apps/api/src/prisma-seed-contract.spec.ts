@@ -4,6 +4,12 @@ import { resolve } from 'node:path';
 const seedSource = readFileSync(resolve(__dirname, '..', 'prisma', 'seed.js'), 'utf8');
 
 describe('Prisma seed contract', () => {
+  it('publishes the local customer catalog with explicit seed provenance', () => {
+    expect(seedSource).toContain('publicationStatus: ServicePublicationStatus.PUBLISHED');
+    expect(seedSource).toContain('provenance: ServiceCatalogProvenance.SEED');
+    expect(seedSource).toContain('publishedAt: new Date()');
+  });
+
   it('keeps Finance admin smoke detail fixtures available without a DB reset', () => {
     expect(seedSource).toContain('seed-finance-smoke-booking');
     expect(seedSource).toContain('seed-finance-smoke-settlement');

@@ -3741,6 +3741,12 @@ export type AdminCoupon = {
   active: boolean;
   startsAt?: string | null;
   endsAt?: string | null;
+  maxRedemptions?: number | null;
+  grossBudgetAmount?: number | null;
+  perCustomerRedemptionLimit?: number | null;
+  minimumOrderAmount?: number | null;
+  maximumDiscountAmount?: number | null;
+  currency?: string | null;
   usageBookingCount?: number;
   usageBookings?: AdminCouponUsageBooking[];
 };
@@ -4143,7 +4149,12 @@ export type AdminTaxPolicyIntegrityRecordPage = {
   issue: string;
   items: Array<{
     bookingId: string;
-    classification: 'APPLICABILITY_READINESS' | 'CURRENT_REGRESSION' | 'LEGACY_MIGRATION_DEBT' | 'TEST_RESIDUE' | 'UNKNOWN';
+    classification:
+      | 'APPLICABILITY_READINESS'
+      | 'CURRENT_REGRESSION'
+      | 'LEGACY_MIGRATION_DEBT'
+      | 'TEST_RESIDUE'
+      | 'UNKNOWN';
     createdAt: string;
     evidenceSource: 'LEGACY' | 'PRODUCTION' | 'TEST' | 'UNKNOWN';
     grossAmount: number;
@@ -5395,17 +5406,19 @@ export type AdminBackgroundJobHealth = {
     unavailableQueueNames?: string[];
   };
   generatedAt: string;
-  healthEvents: Array<AdminBackgroundJobAuditAttribution & {
-    detectedAt: string | null;
-    event: AdminBackgroundJobHealthEventStatus;
-    id: string;
-    oldestOpenJobAt: string | null;
-    oldestOpenJobState: string | null;
-    openJobLagMs: number | null;
-    queueName: string;
-    recordedAt: string;
-    staleAfterMs: number | null;
-  }>;
+  healthEvents: Array<
+    AdminBackgroundJobAuditAttribution & {
+      detectedAt: string | null;
+      event: AdminBackgroundJobHealthEventStatus;
+      id: string;
+      oldestOpenJobAt: string | null;
+      oldestOpenJobState: string | null;
+      openJobLagMs: number | null;
+      queueName: string;
+      recordedAt: string;
+      staleAfterMs: number | null;
+    }
+  >;
   healthEventPage: {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
@@ -5440,17 +5453,19 @@ export type AdminBackgroundJobHealth = {
     unresolvedFailureCount?: number;
     workers: number;
   }>;
-  recurringIncidents: Array<AdminBackgroundJobAuditAttribution & {
-    firstFailureAt: string | null;
-    firstFailureJobId: string | null;
-    id: string;
-    jobName: string;
-    openedAt: string;
-    queueName: string;
-    recoveredAt: string | null;
-    resolvedFailureCount: number;
-    status: AdminBackgroundJobRecurringIncidentStatus;
-  }>;
+  recurringIncidents: Array<
+    AdminBackgroundJobAuditAttribution & {
+      firstFailureAt: string | null;
+      firstFailureJobId: string | null;
+      id: string;
+      jobName: string;
+      openedAt: string;
+      queueName: string;
+      recoveredAt: string | null;
+      resolvedFailureCount: number;
+      status: AdminBackgroundJobRecurringIncidentStatus;
+    }
+  >;
   recurringIncidentPage: {
     complete: boolean;
     hasNextPage: boolean;
@@ -5469,13 +5484,15 @@ export type AdminBackgroundJobHealth = {
 };
 
 export type AdminBackgroundJobIncidentDetail = {
-  failures: Array<AdminBackgroundJobAuditAttribution & {
-    firstSeenAt: string;
-    jobId: string;
-    reason: string | null;
-    status: AdminBackgroundJobReviewStatus;
-    updatedAt: string;
-  }>;
+  failures: Array<
+    AdminBackgroundJobAuditAttribution & {
+      firstSeenAt: string;
+      jobId: string;
+      reason: string | null;
+      status: AdminBackgroundJobReviewStatus;
+      updatedAt: string;
+    }
+  >;
   incident: AdminBackgroundJobHealth['recurringIncidents'][number];
   page: {
     hasNextPage: boolean;

@@ -1,7 +1,6 @@
 import {
   AdminDrawerActionFooter,
   AdminDrawerFormGrid,
-  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDateTime,
@@ -48,7 +47,11 @@ export function CouponManagementDrawer({
     <CouponDrawerShell
       closeHref={closeHref}
       eyebrow={mode === 'edit' ? 'Campaign configuration' : 'Booking and payment evidence'}
-      subtitle={mode === 'edit' ? 'Times are shown and edited in ICT (UTC+7).' : 'Usage is loaded independently from the current coupon list page.'}
+      subtitle={
+        mode === 'edit'
+          ? 'Times are shown and edited in ICT (UTC+7).'
+          : 'Usage is loaded independently from the current coupon list page.'
+      }
       title={title}
       titleId={`coupon-${mode}-drawer-title`}
     >
@@ -66,7 +69,9 @@ export function CouponManagementDrawer({
         ) : (
           <AdminNoticeCard role="alert" tone="danger">
             <strong>Editing unavailable</strong>
-            <p className="muted">Coupon list or summary data is unavailable. Retry before changing this campaign.</p>
+            <p className="muted">
+              Coupon list or summary data is unavailable. Retry before changing this campaign.
+            </p>
             <AdminFormControlLink className="button-secondary" href={returnTo}>
               Retry coupons
             </AdminFormControlLink>
@@ -99,7 +104,9 @@ function CouponEditForm({
     <>
       <AdminInlineNotice className="coupon-edit-status" tone="info">
         <StatusBadgeFromPillClass pillClass={row.statusClassName}>{row.statusLabel}</StatusBadgeFromPillClass>
-        <span>Pause or activate from the list so lifecycle changes always receive a separate confirmation.</span>
+        <span>
+          Pause or activate from the list so lifecycle changes always receive a separate confirmation.
+        </span>
       </AdminInlineNotice>
       <AdminDrawerFormGrid action={updateAction} className="coupon-drawer-form admin-mt-16">
         <input name="couponId" type="hidden" value={row.id} />
@@ -142,15 +149,65 @@ function CouponEditForm({
           label="Ends (ICT)"
           labelVisibility="visible"
           name="endsAt"
+          required
         />
-        <AdminFormCheckbox
-          className="admin-grid-span-2 coupon-no-end-date"
-          defaultChecked={!row.endsAtIso}
-          label="No end date"
-          name="noEndDate"
-        >
-          <span>No end date</span>
-        </AdminFormCheckbox>
+        <AdminNoticeCard className="admin-grid-span-2" tone="info">
+          <strong>Checkout exposure limits · VND</strong>
+          <p className="muted">Complete every field before activating a paused or legacy coupon.</p>
+        </AdminNoticeCard>
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={row.maxRedemptions ?? ''}
+          label="Maximum redemptions"
+          labelVisibility="visible"
+          min="1"
+          name="maxRedemptions"
+          required
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={row.perCustomerRedemptionLimit ?? ''}
+          label="Per-customer limit"
+          labelVisibility="visible"
+          min="1"
+          name="perCustomerRedemptionLimit"
+          required
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={row.grossBudgetAmount ?? ''}
+          label="Gross campaign budget (VND)"
+          labelVisibility="visible"
+          min="1"
+          name="grossBudgetAmount"
+          required
+          step="1"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={row.maximumDiscountAmount ?? ''}
+          label="Maximum discount / booking (VND)"
+          labelVisibility="visible"
+          min="1"
+          name="maximumDiscountAmount"
+          required
+          step="1"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={row.minimumOrderAmount ?? ''}
+          label="Minimum order amount (VND)"
+          labelVisibility="visible"
+          min="0"
+          name="minimumOrderAmount"
+          required
+          step="1"
+          type="number"
+        />
         <AdminDrawerActionFooter className="admin-grid-span-2">
           <AdminFormControlLink className="button-secondary" href={closeHref}>
             Cancel
@@ -179,7 +236,10 @@ function CouponUsageWorkspace({
     return (
       <AdminNoticeCard role="alert" tone="danger">
         <strong>Usage unavailable</strong>
-        <p className="muted">Booking and payment evidence could not be loaded. Retry before using this view for campaign decisions.</p>
+        <p className="muted">
+          Booking and payment evidence could not be loaded. Retry before using this view for campaign
+          decisions.
+        </p>
         <AdminFormControlLink className="button-secondary" href={hrefForPage(usagePage)}>
           Retry usage
         </AdminFormControlLink>
@@ -199,7 +259,9 @@ function CouponUsageWorkspace({
 
   const visiblePaid = row.usageBookings.reduce((sum, booking) => sum + (booking.amount ?? 0), 0);
   const visibleDiscount = row.usageBookings.reduce((sum, booking) => sum + (booking.discountAmount ?? 0), 0);
-  const visibleReversed = row.usageBookings.filter((booking) => booking.reversalStatusLabel === 'REVERSED').length;
+  const visibleReversed = row.usageBookings.filter(
+    (booking) => booking.reversalStatusLabel === 'REVERSED',
+  ).length;
   const currency = row.usageBookings[0]?.currency ?? 'VND';
 
   return (
@@ -209,8 +271,16 @@ function CouponUsageWorkspace({
         className="coupon-usage-summary"
         metrics={[
           { key: 'booking-count', label: 'All linked bookings', value: row.usageBookingCount },
-          { key: 'visible-paid', label: 'Customer paid · visible page', value: formatMoney(visiblePaid, currency) },
-          { key: 'visible-discount', label: 'Discount · visible page', value: formatMoney(visibleDiscount, currency) },
+          {
+            key: 'visible-paid',
+            label: 'Customer paid · visible page',
+            value: formatMoney(visiblePaid, currency),
+          },
+          {
+            key: 'visible-discount',
+            label: 'Discount · visible page',
+            value: formatMoney(visibleDiscount, currency),
+          },
           { key: 'visible-reversed', label: 'Reversed · visible page', value: visibleReversed },
         ]}
       />

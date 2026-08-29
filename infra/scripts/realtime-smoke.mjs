@@ -1,43 +1,85 @@
 import jwt from 'jsonwebtoken';
-import { AdminUserProvenance, PrismaClient, Role } from '@prisma/client';
+import {
+  AdminOperatorPermissionCategory,
+  AdminUserProvenance,
+  PrismaClient,
+  Role,
+} from '@prisma/client';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { io } from 'socket.io-client';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
+import { assertTaxPolicyFixtureWriteTarget } from './lib/tax-policy-fixture-write-target.mjs';
 
 const { env } = loadMergedEnv('.env');
+
+if (env.DATABASE_URL && !process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = env.DATABASE_URL;
+}
+if (env.NODE_ENV === 'production') {
+  throw new Error('Realtime smoke cannot create Admin or booking fixtures in production.');
+}
+assertTaxPolicyFixtureWriteTarget(env.DATABASE_URL, env.TAX_POLICY_FIXTURE_WRITE_ALLOWLIST);
 
 const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
 const socketBaseUrl = process.env.SOCKET_BASE_URL ?? apiBaseUrl.replace(/\/api$/, '');
 
-function jwtAccessSecret() {
-  const configured = env.JWT_ACCESS_SECRET?.trim();
-  if (configured && !['change-me', 'changeme', 'secret', 'password'].includes(configured.toLowerCase())) {
-    return configured;
-  }
-  if (env.NODE_ENV === 'production') {
-    throw new Error('JWT_ACCESS_SECRET must be configured before running realtime smoke in production.');
-  }
-  return 'dev-access-secret';
+function adminWebApiTokenSecret() {
+  return env.ADMIN_WEB_API_TOKEN_SECRET?.trim() || 'dev-admin-web-api-token-secret';
 }
 
 async function createSmokeAdminAccessToken() {
   const prisma = new PrismaClient();
   try {
-    const user = await prisma.user.findFirst({
-      where: {
+    const now = new Date();
+    const fixtureRunId = `realtime-smoke-${process.pid}-${Date.now()}`;
+    const user = await prisma.user.create({
+      data: {
         adminUserProvenance: AdminUserProvenance.FIXTURE,
-        roles: { has: Role.MASTER_ADMIN },
+        fixtureKind: 'REALTIME_SMOKE',
+        fixtureRunId,
+        fullName: 'Realtime Smoke Admin',
+        phone: `+8497${String(Date.now()).slice(-7)}`,
+        roles: [Role.ADMIN, Role.MASTER_ADMIN],
       },
-      orderBy: { createdAt: 'asc' },
     });
-    if (!user) {
-      throw new Error('Realtime smoke requires an explicit fixture MASTER_ADMIN account.');
-    }
+    const sessionId = `${fixtureRunId}-${user.id}`;
+    await prisma.$transaction([
+      prisma.adminOperatorPermission.create({
+        data: { userId: user.id, categories: Object.values(AdminOperatorPermissionCategory) },
+      }),
+      prisma.adminOperatorCredential.create({
+        data: {
+          email: `${user.id}@realtime-smoke.hands.test`,
+          mfaState: 'VERIFIED',
+          passwordHash: 'disposable-realtime-smoke-only-hash',
+          passwordSalt: 'disposable-realtime-smoke-only-salt',
+          setupCompletedAt: now,
+          userId: user.id,
+        },
+      }),
+      prisma.adminWebSession.create({
+        data: {
+          expiresAt: new Date(now.getTime() + 30 * 60_000),
+          id: sessionId,
+          lastSeenAt: now,
+          mfaVerifiedAt: now,
+          reauthenticatedAt: now,
+          userId: user.id,
+        },
+      }),
+    ]);
     return jwt.sign(
-      { sub: user.id, activeRole: Role.ADMIN, roles: user.roles },
-      jwtAccessSecret(),
+      {
+        aud: 'hands-api',
+        jti: sessionId,
+        role: Role.ADMIN,
+        scope: 'admin:api',
+        sub: user.id,
+        typ: 'admin-web-api',
+      },
+      adminWebApiTokenSecret(),
       { expiresIn: '10m' },
     );
   } finally {
@@ -200,7 +242,9 @@ const providerAuth = await postJson('/auth/verify-otp', null, {
 const adminAccessToken = await createSmokeAdminAccessToken();
 
 await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/approve`, adminAccessToken);
-await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/unblock`, adminAccessToken);
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/unblock`, adminAccessToken, {
+  reason: 'Realtime smoke prepares an approved disposable Partner fixture.',
+});
 const onlineProvider = await postJson('/provider/online', providerAuth.accessToken);
 if (onlineProvider.status === 'OFFLINE') {
   throw new Error(`Provider failed to go online before realtime smoke: ${JSON.stringify(onlineProvider)}`);
@@ -363,7 +407,7 @@ try {
   await emitAndWait(customerSocket, 'booking.join_room', { bookingId: preferredRejectBooking.id });
   const preferredRejectedEvent = waitForEvent(
     customerSocket,
-    'booking.expired',
+    'booking.cancelled',
     (payload) => payload?.id === preferredRejectBooking.id,
   );
   const preferredRejected = await postJson(

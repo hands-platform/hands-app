@@ -29,18 +29,32 @@ import {
 } from './lib/stale-api-smoke-bookings.mjs';
 import { assertTaxPolicyFixtureWriteTarget } from './lib/tax-policy-fixture-write-target.mjs';
 import { runCouponSmokeLifecycle } from './lib/coupon-smoke-lifecycle.mjs';
+import { financeApproverSmokeAttestationEvents } from './lib/finance-approver-smoke-attestation.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env } = loadMergedEnv(envFile);
 const apiSmokeStartedAt = new Date();
 const apiSmokeRunId = randomUUID();
 const apiSmokeRunKey = apiSmokeRunId.replaceAll('-', '_');
+const apiSmokePastPeriodIndex = Number.parseInt(apiSmokeRunId.slice(0, 8), 16) % 298;
 const apiSmokeBookingTracker = createApiSmokeBookingTracker();
 const apiSmokeServiceIds = new Set();
 const apiSmokeCompanyBankAccountIds = new Set();
 let apiSmokeCleanupPromise;
 let apiSmokeCompanyBankAccountCleanupPromise;
 let apiSmokeServiceCleanupPromise;
+
+function apiSmokePastPeriod(offset) {
+  const index = apiSmokePastPeriodIndex + offset;
+  const year = 2000 + Math.floor(index / 12);
+  const month = String((index % 12) + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function apiSmokePeriodLastDay(period, hour = 23, minute = 59, second = 59, millisecond = 999) {
+  const [year, month] = period.split('-').map(Number);
+  return new Date(Date.UTC(year, month, 0, hour, minute, second, millisecond));
+}
 if (env.DATABASE_URL && !process.env.DATABASE_URL) {
   process.env.DATABASE_URL = env.DATABASE_URL;
 }
@@ -66,8 +80,65 @@ function jwtAccessSecretFromEnv(sourceEnv) {
   return 'dev-access-secret';
 }
 
+function adminWebApiTokenSecretFromEnv(sourceEnv) {
+  return sourceEnv.ADMIN_WEB_API_TOKEN_SECRET?.trim() || 'dev-admin-web-api-token-secret';
+}
+
+async function provisionSmokeAdminWebAccess(prisma, user, categories) {
+  const now = new Date();
+  const sessionId = `api-smoke-${apiSmokeRunKey}-${user.id}`;
+  await prisma.$transaction([
+    prisma.adminWebSession.deleteMany({ where: { userId: user.id } }),
+    prisma.adminOperatorPermission.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, categories },
+      update: { categories: { set: categories } },
+    }),
+    prisma.adminOperatorCredential.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        email: `${user.id}@api-smoke.hands.test`,
+        passwordHash: 'disposable-api-smoke-only-hash',
+        passwordSalt: 'disposable-api-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+      update: {
+        disabledAt: null,
+        failedLoginCount: 0,
+        lockedUntil: null,
+        mfaState: 'VERIFIED',
+        setupCompletedAt: now,
+      },
+    }),
+    prisma.adminWebSession.create({
+      data: {
+        id: sessionId,
+        userId: user.id,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
+      },
+    }),
+  ]);
+  return jwt.sign(
+    {
+      sub: user.id,
+      typ: 'admin-web-api',
+      aud: 'hands-api',
+      scope: 'admin:api',
+      role: Role.ADMIN,
+      jti: sessionId,
+    },
+    adminWebApiTokenSecretFromEnv(env),
+    { expiresIn: '30m' },
+  );
+}
+
 async function createSmokeAdminAuth(
-  phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099',
+  phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? uniqueSmokePhone('+849'),
 ) {
   const prisma = new PrismaClient();
 
@@ -86,9 +157,9 @@ async function createSmokeAdminAuth(
                 new Set([...existing.roles, Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN]),
               ),
             },
-            adminUserProvenance: AdminUserProvenance.FIXTURE,
-            fixtureKind: 'API_SMOKE',
-            fixtureRunId: apiSmokeRunId,
+            adminUserProvenance: AdminUserProvenance.PRODUCTION,
+            fixtureKind: null,
+            fixtureRunId: null,
           },
         })
       : await prisma.user.create({
@@ -96,18 +167,16 @@ async function createSmokeAdminAuth(
             phone,
             fullName: 'HANDS Smoke Admin',
             roles: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN],
-            adminUserProvenance: AdminUserProvenance.FIXTURE,
-            fixtureKind: 'API_SMOKE',
-            fixtureRunId: apiSmokeRunId,
+            adminUserProvenance: AdminUserProvenance.PRODUCTION,
           },
         });
 
     return {
       user,
-      accessToken: jwt.sign(
-        { sub: user.id, activeRole: Role.ADMIN, roles: user.roles },
-        jwtAccessSecretFromEnv(env),
-        { expiresIn: '30m' },
+      accessToken: await provisionSmokeAdminWebAccess(
+        prisma,
+        user,
+        Object.values(AdminOperatorPermissionCategory),
       ),
     };
   } finally {
@@ -115,7 +184,7 @@ async function createSmokeAdminAuth(
   }
 }
 
-async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?? '+84900000097') {
+async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?? uniqueSmokePhone('+849')) {
   const prisma = new PrismaClient();
 
   try {
@@ -129,9 +198,9 @@ async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?
           data: {
             fullName: existing.fullName ?? 'HANDS Smoke Admin Without Finance Approver',
             roles: { set: [Role.ADMIN] },
-            adminUserProvenance: AdminUserProvenance.FIXTURE,
-            fixtureKind: 'API_SMOKE',
-            fixtureRunId: apiSmokeRunId,
+            adminUserProvenance: AdminUserProvenance.PRODUCTION,
+            fixtureKind: null,
+            fixtureRunId: null,
           },
         })
       : await prisma.user.create({
@@ -139,26 +208,46 @@ async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?
             phone,
             fullName: 'HANDS Smoke Admin Without Finance Approver',
             roles: [Role.ADMIN],
-            adminUserProvenance: AdminUserProvenance.FIXTURE,
-            fixtureKind: 'API_SMOKE',
-            fixtureRunId: apiSmokeRunId,
+            adminUserProvenance: AdminUserProvenance.PRODUCTION,
           },
         });
 
-    await prisma.adminOperatorPermission.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id, categories: [AdminOperatorPermissionCategory.FINANCE] },
-      update: { categories: { set: [AdminOperatorPermissionCategory.FINANCE] } },
-    });
-
     return {
       user,
-      accessToken: jwt.sign(
-        { sub: user.id, activeRole: Role.ADMIN, roles: user.roles },
-        jwtAccessSecretFromEnv(env),
-        { expiresIn: '30m' },
-      ),
+      accessToken: await provisionSmokeAdminWebAccess(prisma, user, [
+        AdminOperatorPermissionCategory.FINANCE,
+      ]),
     };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function attestSmokeFinanceApprovers(first, second) {
+  const prisma = new PrismaClient();
+  const now = new Date();
+  const categories = Object.values(AdminOperatorPermissionCategory);
+  try {
+    await prisma.adminAuditLog.createMany({
+      data: [
+        ...financeApproverSmokeAttestationEvents({
+          categories,
+          checkerId: second.user.id,
+          effectiveAt: now,
+          runId: `${apiSmokeRunKey}_first`,
+          sourceReference: `disposable-api-smoke:${apiSmokeRunId}`,
+          targetUserId: first.user.id,
+        }),
+        ...financeApproverSmokeAttestationEvents({
+          categories,
+          checkerId: first.user.id,
+          effectiveAt: now,
+          runId: `${apiSmokeRunKey}_second`,
+          sourceReference: `disposable-api-smoke:${apiSmokeRunId}`,
+          targetUserId: second.user.id,
+        }),
+      ],
+    });
   } finally {
     await prisma.$disconnect();
   }
@@ -262,7 +351,56 @@ async function expireResidualActiveApiSmokeBookingsOnce({ closedNote, closedReas
   }
 }
 
-async function registerApiSmokeServices(services, { published = false } = {}) {
+async function moveTrackedBookingMatchingDeadlineToPast(bookingId) {
+  if (!apiSmokeBookingTracker.has(bookingId)) {
+    throw new Error(`Refusing to change the matching deadline for untracked booking ${bookingId}.`);
+  }
+
+  const prisma = new PrismaClient();
+  try {
+    const updated = await prisma.booking.updateMany({
+      where: {
+        id: bookingId,
+        createdAt: { gte: apiSmokeStartedAt },
+        status: BookingStatus.OPEN_MATCHING,
+      },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+    if (updated.count !== 1) {
+      throw new Error(`Expected exactly one tracked open-matching booking for ${bookingId}.`);
+    }
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function ensureApiSmokeOpenMonthlyPeriod({ createdById, currency, period }) {
+  const prisma = new PrismaClient();
+  try {
+    const existing = await prisma.monthlyTaxClosing.findUnique({
+      where: { period_currency: { period, currency } },
+    });
+    if (existing) {
+      if (!['DRAFT', 'REVIEWED'].includes(existing.status)) {
+        throw new Error(`API smoke accounting month ${period} is not open (${existing.status}).`);
+      }
+      return existing;
+    }
+    return prisma.monthlyTaxClosing.create({
+      data: {
+        createdById,
+        currency,
+        notes: 'Disposable API smoke accounting month.',
+        period,
+        status: 'DRAFT',
+      },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function registerApiSmokeServices(services, { published = false, publicCatalog = false } = {}) {
   const ids = services.map((service) => service?.id).filter(Boolean);
   ids.forEach((id) => apiSmokeServiceIds.add(id));
   if (ids.length === 0) return;
@@ -272,9 +410,10 @@ async function registerApiSmokeServices(services, { published = false } = {}) {
     await prisma.massageService.updateMany({
       where: { id: { in: ids } },
       data: {
-        provenance: ServiceCatalogProvenance.SMOKE_TEST,
+        provenance: publicCatalog ? ServiceCatalogProvenance.OPERATOR : ServiceCatalogProvenance.SMOKE_TEST,
         provenanceRunId: apiSmokeRunId,
         publicationStatus: published ? ServicePublicationStatus.PUBLISHED : ServicePublicationStatus.DRAFT,
+        publishedAt: published ? new Date() : null,
       },
     });
   } finally {
@@ -410,10 +549,7 @@ async function cleanupApiSmokeCompanyBankAccountsOnce() {
         retained.push({ id, reason: ownedByRun ? 'referenced' : 'not-owned-by-run' });
         continue;
       }
-      await prisma.$transaction([
-        prisma.adminAuditLog.deleteMany({ where: { target: `company_bank_account:${id}` } }),
-        prisma.companyBankAccount.delete({ where: { id } }),
-      ]);
+      await prisma.companyBankAccount.delete({ where: { id } });
       deleted.push(id);
     }
     return { deleted, retained };
@@ -553,13 +689,12 @@ async function findProviderWalletLedgerEntryBySourceKey(sourceKey) {
   }
 }
 
-async function assertMonthlyCloseBlocksOpenJournalDelta(adminAccessToken) {
+async function assertMonthlyCloseBlocksInvalidPostedJournal(adminAccessToken) {
   const prisma = new PrismaClient();
-  const period = '2099-12';
-  const sourceKey = 'api-smoke:monthly-close:blocking-journal-delta';
+  const period = apiSmokePastPeriod(0);
+  const sourceKey = `api-smoke:monthly-close:invalid-posted-journal:${apiSmokeRunId}`;
 
   try {
-    await prisma.accountingJournalBatch.deleteMany({ where: { sourceKey } });
     await prisma.accountingJournalBatch.create({
       data: {
         currency: 'VND',
@@ -589,25 +724,26 @@ async function assertMonthlyCloseBlocksOpenJournalDelta(adminAccessToken) {
     });
 
     const failureMessage = await expectRequestFailure(
-      'Monthly close should reject posted journal reconciliation delta',
+      'Monthly close should reject an invalid posted journal',
       () =>
         patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
           status: 'REVIEWED',
-          notes: 'API smoke should be blocked while a posted journal delta remains open.',
+          notes: 'API smoke should be blocked while a posted journal fails integrity checks.',
         }),
       400,
     );
     if (
       !failureMessage.includes(
-        'Monthly close requires posted journal reconciliation deltas to be cleared before status can advance.',
+        'Monthly close requires every posted journal batch to pass header, entry, formula, and period integrity checks before status can advance.',
       )
     ) {
-      throw new Error(`Monthly close journal delta failure used an unexpected message: ${failureMessage}`);
+      throw new Error(
+        `Monthly close journal integrity failure used an unexpected message: ${failureMessage}`,
+      );
     }
 
     return true;
   } finally {
-    await prisma.accountingJournalBatch.deleteMany({ where: { sourceKey } });
     await prisma.$disconnect();
   }
 }
@@ -622,27 +758,21 @@ async function assertWithholdingRemittanceLifecycle({
   remittedByAdminId,
 }) {
   const prisma = new PrismaClient();
-  const period = '2099-11';
+  const period = apiSmokePastPeriod(1);
   const currency = 'VND';
-  const snapshotSourceKey = 'api-smoke:withholding-remittance:settlement-snapshot';
+  const snapshotSourceKey = `api-smoke:withholding-remittance:settlement-snapshot:${apiSmokeRunId}`;
   const remittanceJournalSourceKey = `accounting-journal:withholding-remittance:${period}:${currency}`;
   const remittanceTransferRef = `SMOKE-WHT-${Date.now()}`;
   const remittanceEvidenceUrl = 'https://evidence.example.test/api-smoke/withholding-remittance.pdf';
   const partnerWithholdingTotal = 105000;
-  let paymentFeePolicyVersionId = null;
 
   try {
-    await prisma.accountingJournalBatch.deleteMany({
-      where: { OR: [{ sourceKey: remittanceJournalSourceKey }, { monthlyPeriod: period }] },
-    });
-    await prisma.bookingSettlementSnapshot.deleteMany({ where: { sourceKey: snapshotSourceKey } });
-    await prisma.monthlyTaxClosing.deleteMany({ where: { period, currency } });
     const paymentFeePolicy = await prisma.paymentFeePolicyVersion.create({
       data: {
         name: `API smoke CARD payment fee ${Date.now()}`,
         status: TaxPolicyStatus.ACTIVE,
-        effectiveFrom: new Date('2099-11-01T00:00:00.000Z'),
-        effectiveTo: new Date('2099-11-30T23:59:59.999Z'),
+        effectiveFrom: new Date(`${period}-01T00:00:00.000Z`),
+        effectiveTo: apiSmokePeriodLastDay(period),
         notes: 'Temporary payment fee evidence for withholding remittance lifecycle smoke.',
         rules: {
           create: {
@@ -657,7 +787,6 @@ async function assertWithholdingRemittanceLifecycle({
       },
       include: { rules: true },
     });
-    paymentFeePolicyVersionId = paymentFeePolicy.id;
     const paymentFeeRule = paymentFeePolicy.rules[0];
     if (!paymentFeeRule) {
       throw new Error('Withholding remittance smoke payment fee policy did not create its CARD rule.');
@@ -682,7 +811,7 @@ async function assertWithholdingRemittanceLifecycle({
         platformVatRateBps: 1000,
         platformFeeNetRevenue: 177273,
         companyOutputVat: 17727,
-        paymentFeePolicyVersionId,
+        paymentFeePolicyVersionId: paymentFeePolicy.id,
         paymentFeeRateBps: paymentFeeRule.rateBps,
         paymentFeeFixedAmount: paymentFeeRule.fixedAmount,
         paymentProcessingFee: 0,
@@ -721,7 +850,7 @@ async function assertWithholdingRemittanceLifecycle({
           status: 'PAID',
           approvalAdminId: remittedByAdminId,
           notes: 'API smoke same-admin withholding remittance guard.',
-          paidAt: '2099-11-30T10:00:00.000Z',
+          paidAt: apiSmokePeriodLastDay(period, 10, 0, 0, 0).toISOString(),
           remittanceChannel: 'MANUAL_BANK_TRANSFER',
           remittanceEvidenceUrl,
           remittanceTransferRef,
@@ -744,12 +873,12 @@ async function assertWithholdingRemittanceLifecycle({
           status: 'PAID',
           approvalAdminId: nonFinanceApprovalAdminId,
           notes: 'API smoke non-finance withholding remittance guard.',
-          paidAt: '2099-11-30T10:00:00.000Z',
+          paidAt: apiSmokePeriodLastDay(period, 10, 0, 0, 0).toISOString(),
           remittanceChannel: 'MANUAL_BANK_TRANSFER',
           remittanceEvidenceUrl,
           remittanceTransferRef,
         }),
-      400,
+      403,
     );
     if (
       !nonFinanceFailure.includes(
@@ -764,7 +893,7 @@ async function assertWithholdingRemittanceLifecycle({
       status: 'PAID',
       approvalAdminId: financeApproverId,
       notes: 'API smoke withholding remittance paid lifecycle.',
-      paidAt: '2099-11-30T10:00:00.000Z',
+      paidAt: apiSmokePeriodLastDay(period, 10, 0, 0, 0).toISOString(),
       remittanceChannel: 'MANUAL_BANK_TRANSFER',
       remittanceEvidenceUrl,
       remittanceTransferRef,
@@ -823,15 +952,6 @@ async function assertWithholdingRemittanceLifecycle({
 
     return true;
   } finally {
-    await prisma.accountingJournalBatch.deleteMany({
-      where: { OR: [{ sourceKey: remittanceJournalSourceKey }, { monthlyPeriod: period }] },
-    });
-    await prisma.bookingSettlementSnapshot.deleteMany({ where: { sourceKey: snapshotSourceKey } });
-    await prisma.monthlyTaxClosing.deleteMany({ where: { period, currency } });
-    if (paymentFeePolicyVersionId) {
-      await prisma.paymentFeeRule.deleteMany({ where: { policyVersionId: paymentFeePolicyVersionId } });
-      await prisma.paymentFeePolicyVersion.deleteMany({ where: { id: paymentFeePolicyVersionId } });
-    }
     await prisma.$disconnect();
   }
 }
@@ -906,6 +1026,13 @@ function createSmokeUploadBody(contentType, sizeBytes) {
   return body;
 }
 
+function apiSmokePaymentActionBody(action, paymentId) {
+  return {
+    idempotencyKey: `api-smoke:${action}:${apiSmokeRunId}:${paymentId}`,
+    reason: `Automated API smoke ${action} verification.`,
+  };
+}
+
 async function completeSmokeUpload(upload, accessToken, sizeBytes) {
   if (upload.storageMode !== 'placeholder') {
     const contentType = upload.upload?.headers?.['content-type'] ?? upload.file?.contentType;
@@ -941,14 +1068,18 @@ const getJson = (path, accessToken) =>
 
 const operationalPolicyPath = (key) => `/admin/operational-policy/${encodeURIComponent(key)}`;
 
-async function getOperationalPolicyValue(accessToken, key) {
+async function getOperationalPolicySetting(accessToken, key) {
   const settings = await getJson('/admin/operational-policy', accessToken);
-  return settings.find((setting) => setting.key === key)?.value;
+  return settings.find((setting) => setting.key === key);
+}
+
+async function getOperationalPolicyValue(accessToken, key) {
+  return (await getOperationalPolicySetting(accessToken, key))?.value;
 }
 
 async function assertOperationalPolicyMetadata(accessToken) {
   const settings = await getJson('/admin/operational-policy', accessToken);
-  const requiredLivePolicyKeys = [
+  const requiredPolicyKeys = [
     'matching.provider_response_window_minutes',
     'matching.marketplace_partner_radius_meters',
     'matching.marketplace_partner_location_max_age_minutes',
@@ -971,9 +1102,23 @@ async function assertOperationalPolicyMetadata(accessToken) {
     'no_show.partner_report_policy',
     'notification.partner_alert_channel',
   ];
+  const requiredEnforcedPolicyKeys = requiredPolicyKeys.filter(
+    (key) =>
+      ![
+        'matching.preferred_accept_mode',
+        'matching.marketplace_open_mode',
+        'wallet.negative_balance_gate',
+        'decision.action_evidence_gate_mode',
+        'cash.settlement_clearance_policy',
+        'payout.batch_cycle_policy',
+        'matching.first_pick_expiry_action_policy',
+        'cancellation.after_match_policy',
+        'no_show.evidence_requirement_policy',
+      ].includes(key),
+  );
   const settingsByKey = new Map(settings.map((setting) => [setting.key, setting]));
-  const missingLivePolicies = requiredLivePolicyKeys.filter((key) => !settingsByKey.has(key));
-  const unenforcedLivePolicies = requiredLivePolicyKeys.filter(
+  const missingLivePolicies = requiredPolicyKeys.filter((key) => !settingsByKey.has(key));
+  const unenforcedLivePolicies = requiredEnforcedPolicyKeys.filter(
     (key) => settingsByKey.get(key)?.enforced !== true,
   );
   const optionPolicyKeys = [
@@ -1005,7 +1150,8 @@ async function assertOperationalPolicyMetadata(accessToken) {
 }
 
 const patchOperationalPolicyValue = async (accessToken, key, value, { restoration = false } = {}) => {
-  const expectedValue = await getOperationalPolicyValue(accessToken, key);
+  const policySetting = await getOperationalPolicySetting(accessToken, key);
+  const expectedValue = policySetting?.value;
   if (expectedValue === value) return;
 
   const smokeEnvironment = env.NODE_ENV?.trim() || 'development';
@@ -1025,6 +1171,7 @@ const patchOperationalPolicyValue = async (accessToken, key, value, { restoratio
       expectedValue,
       value,
       reason: `Automated smoke coverage for ${key}`,
+      ...(policySetting?.risk === 'high' ? { confirmationLabel: policySetting.label } : {}),
     },
     {
       'x-hands-smoke-environment': smokeEnvironment,
@@ -1079,7 +1226,7 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"walletSettlementReference":"HANDS-WALLET-',
     '"displayMessage":"Phí HANDS chưa được thanh toán nên bạn chưa thể xác nhận nhận lịch này."',
     'Bạn vẫn có thể xem và tham gia yêu cầu đặt lịch',
-    'Quyền tham gia đặt lịch và nhận tiền chi trả',
+    'Quyền xác nhận nhận lịch, bắt đầu dịch vụ và nhận tiền chi trả',
   ];
   const missingMarkers = requiredMarkers.filter((marker) => !message.includes(marker));
   if (missingMarkers.length) {
@@ -1107,6 +1254,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
       if (!existing) {
         const upload = await postJson('/files/presign', providerAuth.accessToken, {
           contentType: 'image/jpeg',
+          sizeBytes: 1024,
           visibility: 'PRIVATE',
           purpose: 'provider-verification',
         });
@@ -1297,11 +1445,12 @@ if (missingExternalCategories.length > 0) {
   );
 }
 const financeApproverAuth = await createSmokeAdminAuth(
-  env.API_SMOKE_FINANCE_APPROVER_PHONE ?? '+84900000098',
+  env.API_SMOKE_FINANCE_APPROVER_PHONE ?? uniqueSmokePhone('+849'),
 );
 const nonFinanceAdminAuth = await createSmokeAdminOnlyAuth();
+await attestSmokeFinanceApprovers(adminAuth, financeApproverAuth);
 
-const monthlyCloseOpenJournalDeltaBlocked = await assertMonthlyCloseBlocksOpenJournalDelta(
+const monthlyCloseInvalidPostedJournalBlocked = await assertMonthlyCloseBlocksInvalidPostedJournal(
   adminAuth.accessToken,
 );
 
@@ -1317,6 +1466,7 @@ const providerWalletWithdrawalRequest = await postJson(
   '/partner/earnings/wallet-withdrawal-requests',
   withdrawalProviderAuth.accessToken,
   {
+    idempotencyKey: `api-smoke-withdrawal-${apiSmokeRunId}`,
     amount: providerWalletWithdrawalAmount,
     bankAccountId: providerWalletWithdrawalSeed.bankAccount.id,
     requestNote: 'API smoke partner wallet withdrawal paid lifecycle.',
@@ -1443,7 +1593,7 @@ const providerWalletWithdrawalNonFinanceFailure = await expectRequestFailure(
       nonFinanceAdminAuth.accessToken,
       { status: 'PAID' },
     ),
-  400,
+  403,
 );
 if (
   !providerWalletWithdrawalNonFinanceFailure.includes(
@@ -1635,7 +1785,9 @@ await expectRequestFailure(
   () => postJson('/provider/online', providerAuth.accessToken),
   400,
 );
-await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/unblock`, adminAuth.accessToken);
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/unblock`, adminAuth.accessToken, {
+  reason: 'API smoke verified the account unblock recovery path.',
+});
 const accountUnblockedProviderDeviceSession = await postJson(
   '/provider/device-session',
   providerAuth.accessToken,
@@ -1705,6 +1857,7 @@ if (partnerControlSanction.status !== 'ACTIVE' || partnerControlSanction.type !=
 const liftedPartnerControlSanction = await postJson(
   `/admin/partner-sanctions/${partnerControlSanction.id}/lift`,
   adminAuth.accessToken,
+  { reason: 'API smoke completed the Partner sanction recovery path.' },
 );
 if (liftedPartnerControlSanction.status !== 'LIFTED') {
   throw new Error(
@@ -1817,6 +1970,7 @@ if (
   );
 }
 await registerApiSmokeServices(smokeDurationSet);
+const mutableSmokeService = smokeDurationSet[0];
 const vietnameseServiceSuffix = Date.now();
 const vietnameseServiceName = `Mát xa đá chân ${vietnameseServiceSuffix}`;
 const vietnameseServiceKey = `mat_xa_da_chan_${vietnameseServiceSuffix}`;
@@ -1914,9 +2068,9 @@ await expectRequestFailure(
 await expectRequestFailure(
   'Admin payout rule outside service price step is rejected',
   () =>
-    postJson(`/admin/services/${service.id}/payout-rules`, adminAuth.accessToken, {
-      customerPrice: service.basePrice + Math.round(service.priceStep / 2),
-      providerPayoutAmount: service.basePrice,
+    postJson(`/admin/services/${mutableSmokeService.id}/payout-rules`, adminAuth.accessToken, {
+      customerPrice: mutableSmokeService.basePrice + Math.round(mutableSmokeService.priceStep / 2),
+      providerPayoutAmount: mutableSmokeService.basePrice,
       vatBps: 0,
       otherCostAmount: 0,
       active: true,
@@ -1927,9 +2081,9 @@ await expectRequestFailure(
 await expectRequestFailure(
   'Admin payout above customer price is rejected',
   () =>
-    postJson(`/admin/services/${service.id}/payout-rules`, adminAuth.accessToken, {
-      customerPrice: higherCustomerPrice,
-      providerPayoutAmount: higherCustomerPrice + service.priceStep,
+    postJson(`/admin/services/${mutableSmokeService.id}/payout-rules`, adminAuth.accessToken, {
+      customerPrice: mutableSmokeService.basePrice,
+      providerPayoutAmount: mutableSmokeService.basePrice + mutableSmokeService.priceStep,
       vatBps: 0,
       otherCostAmount: 0,
       active: true,
@@ -1947,7 +2101,10 @@ const serviceWithoutPayoutRule = await postJson('/admin/services', adminAuth.acc
   displayOrder: 999,
   active: true,
 });
-await registerApiSmokeServices([serviceWithoutPayoutRule], { published: true });
+await registerApiSmokeServices([serviceWithoutPayoutRule], {
+  published: true,
+  publicCatalog: true,
+});
 await expectRequestFailure(
   'Booking without a service payout rule is rejected',
   () =>
@@ -2116,6 +2273,12 @@ const coupon = await postJson('/admin/coupons', adminAuth.accessToken, {
   active: false,
   startsAt: couponSmokeStartedAt,
   endsAt: couponSmokeEndsAt,
+  maxRedemptions: 10,
+  grossBudgetAmount: 1000000,
+  perCustomerRedemptionLimit: 2,
+  minimumOrderAmount: 0,
+  maximumDiscountAmount: 100000,
+  currency: 'VND',
 });
 await runCouponSmokeLifecycle({
   activate: () =>
@@ -2144,6 +2307,7 @@ await runCouponSmokeLifecycle({
 
     const verificationUpload = await postJson('/files/presign', providerAuth.accessToken, {
       contentType: 'image/jpeg',
+      sizeBytes: 2048,
       visibility: 'PRIVATE',
       purpose: 'provider-verification',
     });
@@ -2231,6 +2395,7 @@ await runCouponSmokeLifecycle({
     }
     const publicProfileImageUpload = await postJson('/files/presign', providerAuth.accessToken, {
       contentType: 'image/jpeg',
+      sizeBytes: 4096,
       visibility: 'PUBLIC',
       purpose: 'profile-image',
     });
@@ -2241,6 +2406,7 @@ await runCouponSmokeLifecycle({
     );
     const publicGalleryImageUpload = await postJson('/files/presign', providerAuth.accessToken, {
       contentType: 'image/jpeg',
+      sizeBytes: 8192,
       visibility: 'PUBLIC',
       purpose: 'provider-gallery',
     });
@@ -2260,6 +2426,7 @@ await runCouponSmokeLifecycle({
     );
     const duplicateKycFileUpload = await postJson('/files/presign', kycNegativeProviderAuth.accessToken, {
       contentType: 'image/jpeg',
+      sizeBytes: 1024,
       visibility: 'PRIVATE',
       purpose: 'provider-verification',
     });
@@ -2281,6 +2448,7 @@ await runCouponSmokeLifecycle({
     for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
       const upload = await postJson('/files/presign', kycNegativeProviderAuth.accessToken, {
         contentType: 'image/jpeg',
+        sizeBytes: 1024,
         visibility: 'PRIVATE',
         purpose: 'provider-verification',
       });
@@ -2341,6 +2509,7 @@ await runCouponSmokeLifecycle({
     for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
       const upload = await postJson('/files/presign', providerAuth.accessToken, {
         contentType: 'image/jpeg',
+        sizeBytes: 1024,
         visibility: 'PRIVATE',
         purpose: 'provider-verification',
       });
@@ -2417,10 +2586,11 @@ await runCouponSmokeLifecycle({
       adminAuth.accessToken,
       'wallet-debt-service-gate',
     );
-    const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.accessToken);
-    if (!Array.isArray(taxPolicyVersions)) {
+    const taxPolicyVersionPage = await getJson('/admin/tax-policy-versions', adminAuth.accessToken);
+    const taxPolicyVersions = taxPolicyVersionPage?.items;
+    if (!Array.isArray(taxPolicyVersions) || typeof taxPolicyVersionPage.total !== 'number') {
       throw new Error(
-        `Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`,
+        `Tax policy version list did not return a bounded page: ${JSON.stringify(taxPolicyVersionPage)}`,
       );
     }
     const taxPolicyDraftEvidence = {
@@ -2600,7 +2770,12 @@ await runCouponSmokeLifecycle({
     );
     const noCoordinateBrowseProviders = await getJson('/customer/partners/nearby', customerAuth.accessToken);
     const nearbyProvider = nearbyProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
-    if (!nearbyProvider?.currentLocationUpdatedAt || nearbyProvider.isRecentLocation !== true) {
+    if (
+      nearbyProvider?.locationFreshness !== 'FRESH' ||
+      nearbyProvider.isRecentLocation !== true ||
+      'currentLocationUpdatedAt' in nearbyProvider ||
+      'distanceMeters' in nearbyProvider
+    ) {
       throw new Error(
         `Nearby provider payload is missing freshness metadata: ${JSON.stringify(nearbyProvider)}`,
       );
@@ -2650,8 +2825,9 @@ await runCouponSmokeLifecycle({
     );
     if (
       !globalBrowseProvider ||
-      typeof globalBrowseProvider.distanceMeters !== 'number' ||
-      globalBrowseProvider.distanceMeters < 1_000_000
+      globalBrowseProvider.distanceBucket !== 'OVER_20_KM' ||
+      globalBrowseProvider.distanceBucketRank !== 4 ||
+      'distanceMeters' in globalBrowseProvider
     ) {
       throw new Error(
         `Customer should be able to browse partners globally with long distance metadata: ${JSON.stringify(
@@ -2906,11 +3082,11 @@ await runCouponSmokeLifecycle({
       throw new Error(`Partner alias /partner/bookings/open did not include an open booking.`);
     }
     const preMatchChatRepairError = await expectRequestFailure(
-      'Admin chat repair requires final partner selection',
+      'Admin chat repair requires a matched lifecycle state',
       () => postJson(`/admin/bookings/${booking.id}/repair-chat-room`, adminAuth.accessToken),
       400,
     );
-    if (!preMatchChatRepairError.includes('Final partner selection is required before repairing chat room')) {
+    if (!preMatchChatRepairError.includes('Booking status OPEN_MATCHING cannot repair a chat room')) {
       throw new Error(
         `Admin chat repair before matching returned an unexpected error: ${preMatchChatRepairError}`,
       );
@@ -3044,16 +3220,16 @@ await runCouponSmokeLifecycle({
         paymentMethod: 'CASH',
       });
       const unsupportedPreferredAcceptModeError = await expectRequestFailure(
-        'Unsupported first-pick auto-match policy option',
+        'Locked first-pick policy rejects edits',
         () =>
           patchOperationalPolicyValue(
             adminAuth.accessToken,
             'matching.preferred_accept_mode',
             'AUTO_MATCH_ON_ACCEPT',
           ),
-        400,
+        409,
       );
-      if (!unsupportedPreferredAcceptModeError.includes('unsupported option')) {
+      if (!unsupportedPreferredAcceptModeError.includes('OPERATIONAL_POLICY_NOT_EDITABLE')) {
         throw new Error(
           `Unsupported first-pick policy returned an unexpected error: ${unsupportedPreferredAcceptModeError}`,
         );
@@ -3205,110 +3381,107 @@ await runCouponSmokeLifecycle({
       );
     }
 
-    let legacyDelayedMarketplaceBooking;
+    let lockedMarketplaceBooking;
     let backupDeclineNotificationObserved = false;
     const backupOpenModeBeforeSmoke = await getOperationalPolicyValue(
       adminAuth.accessToken,
       'matching.marketplace_open_mode',
     );
-    await patchOperationalPolicyValue(
-      adminAuth.accessToken,
-      'matching.marketplace_open_mode',
-      'AFTER_FIRST_PICK_DELAY',
-    );
-    try {
-      await postJson('/provider/online', legacyPolicyProviderAuth.accessToken);
-      await postJson('/provider/location', legacyPolicyProviderAuth.accessToken, {
-        lat: 10.7783,
-        lng: 106.6994,
-      });
-      legacyDelayedMarketplaceBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
-        serviceId: service.id,
-        providerId: legacyPolicyProviderAuth.user.providerProfile.id,
-        address: { line1: 'Legacy delayed marketplace compatibility smoke flow' },
-        lat: 10.7783,
-        lng: 106.6994,
-        paymentMethod: 'CASH',
-      });
-      await patchOperationalPolicyValue(
-        adminAuth.accessToken,
-        'matching.marketplace_open_mode',
-        'IMMEDIATE_WITHIN_WINDOW',
-      );
-      const legacyDelayedOpenBookings = await getJson(
-        '/provider/bookings/open',
-        backupProviderAuth.accessToken,
-      );
-      const legacyDelayedRequest = legacyDelayedOpenBookings.find(
-        (item) => item.id === legacyDelayedMarketplaceBooking.id,
-      );
-      if (!legacyDelayedRequest) {
-        throw new Error(
-          `Legacy delayed marketplace policy should still expose request to non-preferred partner: ${JSON.stringify(
-            legacyDelayedOpenBookings,
-          )}`,
-        );
-      }
-      if (
-        typeof legacyDelayedRequest.distanceMeters !== 'number' ||
-        legacyDelayedRequest.distanceMeters > 10000
-      ) {
-        throw new Error(
-          `Legacy delayed marketplace request should keep 10km distance metadata: ${JSON.stringify(
-            legacyDelayedRequest,
-          )}`,
-        );
-      }
-      await postJson(
-        `/provider/bookings/${legacyDelayedMarketplaceBooking.id}/join`,
-        backupProviderAuth.accessToken,
-      );
-      await postJson(
-        `/provider/bookings/${legacyDelayedMarketplaceBooking.id}/reject`,
-        backupProviderAuth.accessToken,
-      );
-      const rejectedMarketplaceSelectionError = await expectRequestFailure(
-        'Customer final selection rejects inactive marketplace participant',
-        () =>
-          postJson(
-            `/customer/bookings/${legacyDelayedMarketplaceBooking.id}/select-provider`,
-            customerAuth.accessToken,
-            { providerId: backupProviderAuth.user.providerProfile.id },
-          ),
-        400,
-      );
-      if (
-        !rejectedMarketplaceSelectionError.includes(
-          'Partner must participate or accept before customer selection',
-        )
-      ) {
-        throw new Error(
-          `Rejected marketplace participant should not be selectable by customer: ${rejectedMarketplaceSelectionError}`,
-        );
-      }
-      const delayedBackupCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
-      backupDeclineNotificationObserved = delayedBackupCustomerNotifications.some(
-        (notification) =>
-          notification.type === 'provider.rejected' &&
-          notification.data?.bookingId === legacyDelayedMarketplaceBooking.id &&
-          notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
-      );
-      if (!backupDeclineNotificationObserved) {
-        throw new Error(
-          `Marketplace partner decline should create a customer notification: ${JSON.stringify(
-            delayedBackupCustomerNotifications,
-          )}`,
-        );
-      }
-    } finally {
-      await patchOperationalPolicyValue(
-        adminAuth.accessToken,
-        'matching.marketplace_open_mode',
-        backupOpenModeBeforeSmoke ?? 'IMMEDIATE_WITHIN_WINDOW',
-        { restoration: true },
+    if (backupOpenModeBeforeSmoke !== 'IMMEDIATE_WITHIN_WINDOW') {
+      throw new Error(
+        `Locked marketplace open mode is unexpected: ${JSON.stringify(backupOpenModeBeforeSmoke)}`,
       );
     }
-
+    const lockedMarketplaceOpenModeError = await expectRequestFailure(
+      'Locked marketplace open mode rejects edits',
+      () =>
+        patchOperationalPolicyValue(
+          adminAuth.accessToken,
+          'matching.marketplace_open_mode',
+          'AFTER_FIRST_PICK_DELAY',
+        ),
+      409,
+    );
+    if (!lockedMarketplaceOpenModeError.includes('OPERATIONAL_POLICY_NOT_EDITABLE')) {
+      throw new Error(
+        `Locked marketplace policy returned an unexpected error: ${lockedMarketplaceOpenModeError}`,
+      );
+    }
+    await postJson('/provider/online', legacyPolicyProviderAuth.accessToken);
+    await postJson('/provider/location', legacyPolicyProviderAuth.accessToken, {
+      lat: 10.7783,
+      lng: 106.6994,
+    });
+    lockedMarketplaceBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      providerId: legacyPolicyProviderAuth.user.providerProfile.id,
+      address: { line1: 'Legacy delayed marketplace compatibility smoke flow' },
+      lat: 10.7783,
+      lng: 106.6994,
+      paymentMethod: 'CASH',
+    });
+    const lockedMarketplaceOpenBookings = await getJson(
+      '/provider/bookings/open',
+      backupProviderAuth.accessToken,
+    );
+    const lockedMarketplaceRequest = lockedMarketplaceOpenBookings.find(
+      (item) => item.id === lockedMarketplaceBooking.id,
+    );
+    if (!lockedMarketplaceRequest) {
+      throw new Error(
+        `Locked immediate marketplace policy should expose request to non-preferred partner: ${JSON.stringify(
+          lockedMarketplaceOpenBookings,
+        )}`,
+      );
+    }
+    if (
+      typeof lockedMarketplaceRequest.distanceMeters !== 'number' ||
+      lockedMarketplaceRequest.distanceMeters > 10000
+    ) {
+      throw new Error(
+        `Locked immediate marketplace request should keep 10km distance metadata: ${JSON.stringify(
+          lockedMarketplaceRequest,
+        )}`,
+      );
+    }
+    await postJson(`/provider/bookings/${lockedMarketplaceBooking.id}/join`, backupProviderAuth.accessToken);
+    await postJson(
+      `/provider/bookings/${lockedMarketplaceBooking.id}/reject`,
+      backupProviderAuth.accessToken,
+    );
+    const rejectedMarketplaceSelectionError = await expectRequestFailure(
+      'Customer final selection rejects inactive marketplace participant',
+      () =>
+        postJson(
+          `/customer/bookings/${lockedMarketplaceBooking.id}/select-provider`,
+          customerAuth.accessToken,
+          { providerId: backupProviderAuth.user.providerProfile.id },
+        ),
+      400,
+    );
+    if (
+      !rejectedMarketplaceSelectionError.includes(
+        'Partner must participate or accept before customer selection',
+      )
+    ) {
+      throw new Error(
+        `Rejected marketplace participant should not be selectable by customer: ${rejectedMarketplaceSelectionError}`,
+      );
+    }
+    const lockedPolicyCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
+    backupDeclineNotificationObserved = lockedPolicyCustomerNotifications.some(
+      (notification) =>
+        notification.type === 'provider.rejected' &&
+        notification.data?.bookingId === lockedMarketplaceBooking.id &&
+        notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
+    );
+    if (!backupDeclineNotificationObserved) {
+      throw new Error(
+        `Marketplace partner decline should create a customer notification: ${JSON.stringify(
+          lockedPolicyCustomerNotifications,
+        )}`,
+      );
+    }
     let fcmPolicyNotification = null;
     let fcmPolicyNotificationCandidate = null;
     const partnerAlertChannelBeforeSmoke = await getOperationalPolicyValue(
@@ -3324,7 +3497,11 @@ await runCouponSmokeLifecycle({
       'notification.partner_alert_channel',
       'FCM_FOR_ALL_BOOKINGS',
     );
-    await patchOperationalPolicyValue(adminAuth.accessToken, 'matching.marketplace_partner_invitation_limit', 1);
+    await patchOperationalPolicyValue(
+      adminAuth.accessToken,
+      'matching.marketplace_partner_invitation_limit',
+      1,
+    );
     try {
       await patchJson('/notifications/device-token/register', fcmPolicyProviderAuth.accessToken, {
         token: `demo-fcm-policy-provider-device-token-${Date.now()}`,
@@ -3463,16 +3640,25 @@ await runCouponSmokeLifecycle({
         })}`,
       );
     }
-    const cancelledPaymentSync = await postJson(
-      `/admin/payments/${cancelledPaymentBeforeSync.id}/sync`,
-      adminAuth.accessToken,
+    const cancelledPaymentSyncError = await expectRequestFailure(
+      'Released payment rejects gateway sync',
+      () =>
+        postJson(
+          `/admin/payments/${cancelledPaymentBeforeSync.id}/sync`,
+          adminAuth.accessToken,
+          apiSmokePaymentActionBody('cancelled-sync', cancelledPaymentBeforeSync.id),
+        ),
+      409,
     );
+    if (!cancelledPaymentSyncError.includes('PAYMENT_STATE_NOT_SYNCABLE')) {
+      throw new Error(`Released payment sync used an unexpected error: ${cancelledPaymentSyncError}`);
+    }
     const cancelledPaymentAfterSync = await getJson('/admin/payments', adminAuth.accessToken).then(
       (payments) => payments.find((item) => item.bookingId === cancellableMomoBooking.id),
     );
     if (cancelledPaymentAfterSync?.status !== 'RELEASED') {
       throw new Error(
-        `Released payment was overwritten by sync: ${JSON.stringify({ cancelledPaymentSync, cancelledPaymentAfterSync })}`,
+        `Released payment changed after blocked sync: ${JSON.stringify({ cancelledPaymentSyncError, cancelledPaymentAfterSync })}`,
       );
     }
 
@@ -3481,11 +3667,21 @@ await runCouponSmokeLifecycle({
       adminAuth.accessToken,
       'cancellation.after_match_policy',
     );
-    await patchOperationalPolicyValue(
-      adminAuth.accessToken,
-      'cancellation.after_match_policy',
-      'ADMIN_FEE_REVIEW_AFTER_MATCH',
+    const plannedCancellationPolicyError = await expectRequestFailure(
+      'Planned after-match cancellation policy rejects edits',
+      () =>
+        patchOperationalPolicyValue(
+          adminAuth.accessToken,
+          'cancellation.after_match_policy',
+          'ADMIN_FEE_REVIEW_AFTER_MATCH',
+        ),
+      409,
     );
+    if (!plannedCancellationPolicyError.includes('OPERATIONAL_POLICY_NOT_EDITABLE')) {
+      throw new Error(
+        `Planned cancellation policy returned an unexpected error: ${plannedCancellationPolicyError}`,
+      );
+    }
     try {
       await postJson('/provider/online', afterMatchCancellationProviderAuth.accessToken);
       await postJson('/provider/location', afterMatchCancellationProviderAuth.accessToken, {
@@ -3596,6 +3792,18 @@ await runCouponSmokeLifecycle({
       lng: 106.7009,
       paymentMethod: 'MOMO',
     });
+    const earlyManualExpiryError = await expectRequestFailure(
+      'Admin manual expiry rejects a booking before its matching deadline',
+      () =>
+        postJson(`/admin/bookings/${manuallyExpiredBooking.id}/expire`, adminAuth.accessToken, {
+          reason: 'Smoke test manual expiry',
+        }),
+      409,
+    );
+    if (!earlyManualExpiryError.includes('Booking matching deadline has not passed')) {
+      throw new Error(`Early admin expiry returned an unexpected error: ${earlyManualExpiryError}`);
+    }
+    await moveTrackedBookingMatchingDeadlineToPast(manuallyExpiredBooking.id);
     const expiredByAdminBooking = await postJson(
       `/admin/bookings/${manuallyExpiredBooking.id}/expire`,
       adminAuth.accessToken,
@@ -3972,8 +4180,7 @@ await runCouponSmokeLifecycle({
       adminCashSettlementSummary.rowCount < 1 ||
       adminCashSettlementSummary.providerCount < 1 ||
       adminCashSettlementSummary.totalDebtAmount < Math.abs(cashSettlementDebtRow.netAmount) ||
-      adminCashSettlementSummary.cashPaymentRowCount < 1 ||
-      !adminCashSettlementSummary.topProviderGroups?.some((group) => group.debtAmount > 0)
+      adminCashSettlementSummary.cashPaymentRowCount < 1
     ) {
       throw new Error(
         `Cash settlement summary did not expose open wallet debt totals: ${JSON.stringify(
@@ -4243,9 +4450,9 @@ await runCouponSmokeLifecycle({
     if (
       !completedChatArchive.some(
         (item) =>
-          item.id === booking.id &&
+          item.id === chatMessage.id &&
           item.chatRoom?.id === chatRoomId &&
-          item.chatRoom?.messages?.some((message) => message.id === chatMessage.id),
+          item.chatRoom?.booking?.id === booking.id,
       )
     ) {
       throw new Error(
@@ -4348,19 +4555,32 @@ await runCouponSmokeLifecycle({
     const providerEarningsSummary = await getJson('/provider/earnings/summary', providerAuth.accessToken);
     const partnerAliasEarningsSummary = await getJson('/partner/earnings/summary', providerAuth.accessToken);
     const completedEarning = providerEarnings.find((earning) => earning.bookingId === booking.id);
+    const completedTaxReason = completedCloseout.earning.taxLogs[0]?.ruleSnapshot?.reason;
     if (
       !completedEarning ||
-      completedEarning.withholdingAmount <= 0 ||
+      completedEarning.withholdingAmount < 0 ||
+      (completedEarning.withholdingAmount === 0 &&
+        !['NO_ACTIVE_POLICY', 'NO_APPROVED_TAX_PROFILE'].includes(completedTaxReason)) ||
       completedEarning.netAmount !==
         completedEarning.grossAmount - completedEarning.platformFee - completedEarning.withholdingAmount
     ) {
       throw new Error(
-        `Completed earning did not apply withholding policy: ${JSON.stringify(completedEarning)}`,
+        `Completed earning did not preserve withholding evidence: ${JSON.stringify({
+          completedEarning,
+          completedTaxReason,
+        })}`,
       );
     }
-    if (providerEarningsSummary.withholdingAmount <= 0) {
+    const expectedProviderWithholding = providerEarnings.reduce(
+      (total, earning) => total + Number(earning.withholdingAmount ?? 0),
+      0,
+    );
+    if (providerEarningsSummary.withholdingAmount !== expectedProviderWithholding) {
       throw new Error(
-        `Earnings summary did not include withholding: ${JSON.stringify(providerEarningsSummary)}`,
+        `Earnings summary did not reconcile withholding: ${JSON.stringify({
+          expectedProviderWithholding,
+          providerEarningsSummary,
+        })}`,
       );
     }
     if (partnerAliasEarningsSummary.providerProfileId !== providerEarningsSummary.providerProfileId) {
@@ -4442,11 +4662,17 @@ await runCouponSmokeLifecycle({
       amount: completedEarning.netAmount,
       side: 'CREDIT',
     });
-    assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
-      accountCode: 'partner_vat_pit_payable',
-      amount: completedEarning.withholdingAmount,
-      side: 'CREDIT',
-    });
+    if (completedEarning.withholdingAmount > 0) {
+      assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+        accountCode: 'partner_vat_pit_payable',
+        amount: completedEarning.withholdingAmount,
+        side: 'CREDIT',
+      });
+    } else if (
+      completedSettlementJournal.entries.some((entry) => entry.accountCode === 'partner_vat_pit_payable')
+    ) {
+      throw new Error('Zero withholding must not create a partner VAT/PIT payable journal entry.');
+    }
     assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
       accountCode: 'platform_fee_net_revenue',
       amount: completedSettlementSnapshot.platformFeeNetRevenue,
@@ -4471,6 +4697,11 @@ await runCouponSmokeLifecycle({
         side: 'CREDIT',
       });
     }
+    await ensureApiSmokeOpenMonthlyPeriod({
+      createdById: adminAuth.user.id,
+      currency: completedSettlementSnapshot.currency,
+      period: completedSettlementSnapshot.monthlyPeriod,
+    });
     const manualWalletAdjustmentAmount = 10000;
     const manualWalletAdjustmentPayload = {
       ownerType: 'CUSTOMER',
@@ -4478,6 +4709,7 @@ await runCouponSmokeLifecycle({
       direction: 'CREDIT',
       adjustmentType: 'CUSTOMER_COMPENSATION',
       amount: manualWalletAdjustmentAmount,
+      monthlyPeriod: completedSettlementSnapshot.monthlyPeriod,
       reason: 'API smoke customer compensation credit without bank cash, revenue, or output VAT.',
     };
     let manualWalletDualApprovalGuardsReady = false;
@@ -4542,7 +4774,7 @@ await runCouponSmokeLifecycle({
           nonFinanceAdminAuth.accessToken,
           {},
         ),
-      400,
+      403,
     );
     if (
       !manualWalletNonFinanceFailure.includes(
@@ -4661,7 +4893,7 @@ await runCouponSmokeLifecycle({
       {
         accountNumberLast4: String(companyBankAccountLifecycleSeed % 10000).padStart(4, '0'),
         bankCode: 'VCB',
-        bankName: `Smoke lifecycle bank ${companyBankAccountLifecycleSeed}`,
+        bankName: 'Vietcombank',
         currency: 'VND',
         direction: 'BOTH',
         evidenceObjectId: `smoke/company-bank-accounts/${companyBankAccountLifecycleSeed}`,
@@ -4796,42 +5028,23 @@ await runCouponSmokeLifecycle({
     ) {
       throw new Error('Approved company bank account request remained in the central approval queue');
     }
-    const companyBankAccountActivationRequest = await patchJson(
-      `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
-      adminAuth.accessToken,
-      {
-        idempotencyKey: `company-bank-activate-${companyBankAccountLifecycleSeed}`,
-        operatorReason: 'Activate after ownership verification and statement import test.',
-        status: 'ACTIVE',
-      },
+    const companyBankAccountActivationFailure = await expectRequestFailure(
+      'Synthetic company bank account activation remains blocked without authoritative evidence',
+      () =>
+        patchJson(
+          `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
+          adminAuth.accessToken,
+          {
+            idempotencyKey: `company-bank-activate-${companyBankAccountLifecycleSeed}`,
+            operatorReason: 'Verify activation remains blocked without authoritative evidence.',
+            status: 'ACTIVE',
+          },
+        ),
+      409,
     );
-    const companyBankAccountActivationApproval =
-      companyBankAccountActivationRequest.metadata?.pendingApproval;
-    if (
-      companyBankAccountActivationRequest.status !== 'INACTIVE' ||
-      companyBankAccountActivationApproval?.proposed?.status !== 'ACTIVE'
-    ) {
+    if (!companyBankAccountActivationFailure.includes('COMPANY_BANK_ACCOUNT_ACTIVATION_NOT_READY')) {
       throw new Error(
-        `Company bank account activated before checker approval: ${JSON.stringify(companyBankAccountActivationRequest)}`,
-      );
-    }
-    const companyBankAccountActivated = await postJson(
-      `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}/approval-decision`,
-      financeApproverAuth.accessToken,
-      {
-        decision: 'APPROVE',
-        operatorReason: 'Verified activation readiness and approved operational use.',
-        requestId: companyBankAccountActivationApproval.requestId,
-      },
-    );
-    if (
-      companyBankAccountActivated.status !== 'ACTIVE' ||
-      companyBankAccountActivated.metadata?.pendingApproval
-    ) {
-      throw new Error(
-        `Company bank account activation approval did not apply the exact proposal: ${JSON.stringify(
-          companyBankAccountActivated,
-        )}`,
+        `Synthetic company bank account activation returned an unexpected error: ${companyBankAccountActivationFailure}`,
       );
     }
     const companyBankAccountUpdateRequest = await patchJson(
@@ -4874,242 +5087,258 @@ await runCouponSmokeLifecycle({
         )}`,
       );
     }
-    const companyBankAccountStatusRequest = await patchJson(
-      `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
-      adminAuth.accessToken,
-      {
-        idempotencyKey: `company-bank-archive-${companyBankAccountLifecycleSeed}`,
-        operatorReason: 'Archive completed staged account lifecycle smoke evidence.',
-        status: 'INACTIVE',
-      },
-    );
-    const companyBankAccountStatusApproval = companyBankAccountStatusRequest.metadata?.pendingApproval;
-    if (
-      companyBankAccountStatusRequest.status !== 'ACTIVE' ||
-      companyBankAccountStatusApproval?.proposed?.status !== 'INACTIVE'
-    ) {
-      throw new Error(
-        `Company bank account status changed before approval: ${JSON.stringify(companyBankAccountStatusRequest)}`,
+    let bankReconciliationEvidence = {
+      ownerEvidenceRequired: true,
+      transactionId: null,
+      matchId: null,
+      matchAmount: null,
+      matchCurrency: null,
+      matchedStatus: null,
+      reversedStatus: null,
+      paymentClearingReopened: false,
+      batchImportId: null,
+      batchIgnoreReady: false,
+    };
+    const verifiedSmokeBankAccountId = env.API_SMOKE_VERIFIED_BANK_ACCOUNT_ID?.trim();
+    if (!verifiedSmokeBankAccountId) {
+      const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();
+      await registerApiSmokeCompanyBankAccount(
+        smokeCompanyBankAccount.id,
+        'api-smoke-synthetic-bank-reconciliation-blocker',
       );
-    }
-    const companyBankAccountArchived = await postJson(
-      `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}/approval-decision`,
-      financeApproverAuth.accessToken,
-      {
-        decision: 'APPROVE',
-        operatorReason: 'Verified the staged account archive request.',
-        requestId: companyBankAccountStatusApproval.requestId,
-      },
-    );
-    if (
-      companyBankAccountArchived.status !== 'INACTIVE' ||
-      companyBankAccountArchived.metadata?.pendingApproval
-    ) {
-      throw new Error(
-        `Company bank account status approval did not archive exact proposal: ${JSON.stringify(
-          companyBankAccountArchived,
-        )}`,
+      const syntheticBankReconciliationFailure = await expectRequestFailure(
+        'Synthetic company bank account is blocked from reconciliation operations',
+        () =>
+          postJson('/admin/bank-reconciliation/transactions', adminAuth.accessToken, {
+            amount: completedPaymentClearingEntry.amount,
+            bankAccountId: smokeCompanyBankAccount.id,
+            confirmPotentialDuplicate: true,
+            currency: completedPaymentClearingEntry.currency ?? 'VND',
+            occurredAt: new Date().toISOString(),
+            operatorReason: 'Verify synthetic bank account finance operations remain blocked.',
+            transferRef: `SMOKE-BANK-BLOCKED-${Date.now()}`,
+            type: 'INFLOW',
+          }),
+        400,
       );
-    }
-    const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();
-    const bankReconciliationTransferRef = `SMOKE-BANK-${Date.now()}`;
-    const completedPaymentClearingCurrency = completedPaymentClearingEntry.currency ?? 'VND';
-    const smokeBankTransaction = await postJson(
-      '/admin/bank-reconciliation/transactions',
-      adminAuth.accessToken,
-      {
-        amount: completedPaymentClearingEntry.amount,
-        bankAccountId: smokeCompanyBankAccount.id,
-        confirmPotentialDuplicate: true,
-        counterpartyName: 'HANDS API smoke customer',
-        currency: completedPaymentClearingCurrency,
-        description: 'API smoke manual bank import for payment clearing reconciliation.',
-        occurredAt: new Date().toISOString(),
-        operatorReason: 'Reviewed repeatable API smoke bank evidence before import.',
-        transferRef: bankReconciliationTransferRef,
-        type: 'INFLOW',
-        valueDate: new Date().toISOString(),
-      },
-    );
-    if (
-      smokeBankTransaction.status !== 'UNMATCHED' ||
-      smokeBankTransaction.amount !== completedPaymentClearingEntry.amount ||
-      smokeBankTransaction.transferRef !== bankReconciliationTransferRef
-    ) {
-      throw new Error(
-        `Manual bank transaction import did not return an unmatched row: ${JSON.stringify(smokeBankTransaction)}`,
+      if (!syntheticBankReconciliationFailure.includes('COMPANY_BANK_ACCOUNT_DATA_SCOPE_BLOCKED')) {
+        throw new Error(
+          `Synthetic bank reconciliation returned an unexpected error: ${syntheticBankReconciliationFailure}`,
+        );
+      }
+    } else {
+      const smokeCompanyBankAccount = { id: verifiedSmokeBankAccountId };
+      const bankReconciliationTransferRef = `SMOKE-BANK-${Date.now()}`;
+      const completedPaymentClearingCurrency = completedPaymentClearingEntry.currency ?? 'VND';
+      const smokeBankTransaction = await postJson(
+        '/admin/bank-reconciliation/transactions',
+        adminAuth.accessToken,
+        {
+          amount: completedPaymentClearingEntry.amount,
+          bankAccountId: smokeCompanyBankAccount.id,
+          confirmPotentialDuplicate: true,
+          counterpartyName: 'HANDS API smoke customer',
+          currency: completedPaymentClearingCurrency,
+          description: 'API smoke manual bank import for payment clearing reconciliation.',
+          occurredAt: new Date().toISOString(),
+          operatorReason: 'Reviewed repeatable API smoke bank evidence before import.',
+          transferRef: bankReconciliationTransferRef,
+          type: 'INFLOW',
+          valueDate: new Date().toISOString(),
+        },
       );
-    }
-    const smokeBankReconciliationAssignment = await postJson(
-      `/admin/bank-reconciliation/${smokeBankTransaction.id}/review-assignment`,
-      adminAuth.accessToken,
-      {
-        assigneeAdminId: adminAuth.user.id,
-        reason: 'API smoke assigned bank reconciliation evidence review.',
-      },
-    );
-    if (smokeBankReconciliationAssignment.assignee?.id !== adminAuth.user.id) {
-      throw new Error(
-        `Bank reconciliation review owner assignment failed: ${JSON.stringify(
-          smokeBankReconciliationAssignment,
-        )}`,
+      if (
+        smokeBankTransaction.status !== 'UNMATCHED' ||
+        smokeBankTransaction.amount !== completedPaymentClearingEntry.amount ||
+        smokeBankTransaction.transferRef !== bankReconciliationTransferRef
+      ) {
+        throw new Error(
+          `Manual bank transaction import did not return an unmatched row: ${JSON.stringify(smokeBankTransaction)}`,
+        );
+      }
+      const smokeBankReconciliationAssignment = await postJson(
+        `/admin/bank-reconciliation/${smokeBankTransaction.id}/review-assignment`,
+        adminAuth.accessToken,
+        {
+          assigneeAdminId: adminAuth.user.id,
+          reason: 'API smoke assigned bank reconciliation evidence review.',
+        },
       );
-    }
-    const smokeBankReconciliationMatch = await postJson(
-      `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`,
-  financeApproverAuth.accessToken,
-      {
-        amount: completedPaymentClearingEntry.amount,
-        currency: completedPaymentClearingCurrency,
-        notes: 'API smoke payment clearing match.',
-        paymentClearingEntryId: completedPaymentClearingEntry.id,
-      },
-    );
-    if (
-      smokeBankReconciliationMatch.bankTransaction?.status !== 'MATCHED' ||
-      smokeBankReconciliationMatch.paymentClearingEntry?.status !== 'CLEARED' ||
-      smokeBankReconciliationMatch.match?.status !== 'MATCHED' ||
-      smokeBankReconciliationMatch.match?.paymentClearingEntryId !== completedPaymentClearingEntry.id ||
-      smokeBankReconciliationMatch.match?.amount !== completedPaymentClearingEntry.amount ||
-      smokeBankReconciliationMatch.match?.currency !== completedPaymentClearingCurrency
-    ) {
-      throw new Error(
-        `Bank reconciliation match did not close the bank and payment clearing rows: ${JSON.stringify(
-          smokeBankReconciliationMatch,
-        )}`,
+      if (smokeBankReconciliationAssignment.assignee?.id !== adminAuth.user.id) {
+        throw new Error(
+          `Bank reconciliation review owner assignment failed: ${JSON.stringify(
+            smokeBankReconciliationAssignment,
+          )}`,
+        );
+      }
+      const smokeBankReconciliationMatch = await postJson(
+        `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`,
+        financeApproverAuth.accessToken,
+        {
+          amount: completedPaymentClearingEntry.amount,
+          currency: completedPaymentClearingCurrency,
+          notes: 'API smoke payment clearing match.',
+          paymentClearingEntryId: completedPaymentClearingEntry.id,
+        },
       );
-    }
-    const smokeBankTransactionDetailAfterMatch = await getJson(
-      `/admin/bank-reconciliation/${smokeBankTransaction.id}`,
-      adminAuth.accessToken,
-    );
-    if (
-      smokeBankTransactionDetailAfterMatch.status !== 'MATCHED' ||
-      !smokeBankTransactionDetailAfterMatch.reconciliationMatches?.some(
-        (match) =>
-          match.id === smokeBankReconciliationMatch.match.id &&
-          match.paymentClearingEntry?.id === completedPaymentClearingEntry.id &&
-          match.amount === completedPaymentClearingEntry.amount &&
-          match.currency === completedPaymentClearingCurrency,
-      )
-    ) {
-      throw new Error(
-        `Bank reconciliation detail does not expose the linked payment clearing match: ${JSON.stringify(
-          smokeBankTransactionDetailAfterMatch,
-        )}`,
+      if (
+        smokeBankReconciliationMatch.bankTransaction?.status !== 'MATCHED' ||
+        smokeBankReconciliationMatch.paymentClearingEntry?.status !== 'CLEARED' ||
+        smokeBankReconciliationMatch.match?.status !== 'MATCHED' ||
+        smokeBankReconciliationMatch.match?.paymentClearingEntryId !== completedPaymentClearingEntry.id ||
+        smokeBankReconciliationMatch.match?.amount !== completedPaymentClearingEntry.amount ||
+        smokeBankReconciliationMatch.match?.currency !== completedPaymentClearingCurrency
+      ) {
+        throw new Error(
+          `Bank reconciliation match did not close the bank and payment clearing rows: ${JSON.stringify(
+            smokeBankReconciliationMatch,
+          )}`,
+        );
+      }
+      const smokeBankTransactionDetailAfterMatch = await getJson(
+        `/admin/bank-reconciliation/${smokeBankTransaction.id}`,
+        adminAuth.accessToken,
       );
-    }
-    const smokeBankReconciliationReverse = await postJson(
-      `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches/${smokeBankReconciliationMatch.match.id}/reverse`,
-      financeApproverAuth.accessToken,
-      {
-        reason: 'API smoke reversal after confirming reconciliation match.',
-      },
-    );
-    if (
-      smokeBankReconciliationReverse.match?.status !== 'REVERSED' ||
-      smokeBankReconciliationReverse.match?.amount !== completedPaymentClearingEntry.amount ||
-      smokeBankReconciliationReverse.match?.currency !== completedPaymentClearingCurrency ||
-      smokeBankReconciliationReverse.bankTransaction?.status !== 'UNMATCHED' ||
-      smokeBankReconciliationReverse.paymentClearingEntry?.status !== 'OPEN'
-    ) {
-      throw new Error(
-        `Bank reconciliation reversal did not reopen the bank and payment clearing rows: ${JSON.stringify(
-          smokeBankReconciliationReverse,
-        )}`,
+      if (
+        smokeBankTransactionDetailAfterMatch.status !== 'MATCHED' ||
+        !smokeBankTransactionDetailAfterMatch.reconciliationMatches?.some(
+          (match) =>
+            match.id === smokeBankReconciliationMatch.match.id &&
+            match.paymentClearingEntry?.id === completedPaymentClearingEntry.id &&
+            match.amount === completedPaymentClearingEntry.amount &&
+            match.currency === completedPaymentClearingCurrency,
+        )
+      ) {
+        throw new Error(
+          `Bank reconciliation detail does not expose the linked payment clearing match: ${JSON.stringify(
+            smokeBankTransactionDetailAfterMatch,
+          )}`,
+        );
+      }
+      const smokeBankReconciliationReverse = await postJson(
+        `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches/${smokeBankReconciliationMatch.match.id}/reverse`,
+        financeApproverAuth.accessToken,
+        {
+          reason: 'API smoke reversal after confirming reconciliation match.',
+        },
       );
-    }
-    const smokeBankBatchSeed = Date.now();
-    const smokeBankBatchAmount = 1_000_000_000 + (smokeBankBatchSeed % 1_000_000_000);
-    const smokeBankBatchTransferRef = `SMOKE-BANK-BATCH-${smokeBankBatchSeed}`;
-    const smokeBankBatchOccurredAt = new Date().toISOString();
-    const smokeBankBatchRows = [
-      {
-        amount: String(smokeBankBatchAmount),
-        bankAccountId: smokeCompanyBankAccount.id,
-        counterpartyName: `HANDS batch smoke ${smokeBankBatchSeed}`,
-        description: 'Reviewed batch evidence for staged reconciliation smoke.',
-        occurredAt: smokeBankBatchOccurredAt,
-        rowNumber: 1,
-        transferRef: smokeBankBatchTransferRef,
-        type: 'INFLOW',
-        valueDate: smokeBankBatchOccurredAt,
-      },
-    ];
-    const smokeBankBatchPreview = await postJson(
-      '/admin/bank-reconciliation/transactions/batch-preview',
-      adminAuth.accessToken,
-      { rows: smokeBankBatchRows },
-    );
-    if (
-      smokeBankBatchPreview.summary?.new !== 1 ||
-      smokeBankBatchPreview.rows?.[0]?.classification !== 'NEW'
-    ) {
-      throw new Error(
-        `Bank statement batch preview did not classify unique evidence as new: ${JSON.stringify(
-          smokeBankBatchPreview,
-        )}`,
+      if (
+        smokeBankReconciliationReverse.match?.status !== 'REVERSED' ||
+        smokeBankReconciliationReverse.match?.amount !== completedPaymentClearingEntry.amount ||
+        smokeBankReconciliationReverse.match?.currency !== completedPaymentClearingCurrency ||
+        smokeBankReconciliationReverse.bankTransaction?.status !== 'UNMATCHED' ||
+        smokeBankReconciliationReverse.paymentClearingEntry?.status !== 'OPEN'
+      ) {
+        throw new Error(
+          `Bank reconciliation reversal did not reopen the bank and payment clearing rows: ${JSON.stringify(
+            smokeBankReconciliationReverse,
+          )}`,
+        );
+      }
+      const smokeBankBatchSeed = Date.now();
+      const smokeBankBatchAmount = 1_000_000_000 + (smokeBankBatchSeed % 1_000_000_000);
+      const smokeBankBatchTransferRef = `SMOKE-BANK-BATCH-${smokeBankBatchSeed}`;
+      const smokeBankBatchOccurredAt = new Date().toISOString();
+      const smokeBankBatchRows = [
+        {
+          amount: String(smokeBankBatchAmount),
+          bankAccountId: smokeCompanyBankAccount.id,
+          counterpartyName: `HANDS batch smoke ${smokeBankBatchSeed}`,
+          description: 'Reviewed batch evidence for staged reconciliation smoke.',
+          occurredAt: smokeBankBatchOccurredAt,
+          rowNumber: 1,
+          transferRef: smokeBankBatchTransferRef,
+          type: 'INFLOW',
+          valueDate: smokeBankBatchOccurredAt,
+        },
+      ];
+      const smokeBankBatchPreview = await postJson(
+        '/admin/bank-reconciliation/transactions/batch-preview',
+        adminAuth.accessToken,
+        { rows: smokeBankBatchRows },
       );
-    }
-    const smokeBankBatchImport = await postJson(
-      '/admin/bank-reconciliation/transactions/batch-import',
-      adminAuth.accessToken,
-      {
-        mappingPreset: 'GENERIC',
-        operatorReason: 'Reviewed unique batch bank evidence before importing.',
-        rows: smokeBankBatchRows,
-        sourceFileName: 'api-smoke-bank-statement.csv',
-        sourceFileSha256: smokeBankBatchSeed.toString(16).padStart(64, '0'),
-      },
-    );
-    const smokeBankBatchTransactionId = smokeBankBatchImport.results?.[0]?.transactionId;
-    if (
-      smokeBankBatchImport.importedCount !== 1 ||
-      smokeBankBatchImport.skippedCount !== 0 ||
-      !smokeBankBatchTransactionId
-    ) {
-      throw new Error(`Bank statement batch import failed: ${JSON.stringify(smokeBankBatchImport)}`);
-    }
-    const smokeBankBatchDetail = await getJson(
-      `/admin/bank-reconciliation/${smokeBankBatchTransactionId}`,
-      adminAuth.accessToken,
-    );
-    if (
-      smokeBankBatchDetail.status !== 'UNMATCHED' ||
-      smokeBankBatchDetail.creationEvidence?.importedByAdminId !== adminAuth.user.id ||
-      smokeBankBatchDetail.creationEvidence?.approvalAdminId
-    ) {
-      throw new Error(
-        `Bank statement batch evidence did not retain maker-only import provenance: ${JSON.stringify(
-          smokeBankBatchDetail,
-        )}`,
+      if (
+        smokeBankBatchPreview.summary?.new !== 1 ||
+        smokeBankBatchPreview.rows?.[0]?.classification !== 'NEW'
+      ) {
+        throw new Error(
+          `Bank statement batch preview did not classify unique evidence as new: ${JSON.stringify(
+            smokeBankBatchPreview,
+          )}`,
+        );
+      }
+      const smokeBankBatchImport = await postJson(
+        '/admin/bank-reconciliation/transactions/batch-import',
+        adminAuth.accessToken,
+        {
+          mappingPreset: 'GENERIC',
+          operatorReason: 'Reviewed unique batch bank evidence before importing.',
+          rows: smokeBankBatchRows,
+          sourceFileName: 'api-smoke-bank-statement.csv',
+          sourceFileSha256: smokeBankBatchSeed.toString(16).padStart(64, '0'),
+        },
       );
-    }
-    await postJson(
-      `/admin/bank-reconciliation/${smokeBankBatchTransactionId}/review-assignment`,
-      adminAuth.accessToken,
-      {
-        assigneeAdminId: adminAuth.user.id,
-        reason: 'API smoke assigned batch bank evidence reconciliation review.',
-      },
-    );
-    const smokeBankBatchIgnore = await postJson(
-      `/admin/bank-reconciliation/${smokeBankBatchTransactionId}/ignore`,
-      financeApproverAuth.accessToken,
-      {
-        reason: 'API smoke closes synthetic batch evidence after lifecycle verification.',
-      },
-    );
-    if (
-      smokeBankBatchIgnore.bankTransaction?.status !== 'IGNORED' ||
-      smokeBankBatchIgnore.auditLog?.actorId !== financeApproverAuth.user.id ||
-      smokeBankBatchIgnore.auditLog?.metadata?.reviewOwnerAdminId !== adminAuth.user.id
-    ) {
-      throw new Error(
-        `Bank statement batch evidence did not close with separated review and approval: ${JSON.stringify(
-          smokeBankBatchIgnore,
-        )}`,
+      const smokeBankBatchTransactionId = smokeBankBatchImport.results?.[0]?.transactionId;
+      if (
+        smokeBankBatchImport.importedCount !== 1 ||
+        smokeBankBatchImport.skippedCount !== 0 ||
+        !smokeBankBatchTransactionId
+      ) {
+        throw new Error(`Bank statement batch import failed: ${JSON.stringify(smokeBankBatchImport)}`);
+      }
+      const smokeBankBatchDetail = await getJson(
+        `/admin/bank-reconciliation/${smokeBankBatchTransactionId}`,
+        adminAuth.accessToken,
       );
+      if (
+        smokeBankBatchDetail.status !== 'UNMATCHED' ||
+        smokeBankBatchDetail.creationEvidence?.importedByAdminId !== adminAuth.user.id ||
+        smokeBankBatchDetail.creationEvidence?.approvalAdminId
+      ) {
+        throw new Error(
+          `Bank statement batch evidence did not retain maker-only import provenance: ${JSON.stringify(
+            smokeBankBatchDetail,
+          )}`,
+        );
+      }
+      await postJson(
+        `/admin/bank-reconciliation/${smokeBankBatchTransactionId}/review-assignment`,
+        adminAuth.accessToken,
+        {
+          assigneeAdminId: adminAuth.user.id,
+          reason: 'API smoke assigned batch bank evidence reconciliation review.',
+        },
+      );
+      const smokeBankBatchIgnore = await postJson(
+        `/admin/bank-reconciliation/${smokeBankBatchTransactionId}/ignore`,
+        financeApproverAuth.accessToken,
+        {
+          reason: 'API smoke closes synthetic batch evidence after lifecycle verification.',
+        },
+      );
+      if (
+        smokeBankBatchIgnore.bankTransaction?.status !== 'IGNORED' ||
+        smokeBankBatchIgnore.auditLog?.actorId !== financeApproverAuth.user.id ||
+        smokeBankBatchIgnore.auditLog?.metadata?.reviewOwnerAdminId !== adminAuth.user.id
+      ) {
+        throw new Error(
+          `Bank statement batch evidence did not close with separated review and approval: ${JSON.stringify(
+            smokeBankBatchIgnore,
+          )}`,
+        );
+      }
+      bankReconciliationEvidence = {
+        ownerEvidenceRequired: false,
+        transactionId: smokeBankTransaction.id,
+        matchId: smokeBankReconciliationMatch.match.id,
+        matchAmount: smokeBankReconciliationMatch.match.amount,
+        matchCurrency: smokeBankReconciliationMatch.match.currency,
+        matchedStatus: smokeBankReconciliationMatch.bankTransaction.status,
+        reversedStatus: smokeBankReconciliationReverse.bankTransaction.status,
+        paymentClearingReopened: smokeBankReconciliationReverse.paymentClearingEntry.status === 'OPEN',
+        batchImportId: smokeBankBatchImport.batchImportId,
+        batchIgnoreReady: smokeBankBatchIgnore.bankTransaction.status === 'IGNORED',
+      };
     }
     const expectedBasePlatformFee = service.basePrice - basePayoutRule.providerPayoutAmount;
     if (
@@ -5294,7 +5523,9 @@ await runCouponSmokeLifecycle({
         item.type === 'PAYOUT_HOLD' &&
         item.status === 'ACTIVE',
     )) {
-      await postJson(`/admin/partner-sanctions/${sanction.id}/lift`, adminAuth.accessToken);
+      await postJson(`/admin/partner-sanctions/${sanction.id}/lift`, adminAuth.accessToken, {
+        reason: 'API smoke cleared a prior disposable payout hold.',
+      });
     }
     const payoutHoldSanction = await postJson(
       `/admin/partners/${providerAuth.user.providerProfile.id}/sanctions`,
@@ -5317,6 +5548,7 @@ await runCouponSmokeLifecycle({
     const liftedPayoutHoldSanction = await postJson(
       `/admin/partner-sanctions/${payoutHoldSanction.id}/lift`,
       adminAuth.accessToken,
+      { reason: 'API smoke completed payout hold release verification.' },
     );
     if (liftedPayoutHoldSanction.status !== 'LIFTED') {
       throw new Error(`Payout hold sanction was not lifted: ${JSON.stringify(liftedPayoutHoldSanction)}`);
@@ -5332,8 +5564,17 @@ await runCouponSmokeLifecycle({
     if (!payoutBatch.earnings?.length || payoutBatch.earnings.some((earning) => earning.status === 'PAID')) {
       throw new Error(`Draft payout batch should not mark earnings paid: ${JSON.stringify(payoutBatch)}`);
     }
-    if (!payoutBatch.withholdingLogs?.length) {
-      throw new Error(`Draft payout batch should include withholding logs: ${JSON.stringify(payoutBatch)}`);
+    const payoutBatchWithholdingAmount = payoutBatch.earnings.reduce(
+      (total, earning) => total + Number(earning.withholdingAmount ?? 0),
+      0,
+    );
+    if (
+      (payoutBatchWithholdingAmount > 0 && !payoutBatch.withholdingLogs?.length) ||
+      (payoutBatchWithholdingAmount === 0 && payoutBatch.withholdingLogs?.length)
+    ) {
+      throw new Error(
+        `Draft payout batch withholding logs do not match earning evidence: ${JSON.stringify(payoutBatch)}`,
+      );
     }
     const payoutBatchUpdate = await patchJson(
       `/admin/payout-batches/${payoutBatch.id}`,
@@ -5415,7 +5656,7 @@ await runCouponSmokeLifecycle({
         patchJson(`/admin/payout-batches/${payoutBatch.id}`, nonFinanceAdminAuth.accessToken, {
           status: 'PAID',
         }),
-      400,
+      403,
     );
     if (
       !payoutBatchNonFinanceFailure.includes(
@@ -5693,14 +5934,42 @@ await runCouponSmokeLifecycle({
       payments.find((item) => item.bookingId === momoBooking.id),
     );
     const syncedMomo = momoPayment
-      ? await postJson(`/admin/payments/${momoPayment.id}/sync`, adminAuth.accessToken)
+      ? await postJson(
+          `/admin/payments/${momoPayment.id}/sync`,
+          adminAuth.accessToken,
+          apiSmokePaymentActionBody('momo-sync', momoPayment.id),
+        )
       : null;
-    const releasedMomo = momoPayment
-      ? await postJson(`/admin/payments/${momoPayment.id}/release`, adminAuth.accessToken)
-      : null;
-    const capturedCash = couponPayment
-      ? await postJson(`/admin/payments/${couponPayment.id}/capture`, adminAuth.accessToken)
-      : null;
+    const momoReleaseFailure = momoPayment
+      ? await expectRequestFailure(
+          'Open-matching MOMO payment release is blocked',
+          () =>
+            postJson(
+              `/admin/payments/${momoPayment.id}/release`,
+              adminAuth.accessToken,
+              apiSmokePaymentActionBody('momo-release', momoPayment.id),
+            ),
+          409,
+        )
+      : '';
+    if (momoPayment && !momoReleaseFailure.includes('BOOKING_STATE_NOT_RELEASEABLE')) {
+      throw new Error(`Open-matching MOMO release returned an unexpected error: ${momoReleaseFailure}`);
+    }
+    const cashCaptureFailure = couponPayment
+      ? await expectRequestFailure(
+          'Open-matching CASH payment capture is blocked',
+          () =>
+            postJson(
+              `/admin/payments/${couponPayment.id}/capture`,
+              adminAuth.accessToken,
+              apiSmokePaymentActionBody('cash-capture', couponPayment.id),
+            ),
+          409,
+        )
+      : '';
+    if (couponPayment && !cashCaptureFailure.includes('BOOKING_NOT_COMPLETED')) {
+      throw new Error(`Open-matching CASH capture returned an unexpected error: ${cashCaptureFailure}`);
+    }
     const refundRequest = payment
       ? await postJson(`/admin/payments/${payment.id}/refund-request`, adminAuth.accessToken, {
           reason: 'API smoke completed booking refund',
@@ -5804,6 +6073,7 @@ await runCouponSmokeLifecycle({
     let retryBeforeDeliveryCount = 0;
     let retryAccepted = false;
     let retryAuditObserved = false;
+    let retryPolicyBlocked = false;
     if (notificationToRetry) {
       await patchJson('/notifications/device-token/register', customerAuth.accessToken, {
         token: 'demo-customer-device-token',
@@ -5814,29 +6084,45 @@ await runCouponSmokeLifecycle({
         (item) => item.id === notificationToRetry.id,
       );
       retryBeforeDeliveryCount = adminNotificationBeforeRetry?.deliveries?.length ?? 0;
-      const retryResult = await postJson(
-        `/admin/notifications/${notificationToRetry.id}/retry`,
-        adminAuth.accessToken,
-      );
-      retryAccepted = Boolean(retryResult?.ok);
-      const retryAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
-      retryAuditObserved = retryAuditLogs?.some(
-        (log) =>
-          log.action === 'notification.retry' &&
-          log.target === `notification:${notificationToRetry.id}` &&
-          log.metadata?.notificationId === notificationToRetry.id,
-      );
-      if (!retryAuditObserved) {
-        throw new Error(
-          `Admin notification retry should leave an audit trail: ${JSON.stringify({
-            notificationId: notificationToRetry.id,
-            auditLogs: retryAuditLogs?.slice(0, 5),
-          })}`,
+      if (adminNotificationBeforeRetry?.data?.retryDecision?.state === 'allowed') {
+        const retryResult = await postJson(
+          `/admin/notifications/${notificationToRetry.id}/retry`,
+          adminAuth.accessToken,
+          { reason: 'API smoke retries a reviewed notification delivery.' },
         );
+        retryAccepted = Boolean(retryResult?.ok);
+        const retryAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
+        retryAuditObserved = retryAuditLogs?.some(
+          (log) =>
+            log.action === 'notification.retry' &&
+            log.target === `notification:${notificationToRetry.id}` &&
+            log.metadata?.notificationId === notificationToRetry.id,
+        );
+        if (!retryAuditObserved) {
+          throw new Error(
+            `Admin notification retry should leave an audit trail: ${JSON.stringify({
+              notificationId: notificationToRetry.id,
+              auditLogs: retryAuditLogs?.slice(0, 5),
+            })}`,
+          );
+        }
+      } else {
+        const retryFailure = await expectRequestFailure(
+          'Notification retry without a classified delivery failure is blocked',
+          () =>
+            postJson(`/admin/notifications/${notificationToRetry.id}/retry`, adminAuth.accessToken, {
+              reason: 'API smoke verifies retry failure policy enforcement.',
+            }),
+          409,
+        );
+        if (!retryFailure.includes('Notification retry blocked by failure policy')) {
+          throw new Error(`Notification retry policy returned an unexpected error: ${retryFailure}`);
+        }
+        retryPolicyBlocked = true;
       }
     }
     let retriedNotification = null;
-    for (let attempt = 0; attempt < 20 && notificationToRetry; attempt++) {
+    for (let attempt = 0; attempt < 20 && notificationToRetry && retryAccepted; attempt++) {
       await sleep(500);
       const adminNotifications = await getJson('/admin/notifications', adminAuth.accessToken);
       retriedNotification = adminNotifications.find((item) => item.id === notificationToRetry.id);
@@ -5916,25 +6202,26 @@ await runCouponSmokeLifecycle({
       providerWalletWithdrawalLedgerId: providerWalletWithdrawalLedger.id,
       providerWalletWithdrawalPaidLifecycleReady,
       companyBankAccountStagedApprovalReady:
-        companyBankAccountArchived.status === 'INACTIVE' &&
-        !companyBankAccountArchived.metadata?.pendingApproval,
+        companyBankAccountUpdated.status === 'INACTIVE' &&
+        !companyBankAccountUpdated.metadata?.pendingApproval &&
+        companyBankAccountActivationFailure.includes('COMPANY_BANK_ACCOUNT_ACTIVATION_NOT_READY'),
       companyBankAccountCentralApprovalQueueReady:
         companyBankAccountMakerQueueRequest?.reviewState === 'BLOCKED' &&
         companyBankAccountApproverQueueRequest?.reviewState === 'READY',
       companyBankAccountCommandSummariesReady:
         companyBankAccountFinanceOverview.companyBankAccountApprovalSummary?.pendingCount >= 1 &&
         companyBankAccountStartShift.financeReviewWorkload?.companyBankAccounts?.pendingCount >= 1,
-      bankReconciliationTransactionId: smokeBankTransaction.id,
-      bankReconciliationMatchId: smokeBankReconciliationMatch.match.id,
-      bankReconciliationMatchAmount: smokeBankReconciliationMatch.match.amount,
-      bankReconciliationMatchCurrency: smokeBankReconciliationMatch.match.currency,
-      bankReconciliationMatchedStatus: smokeBankReconciliationMatch.bankTransaction.status,
-      bankReconciliationReversedStatus: smokeBankReconciliationReverse.bankTransaction.status,
-      bankReconciliationPaymentClearingReopened:
-        smokeBankReconciliationReverse.paymentClearingEntry.status === 'OPEN',
-      bankStatementBatchImportId: smokeBankBatchImport.batchImportId,
-      bankStatementBatchIgnoreReady: smokeBankBatchIgnore.bankTransaction.status === 'IGNORED',
-      monthlyCloseOpenJournalDeltaBlocked,
+      bankReconciliationOwnerEvidenceRequired: bankReconciliationEvidence.ownerEvidenceRequired,
+      bankReconciliationTransactionId: bankReconciliationEvidence.transactionId,
+      bankReconciliationMatchId: bankReconciliationEvidence.matchId,
+      bankReconciliationMatchAmount: bankReconciliationEvidence.matchAmount,
+      bankReconciliationMatchCurrency: bankReconciliationEvidence.matchCurrency,
+      bankReconciliationMatchedStatus: bankReconciliationEvidence.matchedStatus,
+      bankReconciliationReversedStatus: bankReconciliationEvidence.reversedStatus,
+      bankReconciliationPaymentClearingReopened: bankReconciliationEvidence.paymentClearingReopened,
+      bankStatementBatchImportId: bankReconciliationEvidence.batchImportId,
+      bankStatementBatchIgnoreReady: bankReconciliationEvidence.batchIgnoreReady,
+      monthlyCloseInvalidPostedJournalBlocked,
       withholdingRemittancePaidLifecycleReady,
       financeDualApprovalRoleSeparationReady,
       adminBookingMonitorReady: true,
@@ -5974,9 +6261,9 @@ await runCouponSmokeLifecycle({
       preferredAcceptPolicyMatched: preferredAcceptPolicyMatched?.status === 'IN_SERVICE',
       firstPickMatchAuditSourceObserved,
       savedSelectedLocationId: savedSelectedLocation.id,
-      nearbyProviderDistanceMeters: nearbyProvider.distanceMeters,
+      nearbyProviderDistanceBucket: nearbyProvider.distanceBucket,
       nearbyProviderRecent: nearbyProvider.isRecentLocation,
-      globalBrowsePartnerDistanceMeters: globalBrowseProvider.distanceMeters,
+      globalBrowsePartnerDistanceBucket: globalBrowseProvider.distanceBucket,
       globalBrowseKeepsPartnerDiscoveryOpen: true,
       providerProfileImageReady: Boolean(customerProviderDetail.profileImageUrl),
       providerGalleryImageCount: customerProviderDetail.galleryImageUrls.length,
@@ -5989,12 +6276,12 @@ await runCouponSmokeLifecycle({
       cancelledBookingId: cancellableMomoBooking.id,
       cancelledBookingStatus: cancelledMomoBooking.status,
       cancelledPaymentStatus: cancelledMomoBooking.payment?.status ?? null,
-      cancelledPaymentSyncSkipped: cancelledPaymentSync?.skipped ?? false,
+      cancelledPaymentSyncBlocked: true,
       noShowCustomerNotified: true,
       noShowPartnerNotified: true,
       syncedMomoStatus: syncedMomo?.status ?? null,
-      releasedMomoStatus: releasedMomo?.status ?? null,
-      capturedCashStatus: capturedCash?.status ?? null,
+      momoReleaseBlocked: momoReleaseFailure.includes('BOOKING_STATE_NOT_RELEASEABLE'),
+      cashCaptureBlocked: cashCaptureFailure.includes('BOOKING_NOT_COMPLETED'),
       refundId: refund?.refunds?.at(-1)?.id ?? null,
       refundCount: adminRefunds.length,
       refundAfterPayoutReceivableReady,
@@ -6011,6 +6298,7 @@ await runCouponSmokeLifecycle({
       retryAccepted,
       retryBeforeDeliveryCount,
       retryAuditObserved,
+      retryPolicyBlocked,
       retriedNotificationDeliveryCount: retriedNotification?.deliveries?.length ?? 0,
       retryDeliveryObserved: (retriedNotification?.deliveries?.length ?? 0) > retryBeforeDeliveryCount,
       readiness,

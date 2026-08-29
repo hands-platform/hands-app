@@ -95,8 +95,8 @@ const requiredCoverage = [
       'Direct booking should notify eligible marketplace partners',
       'trace.backupProviderRadiusMeters === 10000',
       "preferredAcceptPolicyMatched.status !== 'IN_SERVICE'",
-      'Legacy delayed marketplace policy should still expose request to non-preferred partner',
-      'Legacy delayed marketplace request should keep 10km distance metadata',
+      'Locked immediate marketplace policy should expose request to non-preferred partner',
+      'Locked immediate marketplace request should keep 10km distance metadata',
     ],
   },
   {
@@ -160,12 +160,12 @@ const requiredCoverage = [
   {
     area: 'tax policy and withholding',
     markers: [
-      'Tax policy version list did not return an array',
+      'Tax policy version list did not return a bounded page',
       'Duplicate active default tax rule is rejected',
       'Overlapping amount-band tax rule is rejected',
-      'Completed earning did not apply withholding policy',
+      'Completed earning did not preserve withholding evidence',
       'completedCloseout.earning?.taxLogs?.length',
-      'Draft payout batch should include withholding logs',
+      'Draft payout batch withholding logs do not match earning evidence',
     ],
   },
   {
